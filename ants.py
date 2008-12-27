@@ -24,6 +24,10 @@ Revisions:
 import ephem, math, numpy
 import constants
 
+class PointingError(Exception):
+      def __init__(self, value): self.parameter = value
+      def __str__(self): return repr(self.parameter)
+
 #  _   _ _   _ _ _ _           _____                 _   _                 
 # | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
 # | | | | __| | | | __| | | | | |_ | | | | '_ \ / __| __| |/ _ \| '_ \/ __|
@@ -64,46 +68,12 @@ def azalt2top(az, alt):
 
 class RadioBody:
     """A class redefining ephem's sense of brightness for radio astronomy."""
-    def __init__(self, strength, freqs, meas_freq, spec_index, 
-            active_chans=None, t0=0):
-        """strength:     source flux measured at 'meas_freq'
-        freqs:        frequencies (in GHz) at bin centers across spectrum
-        meas_freq:    frequency (in GHz) where 'strength' was measured
-        spec_index:   index of power-law spectral model of source emission
-        active_chans: channels to be selected for future freq calculations"""
-        self.freqs = freqs
-        self._meas_freq = meas_freq
-        self._strength = strength
-        self._t0 = t0
-        self._spec_index = spec_index
-        self.select_chans(active_chans)
+    def __init__(self):
         self.prev_sidereal_time = 0     # Used to avoid redundant map calc.
-    def select_chans(self, active_chans):
-        """Choose only 'active_chans' for future freq calculations."""
-        if active_chans is None: active_chans = numpy.arange(self.freqs.size)
-        self.chans = numpy.array(active_chans)
-        self.update(self._strength, self._spec_index)
-    def update(self, strength, spec_index):
-        """Update parameters for source strength and spectral index."""
-        try: len(strength)
-        except(TypeError): strength = [strength]
-        self._strength = strength
-        try: len(spec_index)
-        except(TypeError): spec_index = [spec_index]
-        self._spec_index = spec_index
-        self._emission = (self.freqs.take(self.chans) / self._meas_freq)
-    def emission(self, observer):
-        # This may be a redundant compute
-        # Could optimize to buffer result for same times
-        # or if strength, spec_index polynomials are of order 1
-        self.compute(observer)
-        t = observer.date - self._t0
-        cur_strength = numpy.polyval(self._strength, t)
-        cur_spec_index = numpy.polyval(self._spec_index, t)
-        return cur_strength * self._emission**cur_spec_index
     def gen_uvw_map(self, observer):
         """Generate a uvw map useful for projecting baselines."""
         self.compute(observer)
+        if self.alt < 0: raise PointingError('%s is below horizon' % self.name)
         t = observer.sidereal_time()
         if t != self.prev_sidereal_time:
             self.prev_sidereal_time = t
@@ -121,25 +91,17 @@ class RadioBody:
 
 class RadioFixedBody(ephem.FixedBody, RadioBody):
     """A class combining ephem's FixedBody with a RadioBody."""
-    def __init__(self, ra, dec, freqs, 
-            strength=1., meas_freq=.150, spec_index=-1., active_chans=None):
+    def __init__(self, ra, dec, name=''):
         """ra:           source's right ascension
-        dec:          source's declination
-        freqs:        frequencies (in GHz) at bin centers across spectrum
-        strength:     source flux measured at 'meas_freq'
-        meas_freq:    frequency (in GHz) where 'strength' was measured
-        spec_index:   index of power-law spectral model of source emission
-        active_chans: channels to be selected for future freq calculations"""
+        dec:          source's declination"""
+        RadioBody.__init__(self)
         ephem.FixedBody.__init__(self)
         self._ra = ra
         self._dec = dec
-        RadioBody.__init__(self, strength, freqs, meas_freq, spec_index, 
-            active_chans=active_chans)
+        self.name = name
     def __repr__(self):
-        """This string is used to hash this source to avoid redundant
-        computations."""
-        return 'RadioFixedBody(%f, %f, strength=%s, spec_index=%s)' % \
-            (self._ra, self._dec, self._strength, self._spec_index)
+        """Return a string which can be used to hash src."""
+        return 'RadioFixedBody(%s,%s,name=%s)' % (self._ra,self._dec,self.name)
 
 #  ____           _ _      ____              
 # |  _ \ __ _  __| (_) ___/ ___| _   _ _ __  
@@ -148,17 +110,9 @@ class RadioFixedBody(ephem.FixedBody, RadioBody):
 # |_| \_\__,_|\__,_|_|\___/____/ \__,_|_| |_|
 
 class RadioSun(RadioBody, object):
-    """A representation of the Sun in radio.  Uses blackbelt kung-fu to 
-    subclass ephem.Sun()."""
-    def __init__(self, freqs, strength=1., meas_freq=.150, spec_index=-1.,
-            active_chans=None):
-        """freqs:        frequencies (in GHz) at bin centers across spectrum
-        strength:     source flux measured at 'meas_freq'
-        meas_freq:    frequency (in GHz) where 'strength' was measured
-        spec_index:   index of power-law spectral model of source emission
-        active_chans: channels to be selected for future freq calculations"""
-        RadioBody.__init__(self, strength, freqs, meas_freq, spec_index, 
-            active_chans=active_chans)
+    """A class combining ephem's Sun with a RadioBody."""
+    def __init__(self):
+        RadioBody.__init__(self)
         self.Sun = ephem.Sun()
     def __getattr__(self, nm):
         try: return object.__getattr__(self, nm)
@@ -167,25 +121,7 @@ class RadioSun(RadioBody, object):
         try: object.__setattr__(self, nm, val)
         except(AttributeError): return setattr(self.Sun, nm, val)
     def __repr__(self):
-        return 'RadioSun(%f, %f, strength=%s, spec_index=%s)' % \
-            (self._ra, self._dec, self._strength, self._spec_index)
-
-#  ____                           _     _     _   
-# / ___|  ___  _   _ _ __ ___ ___| |   (_)___| |_ 
-# \___ \ / _ \| | | | '__/ __/ _ \ |   | / __| __|
-#  ___) | (_) | |_| | | | (_|  __/ |___| \__ \ |_ 
-# |____/ \___/ \__,_|_|  \___\___|_____|_|___/\__|
-
-class SourceList:
-    """A class for holding celestial sources."""
-    def __init__(self, src_dict, active_chans=None):
-        self.names = src_dict.keys()
-        self.names.sort()
-        self.sources = [src_dict[s] for s in self.names]
-        self.select_chans(active_chans)
-    def select_chans(self, active_chans):
-        """Choose only 'active_chans' for future freq calculations."""
-        for s in self.sources: s.select_chans(active_chans)
+        return 'RadioSun()'
 
 #     _          _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _ 
@@ -214,19 +150,24 @@ class Antenna:
     def __rsub__(self, a):
         return a.pos - self.pos
 
-#     _          _                            _                         
-#    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
-#   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |
-#  / ___ \| | | | ||  __/ | | | | | | (_| |/ ___ \| |  | | | (_| | |_| |
-# /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
-#                                                                 |___/ 
+#     _                         _                    _   _             
+#    / \   _ __ _ __ __ _ _   _| |    ___   ___ __ _| |_(_) ___  _ __  
+#   / _ \ | '__| '__/ _` | | | | |   / _ \ / __/ _` | __| |/ _ \| '_ \ 
+#  / ___ \| |  | | | (_| | |_| | |__| (_) | (_| (_| | |_| | (_) | | | |
+# /_/   \_\_|  |_|  \__,_|\__, |_____\___/ \___\__,_|\__|_|\___/|_| |_|
+#                         |___/                                        
 
 class ArrayLocation(ephem.Observer):
     """Collected information about where and when an array is."""
-    def __init__(self, location):
-        """location:   location of the array in (lat, long, [elev])"""
+    def __init__(self, location=None, uv=None):
+        """location:   location of the array in (lat, long, [elev])
+        uv:         Miriad UV file"""
         ephem.Observer.__init__(self)
-        self.update_location(location)
+        if not uv is None: self.from_uv(uv)
+        else:
+            if location is None:
+                raise ValueError('Must provide either uv or location.')
+            self.update_location(location)
     def update_location(self, location):
         """Initialize the antenna array for the provided location.  Locations
         may be (lat, long) or (lat, long, elev)."""
@@ -250,15 +191,49 @@ class ArrayLocation(ephem.Observer):
         """Return an equatorial vector pointing at body."""
         body.compute(self)
         return self.top2eq(azalt2top(body.az, body.alt), no_norm=True)
+    def from_uv(self, uv):
+        """Update location from 'latitud' and 'longitu' in Miriad UV file."""
+        location = (uv['latitud'], uv['longitu'])
+        self.update_location(location)
+
+#     _          _                            _                         
+#    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
+#   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |
+#  / ___ \| | | | ||  __/ | | | | | | (_| |/ ___ \| |  | | | (_| | |_| |
+# /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
+#                                                                 |___/ 
 
 class AntennaArray(ArrayLocation):
     """A representation of a collection of antennas, their spacings, and
        information about when and where the array is."""
-    def __init__(self, antennas, location):
+    def __init__(self, antennas=None, location=None, freqs=None, uv=None):
         """antennas:   a list of Antenna instances
-        location:   location of the array in (lat, long, [elev])"""
-        ArrayLocation.__init__(self, location)
+        location:   location of the array in (lat, long, [elev])
+        uv:         Miriad UV file"""
+        ArrayLocation.__init__(self, location=location, uv=uv)
+        if not uv is None: self.from_uv(uv)
+        else:
+            if antennas is None:
+                raise ValueError('Must provide either antennas or uv.')
+            self.update_antennas(antennas)
+            self.freqs = freqs
+            self.set_active_chans()
+    def from_uv(self, uv):
+        """Update antenna positions, array location, and frequencies from 
+        Miriad UV file."""
+        ArrayLocation.from_uv(self, uv)
+        antennas = uv['antpos']
+        antennas.shape = (3, uv['nants'])
+        antennas = antennas.transpose()
         self.update_antennas(antennas)
+        sfreq = uv['sfreq']
+        sdf = uv['sdf']
+        self.freqs = numpy.arange(uv['nchan'], dtype=numpy.float) * sdf + sfreq
+        self.set_active_chans()
+    def set_active_chans(self, chans=None):
+        """Select which channels are used in computations.  Default is all."""
+        if chans is None: self.active_freqs = self.freqs
+        else: self.active_freqs = numpy.take(self.freqs, chans)
     def ij2bl(self, i, j=None):
         """Convert from i,j (counting from 0) baseline notation to
         (i+1) << 8 | (j+1) baseline notation.  If j is not provided, assume
@@ -276,13 +251,17 @@ class AntennaArray(ArrayLocation):
         self.antennas = antennas
         self.n_ants = len(antennas)
         bls = []
+        dlys = []
         self.baseline_order = {}
         for i in range(self.n_ants):
             for j in range(i, self.n_ants):
                 bls.append(antennas[j] - antennas[i])
+                try: dlys.append(antennas[j].delay - antennas[i].delay)
+                except(AttributeError): dlys.append(0)
                 bl = self.ij2bl(i, j)
                 self.baseline_order[bl] = len(bls) - 1
         self.baselines = numpy.array(bls)
+        self.delays = numpy.array(dlys)
     def get_baseline(self, i, j=None):
         """Return the baseline corresponding to i,j (see ij2bl for details)."""
         bl = self.ij2bl(i, j)
@@ -313,40 +292,33 @@ class AntennaArray(ArrayLocation):
         else: uvw_map = body.gen_uvw_map(self)
         proj_bl = numpy.dot(uvw_map, self.get_baseline(i, j))
         return proj_bl
-
-#  ___ _         _       _                        _                     
-# | _ \ |_  ___ /_\  _ _| |_ ___ _ _  _ _  __ _  /_\  _ _ _ _ __ _ _  _ 
-# |  _/ ' \(_-</ _ \| ' \  _/ -_) ' \| ' \/ _` |/ _ \| '_| '_/ _` | || |
-# |_| |_||_/__/_/ \_\_||_\__\___|_||_|_||_\__,_/_/ \_\_| |_| \__,_|\_, |
-#                                                                  |__/ 
-
-class PhsAntennaArray(AntennaArray):
-    """A class which adds phasing functionality to AntennaArray."""
-    def __init__(self, antennas, location):
-        AntennaArray.__init__(self, antennas, location)
-        self.update_antennas(antennas)
-    def update_antennas(self, antennas):
-        """Initialize the antenna array using a list of antennas.  Generates
-        zenith baselines and relative delays."""
-        AntennaArray.update_antennas(self, antennas)
-        dlys = []
-        for i in range(self.n_ants):
-            for j in range(i, self.n_ants):
-                dlys.append(antennas[j].delay - antennas[i].delay)
-        self.delays = numpy.array(dlys)
     def get_delay(self, i, j=None):
         """Return the delay corresponding to i,j (see ij2bl for details)."""
         bl = self.ij2bl(i, j)
         return self.delays[self.baseline_order[bl]]
+    def gen_phs(self, src, i, j=None):
+        """Return the phasing which must be applied to data to point to src."""
+        bl = self.ij2bl(i, j)
+        z = self.get_projected_baseline(bl, body=src)[2]
+        t = self.get_delay(bl)
+        return numpy.exp(-2*numpy.pi*1j * (z+t) * self.active_freqs)
     def phs2src(self, data, src, i, j=None):
-        bl = self.ij2bl(i, j)
-        w = self.get_projected_baseline(bl, body=src)[2]
-        t = self.get_delay(bl)
-        phs = numpy.exp(-2*numpy.pi*1j * (w+t) * src.freqs)
-        return data * phs
+        """Apply phasing to zenith data to point to src."""
+        return data * self.gen_phs(src, i, j)
     def unphs2src(self, data, src, i, j=None):
-        bl = self.ij2bl(i, j)
-        w = self.get_projected_baseline(bl, body=src)[2]
-        t = self.get_delay(bl)
-        phs = numpy.exp(-2*numpy.pi*1j * (w+t) * src.freqs)
-        return data * numpy.conjugate(phs)
+        """Remove phasing from src data to point to zenith."""
+        return data * numpy.conjugate(self.gen_phs(src, i, j))
+    def rmsrc(self, data, src, i, j=None, swath=0):
+        """Remove src flux from data.  Can aggressively remove srcs (allowing
+        for inexact calibration) by removing 'swath' adjacent bins in 
+        lag space."""
+        try: phs = self.gen_phs(src, i, j)
+        except(PointingError): return data
+        d = data * phs
+        if swath == 0: d -= numpy.ma.average(d)
+        else:
+            img = numpy.fft.ifft(d.filled(0))
+            img[swath:-swath] = 0
+            d -= numpy.fft.fft(img)
+        d /= phs
+        return d

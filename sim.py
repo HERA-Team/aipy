@@ -15,6 +15,109 @@ Revisions:
 
 import ants, numpy
 
+class SimRadioBody(ants.RadioBody):
+    """A class redefining ephem's sense of brightness for radio astronomy."""
+    def __init__(self, strength, freqs, meas_freq, spec_index,
+            active_chans=None, t0=0):
+        """strength:     source flux measured at 'meas_freq'
+        freqs:        frequencies (in GHz) at bin centers across spectrum
+        meas_freq:    frequency (in GHz) where 'strength' was measured
+        spec_index:   index of power-law spectral model of source emission
+        active_chans: channels to be selected for future freq calculations"""
+        self.freqs = freqs
+        self._meas_freq = meas_freq
+        self._strength = strength
+        self._t0 = t0
+        self._spec_index = spec_index
+        self.select_chans(active_chans)
+        self.prev_sidereal_time = 0     # Used to avoid redundant map calc.
+    def select_chans(self, active_chans):
+        """Choose only 'active_chans' for future freq calculations."""
+        if active_chans is None: active_chans = numpy.arange(self.freqs.size)
+        self.chans = numpy.array(active_chans)
+        self.update(self._strength, self._spec_index)
+    def update(self, strength, spec_index):
+        """Update parameters for source strength and spectral index."""
+        try: len(strength)
+        except(TypeError): strength = [strength]
+        self._strength = strength
+        try: len(spec_index)
+        except(TypeError): spec_index = [spec_index]
+        self._spec_index = spec_index
+        self._emission = (self.freqs.take(self.chans) / self._meas_freq)
+    def emission(self, observer):
+        # This may be a redundant compute
+        # Could optimize to buffer result for same times
+        # or if strength, spec_index polynomials are of order 1
+        self.compute(observer)
+        t = observer.date - self._t0
+        cur_strength = numpy.polyval(self._strength, t)
+        cur_spec_index = numpy.polyval(self._spec_index, t)
+        return cur_strength * self._emission**cur_spec_index
+
+class SimRadioFixedBody(ephem.FixedBody, SimRadioBody):
+    """A class combining ephem's FixedBody with a RadioBody."""
+    def __init__(self, ra, dec, freqs,
+            strength=1., meas_freq=.150, spec_index=-1., active_chans=None):
+        """ra:           source's right ascension
+        dec:          source's declination
+        freqs:        frequencies (in GHz) at bin centers across spectrum
+        strength:     source flux measured at 'meas_freq'
+        meas_freq:    frequency (in GHz) where 'strength' was measured
+        spec_index:   index of power-law spectral model of source emission
+        active_chans: channels to be selected for future freq calculations"""
+        ephem.FixedBody.__init__(self)
+        self._ra = ra
+        self._dec = dec
+        RadioBody.__init__(self, strength, freqs, meas_freq, spec_index,
+            active_chans=active_chans)
+    def __repr__(self):
+        """This string is used to hash this source to avoid redundant
+        computations."""
+        return 'RadioFixedBody(%f, %f, strength=%s, spec_index=%s)' % \
+            (self._ra, self._dec, self._strength, self._spec_index)
+
+class SimRadioSun(SimRadioBody, object):
+    """A representation of the Sun in radio.  Uses blackbelt kung-fu to
+    subclass ephem.Sun()."""
+    def __init__(self, freqs, strength=1., meas_freq=.150, spec_index=-1.,
+            active_chans=None):
+        """freqs:        frequencies (in GHz) at bin centers across spectrum
+        strength:     source flux measured at 'meas_freq'
+        meas_freq:    frequency (in GHz) where 'strength' was measured
+        spec_index:   index of power-law spectral model of source emission
+        active_chans: channels to be selected for future freq calculations"""
+        RadioBody.__init__(self, strength, freqs, meas_freq, spec_index,
+            active_chans=active_chans)
+        self.Sun = ephem.Sun()
+    def __getattr__(self, nm):
+        try: return object.__getattr__(self, nm)
+        except(AttributeError): return self.Sun.__getattribute__(nm)
+    def __setattr__(self, nm, val):
+        try: object.__setattr__(self, nm, val)
+        except(AttributeError): return setattr(self.Sun, nm, val)
+    def __repr__(self):
+        return 'RadioSun(%f, %f, strength=%s, spec_index=%s)' % \
+            (self._ra, self._dec, self._strength, self._spec_index)
+
+#  ____                           _     _     _
+# / ___|  ___  _   _ _ __ ___ ___| |   (_)___| |_
+# \___ \ / _ \| | | | '__/ __/ _ \ |   | / __| __|
+#  ___) | (_) | |_| | | | (_|  __/ |___| \__ \ |_
+# |____/ \___/ \__,_|_|  \___\___|_____|_|___/\__|
+
+class SourceList:
+    """A class for holding celestial sources."""
+    def __init__(self, src_dict, active_chans=None):
+        self.names = src_dict.keys()
+        self.names.sort()
+        self.sources = [src_dict[s] for s in self.names]
+        self.select_chans(active_chans)
+    def select_chans(self, active_chans):
+        """Choose only 'active_chans' for future freq calculations."""
+        for s in self.sources: s.select_chans(active_chans)
+
+
 #  ____
 # | __ )  ___  __ _ _ __ ___
 # |  _ \ / _ \/ _` | '_ ` _ \

@@ -42,7 +42,7 @@ def flag_by_int(preflagged_auto):
     pwr_vs_t = numpy.ma.average(abs(preflagged_auto), axis=1)
     spikey_pwr_vs_t = abs(pwr_vs_t - remove_spikes(pwr_vs_t))
     hi_thr, lo_thr = gen_rfi_thresh(spikey_pwr_vs_t, per_bin=20, nsig=1)
-    mask = numpy.logical_or(spikey_pwr_vs_t > hi_thr, spikey_pwr_vs_t < lo_thr)
+    mask = spikey_pwr_vs_t > hi_thr
     return mask
 
 def remove_spikes(data, order=6, iter=3, return_poly=False):
@@ -70,6 +70,8 @@ if __name__ == '__main__':
 
     p = OptionParser()
     p.set_usage('xrfi.py [options] *.uv')
+    p.add_option('-s', '--sky_removal', dest='sky_removal', action='store_true',
+        help='Window to filter out sky-based sources before flagging rfi.  Applies Parzen window to lag-domain data.')
     p.set_description(__doc__)
 
     opts, args = p.parse_args(sys.argv[1:])
@@ -83,16 +85,33 @@ if __name__ == '__main__':
         uvi = aipy.miriad.UV(uvfile)
 
         # Gather all data and each time step
+        window = None
         data = {}
         times = []
         while True:
             p, d = uvi.read_data()
             if d.size == 0: break
-            bl = p[-1]
+            i, j = aipy.miriad.bl2ij(p[-1])
+            if i != j and opts.sky_removal:
+                if window is None: 
+                    window = d.size/2 - abs(numpy.arange(d.size) - d.size/2)
+                img = numpy.fft.ifft(d)
+                img *= window
+                d = numpy.fft.fft(img)
             d.shape = (1,) + d.shape
-            if not data.has_key(bl): data[bl] = []
-            data[bl].append(d)
+            try: data[p[-1]].append(d)
+            except(KeyError): data[p[-1]] = [d]
             if len(times) == 0 or times[-1] != p[-2]: times.append(p[-2])
+
+        #import pylab
+        #ks = data.keys()
+        #ks.sort()
+        #for n, k in enumerate(ks):
+        #    d = numpy.ma.concatenate(data[k], axis=0)
+        #    pylab.subplot(4, 3, n+1)
+        #    pylab.imshow(numpy.log10(numpy.abs(d)+1e-6))
+        #    pylab.title(str(aipy.miriad.bl2ij(k)))
+        #pylab.show()
 
         # Generate a single mask for all baselines which masks if any
         # baseline has an outlier at that freq/time.  Data flagged

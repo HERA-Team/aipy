@@ -1,0 +1,17 @@
+This package collects together tools for radio astronomical interferometry.
+In addition to pure-python implementations of rotation and phasing code,
+this package provides interfaces to MIRIAD (a Fortran interferometry package)
+and LBFGSB (an optimization algorithm).
+
+BEFORE YOU INSTALL
+You'll need to have the following packages:
+    pyephem
+    numpy
+    pylab
+    scipy
+
+TO INSTALL AS ROOT
+> sudo python setup.py install
+
+Enjoy,
+Aaron Parsons
