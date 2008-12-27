@@ -11,8 +11,63 @@ Revisions:
                     of all info.  Only computes data relevant to selected
                     parameters.  Added docs.
 """
-import miriad, antennas, numpy, lbfgsb, pickle
-from math import pi
+import miriad, ants, sim, numpy, lbfgsb, pickle
+
+def flatten_prms(prms, prm_list=[]):
+    """Generate a list of parameters suitable for passing to a fitting
+    algorithm from the heirarchical parameter dictionary 'prms', along
+    with 'key_list' information for reconstructing such a dictionary from
+    a list.  'prm_list' is only for recursion."""
+    key_list = {}
+    keys = prms.keys()
+    keys.sort()
+    for k in keys:
+        if type(prms[k]) == dict:
+            prm_list, new_key_list = flatten_prms(prms[k], prm_list)
+            key_list[k] = new_key_list
+        else:
+            try:
+                key_list[k] = (len(prm_list), len(prms[k]))
+                prm_list += list(prms[k])
+            except(TypeError):
+                key_list[k] = (len(prm_list), 1)
+                prm_list.append(prms[k])
+    return prm_list, key_list
+
+def reconstruct_prms(prm_list, key_list):
+    """Generate a heirarchical parameter dictionary from a parameter
+    list (prm_list) and 'key_list' information from flatten_prms."""
+    prms = {}
+    for k in key_list:
+        v = key_list[k]
+        if type(v) == dict: prms[k] = reconstruct_prms(prm_list, v)
+        else:
+            i, L = v
+            if L > 1: prms[k] = prm_list[i:i+L]
+            else: prms[k] = prm_list[i]
+    return prms
+
+def print_params(prms, indent='', grad=None):
+    """Print a nice looking representation of a parameter dictionary."""
+    keys = prms.keys()
+    keys.sort()
+    for k in keys:
+        v = prms[k]
+        if type(v) == dict:
+            print indent, k
+            if grad is None: print_params(v, indent + '  ')
+            else: print_params(v, indent + '  ', grad[k])
+        else:
+            print indent, k
+            if grad is None:
+                if not type(v) is list: v = [v]
+                for i in v: print indent, ' ', i
+            else:
+                print indent, v, '\t<', grad[k], '>'
+                if not type(v) is list: v = [v]
+                for i in len(v):
+                    print indent, ' ', v[i], '\t<', grad[k][i], '>'
+
 
 #  _____ _ _   ____           _ _       ____            _       
 # |  ___(_) |_|  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _ 
@@ -21,8 +76,8 @@ from math import pi
 # |_|   |_|\__|_| \_\__,_|\__,_|_|\___/|____/ \___/ \__,_|\__, |
 #                                                         |___/ 
 
-class FitRadioBody(antennas.RadioBody):
-    """A class adding parameter fitting to antennas.RadioBody"""
+class FitRadioBody(ants.RadioBody):
+    """A class adding parameter fitting to RadioBody"""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {'strength':self._strength, 'spec_index':self._spec_index}
@@ -40,8 +95,8 @@ class FitRadioBody(antennas.RadioBody):
         except(KeyError): spec_index = self._spec_index
         self.update(strength, spec_index)
 
-class FitRadioFixedBody(antennas.RadioFixedBody, FitRadioBody):
-    """A class adding parameter fitting to antennas.RadioFixedBody"""
+class FitRadioFixedBody(ants.RadioFixedBody, FitRadioBody):
+    """A class adding parameter fitting to RadioFixedBody"""
     pass
 
 #  _____ _ _      _          _                         
@@ -50,8 +105,31 @@ class FitRadioFixedBody(antennas.RadioFixedBody, FitRadioBody):
 # |  _| | | |_ / ___ \| | | | ||  __/ | | | | | | (_| |
 # |_|   |_|\__/_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
 
-class FitAntenna(antennas.Antenna):
-    """A class adding parameter fitting to antennas.Antenna"""
+class FitAntenna(ants.Antenna):
+    def get_params(self, prm_list=None):
+        """Return all fitable parameters in a dictionary."""
+        aprms = {'pos':list(self.pos), 'delay':self.delay}
+        prms = {}
+        for p in prm_list:
+            if p.startswith('*'): return aprms
+            try: prms[p] = aprms[p]
+            except(KeyError): pass
+        return prms
+    def set_params(self, prms):
+        """Set all parameters from a dictionary."""
+        try: self.pos = numpy.array(prms['pos'], numpy.float64)
+        except(KeyError): pass
+        try: self.delay = prms['delay']
+        except(KeyError): pass
+
+#  _____ _ _   ____  _              _          _                         
+# |  ___(_) |_/ ___|(_)_ __ ___    / \   _ __ | |_ ___ _ __  _ __   __ _ 
+# | |_  | | __\___ \| | '_ ` _ \  / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` |
+# |  _| | | |_ ___) | | | | | | |/ ___ \| | | | ||  __/ | | | | | | (_| |
+# |_|   |_|\__|____/|_|_| |_| |_/_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
+
+class FitSimAntenna(sim.SimAntenna):
+    """A class adding parameter fitting to SimAntenna"""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {'pos':list(self.pos), 'delay':self.delay, 'offset':self.offset}
@@ -78,7 +156,7 @@ class FitAntenna(antennas.Antenna):
 # |    ||    |   ||   ||    |---'|   ||   |,---||   ||    |    ,---||   |
 # `    ``---'`   '`   '`---'`---'`   '`   '`---^`   '`    `    `---^`---|
 #                                                                   `---'
-class FitAntennaArray(antennas.SimAntennaArray):
+class FitAA:
     """A class adding parameter fitting to antennas.SimAntennaArray"""
     def get_params(self, ant_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
@@ -99,7 +177,19 @@ class FitAntennaArray(antennas.SimAntennaArray):
             except(KeyError): pass
         self.update_antennas(self.antennas)
 
-class FitSourceList(antennas.SourceList):
+class FitAntennaArray(ants.PhsAntennaArray, FitAA):
+    pass
+
+class FitSimAntennaArray(sim.SimAntennaArray, FitAA):
+    pass
+
+#  _____ _ _   ____                           _     _     _   
+# |  ___(_) |_/ ___|  ___  _   _ _ __ ___ ___| |   (_)___| |_ 
+# | |_  | | __\___ \ / _ \| | | | '__/ __/ _ \ |   | / __| __|
+# |  _| | | |_ ___) | (_) | |_| | | | (_|  __/ |___| \__ \ |_ 
+# |_|   |_|\__|____/ \___/ \__,_|_|  \___\___|_____|_|___/\__|
+
+class FitSourceList(ants.SourceList):
     """A class for fitting several celestial sources simultaneously."""
     def get_params(self, src_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
@@ -126,7 +216,7 @@ class FitSourceList(antennas.SourceList):
 # |  _| | | |_|  __/ (_| | | | (_| | | | | | \__ \
 # |_|   |_|\__|_|   \__,_|_|  \__,_|_| |_| |_|___/
 
-class FitSimulator(antennas.Simulator, FitAntennaArray, FitSourceList):
+class FitSimulator(sim.Simulator, FitAntennaArray, FitSourceList):
     """A structure for managing all of the fitting parameters associated
     with a simulation."""
     def __init__(self, ants, location, src_dict, uvfiles=None, 
@@ -136,7 +226,7 @@ class FitSimulator(antennas.Simulator, FitAntennaArray, FitSourceList):
         uvfiles:          A list of Miriad UV files
         active_chans:     Channels to be included in simulation.  Default: all
         fit_file:         File for retrieving and storing fit parameters."""
-        antennas.Simulator.__init__(self, ants, location, src_dict,
+        ants.Simulator.__init__(self, ants, location, src_dict,
             active_chans=active_chans)
         self.set_uvfiles(uvfiles)
         # Initialize some parameters from the first of the UV files

@@ -20,7 +20,8 @@ Revisions:
 """
 __version__ = '0.0.4'
 
-import numpy, rfi, antennas, math, fit, os
+import numpy, ants, math, fit, os, sim
+#import rfi
 
 #  _____           ____
 # | ____|___  _ __| __ )  ___  __ _ _ __ ___
@@ -28,7 +29,7 @@ import numpy, rfi, antennas, math, fit, os
 # | |__| (_) | |  | |_) |  __/ (_| | | | | | |
 # |_____\___/|_|  |____/ \___|\__,_|_| |_| |_|
 
-class EorBeam(antennas.Beam):
+class EorBeam(sim.Beam):
     def __init__(self, freqs, active_chans=None):
         CsAm = numpy.array([
            [ 4.3197202e+00,-3.6236564e-02, 1.9216586e-04,-3.4582946e-07,], 
@@ -64,10 +65,10 @@ class EorBeam(antennas.Beam):
         self.BAm = numpy.dot(CsAm, mhz_freqs)
         self.BXo = numpy.dot(CsXo, mhz_freqs)
         self.BSd = numpy.dot(CsSd, mhz_freqs)
-        antennas.Beam.__init__(self, freqs, active_chans)
+        ants.Beam.__init__(self, freqs, active_chans)
     def select_chans(self, active_chans):
         if active_chans is None: active_chans = numpy.arange(self.freqs.size)
-        antennas.Beam.select_chans(self, active_chans)
+        ants.Beam.select_chans(self, active_chans)
         self.BAm_sel = self.BAm.take(active_chans, axis=1)
         self.BXo_sel = self.BXo.take(active_chans, axis=1)
         self.BSd_sel = self.BSd.take(active_chans, axis=1)
@@ -133,18 +134,18 @@ GAIN_POLY = [.054]
 location = ('38:25:59.24', '-79:51:02.1', 806)     # Green Bank
 
 # Beam to use
-beam = antennas.Beam(freqs)
+beam = sim.Beam(freqs)
 #beam = EorBeam(freqs)
 
 # Antenna positions
-ants = (
-    fit.FitAntenna(  -8.48, 455.28,   9.82, beam, gain_poly=GAIN_POLY ), # 1
-    fit.FitAntenna( 205.47, 319.53,-251.71, beam, gain_poly=GAIN_POLY ), # 2
-    fit.FitAntenna( 187.10,-352.95,-232.59, beam, gain_poly=GAIN_POLY ), # 3
-    fit.FitAntenna(-262.70,-219.07, 318.70, beam, gain_poly=GAIN_POLY ), # 4
-    fit.FitAntenna(-293.44,  -7.66, 360.20, beam, gain_poly=GAIN_POLY ), # 5
-    fit.FitAntenna(-286.04,  93.20, 352.23, beam, gain_poly=GAIN_POLY ), # 6
-    fit.FitAntenna(-182.66, 353.23, 227.56, beam, gain_poly=GAIN_POLY ), # 7
+antennas = (
+    fit.FitAntenna(  -8.48, 455.28,   9.82 ), # 1
+    fit.FitAntenna( 205.47, 319.53,-251.71 ), # 2
+    fit.FitAntenna( 187.10,-352.95,-232.59 ), # 3
+    fit.FitAntenna(-262.70,-219.07, 318.70 ), # 4
+    fit.FitAntenna(-293.44,  -7.66, 360.20 ), # 5
+    fit.FitAntenna(-286.04,  93.20, 352.23 ), # 6
+    fit.FitAntenna(-182.66, 353.23, 227.56 ), # 7
     #fit.FitAntenna( -84.27, 434.46, 107.19, beam, gain_poly=GAIN_POLY, 
     fit.FitAntenna( -75.51, 433.83,  97.02, beam, gain_poly=GAIN_POLY, 
         offset=1.4967), # 8
@@ -167,10 +168,10 @@ src_dict = {
     #'1 Sun':          fit.FitRadioSun(freqs, strength=19996.)
 }
 
-fit_sim = fit.FitSimulator(ants, location, src_dict, active_chans=active_chans)
+fit_sim = fit.FitSimulator(antennas, location, src_dict, active_chans=active_chans)
 
 # RFI
-bad_bins = rfi.range2list((0,69), (235,255), (183,194))
+#bad_bins = rfi.range2list((0,69), (235,255), (183,194))
 #rfi_freq_flagger = rfi.gen_freq_mfunc(bad_bins)
 
 

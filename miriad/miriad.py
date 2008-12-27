@@ -365,6 +365,13 @@ class UV:
     def __del__(self):
         miruv.uvclose_c(self.handle)
 
+def bl2ij(bl):
+    bl = int(bl)
+    return (bl>>8)-1, (bl&255) - 1
+
+def ij2bl(i, j):
+    return (i+1)<<8 | (j+1)
+
 #        _   _ _ _ _         
 #  _   _| |_(_) (_) |_ _   _ 
 # | | | | __| | | | __| | | |
@@ -372,7 +379,23 @@ class UV:
 #  \__,_|\__|_|_|_|\__|\__, |
 #                      |___/ 
 
-def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True):
+def init_from_uv(uvi, uvo, append2hist='', override={}):
+    """Initialize 'uvo' from 'uvi'.  Append 'append2hist' to uvo's history.""" 
+    for k in uvi.items:
+        if k in override: uvo.items[k] = override[k]
+        else: uvo.items[k] = uvi.items[k]
+    uvo.items['history'] += append2hist
+    for k in uvi.vars:
+        # I don't understand why reading 'corr' segfaults miriad,
+        # but it does.  This is a cludgy work-around.
+        if k == 'corr': continue
+        uvo.vars.add_var(k, dict.__getitem__(uvi.vars, k).typecode)
+        if k in override: uvo.vars[k] = override[k]
+        else:
+            try: uvo.vars[k] = uvi.vars[k]
+            except(ValueError): pass
+
+def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True, notrack=[]):
     """Pipe one UV dataset (uvi) into another (uvo) through the mapping function
     'mfunc' (if not provided, this will just clone a dataset).
     
@@ -386,26 +409,19 @@ def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True):
     uvo.  If you don't set this True, then it is your responsibility to
     initialize uvo."""
     # Optionally initialize uvo with appropriate variables, items
-    if init:
-        for k in uvi.items: uvo.items[k] = uvi.items[k]
-        uvo.items['history'] += append2hist
-        for k in uvi.vars:
-            # I don't understand why reading 'corr' segfaults miriad,
-            # but it does.  This is a cludgy work-around.
-            if k == 'corr': continue
-            uvo.vars.add_var(k, dict.__getitem__(uvi.vars, k).typecode)
-            try: uvo.vars[k] = uvi.vars[k]
-            except(ValueError): pass
+    if init: init_from_uv(uvi, uvo, append2hist=append2hist)
     # Set up uvi to copy all variables when 'uvcopyvr' is called.
     for k in uvi.vars:
         if k == 'corr': continue        # Cludge again --- yuck.
-        uvi.vars.set_tracking(k, 'c')
+        if k not in notrack: uvi.vars.set_tracking(k, 'c')
     # Pipe all data through mfunc to uvo
     while True:
         preamble, data = uvi.read_data()
         if data.size == 0: break
-        new_preamble, new_data = mfunc(uvi, preamble, data)
-        if new_data is None: continue
+        if not mfunc is None:
+            new_preamble, new_data = mfunc(uvi, preamble, data)
+            if new_data is None: continue
+        else: new_preamble, new_data = preamble, data
         miruv.uvcopyvr_c(uvi.handle, uvo.handle)
         uvo.write_data(new_preamble, new_data)
 
