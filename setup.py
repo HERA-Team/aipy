@@ -1,7 +1,7 @@
 def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration('aipy', parent_package, top_path,
-        version='0.0.1')
+        version='0.0.2')
     config.add_subpackage('lbfgsb')
     config.add_subpackage('miriad')
     config.add_data_dir('data')
