@@ -30,21 +30,6 @@ Date: 10/21/06
 Revisions: None
 """
 
-# Copyright (C) 2006 Aaron Parsons
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
 __lbfgsb_version__ = '2.1'
 __version__ = '0.0.3'
 
@@ -164,22 +149,17 @@ def minimize(fun, vars, gradfun=None, m=5, factr=1e7, pgtol=1e-5, iprint=-1):
 def lsq_fit(f, vars, xs, ys, g=None, m=5, factr=1e7, 
     pgtol=1e-5, iprint=-1):
     """Perform a least-squares fit of a function to measured data.
-
-    'f' is the function to be fit, and should accept the variables to be
-    fit (vars) and the datapoint locations (xs), in that order.
-    
-    'vars' are the parameters to be fit (see docs for minimize).
-
-    'xs' are the locations at which data has been measured.
-    
-    'ys' are the measured values of the function f at the locations listed 
-    in xs.
-
-    'g' is the gradient of f, and should accept the same arguments as f.  It
-    should return gradient of f in each parameter, in the order listed in vars.
-    If g is not provided, one will be calculated very inefficiently by 
-    perturbing each variable in f and summing over all datapoints.
-
+    f:      The function to be fit, and should accept the variables to be
+            fit (vars) and the datapoint locations (xs), in that order.
+    vars:   The parameters to be fit (see docs for minimize).
+    xs:     The locations at which data has been measured.
+    ys:     The measured values of the function f at the locations listed 
+            in xs.
+    g:      The gradient of f, and should accept the same arguments as f.  It
+            should return gradient of f in each parameter, in the order listed 
+            in vars.  If g is not provided, one will be calculated very 
+            inefficiently by perturbing each variable in f and summing over 
+            all datapoints.
     The other parameters are described in the documentation for 'minimize'."""
     ays = numpy.array(ys)
     if g is not None:

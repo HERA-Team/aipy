@@ -6,23 +6,7 @@ Date: 11/10/2006
 Revisions: 
     11/12/2006  arp     Added numpy.abs/numpy.absolute workaround.
 """
-
-# Copyright (C) 2006 Aaron Parsons
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
-import numpy
+import numpy, miriad
 
 # Add a workaround for some versions of numpy having 'absolute' instead of 'abs'
 try: numpyabs = numpy.abs
@@ -52,13 +36,32 @@ def range2list(*ranges):
                 % (len(r)))
     return L
 
-def gen_rfi_mask(data, also=[], bins=None):
+def find_left_bounded_thresh(hist, min_flag_frac=.125, max_flag_frac=.5):
+    cum, mid, thq = 0, 0, 0
+    tot = hist.sum()
+    for i, h in enumerate(hist):
+        cum += h
+        if mid == 0 and cum > max_flag_frac: mid = i
+        if cum > 1 - min_flag_frac:
+            thq = i
+            break
+    amax1 = numpy.argmax(h[:mid])
+    amax2 = numpy.argmax(h[mid:]) + mid
+    rmin = numpy.argmin(h[amax1:amax2]) + amax1
+    rmin = max(rmin, mid)
+    rmin = min(rmin, thq)
+    return rmin
+
+def gen_rfi_mask(data, also=[], bins=None, use_deriv=True):
     """Faster (and I think better) way of generating a per-frequency rfi mask.
     Don't know about robustness for non-PAPER array data."""
     if bins is None: bins = data.shape[-1] / 20
     adat = numpyabs(data)
-    d = derivative(adat)
-    dd = numpyabs(derivative(d))
+    if use_deriv:
+        d = derivative(adat)
+        dd = numpyabs(derivative(d))
+    else:
+        dd = adat
     h, bvals = numpy.histogram(numpy.log10(dd+1), bins=bins)
     bvals = 10**bvals
     h[0] = 0
@@ -79,34 +82,80 @@ def gen_rfi_mask(data, also=[], bins=None):
         rmin = min(rmin, thq)
         thresh = bvals[rmin]
     except: thresh = 0
+    print amax1, amax2, rmin
+    import pylab
+    pylab.plot(h)
+    pylab.show()
     m = numpy.where(dd > thresh, 1, 0)
     for a in also: m[a] = 1
-    return m
+    return m.astype(numpy.bool)
 
-def gen_freq_mfunc(also=[], bins=None, remask=False):
-    """Create an mfunc suitable for miriad.map_uv use which masks rfi frequency
-    bins based on premise that data + rfi is a bimodal distribution, and that 
-    there is a local minimum between them.  Will not flag more than 1/2 the 
-    data, or less than 1/4, unless the data is totally rfi dominated, in
-    which case it masks the entire spectrum.  Uses the union of all 
-    autocorrelations masks to mask all baselines (autos + crosses) for a
-    given integration.  This may be a little aggressive, but it works."""
-    def mfunc(pbuf, dbuf, vbuf=None, cbuf=None):
-        # Generate an rfi mask which is the 'or' of all autocorr rfi masks.
-        m = numpy.zeros(dbuf[0].shape)
-        for i, p in enumerate(pbuf):
-            bl = int(p[-1])
-            if (bl>>8) & 255 == bl & 255:
-                m = numpy.logical_or(m, 
-                    gen_rfi_mask(dbuf[i].data, also, bins))
-        dout = []
-        for d in dbuf:
-            if remask: dout.append(numpy.ma.array(d.data, mask=m))
-            else:
-                new_m = numpy.logical_or(m, d.mask)
-                dout.append(numpy.ma.array(d.data, mask=new_m))
-        return pbuf, dout
+def gen_post_sim_mfunc(simulator, remask=False):
+    dbuf = {}
+    # Collect the data we want from all the uvfiles
+    for uvf in simulator.uvfiles:
+        uv = miriad.UV(uvf)
+        uv.configure_preamble('time/baseline/pol')
+        while True:
+            preamble, data = uv.read_data()
+            if data.size == 0: break
+            t, bl, p = preamble
+            if not simulator.is_active(bl, p): continue
+            i, j = simulator.gen_ij(bl)
+            data = data.take(simulator.chans)
+            V_f = simulator.sim_data(bl, stokes=p)
+            k = '%d-%d,%d' % (i,j,p)
+            data -= V_f
+            if dbuf.has_key(k): dbuf[k].append(data)
+            else: dbuf[k] = [data]
+        del(uv)
+    # For each baseline,pol,channel generate an rfi mask for the time series
+    for k in dbuf:
+        d = numpy.array(dbuf[k])
+        print d.shape
+        for i in range(d.shape[1]):
+            d[:,i] = gen_rfi_mask(d[:,i])
+        dbuf[k] = d.astype(numpy.bool)
+    # Create the mfunc which will mask data flagged by gen_rfi_mask
+    def mfunc(uv, preamble, data):
+        u, v, w, t, bl = preamble
+        p = uv['pol']
+        if not simulator.is_active(bl, p): return preamble, data
+        i, j = simulator.gen_ij(bl)
+        if i == j: return preamble, data
+        k = '%d-%d,%d' % (i,j,p)
+        m = dbuf[k][0]
+        dbuf[k] = dbuf[k][1:]
+        if not remask: m |= data.mask.take(simulator.chans)
+        data.mask.put(simulator.chans, m)
+        return preamble, data
+    # Return this mfunc to do work elsewhere
     return mfunc
+
+#def gen_freq_mfunc(also=[], bins=None, remask=False):
+#    """Create an mfunc suitable for miriad.pipe_uv use which masks rfi frequency
+#    bins based on premise that data + rfi is a bimodal distribution, and that 
+#    there is a local minimum between them.  Will not flag more than 1/2 the 
+#    data, or less than 1/4, unless the data is totally rfi dominated, in
+#    which case it masks the entire spectrum.  Uses the union of all 
+#    autocorrelations masks to mask all baselines (autos + crosses) for a
+#    given integration.  This may be a little aggressive, but it works."""
+#    def mfunc(uv, p, d):
+#        # Generate an rfi mask which is the 'or' of all autocorr rfi masks.
+#        m = numpy.zeros(dbuf[0].shape)
+#        for i, p in enumerate(pbuf):
+#            bl = int(p[-1])
+#            if (bl>>8) & 255 == bl & 255:
+#                m = numpy.logical_or(m, 
+#                    gen_rfi_mask(dbuf[i].data, also, bins))
+#        dout = []
+#        for d in dbuf:
+#            if remask: dout.append(numpy.ma.array(d.data, mask=m))
+#            else:
+#                new_m = numpy.logical_or(m, d.mask)
+#                dout.append(numpy.ma.array(d.data, mask=new_m))
+#        return pbuf, dout
+#    return mfunc
 
 def gen_rfi_int_thresh(pwrs, bins=10):
     """Given a list of total powers for many integrations, figures out
@@ -120,7 +169,7 @@ def gen_rfi_int_thresh(pwrs, bins=10):
     return thresh
 
 def gen_int_mfunc(uvi, remask=False):
-    """Create an mfunc suitable for miriad.map_uv use which masks rfi
+    """Create an mfunc suitable for miriad.pipe_uv use which masks rfi
     integrations based on total recorded power.  This works, but a better
     way may be to look at the hairiness (squiggles from FFT overflows) which
     ruin all the data in a spectrum and warrents throwing out the integration.
@@ -131,7 +180,7 @@ def gen_int_mfunc(uvi, remask=False):
             preamble, data = uvi.read_data()
             if data.size == 0: break
             bl = int(preamble[-1])
-            pol = int(uvi.vars['pol'])
+            pol = int(uvi['pol'])
             k = '%d,p%d' % (bl, pol)
             p = numpyabs(data.data).sum()
             try: pwr_dict[k].append(p)
@@ -215,8 +264,7 @@ if __name__ == '__main__':
                 return pbuf, dbuf
             hist_lines = 'RFI: Flagged by frequency and integration.\n'
             output('    Flagging data by freq and int')
-        miriad.map_uv(uvi, uvo, mfunc, append2history=hist_lines,
-            send_time_blks=True)
+        miriad.pipe_uv(uvi, uvo, mfunc, append2hist=hist_lines)
         del(uvi); del(uvo)
         output('    Done.')
 

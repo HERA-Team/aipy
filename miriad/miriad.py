@@ -20,6 +20,9 @@ Revisions:
                     to cure a memory leak, and (possibly) speed reading.
     arp 01/28/07    Added uvupdate, uvselect, and uvtrack to speed up copying
                     and mapping of datasets.
+    arp 03/13/07    Changed "map_uv" to "pipe_uv" and removed buffering in
+                    it to fix a bug and simplify what is no longer needed
+                    now that sim_data only generates single baselines.
 
 Known Issues:
     You have to del(uv) in ipython, or vartable doesn't get written.
@@ -31,22 +34,6 @@ Todo:
     Implement uvcopyvr_c to speed cloning of datasets.
     Work with bug_c to produce python exceptions instead of sys exits.
 """
-
-# Copyright (C) 2006 Aaron Parsons
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
 __version__ = '0.0.4'
 
 import numpy, miruv
@@ -385,25 +372,23 @@ class UV:
 #  \__,_|\__|_|_|_|\__|\__, |
 #                      |___/ 
 
-def map_uv(uvi, uvo, mfunc=None, append2history='', send_time_blks=False,
-        initialize=True, bufvars=[]):
-    """Map one UV dataset (uvi) into another (uvo) through the mapping function
+def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True):
+    """Pipe one UV dataset (uvi) into another (uvo) through the mapping function
     'mfunc' (if not provided, this will just clone a dataset).
     
-    'mfunc' should be a function of 4 args: (uv, preamble, data, vars),
-    and should return (preamble, data).  If 'send_time_blks' is true, 
-    each of these variables will be a list with each item corresponding to
-    a read from 'uvi'.  In this case, the return values should also be lists.
-    'uvi' and 'uvo' should be an opened, but otherwise untouched uv files.
-    'append2history' is a string to add to the history of uvo, if you want.
-    'initialize' will copy the initial values of all items and vars in uvi to
-    uvo.  If you don't set this true, then it is your responsibility to
-    initialize uvo.  'bufvars' is a list of additional variables you want to
-    keep track of (this is because in send_time_blks mode, the uv file passed
-    to your mfunc may not tell you all you need to know)."""
-    if initialize:
+    'mfunc' should be a function of 3 args: (uv, preamble, data),
+    and should return (preamble, data).  If data is None, it will be
+    omitted from 'uvo'.
+    'uvi' and 'uvo' should be an opened, 
+    but otherwise untouched uv files, unless 'init' is False.
+    'append2hist' is a string to add to the history of uvo, if you want.
+    'init' will copy the initial values of all items and vars in uvi to
+    uvo.  If you don't set this True, then it is your responsibility to
+    initialize uvo."""
+    # Optionally initialize uvo with appropriate variables, items
+    if init:
         for k in uvi.items: uvo.items[k] = uvi.items[k]
-        uvo.items['history'] += append2history
+        uvo.items['history'] += append2hist
         for k in uvi.vars:
             # I don't understand why reading 'corr' segfaults miriad,
             # but it does.  This is a cludgy work-around.
@@ -411,48 +396,18 @@ def map_uv(uvi, uvo, mfunc=None, append2history='', send_time_blks=False,
             uvo.vars.add_var(k, dict.__getitem__(uvi.vars, k).typecode)
             try: uvo.vars[k] = uvi.vars[k]
             except(ValueError): pass
+    # Set up uvi to copy all variables when 'uvcopyvr' is called.
     for k in uvi.vars:
-        # Set up uvi to copy all variables when 'uvcopyvr' is called.
         if k == 'corr': continue        # Cludge again --- yuck.
         uvi.vars.set_tracking(k, 'c')
-    if send_time_blks: uvi.vars.set_tracking('time', 'uc')
-    pbuf, dbuf, vbuf = [], [], {}
-    for b in bufvars: vbuf[b] = []
+    # Pipe all data through mfunc to uvo
     while True:
-        p, d = uvi.read_data()
-        if d.size == 0:
-            # Send any remaining buffered data
-            _process_buf(uvi, uvo, pbuf, dbuf, vbuf, mfunc, 
-                blkmode=send_time_blks)
-            break
-        elif not send_time_blks or uvi.vars.changed():
-            _process_buf(uvi, uvo, pbuf, dbuf, vbuf, mfunc, 
-                blkmode=send_time_blks)
-            pbuf, dbuf = [], []
-            vbuf = {}
-            for b in bufvars: vbuf[b] = []
-        for b in bufvars: vbuf[b].append(uvi.vars[b])
-        pbuf.append(p); dbuf.append(d)
-
-def _process_buf(uvi, uvo, pbuf, dbuf, vbuf, mfunc, blkmode=False):
-    """Write a buffer of input data to the output uv file.
-       'uvi' is the input file.
-       'uvo' is the input file.
-       'pbuf' is a list of preambles.
-       'dbuf' is a list of data.
-       'vbuf' is a dictionary of any specified variables & their values.
-       'mfunc' is the mapping function.
-       'blkmode' specifies if more than 1 spectrum is being sent.""" 
-    if len(pbuf) == 0: return
-    elif not blkmode:
-        if mfunc is not None:
-            pbuf, dbuf = mfunc(uvi, pbuf[0], dbuf[0], vbuf)
-            pbuf, dbuf = [pbuf], [dbuf]
-    else:
-        if mfunc is not None: pbuf, dbuf = mfunc(uvi, pbuf, dbuf, vbuf)
-    for p, d in zip(pbuf, dbuf):
+        preamble, data = uvi.read_data()
+        if data.size == 0: break
+        new_preamble, new_data = mfunc(uvi, preamble, data)
+        if new_data is None: continue
         miruv.uvcopyvr_c(uvi.handle, uvo.handle)
-        uvo.write_data(p, d)
+        uvo.write_data(new_preamble, new_data)
 
 #  _            _   _                     _     
 # | |_ ___  ___| |_| |__   ___ _ __   ___| |__  

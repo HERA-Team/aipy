@@ -24,22 +24,6 @@ Revisions:
     03/02/2007  arp Changed sim_data to do 1 baseline at a time.  Substantial
                     restructuring of parameter passing.  More documentation.
 """
-
-# Copyright (C) 2007 Aaron Parsons
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
 import ephem, math, numpy
 import constants
 
@@ -98,10 +82,10 @@ class RadioBody:
         self.prev_sidereal_time = 0     # Used to avoid redundant map calc.
     def select_chans(self, active_chans):
         """Choose only 'active_chans' for future freq calculations."""
-        if active_chans is None:
-            try: active_chans = self.chans
-            except: active_chans = numpy.arange(self.freqs.size)
-        self.chans = active_chans
+        if active_chans is None: active_chans = numpy.arange(self.freqs.size)
+        #    try: active_chans = self.chans
+        #    except: active_chans = numpy.arange(self.freqs.size)
+        self.chans = numpy.array(active_chans)
         self.update(self._strength, self._spec_index)
     def update(self, strength, spec_index):
         """Update parameters for source strength and spectral index."""
@@ -118,7 +102,8 @@ class RadioBody:
         # Could optimize to buffer result for same times
         # or if strength, spec_index polynomials are of order 1
         self.compute(observer)
-        t = observer.date - 39051.3774421
+        t = observer.date - 39051.41916
+        #t = observer.date
         cur_strength = numpy.polyval(self._strength, t)
         cur_spec_index = numpy.polyval(self._spec_index, t)
         return cur_strength * self._emission**cur_spec_index
@@ -223,24 +208,11 @@ class Beam:
 DFLT_GAIN_POLY = [-8.25e1, 8.34e1, -3.50e1, 7.79e1, -9.71e-1, 6.41e-2, -1.75e-2]
 
 class Antenna:
-    """A representation of the physical location and beam pattern of an
-    individual antenna in an array."""
-    def __init__(self, x, y, z, beam, delay=0., offset=0., 
-            gain_poly=DFLT_GAIN_POLY, active_chans=None, 
-            pointing=(0.,numpy.pi/2)):
-        """x, y, z:    Antenna coordinates in equatorial (ns) coordinates
-        beam:       Object with function 'response(zang, az)'
-        delay:      Cable/systematic delay in ns
-        offset:     Frequency-independent phase offset
-        gain_poly:  Polynomial fit of passband
-        pointing:   Antenna pointing=(az, alt).  Default is zenith"""
+    """A representation of the physical location an individual antenna in 
+    an array."""
+    def __init__(self, x, y, z):
+        """x, y, z:    Antenna coordinates in equatorial (ns) coordinates"""
         self.pos = numpy.array((x,y,z), numpy.float64) # must be float64 for c2m
-        self.beam = beam
-        self.delay = delay
-        self.offset = offset
-        self.gain_poly = gain_poly
-        self.select_chans(active_chans)
-        self.update_pointing(pointing)
     def __tuple__(self):
         return (self.pos[0], self.pos[1], self.pos[2])
     def __list__(self):
@@ -254,6 +226,26 @@ class Antenna:
         return self.pos - a.pos
     def __rsub__(self, a):
         return a.pos - self.pos
+
+class SimAntenna(Antenna):
+    """A representation of the physical location and beam pattern of an
+    individual antenna in an array."""
+    def __init__(self, x, y, z, beam, delay=0., offset=0., 
+            gain_poly=DFLT_GAIN_POLY, active_chans=None, 
+            pointing=(0.,numpy.pi/2)):
+        """x, y, z:    Antenna coordinates in equatorial (ns) coordinates
+        beam:       Object with function 'response(zang, az)'
+        delay:      Cable/systematic delay in ns
+        offset:     Frequency-independent phase offset
+        gain_poly:  Polynomial fit of passband
+        pointing:   Antenna pointing=(az, alt).  Default is zenith"""
+        Antenna.__init__(self, x, y, z)
+        self.beam = beam
+        self.delay = delay
+        self.offset = offset
+        self.gain_poly = gain_poly
+        self.select_chans(active_chans)
+        self.update_pointing(pointing)
     def select_chans(self, active_chans):
         self.beam.select_chans(active_chans)
         self.update_gain(self.gain_poly)
@@ -303,19 +295,17 @@ class AntennaArray(ephem.Observer):
         return ((bl >> 8) & 255) - 1, (bl & 255) - 1
     def update_antennas(self, antennas):
         """Initialize the antenna array using a list of antennas.  Generates
-        zenith baselines and relative delays."""
+        zenith baselines."""
         self.antennas = antennas
         self.n_ants = len(antennas)
-        bls = []; dlys = []
+        bls = []
         self.baseline_order = {}
         for i in range(self.n_ants):
             for j in range(i, self.n_ants):
                 bls.append(antennas[j] - antennas[i])
-                dlys.append(antennas[j].delay - antennas[i].delay)
                 bl = self.gen_bl(i, j)
                 self.baseline_order[bl] = len(bls) - 1
         self.baselines = numpy.array(bls)
-        self.delays = numpy.array(dlys)
     def update_location(self, location):
         """Initialize the antenna array for the provided location.  Locations
         may be (lat, long) or (lat, long, elev)."""
@@ -330,10 +320,6 @@ class AntennaArray(ephem.Observer):
         """Return the baseline corresponding to i,j (see gen_bl for details)."""
         bl = self.gen_bl(i, j)
         return self.baselines[self.baseline_order[bl]]
-    def get_delay(self, i, j=None):
-        """Return the delay corresponding to i,j (see gen_bl for details)."""
-        bl = self.gen_bl(i, j)
-        return self.delays[self.baseline_order[bl]]
     def top2eq(self, *args, **kwargs):
         """Convert topocentric antenna coordinates to equatorial coordinates,
         given the current latitude."""
@@ -375,27 +361,40 @@ class AntennaArray(ephem.Observer):
 
 class SimAntennaArray(AntennaArray):
     """A class which adds simulation functionality to AntennaArray."""
-    def __init__(self, antennas, location, active_chans=None):
-        """antennas:     a list of Antenna instances
+    def __init__(self, simantennas, location, active_chans=None):
+        """simantennas:     a list of SimAntenna instances
         location:     location of the array in (lat, long, [elev])
         active_chans: channels to be selected for future freq calculations"""
-        AntennaArray.__init__(self, antennas, location)
+        AntennaArray.__init__(self, simantennas, location)
         self.select_chans(active_chans)
-        self.prev_date = 0              # Used to avoid redundant illuminations
-        self.src_hash = 0               # Used to avoid redundant illuminations
+        #self.prev_date = 0              # Used to avoid redundant illuminations
+        #self.src_hash = 0               # Used to avoid redundant illuminations
+    def update_antennas(self, antennas):
+        """Initialize the antenna array using a list of antennas.  Generates
+        zenith baselines and relative delays."""
+        AntennaArray.update_antennas(self, antennas)
+        dlys = []
+        for i in range(self.n_ants):
+            for j in range(i, self.n_ants):
+                dlys.append(antennas[j].delay - antennas[i].delay)
+        self.delays = numpy.array(dlys)
     def select_chans(self, active_chans):
         for a in self.antennas: a.select_chans(active_chans)
         self.freqs = self.antennas[0].beam.active_freqs
+    def get_delay(self, i, j=None):
+        """Return the delay corresponding to i,j (see gen_bl for details)."""
+        bl = self.gen_bl(i, j)
+        return self.delays[self.baseline_order[bl]]
     def illuminate(self, ant, srcs, pol=1):
         """Find the degree to which each source in the list 'srcs' is 
         illuminated by the beam pattern of 'ant'.  Useful for creating 
         simulation data."""  
-        if self.prev_date != self.date or hash(str(srcs)) != self.src_hash:
-            self.prev_illuminations = {1:{}, 2:{}}
-            self.prev_date = self.date
-            self.src_hash = hash(str(srcs))
-        try: return self.prev_illuminations[pol][ant]
-        except(KeyError): pass
+        #if self.prev_date != self.date or hash(str(srcs)) != self.src_hash:
+        #    self.prev_illuminations = {1:{}, 2:{}}
+        #    self.prev_date = self.date
+        #    self.src_hash = hash(str(srcs))
+        #try: return self.prev_illuminations[pol][ant]
+        #except(KeyError): pass
         a = self.antennas[ant]
         nchan = self.freqs.size
         # <GAS> -> Gain * Antenna beam * Source flux
@@ -405,7 +404,7 @@ class SimAntennaArray(AntennaArray):
             # Skip if source is below horizon
             if s.alt < 0: continue
             GAS_sf[n] = a.response((s.az, s.alt), pol=pol) * s.emission(self)
-        self.prev_illuminations[pol][ant] = GAS_sf
+        #self.prev_illuminations[pol][ant] = GAS_sf
         return GAS_sf
     def sim_data(self, srcs, ant1, ant2=None, calc_grad=False, stokes=-5):
         r"""Calculates visibilities at a given time for a list of RadioBodys,
@@ -446,6 +445,55 @@ class SimAntennaArray(AntennaArray):
         if calc_grad: return V_f, GBSE_sf
         else: return V_f
 
+class Simulator(SimAntennaArray, SourceList):
+    """Contains all information for simulating interferometric data from a
+    list of sources."""
+    def __init__(self, antennas, location, src_dict, active_chans=None):
+        SimAntennaArray.__init__(self, antennas, location, 
+            active_chans=active_chans)
+        SourceList.__init__(self, src_dict, active_chans=active_chans)
+        self.set_activity()
+        self.chans = self.antennas[0].beam.chans
+    def select_chans(self, active_chans):
+        """Choose only 'active_chans' for future freq calculations."""
+        try: SimAntennaArray.select_chans(self, active_chans)
+        except(AttributeError): pass
+        try: SourceList.select_chans(self, active_chans)
+        except(AttributeError): pass
+    def set_activity(self, antennas=[], baselines=[], stokes=[],
+            sources=[]):
+        """Sets the activity of baselines and stokes parameters.  This
+        determines the behavior of 'is_active', which can be used as a tool
+        for simulating only the data you are interested in.  You can also
+        select which sources are used in 'sim_data'."""
+        # Generate all active baselines from provided baselines and antennas
+        antennas.sort()
+        for i, a1 in enumerate(antennas):
+            for a2 in antennas[i:]:
+                print a1, a2
+                baselines.append(self.gen_bl(a1, a2))
+        if len(baselines) == 0: baselines = self.baseline_order.keys()
+        self.active_baselines = {}
+        for bl in self.baseline_order.keys(): self.active_baselines[bl] = False
+        for bl in baselines: self.active_baselines[bl] = True
+        # Generate active stokes parameters
+        if len(stokes) == 0: stokes = [-5, -6, -7, -8]
+        self.active_stokes = {-5:False, -6:False, -7:False, -8:False}
+        for s in stokes: self.active_stokes[s] = True
+        # Generate active sources used in sim_data
+        if len(sources) == 0: sources = self.sources
+        self.active_sources = sources
+    def is_active(self, bl, stokes):
+        """Returns whether the given bl, stokes parameter is active for
+        simulation, as dictated by 'set_activity'."""
+        return self.active_baselines[bl] and self.active_stokes[stokes]
+    def sim_data(self, ant1, ant2=None, calc_grad=False, stokes=-5):
+        """Use the active sources defined by 'set_activity' to create sim
+        data for the given baseline (=ant1, or (ant1, ant2) if ant2 is
+        provided) and stokes parameter."""
+        return SimAntennaArray.sim_data(self, self.active_sources, ant1, 
+            ant2=ant2, calc_grad=calc_grad, stokes=stokes)
+
 #  _____         _   _                     _     
 # |_   _|__  ___| |_| |__   ___ _ __   ___| |__  
 #   | |/ _ \/ __| __| '_ \ / _ \ '_ \ / __| '_ \ 
@@ -453,7 +501,7 @@ class SimAntennaArray(AntennaArray):
 #   |_|\___||___/\__|_.__/ \___|_| |_|\___|_| |_|
 
 if __name__ == '__main__':
-    import params, miriad, sys, os
+    import params, miriad, sys, os, pickle
     from optparse import OptionParser
 
     p = OptionParser()
@@ -471,8 +519,16 @@ if __name__ == '__main__':
         return numpy.ma.where(aa > 0, a/aa, 0)
 
     aa = params.antenna_array
-    if not opts.fit_file is None: aa.fromfile(opts.fit_file)
-    chans = numpy.arange(params.NCHAN)
+    sl = params.source_list
+    if not opts.fit_file is None:
+        f = open(opts.fit_file)
+        prms = pickle.load(f)
+        f.close()
+        aa.set_params(prms)
+        sl.set_params(prms)
+    # Make sure all channels are selected.
+    aa.select_chans(None)
+    sl.select_chans(None)
     for a in args:
         if opts.diff: outfile = a + '.dif'
         else: outfile = a + '.sim'
@@ -481,23 +537,23 @@ if __name__ == '__main__':
             continue
         else: print 'Working on:', a
         uvi = miriad.UV(a)
+        #aa.update_location((uvi['latitud'], uvi['longitu']))
         uvo = miriad.UV(outfile, 'new')
         if opts.diff:
-            def mfunc(uv, preamble, data, vars):
+            def mfunc(uv, preamble, data):
                 u, v, w, t, bl = preamble
                 aa.set_jultime(t)
                 sim_data = numpy.ma.array(
-                    aa.sim_data(params.sources.values(), bl, stokes=uv['pol']), mask=0)
+                    aa.sim_data(sl.sources, bl, stokes=uv['pol']), mask=0)
                 return preamble, d - sim_data
             hist_lines = 'DIF: Model subtracted from data.\n'
         else:
-            def mfunc(uv, preamble, data, vars):
+            def mfunc(uv, preamble, data):
                 u, v, w, t, bl = preamble
                 aa.set_jultime(t)
                 sim_data = numpy.ma.array(
-                    aa.sim_data(params.sources.values(), bl, stokes=uv['pol']), mask=0)
+                    aa.sim_data(sl.sources, bl, stokes=uv['pol']), mask=0)
                 return preamble, sim_data
             hist_lines = 'SIM: Data overwritten with simulation data.\n'
-        miriad.map_uv(uvi, uvo, mfunc=mfunc, append2history=hist_lines, 
-            send_time_blks=False)
+        miriad.pipe_uv(uvi, uvo, mfunc=mfunc, append2hist=hist_lines)
         del(uvi); del(uvo)
