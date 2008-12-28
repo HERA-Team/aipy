@@ -363,15 +363,15 @@ Matplotlib to generate plots.  You can always use the -h option to get
 help on the command line interface.
 
 \begin{verbatim}
-[1]$ plot_uv.py -a 0,1 -p yy -c +30,31,32 -m lin test.uv
-[2]$ plot_uv.py -a cross -p yy -m phs test.uv
-[3]$ plot_uv.py -a +0 -d -p yy -c 20,40 -x 3 -m log test.uv --plot_min=-4
-[4]$ plot_uv.py -a 2,3 -p yy -d -f test.uv
+[1]$ plot_uv.py -a 0_1 -p yy -c -10,0,10 -m lin test.uv
+[2]$ plot_uv.py -a cross -m phs --chan_axis=phys --time_axis=phys test.uv
+[3]$ plot_uv.py -a 0 -d -c -20_20 -x 3 -m log test.uv
+[4]$ plot_uv.py -a 2_3 -d -f --chan_axis=phys --time_axis=phys test.uv
 \end{verbatim}
 
 \begin{figure}
 \begin{center}
-\includegraphics{plot_uv1.png}
+\includegraphics[scale=.38]{plot_uv1.png}
 \includegraphics{plot_uv2.jpg}\\
 \includegraphics{plot_uv3.jpg}
 \includegraphics{plot_uv4.jpg}\\
@@ -382,26 +382,29 @@ upper-right is [2], lower-left is [3], and lower-right is [4].}
 \end{figure}
 
 The outputs of these commands are in Figure \ref{fig:plot_uv}.  Command [1]
-uses -a to select baseline (0,1), -p to select polarization yy, -c with a + to
-select 3 individual channels, and -m lin to plot in linear mode.  The result
+uses -a to select baseline (0,1), -p to select polarization yy, -c to
+select 3 individual channels (counting from 0 at band center), and -m lin to 
+plot in linear mode.  The result
 is a linear xy plot of the 3 channels vs. time for that baseline.
 
-Command [2] selects all cross-correlations for polarization yy, and uses
+Command [2] selects all cross-correlations yy and uses
 the phase plotting mode.  The result is a time-frequency ``waterfall plot''
-for each cross-correlation, with color signifying phase.
+for each cross-correlation, with color signifying phase.  Axis labels have
+been switched to physical coordinates.
 
-Command [3] uses -a with a + to select all baselines involving antenna 0.  The
+Command [3] uses -a to select all baselines involving antenna 0.  The
 -d flag takes the Fourier transform of the frequency axis to delay (or lag)
-domain.  -c selects the range of (lag) channels from 20 to 40.  -x says to use
+domain.  -c selects the range of (lag) channels from -20 to 20.  -x says to use
 only every 3rd integration (handy for plotting many files with lots of data),
--m selects a logrithmic scale, and --plot\_min selects a lower bound for the
-color scale in the image.  This produces a waterfall plot of lag vs. time.  The
+-m selects a logrithmic color scale in the image.  This produces a 
+waterfall plot of lag vs. time.  The
 cross-correlations reveal sources moving across the sky over time.
 
 Finally, command [4] plots baseline (2,3) with -d for the delay transform,
 and -f to take the Fourier transform of the time axis.  This yields an
 image with the vertical axis being fringe rate, and the horizontal axis being
 delay.  This is an image of the sky (in weird coordinates).  Zoom around!
+Axis coordinates again have been changed to physical coordinates.
 
 \subsection{Under the Hood}
 

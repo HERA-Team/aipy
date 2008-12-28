@@ -69,8 +69,7 @@ def fit_func(prms):
         print uvfile
         uvi = aipy.miriad.UV(uvfile)
         uvi.select('auto', 0, 0, include=False)
-        for p,d in uvi.all():
-            uvw, t, (i,j) = p
+        for (uvw,t,(i,j)),d in uvi.all():
             # Use only every Nth integration, if decimation is specified.
             if curtime != t:
                 curtime = t

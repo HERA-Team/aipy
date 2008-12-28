@@ -22,6 +22,8 @@ p.add_option('-d', '--dly_w', dest='dly_w',
     help='The number of delay bins to null.')
 p.add_option('-s', '--src', dest='src',
     help='The source to remove.')
+p.add_option('-e', '--extract', dest='extract', action='store_true',
+    help='Extract the source instead of removing it.')
 p.add_option('-l', '--loc', dest='loc', default='pwa303',
     help='Use location-specific info for this location (default pwa303).')
 opts, args = p.parse_args(sys.argv[1:])
@@ -32,48 +34,29 @@ del(uv)
 
 src = aipy.src.get_src(opts.src, type='ant')
 
-# Group files into 1/10 of a julian day for processing in batches.
-groups = {}
 for uvfile in args:
-    uv = aipy.miriad.UV(uvfile)
-    p, d = uv.read()
-    uvw, t, (i,j) = p[-2]
-    t = int(t*10) / 2
-    if not groups.has_key(t): groups[t] = [uvfile]
-    else: groups[t].append(uvfile)
-
-for g in groups:
+    print 'Working on', uvfile
     phs_dat = {}
     cnt = {}
-    files = groups[g]
-    files.sort()
-    print 'Processing group', files
-    flag = 0
-    for uvfile in files:
-        uvofile = uvfile+'.'+opts.src
-        if os.path.exists(uvofile):
-            print uvofile, 'exists, skipping group.'
-            flag = 1
-            break
-    if flag: continue
-    for uvfile in files:
-        print 'Reading', uvfile
-        uvi = aipy.miriad.UV(uvfile)
-        uvi.select('auto', 0, 0, include_it=0)
-        # Gather all data
-        for p,d in uvi.all():
-            uvw, t, (i,j) = p
-            aa.set_jultime(t)
-            src.compute(aa)
-            bl = "%d,%d" % (i,j)
-            try:
-                d = aa.phs2src(d, src, i, j)
-                cnt[bl] = cnt.get(bl, 0) + d.mask.sum()
-                d = numpy.fft.ifft(d.filled(0))
-            except(aipy.ant.PointingError): d = numpy.zeros_like(d.data)
-            try: phs_dat[bl].append(d)
-            except(KeyError): phs_dat[bl] = [d]
-        del(uvi)
+    uvofile = uvfile+'.'+opts.src
+    if os.path.exists(uvofile):
+        print uvofile, 'exists, skipping.'
+        continue
+    uvi = aipy.miriad.UV(uvfile)
+
+    # Gather all data
+    for (uvw,t,(i,j)),d in uvi.all():
+        if i == j: continue
+        aa.set_jultime(t)
+        src.compute(aa)
+        bl = aa.ij2bl(i,j)
+        try:
+            d = aa.phs2src(d, src, i, j)
+            cnt[bl] = cnt.get(bl, 0) + d.mask.sum()
+            d = numpy.fft.ifft(d.filled(0))
+        except(aipy.ant.PointingError): d = numpy.zeros_like(d.data)
+        try: phs_dat[bl].append(d)
+        except(KeyError): phs_dat[bl] = [d]
 
     # Perform fringe rate transform
     for bl in phs_dat:
@@ -84,6 +67,10 @@ for g in groups:
         if x2 == 0: x2 = d.shape[0]
         y1, y2 = opts.dly_w, -opts.dly_w
         if y2 == 0: y2 = d.shape[1]
+        #print x1, x2, y1, y2
+        #import pylab
+        #pylab.imshow(numpy.log10(numpy.abs(d)))
+        #pylab.show()
         d[x1:x2,:] = 0
         d[:,y1:y2] = 0
         d = numpy.fft.ifft(d, axis=0)
@@ -96,21 +83,23 @@ for g in groups:
     # Generate a pipe for removing average phase bias from data
     def rm_mfunc(uv, p, d):
         uvw, t, (i,j) = p
-        bl = "%d,%d" % (i,j)
         if i == j: return p, d
+        bl = aa.ij2bl(i,j)
         aa.set_jultime(t)
         src.compute(aa)
         data = phs_dat[bl][cnt[bl],:]
         try: data = aa.unphs2src(data, src, i, j)
-        except(aipy.ant.PointingError): data = 0
+        except(aipy.ant.PointingError):
+            if opts.extract: d *= 0
+            data = 0
         cnt[bl] += 1
-        return p, d - data
+        if opts.extract: return p, numpy.ma.array(data, mask=d.mask)
+        else: return p, d - data
 
-    for uvfile in files:
-        # Apply the pipe to the data
-        print 'Working on', uvfile
-        uvofile = uvfile+'.'+opts.src
-        uvi = aipy.miriad.UV(uvfile)
-        uvo = aipy.miriad.UV(uvofile, status='new')
-        uvo.init_from_uv(uvi)
-        uvo.pipe(uvi, mfunc=rm_mfunc)
+    # Apply the pipe to the data
+    uvi.rewind()
+    uvo = aipy.miriad.UV(uvofile, status='new')
+    # Apply the pipe to the data
+    uvo.init_from_uv(uvi)
+    uvo.pipe(uvi, mfunc=rm_mfunc)
+    del(uvi); del(uvo)

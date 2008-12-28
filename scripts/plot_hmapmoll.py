@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 import pylab as p
-import numpy, aipy, sys, os
+import numpy, aipy, sys, os, ephem
 from matplotlib.toolkits.basemap import Basemap
 
 RES = .005
@@ -15,8 +15,9 @@ lats = 90 - crd[:,0] * aipy.img.rad2deg
 lons = crd[:,1] * aipy.img.rad2deg - 180
 
 cat = aipy.src.get_catalog(type='ant')
-o = aipy.pyephem.Observer()
-o.date = aipy.ant.juldate2ephem(2454303)
+o = ephem.Observer()
+#o.date = aipy.ant.juldate2ephem(2454303)
+o.date = aipy.ant.juldate2ephem(2454483)
 cat.compute(o)
 # lat/lon coordinates of sources
 slats = numpy.array(map(lambda s: float(s.dec), cat.values()))
@@ -26,6 +27,7 @@ slons = aipy.img.rad2deg*(slons) - 180
 snams = cat.keys()
 
 map = Basemap(projection='moll',lat_0=0,lon_0=0)
+#map = Basemap(projection='moll',lat_0=0,lon_0=180)
 map.drawmapboundary()
 map.drawmeridians(numpy.arange(0,360,30))
 map.drawparallels(numpy.arange(-90,90,30))

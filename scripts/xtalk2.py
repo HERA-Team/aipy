@@ -58,7 +58,7 @@ uv = aipy.miriad.UV(args[0])
 nchan, inttime = uv['nchan'], uv['inttime']
 sdf, sfreq = uv['sdf'], uv['sfreq']
 aa = aipy.loc.get_aa(opts.loc, sdf, sfreq, nchan, use_bp=False)
-skypass_delay = gen_skypass_delay(aa, sdf, nchan, max_bl_frac=.7)
+skypass_delay = gen_skypass_delay(aa, sdf, nchan, max_bl_frac=1.)
 del(uv)
 
 for uvfile in args:

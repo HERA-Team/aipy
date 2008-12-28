@@ -31,7 +31,11 @@ def mdl(uv, p, d):
     cat.compute(aa)
     d = aa.sim_data(cat.values(), i, j, pol=aipy.miriad.pol2str[uv['pol']])
     d = numpy.ma.array(d, mask=numpy.zeros_like(d))
-    return p, d
+    # Add on some noise for a more realistic experience
+    noise_amp = numpy.random.random(d.shape) * 1e5
+    noise_phs = numpy.random.random(d.shape) * 2*numpy.pi * 1j
+    noise = noise_amp * numpy.exp(noise_phs)
+    return p, d + noise
 
 # A pipe to use for removing the model
 def rm(uv, p, d):
