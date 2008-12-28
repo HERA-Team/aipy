@@ -2,7 +2,7 @@
 import aipy as a, numpy as n, pylab as p, sys, optparse, ephem
 
 o = optparse.OptionParser()
-o.set_usage('phs2src.py [options] *.uv')
+o.set_usage('plot_img.py [options] *.uv')
 o.set_description(__doc__)
 o.add_option('-s', '--src', dest='src',
     help='The name of a source to phase to, or ra,dec position.')
@@ -96,12 +96,14 @@ for filename in args:
         if curtime != t:
             curtime = t
             cnt = (cnt + 1) % opts.decimate
+            if cnt == 0:
+                aa.set_jultime(t)
+                src.compute(aa)
         if cnt != 0: continue
-        aa.set_jultime(t)
-        src.compute(aa)
         d = d.take(chans)
         try:
-            d, xyz = aa.phs2src(d, src, i, j, with_coord=True)
+            d = aa.phs2src(d, src, i, j)
+            xyz = aa.gen_uvw(i,j,src=src)
             #w = aa.ants[0].response((src.az, src.alt), pol=2)**2
             w = n.ones(d.shape, dtype=n.float)
         except(a.ant.PointingError): continue

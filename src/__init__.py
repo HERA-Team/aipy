@@ -12,6 +12,5 @@ Date: 2/12/07
 Revisions: lots
 """
 
-__version__ = '0.4.1'
-import ant, const, coord, deconv, eor, fit, img, loc, sim, src
-import miriad, interp, optimize, ephem, pyfits, utils, healpix
+import ant, const, coord, deconv, fit, img, loc, sim, src
+import miriad, interp, optimize, utils, healpix

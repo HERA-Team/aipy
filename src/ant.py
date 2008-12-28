@@ -9,13 +9,13 @@ Revisions:
     01/12/2007  arp Fixed H (hour angle) to be computed in sidereal time, not
                     solar.
     01/28/2007  arp Sync'd to latest miriad.py (0.0.4) version.  Hefty (4-5x)
-                    speed up!  Also converted to use numpy-1.0.1
+                    speed up!  Also converted to use n-1.0.1
     05/14/2007  arp Fixed bug where coordinates were precessed to 2000, not
                     the current date.  
     02/06/2008  arp Set ephem pressure to 0 to remove optical distortion
                     correction.  Moved get_uvw_map to coord.eq2top_m.
 """
-import ephem, math, numpy, coord, const
+import ephem, math, numpy as n, coord, const
 
 class PointingError(Exception):
       def __init__(self, value): self.parameter = value
@@ -49,60 +49,11 @@ class RadioBody:
     """A class redefining ephem's sense of brightness for radio astronomy."""
     def __init__(self, name='', **kwargs):
         self.src_name = name
-        self._obs_cache = None
-    def in_cache(self, observer, refract):
-        try: ocache = observer.cache
-        except(AttributeError): return False
-        if refract: ocache = -ocache
-        if self._obs_cache == ocache: return True
-    def cache(self, observer, refract):
-        try: ocache = observer.cache
-        except(AttributeError): return
-        if refract: ocache = -ocache
-        self._obs_cache = ocache
-    def gen_uvw_map(self, observer, refract=False):
-        """Generate a uvw map useful for projecting baselines.  Can compensate
-        for ionospheric refraction for a given plasma frequency f_c."""
-        H = float(observer.sidereal_time() - self.ra)
-        d = self.dec
-        if refract:
-            afreqs = observer.ants[0].beam.afreqs
-            H, d = self.add_refraction(H, d, afreqs, observer.lat, self.f_c)
-        map = coord.eq2top_m(H, d)
-        return map
-    def add_refraction(self, H, d, f, lat,
-            f_c=.012, d_ion=200e5, R_e=6000e5):
-        """Modify H (hour angle) and d (declination) for ionospheric refraction,
-        given an observing frequency (f), observer latitude (lat), plasma
-        frequency (f_c in GHz), ionospheric height (d_ion), and earth radius
-        (R_e).  Complicated math to change a simple Z angle refraction into
-        H and d perturbations.  For now, only compensates for spherically
-        symmetric ionosphere.  See 1982PASAu...4..386S."""
-        Z = math.pi/2 - self.alt    # Change alt into zenith angle
-        A = self.az                 # Azimuth
-        sin_Z, cos_Z, tan_Z = math.sin(Z), math.cos(Z), math.tan(Z)
-        sin_lat, cos_lat = math.sin(lat), math.cos(lat)
-        sin_A, cos_A = math.sin(A), math.cos(A)
-        sin_d, cos_d = math.sin(d), math.cos(d)
-        sin_H, cos_H = math.sin(H), math.cos(H)
-        # Change in zenith angle due to spherically symmetrical ionosphere
-        d_Zs = (f_c/f)**2 * (d_ion/R_e) * tan_Z / cos_Z**2
-        # Change in zenith angle due to large scale horizontal density gradients
-        d_Zw = 0 # ignoring wedge component of zen_ang for refraction for now
-        # Total zenith angle displacement is sum of 2 components
-        d_Z = d_Zs + d_Zw
-        # Change in az angle due to large scale horizontal density gradients
-        d_Aw = 0 # ignoring wedge component of azimuth for refraction for now
-        # Total azimuth angle displacement is only from wedge component
-        d_A = d_Aw
-        # Convert zenith angle displacement into declination component
-        d_d = (d_Z*(-sin_Z*sin_lat + cos_Z*cos_lat*cos_A) \
-                - d_A*sin_Z*cos_lat*sin_A) / cos_d
-        # Convert zenith angle displacement into hour-angle component
-        d_H = (d_d*sin_H*sin_d - d_A*cos_A*sin_Z - d_Z*sin_A*cos_Z) \
-                / (cos_H*cos_d)
-        return H + d_H, d + d_d
-        
+    def compute(self, observer):
+        # Generate a map for projecting baselines to uvw coordinates
+        self.map = coord.eq2top_m(observer.sidereal_time()-self.ra, self.dec)
+        # Generate a vector in eq coordinates pointing at src
+        self.eq = coord.radec2eq((self.ra, self.dec))
 
 #  ____           _ _       _____ _              _ ____            _       
 # |  _ \ __ _  __| (_) ___ |  ___(_)_  _____  __| | __ )  ___   __| |_   _ 
@@ -113,21 +64,15 @@ class RadioBody:
 
 class RadioFixedBody(ephem.FixedBody, RadioBody):
     """A class combining ephem's FixedBody with a RadioBody."""
-    def __init__(self, ra, dec, f_c=.012, name='', **kwargs):
+    def __init__(self, ra, dec, name='', **kwargs):
         """ra:           source's right ascension (epoch=2000)
-        dec:          source's declination (epoch=2000)
-        f_c:          the plasma frequency (a measure of the electron density)
-                      in the direction of the source, which can cause the 
-                      source to appear displaced from its quiescent position 
-                      as a function of frequency."""
+        dec:          source's declination (epoch=2000)"""
         RadioBody.__init__(self, name=name)
         ephem.FixedBody.__init__(self)
-        self._ra, self._dec, self.f_c = ra, dec, f_c
-    def compute(self, observer, refract=False):
-        if self.in_cache(observer, refract): return
+        self._ra, self._dec = ra, dec
+    def compute(self, observer):
         ephem.FixedBody.compute(self, observer)
-        self.map = self.gen_uvw_map(observer, refract=refract)
-        self.cache(observer, refract)
+        RadioBody.compute(self, observer)
 
 #  ____           _ _      ____                  _       _ 
 # |  _ \ __ _  __| (_) ___/ ___| _ __   ___  ___(_) __ _| |
@@ -138,25 +83,18 @@ class RadioFixedBody(ephem.FixedBody, RadioBody):
 
 class RadioSpecial(RadioBody, object):
     """A class combining ephem's Sun, Moon, planets, etc. with a RadioBody."""
-    def __init__(self, name, f_c=.012, **kwargs):
-        """f_c:          the plasma freq (a measure of the electron density)
-                      in the direction of the source, which can cause the 
-                      source to appear displaced from its quiescent position 
-                      as a function of frequency."""
+    def __init__(self, name, **kwargs):
         RadioBody.__init__(self, name=name)
         self.Body = eval('ephem.%s()' % name)
-        self.f_c = f_c
     def __getattr__(self, nm):
         try: return object.__getattr__(self, nm)
         except(AttributeError): return self.Body.__getattribute__(nm)
     def __setattr__(self, nm, val):
         try: object.__setattr__(self, nm, val)
         except(AttributeError): return setattr(self.Body, nm, val)
-    def compute(self, observer, refract=False):
-        if self.in_cache(observer, refract): return
+    def compute(self, observer):
         self.Body.compute(observer)
-        self.map = self.gen_uvw_map(observer, refract=refract)
-        self.cache(observer, refract)
+        RadioBody.compute(self, observer)
 
 #  ____            ____      _        _             
 # / ___| _ __ ___ / ___|__ _| |_ __ _| | ___   __ _ 
@@ -170,25 +108,12 @@ class SrcCatalog(dict):
     def __init__(self, srcs, **kwargs):
         dict.__init__(self)
         for s in srcs: self.add_src(s)
-        self._obs_cache = None
     def add_src(self, src):
         self[src.src_name] = src
-    def in_cache(self, observer, refract):
-        try: ocache = observer.cache
-        except(AttributeError): return False
-        if refract: ocache = -ocache
-        if self._obs_cache == ocache: return True
-    def cache(self, observer, refract):
-        try: ocache = observer.cache
-        except(AttributeError): return
-        if refract: ocache = -ocache
-        self._obs_cache = ocache
     def get_srcs(self, *args):
         return [self[s] for s in args]
-    def compute(self, observer, refract=False):
-        if self.in_cache(observer, refract): return
-        for s in self: self[s].compute(observer, refract=refract)
-        self.cache(observer, refract)
+    def compute(self, observer):
+        for s in self: self[s].compute(observer)
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -207,7 +132,7 @@ class Beam:
         self.select_chans(active_chans)
     def select_chans(self, active_chans=None):
         """Choose only 'active_chans' for future freq calculations."""
-        if active_chans is None: active_chans = numpy.arange(self.freqs.size)
+        if active_chans is None: active_chans = n.arange(self.freqs.size)
         self.chans = active_chans
         self.afreqs = self.freqs.take(active_chans)
 
@@ -222,25 +147,19 @@ class Antenna:
     an array, and possibly a systematic delay associated with it."""
     def __init__(self, x, y, z, beam, delay=0., offset=0., **kwargs):
         """x, y, z:    Antenna coordinates in equatorial (ns) coordinates"""
-        self.pos = numpy.array((x,y,z), numpy.float64) # must be float64 for mir
+        self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
         self.beam = beam
         self.delay = delay
         self.offset = offset
     def select_chans(self, active_chans=None):
         self.beam.select_chans(active_chans)
-    def __tuple__(self):
-        return (self.pos[0], self.pos[1], self.pos[2])
-    def __list__(self):
-        return [self.pos[0], self.pos[1], self.pos[2]]
-    def __add__(self, a):
-        return self.pos + a.pos
+    def __tuple__(self): return (self.pos[0], self.pos[1], self.pos[2])
+    def __list__(self): return [self.pos[0], self.pos[1], self.pos[2]]
+    def __add__(self, a): return self.pos + a.pos
     __radd__ = __add__
-    def __neg__(self):
-        return -self.pos
-    def __sub__(self, a):
-        return self.pos - a.pos
-    def __rsub__(self, a):
-        return a.pos - self.pos
+    def __neg__(self): return -self.pos
+    def __sub__(self, a): return self.pos - a.pos
+    def __rsub__(self, a): return a.pos - self.pos
 
 #     _                         _                    _   _             
 #    / \   _ __ _ __ __ _ _   _| |    ___   ___ __ _| |_(_) ___  _ __  
@@ -254,20 +173,16 @@ class ArrayLocation(ephem.Observer):
     def __init__(self, location=None, uv=None):
         """location:   location of the array in (lat, long, [elev])
         uv:         Miriad UV file"""
+        assert(location != None or uv != None)
         ephem.Observer.__init__(self)
         self.pressure = 0
-        self.cache = 0
         if not uv is None: self.from_uv(uv)
-        else:
-            if location is None:
-                raise ValueError('Must provide either uv or location.')
-            self.update_location(location)
+        else: self.update_location(location)
     def update_location(self, location):
         """Initialize the antenna array for the provided location.  Locations
         may be (lat, long) or (lat, long, elev)."""
         if len(location) == 2: self.lat, self.long = location
         else: self.lat, self.long, self.elev = location
-        self.cache += 1
     def set_jultime(self, t=None):
         """Set the current time to a Julian date."""
         if t is None: t = ephem.julian_date()
@@ -275,13 +190,10 @@ class ArrayLocation(ephem.Observer):
     def set_ephemtime(self, t=None):
         """Set the current time to a time derived from the ephem package."""
         if t is None: t = ephem.now()
-        self.date = t
-        self.epoch = t
-        self.cache += 1
+        self.date, self.epoch = t, t
     def from_uv(self, uv):
         """Update location from 'latitud' and 'longitu' in Miriad UV file."""
-        location = (uv['latitud'], uv['longitu'])
-        self.update_location(location)
+        self.update_location((uv['latitud'], uv['longitu']))
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -297,26 +209,20 @@ class AntennaArray(ArrayLocation):
         """ants:       a list of Antenna instances
         location:   location of the array in (lat, long, [elev])
         uv:         Miriad UV file"""
+        assert(uv != None or (ants != None and location != None))
         ArrayLocation.__init__(self, location=location, uv=uv)
         if not uv is None: self.from_uv(uv)
         else:
-            if ants is None:
-                raise ValueError('Must provide either ants or uv.')
             self.update_antennas(ants)
             self.select_chans()
     def from_uv(self, uv):
-        """Update antenna positions, array location, and frequencies from 
-        Miriad UV file."""
+        """Update ant positions, array loc, and freqs from Miriad UV file."""
         ArrayLocation.from_uv(self, uv)
         # Generate frequency information
-        sfreq = uv['sfreq']
-        sdf = uv['sdf']
-        freqs = numpy.arange(uv['nchan'], dtype=numpy.float) * sdf + sfreq
+        freqs = n.arange(uv['nchan'], dtype=n.float) * uv['sdf'] + uv['sfreq']
         beam = Beam(freqs)
         # Generate antenna positions
-        ants = uv['antpos']
-        ants.shape = (3, uv['nants'])
-        ants = ants.transpose()
+        ants = n.reshape(uv['antpos'], 3, uv['nants']).transpose()
         # Should get delay information..., and what about offsets?
         ants = [Antenna(x,y,z, beam=beam, delay=0.) for x,y,z in ants]
         self.update_antennas(ants)
@@ -328,79 +234,75 @@ class AntennaArray(ArrayLocation):
         """If antenna parameters or active channels have been changed, this
         function updates variables derived from them.  Increments the cache
         value to force recalculation of cached values in source projections."""
-        bls = []    # Baseline vectors (in ns equatorial coordinates)
-        dlys = []
-        offs = []
-        self.baseline_order = {}
+        bls,dlys,offs = [],[],[] 
+        self.bl_order = {}
         for i, ai in enumerate(self.ants):
             for j, aj in enumerate(self.ants[i:]):
-                j += i
+                bl = self.ij2bl(i, j+i)
                 bls.append(aj - ai)
                 dlys.append(aj.delay - ai.delay)
                 offs.append(aj.offset - ai.offset)
-                bl = self.ij2bl(i, j)
-                self.baseline_order[bl] = len(bls) - 1
-        self.baselines = numpy.array(bls)
-        self.delays = numpy.array(dlys)
-        self.offsets = numpy.array(offs)
-        self.cache += 1
+                self.bl_order[bl] = len(bls) - 1
+        self.bls,self.dlys,self.offs = n.array(bls),n.array(dlys),n.array(offs)
+        # Compute (static) zenith baselines
+        m = coord.eq2top_m(0., self.lat)
+        self.zbls = n.dot(m, self.bls.transpose()).transpose()
+    def set_ephemtime(self, t=None):
+        ArrayLocation.set_ephemtime(self, t=t)
+        # Rotate baselines in eq coords to current sidereal time
+        m = coord.rot_m(-self.sidereal_time(), n.array([0.,0.,1.]))
+        self.ebls = n.dot(m, self.bls.transpose()).transpose()
     def select_chans(self, active_chans=None):
         """Select which channels are used in computations.  Default is all."""
         for a in self.ants: a.select_chans(active_chans)
         self.update()
-    def ij2bl(self, i, j=None):
-        """Convert from i,j (counting from 0) baseline notation to
-        (i+1) << 8 | (j+1) baseline notation.  If j is not provided, assume
-        i is in the desired baseline notation."""
-        if j is None: return int(i)
-        else: return (int(i)+1) << 8 | (int(j)+1)
+    def ij2bl(self, i, j):
+        """Convert baseline i,j (0 indexed) to Miriad's (i+1) << 8 | (j+1)"""
+        return (int(i)+1) << 8 | (int(j)+1)
     def bl2ij(self, bl):
-        """Convert from (i+1) << 8 | (j+1) baseline notation to
-        i,j (counting from 0) baseline notation."""
+        """Convert Miriad's (i+1) << 8 | (j+1) to i,j (0 indexed)"""
         bl = int(bl)
         return ((bl >> 8) & 255) - 1, (bl & 255) - 1
-    def get_baseline(self, i, j):
-        """Return the baseline corresponding to i,j."""
-        return self.baselines[self.baseline_order[self.ij2bl(i,j)]]
+    def get_baseline(self, i, j, src='z'):
+        """Return the baseline corresponding to i,j in various coordinate 
+        projections: src='e' for current equatorial, 'z' for zenith 
+        topocentric, 'r' for unrotated equatorial, or a RadioBody for
+        a projection toward that source."""
+        b = self.bl_order[self.ij2bl(i,j)]
+        if type(src) == str:
+            return {'e':self.ebls[b],'z':self.zbls[b],'r':self.bls[b]}[src[0]]
+        if src.alt < 0: raise PointingError('%s below horizon' % src.src_name)
+        return n.dot(src.map, self.bls[b])
     def get_delay(self, i, j):
         """Return the delay corresponding to i,j."""
-        return self.delays[self.baseline_order[self.ij2bl(i,j)]]
+        return self.dlys[self.bl_order[self.ij2bl(i,j)]]
     def get_offset(self, i, j):
         """Return the delay corresponding to i,j."""
-        return self.offsets[self.baseline_order[self.ij2bl(i,j)]]
-    def get_projected_baseline(self, i, j, src=None):
-        """Project equatorial baselines toward a source position."""
-        # If no body is provided to point to, return zenith baselines
-        if src is None: uvw_map = coord.eq2top_m(0., self.lat)
-        else:
-            if src.alt < 0:
-                raise PointingError('%s is below horizon' % src.src_name)
-            uvw_map = src.map
-        # Counting on freqs to not change often (otherwise body's cached map
-        # will raise an error in the following dot product).
-        proj_bl = numpy.dot(uvw_map, self.get_baseline(i, j))
-        return proj_bl
-    def gen_phs(self, src, i, j, with_coord=False):
-        """Return the phasing to be multiplied to data to point to src."""
-        xyz = self.get_projected_baseline(i, j, src=src)
-        z = xyz[...,2]
-        t = self.get_delay(i, j)
-        o = self.get_offset(i, j)
+        return self.offs[self.bl_order[self.ij2bl(i,j)]]
+    def gen_uvw(self, i, j, src='z'):
+        """Compute uvw coordinates for a provided RadioBody, or 'z' for
+        zenith uvw coordinates."""
+        xyz = self.get_baseline(i,j, src=src)
         afreqs = self.ants[0].beam.afreqs
-        phs = numpy.exp(-1j*(2*numpy.pi * (z+t) * afreqs + o))
-        if with_coord:
-            if len(xyz.shape) == 1:
-                xyz = numpy.resize(xyz, (len(afreqs), xyz.size))
-            return phs, xyz * numpy.reshape(afreqs, (afreqs.size, 1))
-        else: return phs
-    def phs2src(self, data, src, i, j, with_coord=False):
+        if len(xyz.shape) == 1: xyz = n.resize(xyz, (afreqs.size, xyz.size))
+        return xyz * n.reshape(afreqs, (afreqs.size, 1))
+    def gen_phs(self, src, i, j):
+        """Return the phasing to be multiplied to data to point to src."""
+        try: src = src.eq
+        except(AttributeError): pass
+        bl_dot_s = n.dot(src, self.get_baseline(i,j,src='e'))
+        if len(bl_dot_s.shape) >= 1: bl_dot_s.shape = (bl_dot_s.size, 1)
+        t,o = self.get_delay(i,j), self.get_offset(i,j)
+        afreqs = self.ants[0].beam.afreqs
+        afreqs = n.reshape(afreqs, (1,afreqs.size))
+        phs = n.exp(-1j*(2*n.pi*n.dot(bl_dot_s + t, afreqs) + o))
+        return phs.squeeze()
+    def phs2src(self, data, src, i, j):
         """Apply phasing to zenith data to point to src."""
-        rv = self.gen_phs(src, i, j, with_coord=with_coord)
-        if with_coord: return data * rv[0], rv[1]
-        else: return data * rv
+        return data * self.gen_phs(src, i, j)
     def unphs2src(self, data, src, i, j):
         """Remove phasing from src data to point to zenith."""
-        return data * numpy.conjugate(self.gen_phs(src, i, j))
+        return data * n.conjugate(self.gen_phs(src, i, j))
     def rmsrc(self, data, srcs, i, j, swath=0, norm_bandpass=None):
         """Remove src flux from data.  Can aggressively remove srcs (allowing
         for inexact calibration) by removing 'swath' adjacent bins in 
@@ -411,11 +313,11 @@ class AntennaArray(ArrayLocation):
             except(PointingError): continue
             data *= phs
             if swath == 0:
-                if norm_bandpass is None: data -= numpy.ma.average(data)
-                else: data -= numpy.ma.sum(data) * norm_bandpass
+                if norm_bandpass is None: data -= n.ma.average(data)
+                else: data -= n.ma.sum(data) * norm_bandpass
             else:
-                img = numpy.fft.ifft(data.filled(0))
+                img = n.fft.ifft(data.filled(0))
                 img[swath:-swath] = 0
-                data -= numpy.fft.fft(img)
+                data -= n.fft.fft(img)
             data /= phs
         return data

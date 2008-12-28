@@ -48,7 +48,7 @@ template<typename T> class Alm
     Alm (int lmax_=0, int mmax_=0)
       : lmax(lmax_), mmax(mmax_), tval(2*lmax+1),
         alm (((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax))
-      { planck_assert(mmax<=lmax,"mmax must not be larger than mmax"); }
+      { planck_assert(mmax<=lmax,"mmax must not be larger than lmax"); }
 
     /*! Deletes the old coefficients and allocates storage according to
         \a lmax and \a mmax. */
@@ -57,7 +57,7 @@ template<typename T> class Alm
       lmax=lmax_;
       mmax=mmax_;
       tval=2*lmax+1;
-      planck_assert(mmax<=lmax,"mmax must not be larger than mmax");
+      planck_assert(mmax<=lmax,"mmax must not be larger than lmax");
       int num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
       alm.alloc(num_alms);
       }
@@ -83,10 +83,20 @@ template<typename T> class Alm
 
     /*! Returns a reference to the specified coefficient. */
     T &operator() (int l, int m)
-      { return alm[((m*(tval-m))>>1) + l]; }
+      {
+        int index = ((m*(tval-m))>>1) + l;
+        planck_assert(l >= 0 && l <= lmax && m >= 0 && m <= mmax && m <= l &&
+            index < alm.size(), "Index out of range");
+        return alm[index];
+      }
     /*! Returns a constant reference to the specified coefficient. */
     const T &operator() (int l, int m) const
-      { return alm[((m*(tval-m))>>1) + l]; }
+      {
+        int index = ((m*(tval-m))>>1) + l;
+        planck_assert(l >= 0 && l <= lmax && m >= 0 && m <= mmax && m <= l &&
+            index < alm.size(), "Index out of range");
+        return alm[index];
+      }
 
     /*! Returns a pointer for a given m, from which the address of a_lm
         can be obtained by adding l. */

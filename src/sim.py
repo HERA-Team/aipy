@@ -16,9 +16,11 @@ Revisions:
                     splines.
     12/12/07    arp Switched bp again, this time to interpolation from a
                     decimated bandpass.
+    03/06/08    arp Vectorized simulation w/ 4x increase in speed and
+                    support for pixel-based simulation.
 """
 
-import ant, numpy as n, ephem, coord
+import ant, numpy as n, ephem, coord, healpix
 from interp import interpolate
 
 #  ____           _ _       ____            _       
@@ -30,20 +32,13 @@ from interp import interpolate
 
 class RadioBody:
     """A class redefining ephem's sense of brightness for radio astronomy."""
-    def __init__(self, strength, meas_freq=.150, spec_index=-1, 
-            ang_size=0.):
-        """strength:     source flux measured at 'meas_freq'
-        meas_freq:    frequency (in GHz) where 'strength' was measured
-        spec_index:   index of power-law spectral model of source emission"""
-        self._strength = strength
-        self._meas_freq = meas_freq
-        self._spec_index = spec_index
-        self._ang_size = ang_size
-    def gen_emission(self, observer):
-        """Extrapolate source emission from measured freq using power law."""
-        afreqs = observer.ants[0].beam.afreqs
-        emission = (afreqs / self._meas_freq)**self._spec_index
-        return emission * self._strength
+    def __init__(self, janskies, mfreq=.150, index=-1):
+        """janskies:     source strength
+        mfreq:    frequency (in GHz) where strength was measured
+        index:   index of power-law spectral model of source emission"""
+        self.janskies = janskies
+        self.mfreq = mfreq
+        self.index = index
 
 #  ____           _ _       _____ _              _ ____            _       
 # |  _ \ __ _  __| (_) ___ |  ___(_)_  _____  __| | __ )  ___   __| |_   _ 
@@ -54,21 +49,10 @@ class RadioBody:
 
 class RadioFixedBody(ant.RadioFixedBody, RadioBody):
     """A class adding simulation capability to ant.RadioFixedBody"""
-    def __init__(self, ra, dec, strength, f_c=.012, meas_freq=.150, 
-            spec_index=-1., ang_size=0., name='', **kwargs):
-        """ra:           source's right ascension
-        dec:          source's declination
-        strength:     source flux measured at 'meas_freq'
-        meas_freq:    frequency (in GHz) where 'strength' was measured
-        spec_index:   index of power-law spectral model of source emission"""
-        ant.RadioFixedBody.__init__(self, ra, dec, f_c=f_c, name=name)
-        RadioBody.__init__(self, strength, meas_freq=meas_freq,
-            spec_index=spec_index, ang_size=ang_size)
-    def compute(self, observer, refract=False):
-        if self.in_cache(observer, refract): return
-        ant.RadioFixedBody.compute(self, observer, refract=refract)
-        self.emission = self.gen_emission(observer)
-        self.cache(observer, refract)
+    def __init__(self, ra, dec, janskies, mfreq=.150, 
+            index=-1., name='', **kwargs):
+        ant.RadioFixedBody.__init__(self, ra, dec, name=name)
+        RadioBody.__init__(self, janskies, mfreq=mfreq, index=index)
 
 #  ____           _ _      ____                  _       _ 
 # |  _ \ __ _  __| (_) ___/ ___| _ __   ___  ___(_) __ _| |
@@ -79,19 +63,30 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
 
 class RadioSpecial(ant.RadioSpecial, RadioBody):
     """A class adding simulation capability to ant.RadioSun"""
-    def __init__(self, name, strength, f_c=.012, meas_freq=.150, spec_index=-1.,
-            ang_size=8.7e-3, **kwargs):
-        """strength:     source flux measured at 'meas_freq'
-        meas_freq:    frequency (in GHz) where 'strength' was measured
-        spec_index:   index of power-law spectral model of source emission"""
-        ant.RadioSpecial.__init__(self, name, f_c=f_c)
-        RadioBody.__init__(self, strength, meas_freq=meas_freq,
-            spec_index=spec_index, ang_size=ang_size)
-    def compute(self, observer, refract=False):
-        if self.in_cache(observer, refract): return
-        ant.RadioSpecial.compute(self, observer, refract=refract)
-        self.emission = self.gen_emission(observer)
-        self.cache(observer, refract)
+    def __init__(self, name, janskies, mfreq=.150, index=-1., **kwargs):
+        ant.RadioSpecial.__init__(self, name)
+        RadioBody.__init__(self, janskies, mfreq=mfreq, index=index)
+
+#  ____            ____      _        _             
+# / ___| _ __ ___ / ___|__ _| |_ __ _| | ___   __ _ 
+# \___ \| '__/ __| |   / _` | __/ _` | |/ _ \ / _` |
+#  ___) | | | (__| |__| (_| | || (_| | | (_) | (_| |
+# |____/|_|  \___|\____\__,_|\__\__,_|_|\___/ \__, |
+#                                             |___/ 
+
+class SrcCatalog(ant.SrcCatalog):
+    """A class adding simulation capability to SrcCatalog"""
+    def get_vecs(self):
+        """Return the 4 arrays needed by sim(): the 
+        equatorial vector locations, fluxes, spectral indices, and the 
+        frequencies at which the fluxes were measured."""
+        srcs = self.values()
+        s_eqs = n.array([s.eq for s in srcs]).transpose()
+        fluxes = n.array([s.janskies for s in srcs])
+        indices = n.array([s.index for s in srcs])
+        mfreqs = n.array([s.mfreq for s in srcs])
+        return s_eqs, fluxes, indices, mfreqs
+
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -99,13 +94,114 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
 # | |_) |  __/ (_| | | | | | |
 # |____/ \___|\__,_|_| |_| |_|
 
-class Beam(ant.Beam):
+class Beam2DGaussian(ant.Beam):
+    """A 2D Gaussian beam pattern, with default setting for a flat beam."""
+    def __init__(self, freqs, xwidth=n.Inf, ywidth=n.Inf):
+        ant.Beam.__init__(self, freqs)
+        self.update(xwidth=xwidth, ywidth=ywidth)
+    def update(self, xwidth=None, ywidth=None):
+        """Set the width in the x and y directions of the gaussian beam."""
+        if not xwidth is None: self.xwidth = xwidth
+        if not ywidth is None: self.ywidth = ywidth
     def response(self, xyz):
         """Return the beam response across the active band for the specified
-        topocentric coordinates (with z = up, x = east), or for the provided
-        azalt (azimuth, altitude).  In both cases, 2nd axis should be multiple 
-        coordinates.  Returns 'x' polarization (rotate pi/2 for 'y')."""
-        return n.ones((self.afreqs.shape[0], xyz.shape[1]), dtype=n.float)
+        topocentric coordinates (with z = up, x = east). 2nd axis should be 
+        multiple coordinates.  Returns 'x' pol (rotate pi/2 for 'y')."""
+        x,y,z = xyz
+        x,y = n.arcsin(x)/self.xwidth, n.arcsin(y)/self.ywidth
+        resp = n.sqrt(n.exp(-(x**2 + y**2)))
+        resp = n.resize(resp, (self.afreqs.size, resp.size))
+        return resp
+
+class BeamPolynomial(ant.Beam):
+    """A Beam model that uses a 2D polynomial in cos(2*n*az) for first axis,
+    and in freq**n for second axis."""
+    def __init__(self, freqs, poly_azfreq=n.array([[.5]])):
+        self.poly = poly_azfreq
+        ant.Beam.__init__(self, freqs)
+        self.update(poly_azfreq)
+    def select_chans(self, active_chans):
+        ant.Beam.select_chans(self, active_chans)
+        self.update()
+    def update(self, poly_azfreq=None):
+        """Set the width in the x and y directions of the gaussian beam."""
+        if poly_azfreq is None: poly_azfreq = self.poly
+        elif len(poly_azfreq.shape) == 1: poly_azfreq.shape = self.poly.shape
+        self.poly = poly_azfreq
+        f = n.resize(self.afreqs, (self.poly.shape[1], self.afreqs.size))
+        f = f**n.array([range(self.poly.shape[1])]).transpose()
+        self.sigma = n.dot(self.poly, f)
+    def response(self, top):
+        """Return the beam response across the active band for the specified
+        topocentric coordinates (with z = up, x = east). 2nd axis should be 
+        multiple coordinates.  Returns 'x' pol (rotate pi/2 for 'y')."""
+        az,alt = coord.top2azalt(top)
+        zang = n.pi/2 - alt
+        if zang.size == 1:
+            zang = n.array([zang]); zang.shape = (1,)
+            az = n.array([az]); az.shape = (1,)
+        a = 2 * n.arange(self.poly.shape[0], dtype=n.float)
+        a.shape = (1,) + a.shape; az.shape += (1,); zang.shape += (1,)
+        a = n.cos(n.dot(az, a))
+        a[:,0] = 0.5
+        s = n.dot(a, self.sigma)
+        return n.sqrt(n.exp(-(zang/s)**2)).transpose()
+
+class BeamCosSeries(ant.Beam):
+    def __init__(self, freqs, poly_cos=n.array([[0., 1.]]), 
+            poly_wid=n.array([0., 1.])):
+        self.poly_cos = poly_cos
+        self.poly_wid = poly_wid
+        ant.Beam.__init__(self, freqs)
+        self.update(poly_cos, poly_wid)
+    def select_chans(self, active_chans):
+        ant.Beam.select_chans(self, active_chans)
+        self.update()
+    def update(self, poly_cos=None, poly_wid=None):
+        """Set the width in the x and y directions of the gaussian beam."""
+        if poly_cos is None: poly_cos = self.poly_cos
+        elif len(poly_cos.shape) == 1: poly_cos.shape = self.poly_cos.shape
+        if poly_wid is None: poly_wid = self.poly_wid
+        self.poly_cos = poly_cos
+        self.poly_wid = poly_wid
+    def response(self, top):
+        az,alt = coord.top2azalt(top)
+        zang = n.pi/2 - alt
+        if zang.size == 1:
+            zang = n.array([zang]); zang.shape = (1,)
+            az = n.array([az]); az.shape = (1,)
+        wid = 2 * n.arange(self.poly_wid.shape[0], dtype=n.float)
+        wid.shape = (1,) + wid.shape
+        az.shape += (1,)
+        wid = n.dot(n.cos(n.dot(az, wid)), self.poly_wid)
+        x = n.cos(wid * zang)**2
+        a = 2 * n.arange(self.poly_cos.shape[0], dtype=n.float)
+        a.shape = (1,) + a.shape; zang.shape += (1,)
+        p = n.dot(n.cos(n.dot(az, a)), self.poly_cos)
+        rv = n.polyval(p.transpose(), x.transpose())
+        rv.shape = (1,) + rv.shape
+        return rv.clip(0, n.Inf)
+
+class BeamAlm(ant.Beam):
+    def __init__(self, freqs, lmax=10, mmax=10, coeffs=None, nside=32):
+        self.alm = healpix.Alm(lmax,mmax)
+        self.hmap = healpix.HealpixMap(nside, ordering='RING')
+        ant.Beam.__init__(self, freqs)
+        self.update(coeffs)
+    def select_chans(self, active_chans):
+        ant.Beam.select_chans(self, active_chans)
+        self.update()
+    def update(self, coeffs=None):
+        if coeffs is None: coeffs = self.alm.get_data()
+        self.alm.set_data(coeffs)
+        self.hmap.from_alm(self.alm)
+    def response(self, top):
+        #x,y,z = top
+        #top = (-n.abs(x), -n.abs(y), z)
+        rv = self.hmap[n.array(top).transpose()]
+        rv.shape = (1,) + rv.shape
+        return rv.clip(0, n.Inf)
+    
 
 #     _          _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _ 
@@ -125,7 +221,7 @@ class Antenna(ant.Antenna):
         bp:         Decimated sampling of passband. Default is flat.
         pointing:   Antenna pointing=(az, alt).  Default is zenith"""
         ant.Antenna.__init__(self, x,y,z, beam=beam, delay=delay, offset=offset)
-        # Implement a flat = 1 passband if no bp is provided
+        # Implement a flat passband of ones if no bp is provided
         if bp is None: bp = n.ones(beam.freqs.size, dtype=n.float)
         self.update_gain(bp, amp)
         self.update_pointing(*pointing)
@@ -150,18 +246,16 @@ class Antenna(ant.Antenna):
         rot = n.dot(rot, coord.rot_m(-az, z))
         self.rot_pol_x = rot
         self.rot_pol_y = n.dot(coord.rot_m(-n.pi/2, z), rot)
-    def response(self, xyz=None, azalt=None, pol='x'):
+    def response(self, top, pol='x'):
         """Return the total antenna response to the specified topocentric 
-        coordinates (with z = up, x = east), or azalt (azimult, altitude). 
-        This includes including beam response, per-frequency gain, and a 
-        phase offset.  1st axis should be xyz, 2nd axis should be multiple 
-        coordinates."""
-        assert(xyz != None or azalt != None)
-        if xyz is None: xyz = coord.azalt2top(azalt)
-        if pol == 'x': rot = self.rot_pol_x
-        else: rot = self.rot_pol_y
-        beam_resp = self.beam.response(n.dot(rot, xyz))
-        return beam_resp * self.gain
+        coordinates (with z = up, x = east).  This includes beam response and
+        per-frequency gain.  1st axis should be xyz, 2nd axis should be 
+        multiple coordinates."""
+        top = {'x':top, 'y':n.dot(self.rot_pol_y, top)}[pol]
+        beam_resp = self.beam.response(top)
+        gain = self.gain
+        if len(beam_resp.shape) == 2: gain = n.reshape(gain, (gain.size, 1))
+        return beam_resp * gain
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -172,58 +266,36 @@ class Antenna(ant.Antenna):
 
 class AntennaArray(ant.AntennaArray):
     """A class which adds simulation functionality to AntennaArray."""
-    def __init__(self, simants, location, active_chans=None, **kwargs):
-        """simants:         a list of Antenna instances
-        location:     location of the array in (lat, long, [elev])
-        active_chans: channels to be selected for future freq calculations"""
-        ant.AntennaArray.__init__(self, ants=simants, location=location)
-        self.select_chans(active_chans)
-    def select_chans(self, active_chans=None):
-        for a in self.ants: a.select_chans(active_chans)
-    def illuminate(self, ant, srcs, pol='x'):
-        """Find the degree to which each source in the list 'srcs' is
-        illuminated by the beam pattern of 'ant'.  Useful for creating
-        simulation data."""
-        a = self.ants[ant]
-        nchan = a.beam.afreqs.size
-        # <GAS> -> Gain * Antenna beam * Source flux
-        GAS_sf = n.zeros((len(srcs), nchan), dtype=n.float)
-        for c, s in enumerate(srcs):
-            # Skip if source is below horizon
-            if s.alt < 0: continue
-            #GAS_sf[c] = a.response((s.az, s.alt), pol=pol) * s.emission
-            GAS_sf[c] = a.response(coord.azalt2top((s.az, s.alt)), pol=pol)
-            GAS_sf[c] *= s.emission
-        return GAS_sf
-    def sim_data(self, srcs, i, j, pol='xx'):
-        r"""Calculates visibilities at a given time for a list of RadioBodys,
-        for an array of frequencies according to the Measurement Equation:
-            V_{ij}(\nu,t) = \phi_{ij\nu}(t) + \Sigma_n{g_i(\nu) g_j^*(\nu)
-                            A_{i\nu}(\hat S_n(t)) A_{j\nu}(\hat S_n(t))
-                            S_n\left(\nu\over\nu_0\right)^{\alpha_n}
-                            e^{2\pi\vec b_{ij}\cdot\hat S_n(t)
-                            + 2\pi\nu\tau_{ij}}}"""
-        assert(pol in ['xx', 'yy', 'xy', 'yx'])
-        bl = self.ij2bl(i, j)
-        afreqs = self.ants[0].beam.afreqs
-        pol1, pol2 = pol
-        # <GBS> -> Gain * Baseline beam * Source flux
-        # <sf> -> source, freq (matrix axes)
-        GBS_sf = n.conjugate(self.illuminate(i, srcs, pol=pol1))
-        GBS_sf *= self.illuminate(j, srcs, pol=pol2)
-        # <P> -> phase -> exp(1j*(2*n.pi * (z+t) * freq + offset))
-        P_sf = n.zeros(GBS_sf.shape, dtype=n.complex)
-        for c, s in enumerate(srcs):
-            # If PointingError, P_sf[s] = 0, so flux from source will be nulled
-            try: phs, uvw = self.gen_phs(s, i, j, with_coord=True)
-            except(ant.PointingError): continue
-            u, v, w = uvw[:,0], uvw[:,1], uvw[:,2]
-            P_sf[c] = n.conjugate(phs)
-            # Take into account effects of resolving source
-            GBS_sf[c] *= n.sinc(s._ang_size * n.sqrt(u**2+v**2))
-        # <GBSP> -> total per-source visibility calculation
-        GBSP_sf = GBS_sf * P_sf
-        # <V> -> Visibility data -> sum of GBSP over sources
-        V_f = GBSP_sf.sum(axis=0)
-        return V_f
-
+    def sim(self, i, j, s_eqs, fluxes, 
+            indices=0., mfreqs=n.array([.150]), pol='xx'):
+        """Simulate visibilites for the (i,j) baseline based on source
+        locations (in equatorial coordinates), fluxes, spectral indices,
+        the frequencies at which fluxes were measured, and the polarization."""
+        assert(pol in ('xx','yy','xy','yx'))
+        # Get topocentric coordinates of all srcs
+        m = coord.eq2top_m(-self.sidereal_time(), self.lat)
+        src_top = n.dot(m, s_eqs)
+        # Throw out everthing that is below the horizon
+        valid = n.logical_and(src_top[2,:] > 0, fluxes > 0)
+        if n.all(valid == 0): return n.zeros_like(self.ants[i].beam.afreqs)
+        fluxes = fluxes.compress(valid)
+        indices = indices.compress(valid)
+        mfreqs = mfreqs.compress(valid)
+        src_top = src_top.compress(valid, axis=1)
+        s_eqs = s_eqs.compress(valid, axis=1)
+        # Get antenna source-dependent gains
+        GAi_sf = self.ants[i].response(src_top, pol=pol[0]).transpose()
+        GAj_sf = self.ants[j].response(src_top, pol=pol[1]).transpose()
+        # Get src fluxes vs. freq
+        fluxes.shape = (fluxes.size, 1)
+        mfreqs.shape = (mfreqs.size, 1)
+        indices.shape = (indices.size, 1)
+        freqs = n.resize(self.ants[i].beam.afreqs, 
+            (fluxes.size, self.ants[i].beam.afreqs.size))
+        I_sf = fluxes * (freqs / mfreqs)**indices
+        # Get the phase of each src vs. freq
+        E_sf = n.conjugate(self.gen_phs(s_eqs.transpose(), i, j))
+        # Combine and sum over sources
+        GBIE_sf = GAi_sf * GAj_sf * I_sf**2 * E_sf
+        Vij_f = GBIE_sf.sum(axis=0)
+        return Vij_f

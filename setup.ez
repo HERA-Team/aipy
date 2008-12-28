@@ -54,6 +54,16 @@ sets), and fitting routines from SciPy.
             'src/_healpix/cxx/Healpix_cxx/healpix_base.cc'],
             include_dirs = [numpy.get_include(), 'src/_healpix/cxx/cxxsupport',
                 'src/_healpix/cxx/Healpix_cxx']),
+        Extension('aipy._alm',
+            ['src/_healpix/alm_wrap.cpp',
+            'src/_healpix/cxx/Healpix_cxx/alm_map_tools.cc',
+            'src/_healpix/cxx/libfftpack/ls_fft.c',
+            'src/_healpix/cxx/libfftpack/bluestein.c',
+            'src/_healpix/cxx/libfftpack/fftpack.c',
+            'src/_healpix/cxx/Healpix_cxx/healpix_map.cc',
+            'src/_healpix/cxx/Healpix_cxx/healpix_base.cc'],
+            include_dirs = [numpy.get_include(), 'src/_healpix/cxx/cxxsupport',
+                'src/_healpix/cxx/Healpix_cxx']),
         #NumpyExtension('aipy._miriad', ['src/_miriad/miriad_wrap.cpp'] + \
         Extension('aipy._miriad', ['src/_miriad/miriad_wrap.cpp'] + \
             indir('src/_miriad/mir', ['uvio.c','hio.c','pack.c','bug.c',

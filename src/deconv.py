@@ -86,7 +86,7 @@ def clean(im, ker, mdl=None, gain=.2, maxiter=10000, chkiter=100, tol=1e-3,
     info.update({'res':n_dif, 'score': score, 'iter':i+1})
     return n_mdl, info
 
-def lsq(im, ker, mdl=None, gain=.2, tol=1e-3, maxiter=1000, 
+def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=1000, 
         lower=lo_clip_lev, upper=n.Inf, verbose=False):
     """This simple least-square fitting procedure for deconvolving an image 
     saves computing by assuming a diagonal pixel-pixel gradient of the fit.
@@ -114,12 +114,12 @@ def lsq(im, ker, mdl=None, gain=.2, tol=1e-3, maxiter=1000,
         g_chi2 = -2*q*(diff)
         chi2 = diff**2
         return chi2, g_chi2
-    prev_score = 0
+    score = 0
     # Start the fit loop
     for i in range(maxiter):
         chi2, g_chi2 = f(x)
-        score = n.average(chi2)
-        term = abs(1 - prev_score/score)
+        n_score = n.average(chi2)
+        term = abs(1 - score/n_score)
         if verbose:
             slope = n.sqrt(n.average(g_chi2**2))
             print 'Step %d:' % i, 'score %f,' % score, 
@@ -127,8 +127,8 @@ def lsq(im, ker, mdl=None, gain=.2, tol=1e-3, maxiter=1000,
         if term < tol:
             info['term'] = 'tol'
             break
-        prev_score = score
-        # For especially clean images, g_chi2 in some components can go to 0.
+        score = n_score
+        # For especially clean imgs, g_chi2 in some components can go to 0.
         # This check makes lsq a little slower for most images, though...
         d_x = n.where(abs(g_chi2) > 0, -(1/g_chi2) * chi2, 0)
         x = n.clip(x + gain * d_x, lower, upper)
@@ -155,8 +155,8 @@ def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=1000,
     q = n.sqrt((ker**2).sum())
     minus_two_q = -2*q
     two_q_sq = 2*q**2
-    #if mdl is None: mdl = n.ones_like(im) * n.average(im) / ker.sum()
-    if mdl is None: mdl = n.ones_like(im) * n.average(im) / q
+    if mdl is None: mdl = n.ones_like(im) * n.average(im) / ker.sum()
+    #if mdl is None: mdl = n.ones_like(im) * n.average(im) / q
     Nvar0 = d_i.size * var0
     inv_ker = n.fft.fft2(ker)
     m_i = mdl.flatten()
@@ -219,7 +219,7 @@ def maxent_findvar(im, ker, f_var0=.8, mdl=None, gain=.1, tol=1e-3,
                 maxiter=maxiter, lower=lower, upper=upper, verbose=False)
             if verbose:
                 print 'success %d,' % i['success'],
-                print 'term: %s,' % i['term'], 'score: %f' % i['score']
+                print 'term: %s,' % i['term'], 'score:' , i['score']
             # Check if fit converged
             if i['success'] and i['term'] == 'tol':
                 cl, info = c, i
