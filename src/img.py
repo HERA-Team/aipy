@@ -233,9 +233,12 @@ class SkyMap:
         return n.abs(self.map / w)
 
 class SkyHMap:
-    def __init__(self, nside=128, ordering='RING', fromfits=None):
+    def __init__(self, nside=128, ordering='RING', fromfits=None,
+            use_interp=False):
         self.map = healpix.HealpixMap(nside, ordering=ordering)
         self.wgt = healpix.HealpixMap(nside, ordering=ordering)
+        self.map.use_interp = use_interp
+        self.wgt.use_interp = use_interp
         if not fromfits is None: self.from_fits(fromfits)
         else:
             m = n.zeros(self.map.Npix(), dtype=n.float)

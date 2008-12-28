@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-import aipy as a, numpy as n, pylab as p, sys, optparse
+import aipy as a, numpy as n, pylab as p, sys, optparse, ephem
 
 o = optparse.OptionParser()
 o.set_usage('phs2src.py [options] *.uv')
@@ -8,12 +8,12 @@ o.add_option('-s', '--src', dest='src',
     help='The name of a source to phase to, or ra,dec position.')
 o.add_option('-l', '--loc', dest='loc', 
     help='Use location-specific info for this location.')
-o.add_option('-d', '--deconv', dest='deconv', action='store_true',
-    help='Attempt to deconvolve the dirty image by the dirty beam.')
-o.add_option('--var', dest='var', type='float', default=0.,
+o.add_option('-d', '--deconv', dest='deconv', default='mem',
+    help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).')
+o.add_option('--var', dest='var', type='float', default=1.,
     help='Starting guess for variance in maximum entropy fit (defaults to variance of dirty image.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
-    help='Tolerance for successful deconvolution.')
+    help='Tolerance for successful deconvolution.  For annealing, interpreted as cooling speed.')
 o.add_option('--maxiter', dest='maxiter', type='int', default=200,
     help='Number of allowable iterations per deconvolve attempt.')
 o.add_option('-a', '--ants', dest='ants', default='cross',
@@ -142,33 +142,19 @@ if opts.smooth != 0:
     im_img = n.abs(a.img.convolve2d(im_img, sm))
     bm_img = n.abs(a.img.convolve2d(bm_img, sm))
 
-if opts.deconv:
-    # Try various noise levels until one works
-    cl_img, info = None, None
-    loop_num = -1
-    if opts.var != 0: im_var = opts.var
-    else: im_var = n.var(im_img)
-    while cl_img is None:
-        print '________________________________________________________'
-        if loop_num == -1: var0 = im_var
-        else: var0 = im_var / (1.5**loop_num)
-        while loop_num < 0 or var0 < im_var * (1.5**loop_num):
-            print 'Trying var0=%f' % var0
-            c, i = a.deconv.maxent(im_img, bm_img,
-                var0=var0, maxiter=opts.maxiter, verbose=False, tol=opts.tol)
-            print 'Success =', i['success'],
-            print 'Term:', i['term'], 'Score:', i['score']
-            # Check if fit converged
-            if i['success'] and i['term'] == 'tol':
-                cl_img, info = c, i
-                break
-            else:
-                if not cl_img is None: break
-                if loop_num == -1: break
-                var0 *= 1.2 ** (1./(2*(loop_num+1)))
-        loop_num += 1
-    print 'Done with MEM.'
-    rs_img = info['res']
+if opts.deconv == 'mem':
+    cl_img,info = a.deconv.maxent_findvar(im_img, bm_img, f_var0=opts.var,
+        maxiter=opts.maxiter, verbose=True, tol=opts.tol)
+elif opts.deconv == 'lsq':
+    cl_img,info = a.deconv.lsq(im_img, bm_img, 
+        maxiter=opts.maxiter, verbose=True, tol=opts.tol)
+elif opts.deconv == 'cln':
+    cl_img,info = a.deconv.clean(im_img, bm_img, 
+        maxiter=opts.maxiter, verbose=True, tol=opts.tol)
+elif opts.deconv == 'ann':
+    cl_img,info = a.deconv.anneal(im_img, bm_img, maxiter=opts.maxiter, 
+        cooling=lambda i,x: opts.tol*(1-n.cos(i/50.))*(x**2), verbose=True)
+if opts.deconv != None: rs_img = info['res']
 
 p.subplot(221)
 im_img = n.log10(im_img + 1e-15)
@@ -186,21 +172,32 @@ p.colorbar(shrink=.5, fraction=.05)
 p.title('Dirty Beam')
 
 p.subplot(223)
-if opts.deconv: cl_img = n.log10(cl_img + 1e-15)
-else: cl_img = n.abs(im.uv)
+if opts.deconv != None:
+    cl_img = n.log10(cl_img + 1e-15)
+    # Generate a little info about where the strongest src is
+    src_loc = cl_img.argmax()
+    eq = im.get_eq(ra=src.ra, dec=src.dec, center=(DIM/2,DIM/2))
+    ra,dec = a.coord.eq2radec(eq)
+    ra,dec = ra.flat[src_loc], dec.flat[src_loc]
+    eq = ephem.Equatorial(ra, dec)
+    print 'Phase center:', (src.ra, src.dec)
+    x,y = n.indices(cl_img.shape)
+    print 'Max src:', eq.get(), 'at pixel', (y.flat[src_loc], x.flat[src_loc])
+    # ... and then finish plotting
+else: cl_img = n.log10(n.abs(im.uv))
 mx = cl_img.max()
 p.imshow(cl_img, vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')
 p.colorbar(shrink=.5, fraction=.05)
-if opts.deconv: p.title('Clean Image')
+if opts.deconv != None: p.title('%s Image' % opts.deconv.upper())
 else: p.title('UV Sampling')
 
 p.subplot(224)
-if opts.deconv: rs_img = n.log10(n.abs(rs_img) + 1e-15)
-else: rs_img = n.abs(im.bm)
+if opts.deconv != None: rs_img = n.log10(n.abs(rs_img) + 1e-15)
+else: rs_img = n.log10(n.abs(im.bm))
 mx = rs_img.max()
 p.imshow(rs_img, vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')
 p.colorbar(shrink=.5, fraction=.05)
-if opts.deconv: p.title('Residual Image')
+if opts.deconv != None: p.title('Residual Image')
 else: p.title('Beam Sampling')
 
 p.show()
