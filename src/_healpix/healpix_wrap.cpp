@@ -185,6 +185,7 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
     pointing p;
     vec3 v;
     PyArrayObject *crd1, *crd2, *crd3=NULL, *rv, *wgt=NULL;
+    PyObject *rv2;
     static char *kwlist[] = {"crd1", "crd2", "crd3", "interpolate", NULL};
     // Parse and check input arguments
     if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!O!|O!i", kwlist, 
@@ -242,7 +243,12 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
         }
     }
     if (interpolate == 0) return PyArray_Return(rv);
-    return Py_BuildValue("(OO)", PyArray_Return(rv), PyArray_Return(wgt));
+    // Otherwise build tuple to return.
+    // Make sure to DECREF when using Py_BuildValue() !!
+    rv2 = Py_BuildValue("(OO)", PyArray_Return(rv), PyArray_Return(wgt));
+    Py_DECREF(rv); Py_DECREF(wgt);
+    return rv2;
+    
 }
     
 /* Wraps pix2ang, but adds option of vector output as well.  Similarly

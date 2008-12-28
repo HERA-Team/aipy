@@ -225,7 +225,7 @@ class BeamAlm(ant.Beam):
 class Antenna(ant.Antenna):
     """A representation of the physical location and beam pattern of an
     individual antenna in an array."""
-    def __init__(self, x, y, z, beam, delay=0., bp_r=n.array([1]), 
+    def __init__(self, x, y, z, beam, delay=0., offset=0., bp_r=n.array([1]),
             bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
         """x, y, z:    Antenna coordinates in equatorial (ns) coordinates
         beam:       Object with function 'response(xyz=None, azalt=None)'
@@ -233,7 +233,7 @@ class Antenna(ant.Antenna):
         bp_r:       Polynomial modeling the real component of the passband
         bp_i:       Polynomial modeling the imag component of the passband
         pointing:   Antenna pointing=(az, alt).  Default is zenith"""
-        ant.Antenna.__init__(self, x,y,z, beam=beam, delay=delay)
+        ant.Antenna.__init__(self, x,y,z, beam=beam, delay=delay, offset=offset)
         # Implement a flat passband of ones if no bp is provided
         self.update_gain(bp_r, bp_i, amp)
         self.update_pointing(*pointing)
@@ -252,6 +252,7 @@ class Antenna(ant.Antenna):
         if not amp is None: self.amp = amp
         bp = n.polyval(self.bp_r, self.beam.afreqs) + \
              1j*n.polyval(self.bp_i, self.beam.afreqs)
+        #bp *= n.exp(1j*self.offset)
         self.gain = self.amp * bp
     def update_pointing(self, az=0, alt=n.pi/2, twist=0):
         """Set the antenna beam to point at (az, alt) with the specified
@@ -263,15 +264,17 @@ class Antenna(ant.Antenna):
         rot = n.dot(rot, coord.rot_m(-az, z))
         self.rot_pol_x = rot
         self.rot_pol_y = n.dot(coord.rot_m(-n.pi/2, z), rot)
+    def bm_response(self, top, pol='x'):
+        top = n.array(top)
+        top = {'x':top, 'y':n.dot(self.rot_pol_y, top)}[pol]
+        x,y,z = top
+        return self.beam.response((x,y,z))
     def response(self, top, pol='x'):
         """Return the total antenna response to the specified topocentric 
         coordinates (with z = up, x = east).  This includes beam response and
         per-frequency gain.  1st axis should be xyz, 2nd axis should be 
         multiple coordinates."""
-        top = n.array(top)
-        top = {'x':top, 'y':n.dot(self.rot_pol_y, top)}[pol]
-        x,y,z = top
-        beam_resp = self.beam.response((x,y,z))
+        beam_resp = self.bm_response(top, pol=pol)
         gain = self.gain
         if len(beam_resp.shape) == 2: gain = n.reshape(gain, (gain.size, 1))
         return beam_resp * gain
@@ -338,7 +341,9 @@ class AntennaArray(ant.AntennaArray):
         s_sz = self._cache['s_sz']
         # Get the phase of each src vs. freq, also does resolution effects
         E_sf = n.conjugate(self.gen_phs(s_eqs.transpose(), i, j, angsize=s_sz))
+        E_sf.shape = I_sf.shape
         # Combine and sum over sources
-        GBIE_sf = GAi_sf * GAj_sf * I_sf * E_sf
+        GBIE_sf = GAi_sf * n.conjugate(GAj_sf) * I_sf * E_sf
+        #GBIE_sf = GAi_sf * GAj_sf * I_sf * E_sf
         Vij_f = GBIE_sf.sum(axis=0)
         return Vij_f

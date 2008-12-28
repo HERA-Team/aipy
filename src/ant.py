@@ -162,11 +162,12 @@ class Beam:
 class Antenna:
     """A representation of the physical location an individual antenna in 
     an array, and possibly a systematic delay associated with it."""
-    def __init__(self, x, y, z, beam, delay=0., **kwargs):
+    def __init__(self, x, y, z, beam, delay=0., offset=0., **kwargs):
         """x, y, z:    Antenna coordinates in equatorial (ns) coordinates"""
         self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
         self.beam = beam
         self.delay = delay
+        self.offset = (offset % 1)
     def select_chans(self, active_chans=None):
         self.beam.select_chans(active_chans)
     def __tuple__(self): return (self.pos[0], self.pos[1], self.pos[2])
@@ -229,13 +230,14 @@ class AntennaArray(ArrayLocation):
         """If antenna parameters or active channels have been changed, this
         function updates variables derived from them.  Increments the cache
         value to force recalculation of cached values in source projections."""
-        bls,dlys,offs = [],[],[] 
+        bls,dlys,offs = [],[],[]
         self.bl_order = {}
         for i, ai in enumerate(self.ants):
             for j, aj in enumerate(self.ants[i:]):
                 bl = self.ij2bl(i, j+i)
                 bls.append(aj - ai)
                 dlys.append(aj.delay - ai.delay)
+                offs.append(aj.offset - ai.offset)
                 self.bl_order[bl] = len(bls) - 1
         self.bls,self.dlys,self.offs = n.array(bls),n.array(dlys),n.array(offs)
         # Compute (static) zenith baselines
@@ -273,6 +275,9 @@ class AntennaArray(ArrayLocation):
     def get_delay(self, i, j):
         """Return the delay corresponding to i,j."""
         return self.dlys[self.bl_order[self.ij2bl(i,j)]]
+    def get_offset(self, i, j):
+        """Return the delay corresponding to i,j."""
+        return self.offs[self.bl_order[self.ij2bl(i,j)]]
     def gen_uvw(self, i, j, src='z'):
         """Compute uvw coordinates for a provided RadioBody, or 'z' for
         zenith uvw coordinates."""
@@ -290,14 +295,17 @@ class AntennaArray(ArrayLocation):
         bl_dot_s = n.dot(src, bl)
         if len(bl_dot_s.shape) >= 1: bl_dot_s.shape = (bl_dot_s.size, 1)
         t = self.get_delay(i,j)
+        o = self.get_offset(i,j)
         afreqs = self.ants[0].beam.afreqs
         afreqs = n.reshape(afreqs, (1,afreqs.size))
+        # Rudimentarily account for resolution effects
         if not angsize is None:
             angsize.shape = bl_dot_s.shape
             amp = angsize * n.sqrt(n.dot(bl,bl) - bl_dot_s**2)
             amp = n.sinc(n.dot(amp, afreqs))
         else: amp = 1.
-        phs = amp * n.exp(-1j*(2*n.pi*n.dot(bl_dot_s + t, afreqs)))
+        phs = amp * n.exp(-1j*2*n.pi*(n.dot(bl_dot_s + t, afreqs) + o))
+        #phs = amp * n.exp(-1j*(2*n.pi*n.dot(bl_dot_s + t, afreqs)))
         return phs.squeeze()
     def phs2src(self, data, src, i, j):
         """Apply phasing to zenith data to point to src."""

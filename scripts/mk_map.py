@@ -8,6 +8,8 @@ o.add_option('-l', '--loc', dest='loc',
     help='Use location-specific info for this location.')
 o.add_option('-d', '--deconv', dest='deconv', default='mem',
     help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).')
+o.add_option('-r', '--residual', dest='residual', action='store_true',
+    help='Include the residual data (after deconvolution) in the map.')
 o.add_option('--var', dest='var', type='float', default=.8,
     help='Starting variance guess for deconvolution, as a fraction of the total image variance.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
@@ -32,7 +34,7 @@ o.add_option('--size', dest='size', type='int', default=200,
     help='Size of maximum UV baseline.')
 o.add_option('--res', dest='res', type='float', default=0.5,
     help='Resolution of UV matrix.')
-o.add_option('--buf', dest='buf_thresh', default=1e6, type='float',
+o.add_option('--buf', dest='buf_thresh', default=1.8e6, type='float',
     help='Maximum amount of data to buffer before gridding.  Excessive gridding takes performance hit, but if buffer exceeds memory available... ouch.')
 o.add_option('-m', '--map', dest='map',
     help='The skymap file to use.  If it exists, new data will be added to the map.  Othewise, the file will be created.')
@@ -70,8 +72,7 @@ opts, args = o.parse_args(sys.argv[1:])
 
 # Get antenna array information
 uv = a.miriad.UV(args[0])
-aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'],
-    use_bp=False)
+aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
 if opts.pol is None: active_pol = uv['pol']
 else: active_pol = a.miriad.str2pol[opts.pol]
 chans = gen_chans(opts.chan, uv)
@@ -80,10 +81,9 @@ del(uv)
 aa.select_chans(chans)
 
 # Open skymap
-if os.path.exists(opts.map):
-    skymap = a.img.SkyHMap(fromfits=opts.map, use_interp=opts.interpolate)
-else:
-    skymap = a.img.SkyHMap(nside=256, use_interp=opts.interpolate)
+if os.path.exists(opts.map): skymap = a.map.Map(fromfits=opts.map)
+else: skymap = a.map.Map(nside=256)
+skymap.set_interpol(opts.interpolate)
 
 # Some imaging constants
 DIM = int(opts.size/opts.res)
@@ -159,6 +159,8 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
 
     im_img = im.image((DIM/2, DIM/2))
     bm_img = im.bm_image()
+    bm_gain = n.sqrt((bm_img**2).sum())
+    print 'Gain of dirty beam:', bm_gain
 
     if opts.deconv == 'none': img = im_img #/ n.sqrt((bm_img**2).sum())
     elif opts.deconv == 'mem':
@@ -175,20 +177,24 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
             cooling=lambda i,x: opts.tol*(1-n.cos(i/50.))*(x**2), verbose=True)
     if opts.deconv != 'none':
         rs_img = info['res']
-        #img = n.abs(cl_img + rs_img)
-        img = cl_img
-    crds = im.get_eq(src.ra, src.dec, center=(DIM/2,DIM/2))
-    crds.shape = (3, crds.size/3)
-    crds = crds.transpose()
-    x,y,z = im.get_top(center=(DIM/2,DIM/2))
-    map_wgts = n.exp(-(x**2 + y**2) / .1**2)
+        if opts.residual: img = n.abs(bm_gain*cl_img + rs_img)
+        else: img = bm_gain * cl_img
+    ex,ey,ez = im.get_eq(src.ra, src.dec, center=(DIM/2,DIM/2))
+    #crds.shape = (3, crds.size/3)
+    #crds = crds.transpose()
+    tx,ty,tz = im.get_top(center=(DIM/2,DIM/2))
+    map_wgts = n.exp(-(tx**2 + ty**2) / .1**2)
     map_wgts.shape = (map_wgts.size,)
     valid = n.logical_not(map_wgts.mask)
-    crds = crds.compress(valid, axis=0)
+    #crds = crds.compress(valid, axis=0)
+    ex = ex.compress(valid); ey = ey.compress(valid); ez = ez.compress(valid)
     map_wgts = map_wgts.compress(valid)
     img = img.flatten()
     img = img.compress(valid)
-    crds = n.asarray(crds)
-    skymap[crds] = (img, map_wgts)
+    #crds = n.asarray(crds)
+    #print crds.shape, map_wgts.shape, img.shape
+    #print skymap.wgt[crds].shape
+    #skymap.add(crds, map_wgts, img)
+    skymap.add((ex,ey,ez), map_wgts, img)
     skymap.to_fits(opts.map, clobber=True)
 

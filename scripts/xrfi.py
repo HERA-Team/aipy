@@ -49,28 +49,29 @@ def flag_by_int(preflagged_auto, nsig=1):
     fits a smooth passband, then uses smooth passband to remove outliers
     (both positive and negative)."""
     pwr_vs_t = numpy.ma.average(abs(preflagged_auto), axis=1)
-    spikey_pwr_vs_t = abs(pwr_vs_t - remove_spikes(pwr_vs_t))
+    mask = pwr_vs_t.mask
+    spikey_pwr_vs_t = numpy.abs(pwr_vs_t - remove_spikes(pwr_vs_t, mask))
     hi_thr, lo_thr = gen_rfi_thresh(spikey_pwr_vs_t, per_bin=20, nsig=nsig)
     mask = spikey_pwr_vs_t > hi_thr
     return mask.astype(numpy.int)
 
-def remove_spikes(data, order=6, iter=3, return_poly=False):
+def remove_spikes(data, mask=None, order=6, iter=3, return_poly=False):
     """Iteratively fits a smooth function by removing outliers and fitting
     a polynomial, then using the polynomial to remove other outliers."""
     xs = numpy.arange(data.size)
-    if numpy.ma.isMA(data) and data.mask.size == data.size: mask = data.mask
-    else: mask = numpy.zeros_like(data.data)
+    if mask is None or mask.size != data.size:
+        mask = numpy.zeros(data.shape, dtype=numpy.bool)
     im = numpy.logical_not(mask)
-    nxs = numpy.compress(im, xs)
-    ndata = numpy.compress(im, data)
+    nxs = xs.compress(im)
+    ndata = data.compress(im)
     if len(nxs) != 0: p = numpy.polyfit(nxs, ndata, deg=order)
     else: p = numpy.polyfit(xs, data, deg=order)
     if iter != 0:
-        residual = abs(data - numpy.polyval(p, xs))
-        sig = numpy.sqrt(numpy.ma.average(residual**2))
-        mask.put(numpy.where(residual > sig/2), 1)
-        data = numpy.ma.array(data, mask=mask)
-        p = remove_spikes(data, order=order, iter=iter-1, return_poly=True)
+        residual = abs(ndata - numpy.polyval(p, nxs))
+        sig = numpy.sqrt(numpy.average(residual**2))
+        mask.put(numpy.where(residual > sig), 1)
+        p = remove_spikes(data, mask=mask, order=order, 
+            iter=iter-1, return_poly=True)
     if return_poly: return p
     else: return numpy.polyval(p, xs)
 
@@ -87,13 +88,14 @@ if __name__ == '__main__':
         help='Can be val,int,both for flagging by value only, integration only, or both.  Default both.')
     o.add_option('-c', '--chans', dest='chans', default='',
         help='Comma-delimited ranges (e.g. 1-3,5-10) of channels to manually flag before any other statistical flagging.')
-    o.add_option('-t', '--ch_thresh', dest='ch_thresh',type='float',default=.33,
-        help='Fraction of the data in a channel which, if flagged, will result in the entire channel begin flagged.  Default .33')
+    o.add_option('--ch_thresh', dest='ch_thresh',type='float',default=.33,
+        help='Fraction of the data in a channel which, if flagged, will result in the entire channel being flagged.  Default .33')
+    o.add_option('--int_thresh', dest='int_thresh',type='float',default=.66,
+        help='Fraction of the data in an integration which, if flagged, will result in the entire integration being flagged.  Default .33')
     o.add_option('-i', '--infile', dest='infile', action='store_true',
         help='Apply xrfi flags generated with the -o option.')
     o.add_option('-o', '--outfile', dest='outfile', action='store_true',
         help='Rather than apply the flagging to the data, store them in a file (named by JD) to apply to a different file with the same JD.')
-
 
     opts, args = o.parse_args(sys.argv[1:])
     chans = opts.chans.split(',')
@@ -144,37 +146,42 @@ if __name__ == '__main__':
             # strictly on basis of nsigma above mean.
             if not opts.flagmode.startswith('int'):
                 new_mask = {}
-                for k in mask:
-                    mask[k][flag_chans] = 1
-                    new_mask[k] = mask[k].copy()
-                for p in data:
-                  for k in data[p]:
-                    i, j = aipy.miriad.bl2ij(k)
+                for bl in mask:
+                    mask[bl][flag_chans] = 1
+                    new_mask[bl] = mask[bl].copy()
+                for pol in data:
+                  for bl in data[pol]:
+                    i, j = aipy.miriad.bl2ij(bl)
                     if i == j: continue
-                    data_times = data[p][k].keys()
-                    d = numpy.ma.array([data[p][k][t] for t in data_times],
+                    data_times = data[pol][bl].keys()
+                    d = numpy.ma.array([data[pol][bl][t] for t in data_times],
                         mask=[mask[t] for t in data_times])
                     hi_thr, lo_thr = gen_rfi_thresh(d, nsig=opts.nsig)
                     m = numpy.where(numpy.abs(d) > hi_thr,1,0)
                     for i, t in enumerate(data_times): new_mask[t] |= m[i]
                 mask = new_mask
-                # If more than half the data in a channel is flagged, flag the
-                # whole thing
-                msk_cnt = numpy.array([mask[t] for t in data_times]).sum(axis=0)
-                ch_msk = numpy.where(msk_cnt > msk_cnt.max()*opts.ch_thresh,1,0)
-                for k in mask: mask[k] |= ch_msk
+                # If more than ch_thresh of the data in a channel or 
+                # integration is flagged, flag the whole thing
+                ch_cnt = numpy.array([mask[t] for t in data_times]).sum(axis=0)
+                ch_msk = numpy.where(ch_cnt > ch_cnt.max()*opts.ch_thresh,1,0)
+                for t in mask:
+                    if mask[t].sum() > mask[t].size * opts.int_thresh:
+                        mask[t] |= 1
+                    else:
+                        mask[t] |= ch_msk
 
             # Use autocorrelations to flag entire integrations which have
-            # anomalous powers.  All antennas must agree for a integration
-            # to get flagged.
+            # anomalous powers.  At least 2 antennas must agree for a 
+            # integration to get flagged.
             if not opts.flagmode.startswith('val'):
                 new_mask = {}
-                for p in data:
-                  for k in data[p]:
-                    i, j = aipy.miriad.bl2ij(k)
+                for pol in data:
+                  for bl in data[pol]:
+                    i, j = aipy.miriad.bl2ij(bl)
                     if i != j: continue
-                    data_times = data[p][k].keys()
-                    d = numpy.ma.array([data[p][k][t] for t in data_times],
+                    data_times = data[pol][bl].keys()
+                    data_times.sort()
+                    d = numpy.ma.array([data[pol][bl][t] for t in data_times],
                         mask=[mask[t] for t in data_times])
                     for i in numpy.where(flag_by_int(d))[0]:
                         t = data_times[i]

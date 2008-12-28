@@ -58,8 +58,12 @@ for src in opts.srcs.split(','):
     strength = flux * (opts.freq / mfreq)**index * opts.sscale
     print 'Adding', src, 'with strength %f Jy' % strength,
     print 'and index %f' % index
-    curflux, i = h[x,y,z]
-    h.put((x,y,z),1,strength+curflux,[index])
+    if opts.nindices == 0:
+        curflux = h[x,y,z]
+        h.put((x,y,z),1,strength+curflux)
+    else:
+        curflux, i = h[x,y,z]
+        h.put((x,y,z),1,strength+curflux,[index])
 
 print 'Saving to', opts.map
 h.to_fits(opts.map)

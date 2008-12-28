@@ -27,7 +27,7 @@ o.add_option('--oepoch', dest='oepoch', type='float', default=ephem.J2000,
     help='Epoch of output coordinates (plotted).')
 o.add_option( '--max', dest='max', type='float', default=None,
     help='Manually set the maximum color level (log10).')
-o.add_option('--dyn_rng', dest='dyn_rng', type='float', default=5.,
+o.add_option('--dyn_rng', dest='dyn_rng', type='float', default=None,
     help="Dynamic range in color of image (log10).")
 o.add_option('--levels', dest='levels', type='int', default=15,
     help="Number of color levels to plot.")
@@ -82,6 +82,7 @@ slats = n.array([float(s.get()[1]) for s in scrds]) * a.img.rad2deg
 slons = n.array([float(s.get()[0] + CEN) for s in scrds]) * a.img.rad2deg
 slons -= 180
 slons = n.where(slons < -180, slons + 360, slons)
+if opts.osys == 'eq': slons = 360 - slons
 snams = cat.keys()
 
 map = Basemap(projection=opts.projection,lat_0=0,lon_0=0)
@@ -90,15 +91,19 @@ map.drawmeridians(n.arange(0,360,30))
 map.drawparallels(n.arange(-90,90,30))
 x, y = map(lons, lats)
 if opts.mode.startswith('log'): data = n.log10(n.abs(data))
-max = opts.max
-if max is None: max = data.max()
-data = data.clip(max-opts.dyn_rng, max)
-min,max = data.min(),data.max()
+if opts.max is None: max = data.max()
+else: max = opts.max
+if opts.dyn_rng is None:
+    min = data.min()
+    if min < (max - 10): min = max-10
+else: min = max - opts.dyn_rng
+data = data.clip(min, max)
 step = (max - min) / opts.levels
 levels = n.arange(min-step, max+step, step)
 data.shape = SZ
 x.shape = SZ
 y.shape = SZ
+if opts.osys == 'eq': data = n.fliplr(data)
 CS = map.contourf(x, y, data, levels, linewidths=0)
 sx, sy = map(slons,slats)
 if opts.srcs:

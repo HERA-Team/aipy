@@ -295,7 +295,7 @@ class Antenna(sim.Antenna):
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         x,y,z = self.pos
-        aprms = {'x':x, 'y':y, 'z':z, 'delay':self.delay}
+        aprms = {'x':x, 'y':y, 'z':z, 'dly':self.delay, 'off':self.offset}
         aprms['bp_r'] = list(self.bp_r)
         aprms['bp_i'] = list(self.bp_i)
         aprms['amp'] = self.amp
@@ -315,7 +315,9 @@ class Antenna(sim.Antenna):
         except(KeyError): pass
         try: self.pos[2] = prms['z']
         except(KeyError): pass
-        try: self.delay = prms['delay']
+        try: self.delay = prms['dly']
+        except(KeyError): pass
+        try: self.offset = (prms['off'] % 1)
         except(KeyError): pass
         self.update_gain(bp_r=prms.get('bp_r', None),
             bp_i=prms.get('bp_i', None), amp=prms.get('amp', None))

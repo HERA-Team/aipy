@@ -113,7 +113,8 @@ def fit_func(prms):
     cat.set_params(prms)
     asz = cat.get_angsizes()
     if n.all(asz == 0): asz = None  # Making None bypasses a computation step
-    score,cnt,curtime = 0,0,None
+    score,nsamples = 0.,0
+    cnt,curtime = 0,None
     for uvfile in args:
         sys.stdout.write('.'), ; sys.stdout.flush()
         uv = a.miriad.UV(uvfile)
@@ -136,9 +137,11 @@ def fit_func(prms):
             d = d.take(chans)
             f = f.take(chans)
             sim_d = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
-            difsq = n.abs(d - sim_d)**2
-            score += n.where(f, 0, difsq).sum()
-        
+            sq,difsq = n.abs(d)**2, n.abs(d - sim_d)**2
+            sq = n.ma.masked_equal(sq, 0)
+            score += n.where(f, 0, difsq/sq).sum()
+            nsamples += n.logical_not(f).sum()
+    score = n.sqrt(score / nsamples)
     print
     if first_fit is None: first_fit = score
     print 'Score:', score, '(%2.2f%% of %f)' % (100 * score / first_fit, first_fit)

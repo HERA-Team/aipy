@@ -54,7 +54,7 @@ for uvfile in args:
             d = numpy.ma.average(d, axis=1)
             d = numpy.ma.array(d.data, mask=m, dtype=numpy.complex64)
             return p, d
-        uvo.pipe(uvi, mfunc=f, append2hist='Miniaturized...\n')
+        uvo.pipe(uvi, mfunc=f, append2hist='COMB_FREQ: nchan=%d, careful=%s, unify=%s\n' % (opts.nchan, opts.careful_flag, opts.unify))
     else:
         uvo.pipe(uvi, append2hist='Miniaturized...\n')
     if not opts.unify:

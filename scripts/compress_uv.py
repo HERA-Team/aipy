@@ -19,7 +19,8 @@ opts, args = p.parse_args(sys.argv[1:])
 for i in args:
     print i
     if opts.expand:
-        os.system('tar xjf %s' % i)
+        rv = os.system('tar xjf %s' % i)
+        if rv != 0: break
         continue
     cmp_name = i + '.tar.bz2'
     if os.path.exists(cmp_name):
