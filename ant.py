@@ -21,7 +21,7 @@ Revisions:
     05/14/2007  arp Fixed bug where coordinates were precessed to 2000, not
                     the current date.  
 """
-import ephem, math, numpy
+import pyephem as ephem, math, numpy
 import constants
 
 class PointingError(Exception):

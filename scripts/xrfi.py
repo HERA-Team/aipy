@@ -11,7 +11,7 @@ Revisions:
 
 __version__ = '0.0.2'
 
-import numpy, aipy, scipy.optimize
+import numpy, aipy
 
 def gaussian(amp, sig, off, x):
     """Generate gaussian value at x given amplitude, sigma, and x offset."""
@@ -24,15 +24,19 @@ def fit_gaussian(xs, ys):
         amp, sig, off = args
         sum = ((ys - gaussian(amp, sig, off, xs))**2).sum()
         return sum
-    return scipy.optimize.fmin(fitfunc, (ys.sum(), 50, ys.argmax()), disp=0)
+    return aipy.optimize.fmin(fitfunc, (ys.sum(), 50, ys.argmax()), disp=0)
 
 def gen_rfi_thresh(data, nsig=2, per_bin=1000):
     """Generate a threshold at nsig times the standard deviation above the mean
     above which data is considered rfi."""
-    if numpy.ma.isMA(data): histdata = numpy.log10(abs(data.filled(0))+1e-6)
-    else: histdata = numpy.log10(abs(data)+1e-6)
+    # Mask any 0's (assume that data must exist to be valid)
+    if numpy.ma.isMA(data): data.mask.put(numpy.where(data == 0), 1)
+    else: data = numpy.array(data, mask=numpy.where(data == 0, 1, 0))
+    # Generate a log-histogram
+    histdata = numpy.log10(numpy.abs(data.compressed()))
     h, bvals = numpy.histogram(histdata, bins=histdata.size/per_bin)
     if h.size == 0: return 0, 0
+    # Fit a gaussian to histogram (better than just std-dev of data)
     amp, sig, off = fit_gaussian(numpy.arange(h.size), h)
     hi_thresh = numpy.clip(numpy.round(off + nsig*sig), 0, len(bvals)-1)
     lo_thresh = numpy.clip(numpy.round(off - nsig*sig), 0, len(bvals)-1)
@@ -40,13 +44,13 @@ def gen_rfi_thresh(data, nsig=2, per_bin=1000):
     lo_thresh = bvals[lo_thresh]
     return 10**hi_thresh, 10**lo_thresh
 
-def flag_by_int(preflagged_auto):
+def flag_by_int(preflagged_auto, nsig=1):
     """Flag rfi for an autocorrelation.  Iteratively removes outliers and
     fits a smooth passband, then uses smooth passband to remove outliers
     (both positive and negative)."""
     pwr_vs_t = numpy.ma.average(abs(preflagged_auto), axis=1)
     spikey_pwr_vs_t = abs(pwr_vs_t - remove_spikes(pwr_vs_t))
-    hi_thr, lo_thr = gen_rfi_thresh(spikey_pwr_vs_t, per_bin=20, nsig=1)
+    hi_thr, lo_thr = gen_rfi_thresh(spikey_pwr_vs_t, per_bin=20, nsig=nsig)
     mask = spikey_pwr_vs_t > hi_thr
     return mask.astype(numpy.int)
 
@@ -77,8 +81,18 @@ if __name__ == '__main__':
     p = OptionParser()
     p.set_usage('xrfi.py [options] *.uv')
     p.set_description(__doc__)
+    p.add_option('-n', '--nsig', dest='nsig', default=2., type='float',
+        help='Number of standard deviations above mean to flag.')
+    p.add_option('-c', '--chans', dest='chans', default='',
+        help='Comma-delimited ranges (e.g. 1-3,5-10) of channels to manually flag before any other statistical flagging.')
 
     opts, args = p.parse_args(sys.argv[1:])
+    chans = opts.chans.split(',')
+    flag_chans = []
+    for c in chans:
+        if len(c) == 0: continue
+        c = map(int, c.split('-'))
+        flag_chans.extend(range(c[0], c[1]+1))
 
     for uvfile in args:
         print 'Working on', uvfile
@@ -95,34 +109,42 @@ if __name__ == '__main__':
         while True:
             p, d = uvi.read_data()
             if d.size == 0: break
-            i, j = aipy.miriad.bl2ij(p[-1])
+            t, bl = p[-2:]
+            if len(times) == 0 or times[-1] != t: times.append(t)
+            i, j = aipy.miriad.bl2ij(bl)
             if i != j:
                 if window is None: 
                     window = d.size/2 - abs(numpy.arange(d.size) - d.size/2)
                 d = numpy.fft.fft(numpy.fft.ifft(d) * window)
-            try: data[p[-1]].append(d)
-            except(KeyError): data[p[-1]] = [d]
-            if len(times) == 0 or times[-1] != p[-2]: times.append(p[-2])
+            pol = uvi['pol']
+            if not pol in data: data[pol] = {}
+            if not bl in data[pol]: data[pol][bl] = []
+            data[pol][bl].append(d)
 
         # Generate a single mask for all baselines which masks if any
         # baseline has an outlier at that freq/time.  Data flagged
         # strictly on basis of nsigma above mean.
-        total_mask = 0
-        for k in data:
-            data[k] = numpy.array(data[k])
+        total_mask = numpy.zeros((len(times), uvi['nchan']), dtype=numpy.int)
+        total_mask[:,flag_chans] = 1
+        for p in data:
+          for k in data[p]:
+            s0 = len(data[p][k])
+            data[p][k] = numpy.ma.array(data[p][k], mask=total_mask[:s0,:])
             i, j = aipy.miriad.bl2ij(k)
             if i == j: continue
-            hi_thresh, lo_thresh = gen_rfi_thresh(data[k])
-            total_mask |= numpy.where(abs(data[k]) > hi_thresh, 1, 0)
+            hi_thr, lo_thr = gen_rfi_thresh(data[p][k], nsig=opts.nsig)
+            total_mask[:s0,:] |= numpy.where(numpy.abs(data[p][k]) > hi_thr,1,0)
 
         # Use autocorrelations to flag entire integrations which have
         # anomalous powers.  All antennas must agree for a integration
         # to get flagged.
-        int_mask = 0
-        for bl in data:
-            data[bl] = numpy.ma.array(data[bl], mask=total_mask)
-            i, j = aipy.miriad.bl2ij(bl)
-            if i == j: int_mask += flag_by_int(data[bl])
+        int_mask = numpy.zeros((len(times),))
+        for p in data:
+          for k in data[p]:
+            s0 = data[p][k].shape[0]
+            data[p][k] = numpy.ma.array(data[p][k], mask=total_mask[:s0,:])
+            i, j = aipy.miriad.bl2ij(k)
+            if i == j: int_mask[:s0] += flag_by_int(data[p][k])
         for n in numpy.where(int_mask > 1): total_mask[n] = 1
 
         # Generate a pipe for applying both the total_mask and the int_mask

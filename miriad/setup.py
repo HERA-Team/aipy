@@ -15,7 +15,7 @@ def configuration(parent_package='', top_path=None):
             'mirsrc/uvio.c', 'mirsrc/hio.c', 'mirsrc/pack.c', 'mirsrc/bug.c', 
             'mirsrc/dio.c', 'mirsrc/headio.c', 'mirsrc/maskio.c'],
         include_dirs=['./', 'mirsrc', numpy.get_include(), numpy_i],
-        extra_compile_args=['-std=c99'],
+        #extra_compile_args=['-std=c99'],   # used to be needed b/c of numpy
     )
     return config
 

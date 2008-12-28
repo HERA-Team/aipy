@@ -11,7 +11,8 @@ aa.select_chans(chans)
 cat = aipy.src.get_catalog()
 size = 100
 res = .5
-src = aipy.ant.RadioFixedBody('20:00','40')
+src = aipy.src.get_src('cyg')
+#src = aipy.ant.RadioFixedBody('20:00','40')
 #src = aipy.ant.RadioFixedBody('4:00','-15')
 
 dim = int(size/res)

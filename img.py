@@ -4,8 +4,11 @@ and combining (mosaicing) images into a spherical map.  Requires installation
 of matplotlib.toolkits.basemap.
 
 Author: Aaron Parsons
-Date: 11/29/07
-Revisions: None
+Date: 11/29/06
+Revisions:
+    10/18/07    arp     Changed calling syntax inside Img.put for an impressive
+                        10x speedup.  Also changed Basemap call to not include
+                        earth map, for another hefty speed-up.
 """
 
 import numpy
@@ -74,12 +77,13 @@ class Img:
             bm = numpy.zeros_like(self.uv)
         if wgts is None: wgts = numpy.ones_like(data)
         inds = numpy.round(uvw[:,:2] / self.res).astype(numpy.int)
-        for i, d, w in zip(inds, data, wgts):
-            i = tuple(i)
-            try:
-                uv[i] += d
-                bm[i] += w
-            except(IndexError): pass
+        valid = numpy.where(numpy.logical_or(
+            inds[:,0] >= self.size, inds[:,1] >= self.size), 0, 1)
+        data = data.compress(valid)
+        wgts = wgts.compress(valid)
+        inds = [inds[:,0].compress(valid), inds[:,1].compress(valid)]
+        uv[inds] += data
+        bm[inds] += wgts
         if not apply: return uv, bm
     def append_hermitian(self, uvw, data, wgts=None):
         """Append to (uvw, data, [wgts]) the points (-uvw, conj(data), [wgts]).
@@ -108,8 +112,8 @@ class Img:
         # into lat, long coordinates
         m = Basemap(projection='ortho',
             lon_0=degrees(ra-numpy.pi), lat_0=degrees(dec), 
-            rsphere=1, resolution='c')
-        # Convert img coordiates to points on the map (0 to 2)
+            rsphere=1, resolution=None)
+        # Convert img coordinates to points on the map (0 to 2)
         x, y = numpy.indices(self.uv.shape)
         x, y = x - self.uv.shape[0]/2., y - self.uv.shape[1]/2.
         x, y = x / self.size + 1, y / self.size + 1
@@ -137,7 +141,7 @@ class ImgW(Img):
         uvw = uvw.take(order, axis=0)
         data = data.take(order)
         w = uvw[:,-1]
-        sqrt_w = numpy.sqrt(abs(w)) * numpy.sign(w)
+        sqrt_w = numpy.sqrt(numpy.abs(w)) * numpy.sign(w)
         i = 0
         while True:
             # Grab a chunk of uvw's which grid w to same point.

@@ -107,10 +107,10 @@ class Beam(sim.Beam):
     #    func = lambda f: antresp.response(zang, az, f, \
     #        'Cs.amp.dat', 'Cs.xoff.dat', 'Cs.sigma.dat')
     #    return numpy.array(map(func, 1e3*self.active_freqs))
-    def response(self, zang, az, pol=1):
+    def response(self, zang, az, pol='x'):
         """Return the beam response across the band for input zenith angle
-        (zang) and azimuth (az).  Rotate beam model 90 degrees if pol == 2."""
-        if pol == 2: az += numpy.pi/2
+        (zang) and azimuth (az).  Rotate beam model 90 degrees if pol == 'y'."""
+        if pol == 'y': az += numpy.pi/2
         a = numpy.cos(numpy.array([0, 2*az, 4*az, 6*az, 8*az, 10*az]))
         a[0] = 0.5
         a1 = numpy.dot(a, self.BAm_sel)

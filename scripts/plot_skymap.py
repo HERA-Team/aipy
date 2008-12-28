@@ -3,7 +3,7 @@ import pylab, numpy, sys, aipy.img
 
 skymap = aipy.img.SkyMap(fromfile=sys.argv[-1])
 m = skymap.get_map().transpose()
-b = numpy.log10(m + 1e-15) - 1
+b = numpy.log10(m + 1e-15)
 mx = b.max()
 #mx = 4.
 ax = pylab.subplot(111)

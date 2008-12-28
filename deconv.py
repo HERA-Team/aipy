@@ -196,15 +196,23 @@ def maxent(im, ker, var0=None, mdl=None, gain=.1, tol=1e-3,
             print '    score', score, 'fit', numpy.dot(diff,diff)
             print '    alpha', alpha, 'd_alpha', d_alpha
         return d_b_i, d_alpha, score
-    alpha, beta = 0., 0.
+    alpha = 0.
     b_i = m_i.copy()
+    info = {'success':True, 'term':'maxiter', 'var0':var0, 'tol':tol}
     for i in range(maxiter):
         if verbose: print 'Step', i, ':'
         d_b_i, d_alpha, score = next_step(b_i, alpha, verbose=verbose)
-        if score < tol: break
+        if score < tol:
+            info['term'] = 'tol'
+            break
+        elif numpy.isinf(score) or score < 0 or numpy.isnan(score):
+            info.update({'term':'divergence', 'success':False})
+            break
         b_i += gain * d_b_i
         alpha += gain * d_alpha
         b_i = numpy.where(b_i < clip_lev, clip_lev, b_i)
     b_i.shape = im.shape
-    return b_i, im - numpy.fft.ifft2(numpy.fft.fft2(b_i) * inv_ker).real
+    info.update({'res':im - numpy.fft.ifft2(numpy.fft.fft2(b_i) * inv_ker).real,
+        'score': score, 'alpha': alpha, 'iter':i+1})
+    return b_i, info
 

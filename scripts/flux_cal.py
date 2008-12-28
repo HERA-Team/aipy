@@ -21,7 +21,9 @@ uv = aipy.miriad.UV(args[0])
 aa = aipy.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
 del(uv)
 
-opts, args = p.parse_args(sys.argv[1:])
+import pylab
+pylab.plot(aa.ants[0].gain)
+pylab.show()
 
 def cal_func(uv, p, d):
     i, j = aa.bl2ij(p[-1])

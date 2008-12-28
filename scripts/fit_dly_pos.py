@@ -8,7 +8,7 @@ Date: 6/03/07
 Revisions: None
 """
 
-import aipy, numpy, sys, os, scipy.optimize
+import aipy, numpy, sys, os
 from optparse import OptionParser
 
 def calc_gain(phsdata):
@@ -105,6 +105,6 @@ def fit_func(prms):
     #pylab.show()
     return score / first_fit
 
-scipy.optimize.fmin(fit_func, prm_list)
+aipy.optimize.fmin(fit_func, prm_list)
 print 'Done!'
 

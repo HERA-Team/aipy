@@ -14,5 +14,6 @@ Date: 2/12/07
 Revisions: lots
 """
 
-__version__ = '0.2.4'
-import ant, constants, deconv, eor, fit, img, loc, sim, src, miriad, lbfgsb
+__version__ = '0.3.0'
+import ant, constants, deconv, eor, fit, img, loc, sim, src
+import miriad, interpolate, optimize, pyephem

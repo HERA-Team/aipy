@@ -185,7 +185,7 @@ for filename in args:
                     times.append(preamble[-2])
         return preamble, None
     if opts.plot_chan == -1:
-        aipy.miriad.pipe_uv(uvi, uvo, mfunc=f, init=False, notrack=ignore_vars)
+        aipy.miriad.pipe_uv(uvi, uvo, mfunc=f, init=False, exclude=ignore_vars)
         del(uvi); del(uvo)
     else:
         aipy.miriad.pipe_uv(uvi, None, mfunc=f, init=False)

@@ -77,6 +77,11 @@ typecodes = {'a':AsciiTypeCode(  1,  1,  numpy.character),
              'j':TypeCode(  3,  2,  numpy.int16),       # This segfaults
              None:None,}
 
+pol_code = {'xx': -5,
+            'yy': -6,
+            'xy': -7,
+            'yx': -8,}
+
 item_types = {'obstype' : 'a',
          'history' : 'a',
          'vartable': 'a',
@@ -409,7 +414,7 @@ def init_from_uv(uvi, uvo, append2hist='', override={}, exclude=[]):
             try: uvo.vars[k] = uvi.vars[k]
             except(ValueError): pass
 
-def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True, notrack=[],
+def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True,
         override={}, exclude=[]):
     """Pipe one UV dataset (uvi) into another (uvo) through the mapping function
     'mfunc' (if not provided, this will just clone a dataset).
@@ -430,7 +435,7 @@ def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True, notrack=[],
     # Set up uvi to copy all variables when 'uvcopyvr' is called.
     for k in uvi.vars:
         if k == 'corr': continue        # Cludge again --- yuck.
-        if k not in notrack: uvi.vars.set_tracking(k, 'c')
+        if k not in override and k not in exclude: uvi.vars.set_tracking(k, 'c')
     # Pipe all data through mfunc to uvo
     while True:
         p, d = uvi.read_data()

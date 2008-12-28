@@ -17,7 +17,7 @@ Revisions:
 """
 
 import ant, numpy, ephem
-from scipy.interpolate import splrep, splev
+from interpolate import splrep, splev
 
 #  _   _ _   _ _ _ _           _____                 _   _                 
 # | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
@@ -113,7 +113,7 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
 # |____/ \___|\__,_|_| |_| |_|
 
 class Beam(ant.Beam):
-    def response(self, zang, az, pol=1):
+    def response(self, zang, az, pol='x'):
         """Return the beam response across the band for input zenith angle
         (zang), and azimuth (az).  Rotate beam model 90 degrees if pol == 2."""
         return numpy.ones_like(self.afreqs)
@@ -152,7 +152,7 @@ class Antenna(ant.Antenna):
     def update_pointing(self, azalt):
         """Set the antenna beam to point at azalt=(az, alt)."""
         self.pointing = azalt
-    def response(self, azalt, pol=1):
+    def response(self, azalt, pol='x'):
         """Return the total antenna response to a source at azalt=(az, alt),
         including beam response, per-frequency gain, and a phase offset."""
         zang = ephem.separation(self.pointing, azalt)
@@ -176,7 +176,7 @@ class AntennaArray(ant.AntennaArray):
         self.select_chans(active_chans)
     def select_chans(self, active_chans=None):
         for a in self.ants: a.select_chans(active_chans)
-    def illuminate(self, ant, srcs, pol=1):
+    def illuminate(self, ant, srcs, pol='x'):
         """Find the degree to which each source in the list 'srcs' is
         illuminated by the beam pattern of 'ant'.  Useful for creating
         simulation data."""
@@ -200,10 +200,10 @@ class AntennaArray(ant.AntennaArray):
         if j is None: i, j = self.bl2ij(i)
         bl = self.ij2bl(i, j)
         afreqs = self.ants[0].beam.afreqs
-        if   stokes == -5: pol1, pol2 = 1, 1
-        elif stokes == -6: pol1, pol2 = 2, 2
-        elif stokes == -7: pol1, pol2 = 1, 2
-        elif stokes == -8: pol1, pol2 = 2, 1
+        if   stokes == -5: pol1, pol2 = 'x','x'
+        elif stokes == -6: pol1, pol2 = 'y','y'
+        elif stokes == -7: pol1, pol2 = 'x','y'
+        elif stokes == -8: pol1, pol2 = 'y','x'
         else:
             raise ValueError('Unsupported stokes value: %d not in  [-5,-8].' \
                 % (stokes))

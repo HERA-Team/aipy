@@ -1,10 +1,10 @@
 Metadata-Version: 1.0
 Name: aipy
-Version: 0.2.5
-Summary: UNKNOWN
-Home-page: UNKNOWN
-Author: UNKNOWN
-Author-email: UNKNOWN
-License: UNKNOWN
+Version: 0.3.0
+Summary: Astronomical Interferometry in PYthon
+Home-page: http://setiathome.berkeley.edu/~aparsons
+Author: Aaron Parsons
+Author-email: aparsons at astron.berkeley.edu
+License: GPL
 Description: UNKNOWN
 Platform: UNKNOWN

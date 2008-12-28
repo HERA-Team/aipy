@@ -22,8 +22,8 @@ p.add_option('-a', '--ants', dest='ants', default='all',
     help='Select which antennas/baselines to include in plot.  Options are: "all", "auto", "cross", "<ant1 #>,<ant2 #>" (a specific baseline), or "+<ant1 #>,..." (a list of active antennas).')
 p.add_option('-c', '--chan', dest='chan', default='all',
     help='Select which channels (taken after any delay/fringe transforms) to plot.  Options are: "all", "+<chan1 #>,..." (a list of active channels), or "<chan1 #>,<chan2 #>" (a range of channels).  If "all" or a range are selected, a 2-d image will be plotted.  If a list of channels is selected, an xy plot will be generated.')
-p.add_option('-p', '--pol', dest='pol', default=1, type='int',
-    help='Choose which polarization parameter (1, 2, 3, 4 = xx, yy, xy, yx).')
+p.add_option('-p', '--pol', dest='pol', default='xx',
+    help='Choose which polarization (xx, yy, xy, yx) to plot.')
 p.add_option('-x', '--decimate', dest='decimate', default=1, type='int',
     help='Take every Nth time data point.')
 p.add_option('-u', '--unmask', dest='unmask', action='store_true',
@@ -84,7 +84,7 @@ def gen_chan_extractor(chanopt, get_y=None):
             return lambda chan: chan[x:y]
 
 opts, args = p.parse_args(sys.argv[1:])
-active_pol = -4 - opts.pol
+active_pol = aipy.miriad.pol_code[opts.pol]
 chan_extractor = gen_chan_extractor(opts.chan)
 uv = aipy.miriad.UV(args[0])
 p, d = uv.read_data()
@@ -135,6 +135,9 @@ for uvfile in args:
 plot_times = numpy.array(plot_times)
 bls = plot_x.keys()
 bls.sort()
+if len(bls) == 0:
+    print 'No data to plot.'
+    sys.exit(0)
 m2 = int(math.sqrt(len(bls)))
 m1 = int(math.ceil(float(len(bls)) / m2))
 # Generate all the plots

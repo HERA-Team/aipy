@@ -1,10 +1,9 @@
 AIPY (Astronomical Interferometry in PYthon)
 
-This package collects together tools for radio astronomical interferometry.
-In addition to pure-python implementations of rotation and phasing code,
-this package provides interfaces to MIRIAD (a Fortran interferometry package)
-and LBFGSB (an optimization algorithm).  Please see doc/LBFGSB_README for
-the terms of use for the LBFGSB code.
+This package collects together tools for radio astronomical interferometry.  In
+addition to pure-python implementations of phasing, calibration, imaging, and
+deconvolution code, this package provides interfaces to MIRIAD (a Fortran
+interferometry package) and routines from SciPy for fitting and interpolation.
 
 BEFORE YOU INSTALL
     This is a *nix package.  It is unknown whether it installs on MacOS, and
@@ -12,15 +11,11 @@ BEFORE YOU INSTALL
     python >= 2.4.
 
     For python, you'll need to have the following packages:
-    pyephem (any version)
-    numpy (most recent)
-        ** a note about numpy installation:  If you are getting a compile
-        error, this can be a result of a numpy-1.0.3 bug related to distutils.  
-        To circumvent this problem, download the latest svn checkout of numpy:
+    numpy-1.0.4 (bleeding edge)
         > svn co http://svn.scipy.org/svn/numpy/trunk numpy
         and then proceed as normal with its installation.
     matplotlib (aka pylab, most recent >= 90.0)
-    scipy (optional, but useful for some fitting routines)
+    matplotlib-basemap-0.9.X
 
 TO INSTALL AS ROOT
     > sudo python setup.py install
@@ -36,7 +31,7 @@ TO INSTALL AS USER
     point to <module_dir>.  In bash, this looks like:
     > export PYTHONPATH=<module_dir>
     However, you'll have to type this every time you open a terminal.  To
-    avoid this, add the export line to your .bashrc file in your home dir.
+    avoid this, add the export line to the .bashrc file in your home dir.
 
 COMMAND-LINE SCRIPTS
     Unless you installed as user, these will be in /usr/bin.  For more info
@@ -62,3 +57,22 @@ COMMAND-LINE SCRIPTS
     
 Enjoy,
 Aaron Parsons
+
+-----------------------------------------------------------------------------
+
+PACKAGE INFO FOR DEVELOPERS
+    The subpackages "interpolate", "optimize", "special" were copied in from 
+    scipy-0.6.0.  If these ever need to be updated, just download scipy
+    source and copy scipy/scipy/interpolate,optimize,special into aipy.
+    Unfortunately, then you need to crawl through the code and replace all
+    "scipy" references with "aipy".
+
+    The miriad source code (aipy/miriad/mirsrc) was included from 
+    MIRIAD-4.0.5.  To update, download miriad source and copy $MIR/src/subs/* 
+    and $MIR/src/inc/* into aipy/miriad/mirsrc.  Not all files are used, but 
+    include them all anyway.
+
+    PyEphem is included in the directory aipy/pyephem.  Current version is
+    pyephem-3.7.2a1.  However, setup.py is manually edited to enable it to
+    be built as a subpackage.  If updating code, don't clobber setup.py.  
+    Just copy rest in.  Also added a __init__.py to pyephem.
