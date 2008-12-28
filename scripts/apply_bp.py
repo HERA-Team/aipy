@@ -1,12 +1,17 @@
 #! /usr/bin/env python
-"""Apply the bandpass function in a UV file to the raw data, and then write
+"""
+Apply the bandpass function in a UV file to the raw data, and then write
 to a new UV file which will not have a bandpass file.  Has the (recommended)
 option of linearizing for quantization gain effects.  For now, these are
 applied only to the auto-correlations.  Cross-correlation quantization gain is
 less sensitive to level, so linearization will come later.
 Author: Aaron Parsons
 Date: 8/14/07
-Revisions: None"""
+Revisions:
+    9/25/07 arp Uninverted bandpass and untransposed to sync with what
+                Miriad expects from the bandpass variable.  Removes variables
+                associated with bandpass (correctly).
+"""
 
 
 import sys, aipy.miriad, numpy, os
@@ -135,6 +140,10 @@ if opts.plot_chan >= 0:
 else:
     print 'Using %s quantization correction' % opts.linearization
 
+# These are all the items which should be removed once bandpass applied.
+ignore_vars = ['bandpass', 'freqs', 'ngains', 'nspect0', 
+    'nchan0', 'ntau', 'nfeeds', 'nsols', 'header', 'vartable']
+
 # Process all files passed from the command line.
 for filename in args:
     print filename,
@@ -146,12 +155,14 @@ for filename in args:
         uvo = aipy.miriad.UV(filename+'b', status='new')
         aipy.miriad.init_from_uv(uvi, uvo,
             append2hist='APPLY_BP: Corr type = %s\n' % (opts.linearization),
-            exclude=['bandpass', 'leakage'])
-    bp = 1/uvi['bandpass'].real
+            exclude=ignore_vars)
+    #bp = 1/uvi['bandpass'].real    # From old c2m
+    bp = uvi['bandpass'].real       # Sync'd with pocket_corr.py in corr pkg.
     nchan = uvi['nchan']
     nants = uvi['nants']
     try:
-        bp.shape = (nchan, nants)
+        #bp.shape = (nchan, nants) ; bp = bp.transpose() # From old c2m
+        bp.shape = (nants, nchan)   # Sync'd to c2m.py in corr pkg.
         print
     except:
         bp = numpy.ones((nchan, nants))
@@ -161,7 +172,8 @@ for filename in args:
         d = data.data
         if opts.plot_chan == -1:
             if i == j: d = numpy.polyval(cpoly, d)
-            d *= bp[:,i] * bp[:,j]
+            #d *= bp[:,i] * bp[:,j] # From old c2m
+            d *= bp[i,:] * bp[j,:]
             data = numpy.ma.array(d, mask=data.mask)
             return preamble, data
         elif i == j:
@@ -173,7 +185,7 @@ for filename in args:
                     times.append(preamble[-2])
         return preamble, None
     if opts.plot_chan == -1:
-        aipy.miriad.pipe_uv(uvi, uvo, mfunc=f, init=False)
+        aipy.miriad.pipe_uv(uvi, uvo, mfunc=f, init=False, notrack=ignore_vars)
         del(uvi); del(uvo)
     else:
         aipy.miriad.pipe_uv(uvi, None, mfunc=f, init=False)

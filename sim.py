@@ -1,5 +1,6 @@
 """
-Module for adding data simulation support to AntennaArrays.
+Module for adding data simulation support to AntennaArrays.  For most classes,
+this means adding gain/amplitude information (as a function of frequency).
 
 Author: Aaron Parsons
 Date: 11/07/2006
@@ -9,107 +10,68 @@ Revisions:
                     have optional compute of gradient.
     03/02/2007  arp Changed sim_data to do 1 baseline at a time.  Substantial
                     restructuring of parameter passing.  More documentation.
-    05/15/2007  arp Split part of SimAntennas into PhsAntennas to have more
+    05/15/2007  arp Split part of Antennas into PhsAntennas to have more
                     streamlined support for phasing antenna data.
 """
 
-import ants, numpy, ephem
+import ant, numpy, ephem
 
-class SimRadioBody:
+class RadioBody:
     """A class redefining ephem's sense of brightness for radio astronomy."""
-    def __init__(self, strength, freqs, meas_freq=.150, spec_index=-1,
-            active_chans=None, ang_size=0.):
+    def __init__(self, strength, meas_freq=.150, spec_index=-1, 
+            ang_size=0.):
         """strength:     source flux measured at 'meas_freq'
-        freqs:        frequencies (in GHz) at bin centers across spectrum
         meas_freq:    frequency (in GHz) where 'strength' was measured
-        spec_index:   index of power-law spectral model of source emission
-        active_chans: channels to be selected for future freq calculations"""
+        spec_index:   index of power-law spectral model of source emission"""
         self._strength = strength
-        self.freqs = freqs
         self._meas_freq = meas_freq
         self._spec_index = spec_index
         self._ang_size = ang_size
-        self.select_chans(active_chans)
-    def select_chans(self, active_chans):
-        """Choose only 'active_chans' for future freq calculations."""
-        if active_chans is None: active_chans = numpy.arange(self.freqs.size)
-        self.chans = numpy.array(active_chans)
-        self.update(self._strength, self._spec_index)
-    def update(self, strength, spec_index):
-        """Update parameters for source strength and spectral index."""
-        self._strength = strength
-        self._spec_index = spec_index
-        self.emission = (self.freqs.take(self.chans) / self._meas_freq)
-        self.emission = self._strength * self.emission**self._spec_index
-    def bl_response(self, u, v):
-        return numpy.sinc(self._ang_size * numpy.sqrt(u**2+v**2))
+    def gen_emission(self, observer):
+        """Extrapolate source emission from measured freq using power law."""
+        afreqs = observer.ants[0].beam.afreqs
+        emission = (afreqs / self._meas_freq)**self._spec_index
+        return emission * self._strength
 
-class SimRadioFixedBody(ants.RadioFixedBody, SimRadioBody):
-    """A class adding simulation capability to ants.RadioFixedBody"""
-    def __init__(self, ra, dec, strength, freqs, meas_freq=.150, 
-            spec_index=-1., ang_size=0., active_chans=None, name=''):
+class RadioFixedBody(ant.RadioFixedBody, RadioBody):
+    """A class adding simulation capability to ant.RadioFixedBody"""
+    def __init__(self, ra, dec, strength, f_c=.012, meas_freq=.150, 
+            spec_index=-1., ang_size=0., name='', **kwargs):
         """ra:           source's right ascension
         dec:          source's declination
-        freqs:        frequencies (in GHz) at bin centers across spectrum
         strength:     source flux measured at 'meas_freq'
         meas_freq:    frequency (in GHz) where 'strength' was measured
-        spec_index:   index of power-law spectral model of source emission
-        active_chans: channels to be selected for future freq calculations"""
-        ants.RadioFixedBody.__init__(self, ra, dec, name=name)
-        SimRadioBody.__init__(self, strength, freqs, meas_freq=meas_freq,
-            spec_index=spec_index, ang_size=ang_size, active_chans=active_chans)
+        spec_index:   index of power-law spectral model of source emission"""
+        ant.RadioFixedBody.__init__(self, ra, dec, f_c=f_c, name=name)
+        RadioBody.__init__(self, strength, meas_freq=meas_freq,
+            spec_index=spec_index, ang_size=ang_size)
+    def compute(self, observer, refract=False):
+        if self.in_cache(observer, refract): return
+        ant.RadioFixedBody.compute(self, observer, refract=refract)
+        self.emission = self.gen_emission(observer)
+        self.cache(observer, refract)
 
-class SimRadioSun(ants.RadioSun, SimRadioBody):
-    """A class adding simulation capability to ants.RadioSun"""
-    def __init__(self, strength, freqs, meas_freq=.150, spec_index=-1.,
-            ang_size=8.7e-3, active_chans=None, name='sun'):
-        """freqs:        frequencies (in GHz) at bin centers across spectrum
-        strength:     source flux measured at 'meas_freq'
+class RadioSpecial(ant.RadioSpecial, RadioBody):
+    """A class adding simulation capability to ant.RadioSun"""
+    def __init__(self, name, strength, f_c=.012, meas_freq=.150, spec_index=-1.,
+            ang_size=8.7e-3, **kwargs):
+        """strength:     source flux measured at 'meas_freq'
         meas_freq:    frequency (in GHz) where 'strength' was measured
-        spec_index:   index of power-law spectral model of source emission
-        active_chans: channels to be selected for future freq calculations"""
-        ants.RadioSun.__init__(self, name=name)
-        SimRadioBody.__init__(self, strength, freqs, meas_freq=meas_freq,
-            ang_size=ang_size, spec_index=spec_index, active_chans=active_chans)
+        spec_index:   index of power-law spectral model of source emission"""
+        ant.RadioSpecial.__init__(self, name, f_c=f_c)
+        RadioBody.__init__(self, strength, meas_freq=meas_freq,
+            spec_index=spec_index, ang_size=ang_size)
+    def compute(self, observer, refract=False):
+        if self.in_cache(observer, refract): return
+        ant.RadioSpecial.compute(self, observer, refract=refract)
+        self.emission = self.gen_emission(observer)
+        self.cache(observer, refract)
 
-#  ____                           _     _     _
-# / ___|  ___  _   _ _ __ ___ ___| |   (_)___| |_
-# \___ \ / _ \| | | | '__/ __/ _ \ |   | / __| __|
-#  ___) | (_) | |_| | | | (_|  __/ |___| \__ \ |_
-# |____/ \___/ \__,_|_|  \___\___|_____|_|___/\__|
-
-class SourceList:
-    """A class for holding celestial sources."""
-    def __init__(self, srcs, active_chans=None):
-        self.sources = srcs
-        self.names = [s.src_name for s in srcs]
-        self.select_chans(active_chans)
-    def select_chans(self, active_chans):
-        """Choose only 'active_chans' for future freq calculations."""
-        for s in self.sources: s.select_chans(active_chans)
-
-#  ____
-# | __ )  ___  __ _ _ __ ___
-# |  _ \ / _ \/ _` | '_ ` _ \
-# | |_) |  __/ (_| | | | | | |
-# |____/ \___|\__,_|_| |_| |_|
-
-class Beam:
-    """Template for an antenna's beam pattern on the sky."""
-    def __init__(self, freqs, active_chans=None):
-        """freqs:        frequencies (in GHz) at bin centers across spectrum
-        active_chans: channels to be selected for future freq calculations"""
-        self.freqs = freqs
-        self.select_chans(active_chans)
-    def select_chans(self, active_chans):
-        """Choose only 'active_chans' for future freq calculations."""
-        if active_chans is None: active_chans = numpy.arange(self.freqs.size)
-        self.chans = active_chans
-        self.active_freqs = self.freqs.take(active_chans)
+class Beam(ant.Beam):
     def response(self, zang, az, pol=1):
         """Return the beam response across the band for input zenith angle
         (zang), and azimuth (az).  Rotate beam model 90 degrees if pol == 2."""
-        return numpy.ones_like(self.active_freqs)
+        return numpy.ones_like(self.afreqs)
 
 #  ____  _              _          _                         
 # / ___|(_)_ __ ___    / \   _ __ | |_ ___ _ __  _ __   __ _ 
@@ -117,41 +79,31 @@ class Beam:
 #  ___) | | | | | | |/ ___ \| | | | ||  __/ | | | | | | (_| |
 # |____/|_|_| |_| |_/_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
                                                            
-# A default passband fit from PAPER's measured receiver gain
-# (in Receiver_Gain.txt)
-DFLT_GAIN_POLY = [-8.25e1, 8.34e1, -3.50e1, 7.79e1, -9.71e-1, 6.41e-2, -1.75e-2]
-
-class SimAntenna(ants.Antenna):
+class Antenna(ant.Antenna):
     """A representation of the physical location and beam pattern of an
     individual antenna in an array."""
     def __init__(self, x, y, z, beam, delay=0., offset=0.,
-            gain_poly=DFLT_GAIN_POLY, amp=1, active_chans=None,
-            pointing=(0.,numpy.pi/2)):
+            gain_poly=[1], amp=1, pointing=(0.,numpy.pi/2), **kwargs):
         """x, y, z:    Antenna coordinates in equatorial (ns) coordinates
         beam:       Object with function 'response(zang, az)'
         delay:      Cable/systematic delay in ns
         offset:     Frequency-independent phase offset
         gain_poly:  Polynomial fit of passband
         pointing:   Antenna pointing=(az, alt).  Default is zenith"""
-        ants.Antenna.__init__(self, x, y, z, delay=delay)
-        self.beam = beam
-        self.offset = offset
+        ant.Antenna.__init__(self, x,y,z, beam=beam, delay=delay, offset=offset)
         self.update_gain(gain_poly, amp)
-        self.select_chans(active_chans)
         self.update_pointing(pointing)
-    def select_chans(self, active_chans):
-        self.beam.select_chans(active_chans)
+    def select_chans(self, active_chans=None):
+        ant.Antenna.select_chans(self, active_chans)
         self.update_gain(self.gain_poly)
     def update_gain(self, gain_poly=None, amp=None):
-        """Set a passband gain based on the polynomial fit 'gain_poly'.  Select
-        only 'active_chans' for future freq calculations."""
+        """Set a passband gain based on the polynomial fit 'gain_poly'."""
         if not gain_poly is None:
             try: len(gain_poly)
             except(TypeError): gain_poly = [gain_poly]
             self.gain_poly = gain_poly
         if not amp is None: self.amp = amp
-        self.gain = self.amp * numpy.polyval(self.gain_poly, 
-            self.beam.active_freqs)
+        self.gain = self.amp * numpy.polyval(self.gain_poly, self.beam.afreqs)
     def update_pointing(self, azalt):
         """Set the antenna beam to point at azalt=(az, alt)."""
         self.pointing = azalt
@@ -160,8 +112,7 @@ class SimAntenna(ants.Antenna):
         including beam response, per-frequency gain, and a phase offset."""
         zang = ephem.separation(self.pointing, azalt)
         beam_resp = self.beam.response(zang, azalt[0], pol=pol)
-        offset = numpy.exp(2*numpy.pi*1j*self.offset)
-        return beam_resp * self.gain * offset
+        return beam_resp * self.gain
 
 #  ___ _         _       _                        _                     
 # / __(_)_ __   /_\  _ _| |_ ___ _ _  _ _  __ _  /_\  _ _ _ _ __ _ _  _ 
@@ -169,32 +120,30 @@ class SimAntenna(ants.Antenna):
 # |___/_|_|_|_/_/ \_\_||_\__\___|_||_|_||_\__,_/_/ \_\_| |_| \__,_|\_, |
 #                                                                  |__/ 
 
-class SimAntennaArray(ants.AntennaArray):
+class AntennaArray(ant.AntennaArray):
     """A class which adds simulation functionality to AntennaArray."""
-    def __init__(self, simantennas, location, active_chans=None):
-        """simantennas:     a list of SimAntenna instances
+    def __init__(self, simants, location, active_chans=None, **kwargs):
+        """simants:         a list of Antenna instances
         location:     location of the array in (lat, long, [elev])
         active_chans: channels to be selected for future freq calculations"""
-        ants.AntennaArray.__init__(self, simantennas, location)
+        ant.AntennaArray.__init__(self, ants=simants, location=location)
         self.select_chans(active_chans)
-    def select_chans(self, active_chans):
-        for a in self.antennas: a.select_chans(active_chans)
-        self.freqs = self.antennas[0].beam.active_freqs
+    def select_chans(self, active_chans=None):
+        for a in self.ants: a.select_chans(active_chans)
     def illuminate(self, ant, srcs, pol=1):
         """Find the degree to which each source in the list 'srcs' is
         illuminated by the beam pattern of 'ant'.  Useful for creating
         simulation data."""
-        a = self.antennas[ant]
-        nchan = self.freqs.size
+        a = self.ants[ant]
+        nchan = a.beam.afreqs.size
         # <GAS> -> Gain * Antenna beam * Source flux
         GAS_sf = numpy.zeros((len(srcs), nchan), dtype=numpy.float)
         for n, s in enumerate(srcs):
-            s.compute(self)
             # Skip if source is below horizon
             if s.alt < 0: continue
             GAS_sf[n] = a.response((s.az, s.alt), pol=pol) * s.emission
         return GAS_sf
-    def sim_data(self, srcs, ant1, ant2=None, calc_grad=False, stokes=-5):
+    def sim_data(self, srcs, i, j=None, stokes=-5):
         r"""Calculates visibilities at a given time for a list of RadioBodys,
         for an array of frequencies according to the Measurement Equation:
             V_{ij}(\nu,t) = \phi_{ij\nu}(t) + \Sigma_n{g_i(\nu) g_j^*(\nu)
@@ -202,96 +151,33 @@ class SimAntennaArray(ants.AntennaArray):
                             S_n\left(\nu\over\nu_0\right)^{\alpha_n}
                             e^{2\pi\vec b_{ij}\cdot\hat S_n(t)
                             + 2\pi\nu\tau_{ij}}}"""
-        if ant2 is None: i, j = self.bl2ij(ant1)
-        else: i, j = ant1, ant2
+        if j is None: i, j = self.bl2ij(i)
         bl = self.ij2bl(i, j)
+        afreqs = self.ants[0].beam.afreqs
         if   stokes == -5: pol1, pol2 = 1, 1
         elif stokes == -6: pol1, pol2 = 2, 2
         elif stokes == -7: pol1, pol2 = 1, 2
         elif stokes == -8: pol1, pol2 = 2, 1
         else:
-            raise ValueError('Unsupported stokes value: %d not in  [-4,-8].' \
+            raise ValueError('Unsupported stokes value: %d not in  [-5,-8].' \
                 % (stokes))
         # <GBS> -> Gain * Baseline beam * Source flux
         # <sf> -> source, freq (matrix axes)
         GBS_sf = numpy.conjugate(self.illuminate(i, srcs, pol=pol1))
         GBS_sf *= self.illuminate(j, srcs, pol=pol2)
-        # <W> -> w component of baseline
-        W_sf = numpy.zeros(GBS_sf.shape, dtype=numpy.float)
+        # <P> -> phase -> exp(1j*(2*numpy.pi * (z+t) * freq + offset))
+        P_sf = numpy.zeros(GBS_sf.shape, dtype=numpy.complex)
         for n, s in enumerate(srcs):
-            # Nanosec coords
-            try: x, y, z = self.get_projected_baseline(bl, body=s)
-            except(ants.PointingError):
-                GBS_sf[n] = 0
-                continue
-            u, v, w = x*self.freqs, y*self.freqs, z*self.freqs
-            # Actual wavenumber coords
-            W_sf[n] = w
+            # If PointingError, P_sf[s] = 0, so flux from source will be nulled
+            try: phs, uvw = self.gen_phs(s, bl, with_coord=True)
+            except(ant.PointingError): continue
+            u, v, w = uvw[:,0], uvw[:,1], uvw[:,2]
+            P_sf[n] = numpy.conjugate(phs)
             # Take into account effects of resolving source
-            GBS_sf[n] *= s.bl_response(u, v)
-        # <T> -> tau -> baseline delay
-        T__f = self.get_delay(bl) * self.freqs
-        # <E> -> exp(w component + baseline delay)
-        E_sf = numpy.exp(2*numpy.pi*1j * (W_sf + T__f))
-        # <GBSE> -> total per-source visibility calculation
-        GBSE_sf = GBS_sf * E_sf
-        # <V> -> Visibility data -> sum of GBSE over sources
-        V_f = GBSE_sf.sum(axis=0)
-        if calc_grad: return V_f, GBSE_sf
-        else: return V_f
-
-#  ____  _                 _       _             
-# / ___|(_)_ __ ___  _   _| | __ _| |_ ___  _ __ 
-# \___ \| | '_ ` _ \| | | | |/ _` | __/ _ \| '__|
-#  ___) | | | | | | | |_| | | (_| | || (_) | |   
-# |____/|_|_| |_| |_|\__,_|_|\__,_|\__\___/|_|   
-
-class Simulator(SimAntennaArray, SourceList):
-    """Contains all information for simulating interferometric data from a
-    list of sources."""
-    def __init__(self, antennas, location, src_dict, active_chans=None):
-        SimAntennaArray.__init__(self, antennas, location,
-            active_chans=active_chans)
-        SourceList.__init__(self, src_dict, active_chans=active_chans)
-        self.set_activity()
-        self.chans = self.antennas[0].beam.chans
-    def select_chans(self, active_chans):
-        """Choose only 'active_chans' for future freq calculations."""
-        try: SimAntennaArray.select_chans(self, active_chans)
-        except(AttributeError): pass
-        try: SourceList.select_chans(self, active_chans)
-        except(AttributeError): pass
-    def set_activity(self, antennas=[], baselines=[], stokes=[],
-            sources=[]):
-        """Sets the activity of baselines and stokes parameters.  This
-        determines the behavior of 'is_active', which can be used as a tool
-        for simulating only the data you are interested in.  You can also
-        select which sources are used in 'sim_data'."""
-        # Generate all active baselines from provided baselines and antennas
-        antennas.sort()
-        for i, a1 in enumerate(antennas):
-            for a2 in antennas[i:]:
-                print a1, a2
-                baselines.append(self.ij2bl(a1, a2))
-        if len(baselines) == 0: baselines = self.baseline_order.keys()
-        self.active_baselines = {}
-        for bl in self.baseline_order.keys(): self.active_baselines[bl] = False
-        for bl in baselines: self.active_baselines[bl] = True
-        # Generate active stokes parameters
-        if len(stokes) == 0: stokes = [-5, -6, -7, -8]
-        self.active_stokes = {-5:False, -6:False, -7:False, -8:False}
-        for s in stokes: self.active_stokes[s] = True
-        # Generate active sources used in sim_data
-        if len(sources) == 0: sources = self.sources
-        self.active_sources = sources
-    def is_active(self, bl, stokes):
-        """Returns whether the given bl, stokes parameter is active for
-        simulation, as dictated by 'set_activity'."""
-        return self.active_baselines[bl] and self.active_stokes[stokes]
-    def sim_data(self, ant1, ant2=None, calc_grad=False, stokes=-5):
-        """Use the active sources defined by 'set_activity' to create sim
-        data for the given baseline (=ant1, or (ant1, ant2) if ant2 is
-        provided) and stokes parameter."""
-        return SimAntennaArray.sim_data(self, self.active_sources, ant1,
-            ant2=ant2, calc_grad=calc_grad, stokes=stokes)
+            GBS_sf[n] *= numpy.sinc(s._ang_size * numpy.sqrt(u**2+v**2))
+        # <GBSP> -> total per-source visibility calculation
+        GBSP_sf = GBS_sf * P_sf
+        # <V> -> Visibility data -> sum of GBSP over sources
+        V_f = GBSP_sf.sum(axis=0)
+        return V_f
 

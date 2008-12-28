@@ -31,8 +31,7 @@ for uvfile in args:
         uvo = aipy.miriad.UV(uvofile, status='new')
         aipy.miriad.init_from_uv(uvi, uvo, append2hist='Miniaturized...\n',
             override={'nchan':opts.nchan, 'sfreq':newsfreq, 'sdf':newsdf,
-                'nschan':opts.nchan, 'freq':newsfreq, 'nchan0':opts.nchan, },
-            exclude=['bandpass', 'leakage'])
+                'nschan':opts.nchan, 'freq':newsfreq, 'nchan0':opts.nchan, })
 
     def f(uv, p, d):
         d.shape = (opts.nchan, nchan/opts.nchan)

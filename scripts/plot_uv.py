@@ -38,6 +38,10 @@ p.add_option('-f', '--fringe', dest='fringe', action='store_true',
     help='Take FFT of time axis to go to fringe (Hz) space.')
 p.add_option('-t', '--lst', dest='lst', action='store_true',
     help='Choose time axis to be lst.')
+p.add_option('', '--dt', dest='dt', action='store_true',
+    help='Remove a linear extrapolation from adjacent times.')
+p.add_option('', '--df', dest='df', action='store_true',
+    help='Remove a linear extrapolation from adjacent frequency channels.')
 
 def data_selector(antopt, uv):
     """Convert the command-line argument for ants into a function which, when
@@ -136,6 +140,8 @@ m1 = int(math.ceil(float(len(bls)) / m2))
 # Generate all the plots
 for n, bl in enumerate(bls):
     d = numpy.ma.concatenate(plot_x[bl], axis=0)
+    if opts.df: d = d[:,:-2]/2 + d[:,2:]/2 - d[:,1:-1]
+    if opts.dt: d = d[:-2]/2 + d[2:]/2 - d[1:-1]
     if opts.fringe:
         d = numpy.ma.array(numpy.fft.ifft(d.filled(0), axis=0))
         d = numpy.ma.concatenate([d[d.shape[0]/2:], d[:d.shape[0]/2]], axis=0)
@@ -145,7 +151,7 @@ for n, bl in enumerate(bls):
     elif opts.mode.startswith('lin'): d = numpy.ma.absolute(d)
     elif opts.mode.startswith('real'): d = d.real
     elif opts.mode.startswith('imag'): d = d.imag
-    else: d = numpy.ma.log10(numpy.ma.absolute(d)+1e-6)
+    else: d = numpy.ma.log10(numpy.ma.absolute(d)+1e-10)
     pylab.subplot(m1, m2, n+1)
     if plots == 'imshow' and opts.sum_chan is None:
         pylab.imshow(d, aspect='auto')

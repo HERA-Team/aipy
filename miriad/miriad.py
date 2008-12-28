@@ -23,6 +23,9 @@ Revisions:
     arp 03/13/07    Changed "map_uv" to "pipe_uv" and removed buffering in
                     it to fix a bug and simplify what is no longer needed
                     now that sim_data only generates single baselines.
+    arp 09/25/07    Fixed bug whereby item handles were created whether or not
+                    those items existed in the file.  This led to spurious
+                    references to bandpass and leakage that confused Miriad.
 
 Known Issues:
     You have to del(uv) in ipython, or vartable doesn't get written.
@@ -34,7 +37,7 @@ Todo:
     Implement uvcopyvr_c to speed cloning of datasets.
     Work with bug_c to produce python exceptions instead of sys exits.
 """
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 
 import numpy, miruv
 
@@ -156,6 +159,11 @@ class UVItemTable(dict):
         dict.__init__(self)
         self.uvhandle = uvhandle
         for i in item_types:
+            # Check to see if item exists in file:
+            handle, status = miruv.haccess_c(uvhandle, i, 'read')
+            if status != 0: continue
+            miruv.hdaccess_c(handle)
+            # If it exists, make a reference to it
             uvi = UVItem(i, uvhandle, item_types[i])
             dict.__setitem__(self, i, uvi)
     def __getitem__(self, k):
@@ -386,6 +394,7 @@ def init_from_uv(uvi, uvo, append2hist='', override={}, exclude=[]):
         else: uvo.items[k] = uvi.items[k]
     uvo.items['history'] += append2hist
     for k in uvi.vars:
+        if k in exclude: continue
         # I don't understand why reading 'corr' segfaults miriad,
         # but it does.  This is a cludgy work-around.
         if k == 'corr': continue
