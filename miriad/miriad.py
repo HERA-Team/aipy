@@ -301,14 +301,16 @@ class UV:
                     'ddec','uvnrange','increment','ra','dec','and', 'clear',
                     'on','polarization','shadow','auto','dazim','delev'
             p1,p2   Generally this is the range of values to select. For
-                    'antennae', this is the two antennae pair to select.
-                    For 'antennae', a zero indicates 'all antennae'.
+                    'antennae', this is the two antennae pair to select
+                    (indexed from 0); a -1 indicates 'all antennae'.
                     For 'shadow', a zero indicates use 'antdiam' variable.
                     For 'on','window','polarization','increment','shadow' only
                     p1 is used.
                     For 'and','or','clear','auto' p1 and p2 are ignored.
             include_it    If true, the data is selected. If false, the data is
                     discarded. Ignored for 'and','or','clear'."""
+        if name == 'antennae':
+            p1 += 1; p2 += 1
         miruv.uvselect_c(self.handle, str(name), float(p1), float(p2), 
             int(include_it))
     def rewind(self):
@@ -339,10 +341,14 @@ class UV:
         if preamble.size != self.preamble_size:
             raise ValueError('Expected preamble of length %d.  Got %d.' % \
                 (self.preamble_size, preamble.size))
-        fl_data = numpy.zeros((data.size, 2), dtype=numpy.float32)
-        fl_data[:,0] = data.data.real; fl_data[:,1] = data.data.imag
-        fl_data.shape = (2*data.size,)
         flags = numpy.logical_not(data.mask).astype(numpy.int32)
+        # Changed to use filled (even though it loses the info of what the
+        # flagged data was) b/c data.data doesn't work...
+        data = data.filled(0)
+        fl_data = numpy.zeros((data.size, 2), dtype=numpy.float32)
+        #fl_data[:,0] = data.data.real; fl_data[:,1] = data.data.imag
+        fl_data[:,0] = data.real; fl_data[:,1] = data.imag
+        fl_data.shape = (2*data.size,)
         if len(flags.shape) == 0:
             flags = numpy.ones(data.shape, dtype=numpy.int32)
         miruv.uvwrite_c_wrap(self.handle, preamble, fl_data, flags)
@@ -389,7 +395,8 @@ def init_from_uv(uvi, uvo, append2hist='', override={}, exclude=[]):
             try: uvo.vars[k] = uvi.vars[k]
             except(ValueError): pass
 
-def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True, notrack=[]):
+def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True, notrack=[],
+        override={}, exclude=[]):
     """Pipe one UV dataset (uvi) into another (uvo) through the mapping function
     'mfunc' (if not provided, this will just clone a dataset).
     
@@ -403,21 +410,23 @@ def pipe_uv(uvi, uvo, mfunc=None, append2hist='', init=True, notrack=[]):
     uvo.  If you don't set this True, then it is your responsibility to
     initialize uvo."""
     # Optionally initialize uvo with appropriate variables, items
-    if init: init_from_uv(uvi, uvo, append2hist=append2hist)
+    if init:
+        init_from_uv(uvi, uvo, append2hist=append2hist, override=override,
+            exclude=exclude)
     # Set up uvi to copy all variables when 'uvcopyvr' is called.
     for k in uvi.vars:
         if k == 'corr': continue        # Cludge again --- yuck.
         if k not in notrack: uvi.vars.set_tracking(k, 'c')
     # Pipe all data through mfunc to uvo
     while True:
-        preamble, data = uvi.read_data()
-        if data.size == 0: break
+        p, d = uvi.read_data()
+        if d.size == 0: break
         if not mfunc is None:
-            new_preamble, new_data = mfunc(uvi, preamble, data)
-            if new_data is None: continue
-        else: new_preamble, new_data = preamble, data
+            np, nd = mfunc(uvi, p, d)
+            if nd is None: continue
+        else: np, nd = p, d
         miruv.uvcopyvr_c(uvi.handle, uvo.handle)
-        uvo.write_data(new_preamble, new_data)
+        uvo.write_data(np, nd)
 
 #  _            _   _                     _     
 # | |_ ___  ___| |_| |__   ___ _ __   ___| |__  

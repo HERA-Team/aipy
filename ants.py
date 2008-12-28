@@ -68,12 +68,17 @@ def azalt2top(az, alt):
 
 class RadioBody:
     """A class redefining ephem's sense of brightness for radio astronomy."""
-    def __init__(self):
+    def __init__(self, name=''):
+        self.src_name = name
+    def set_pos(self, ra, dec):
+        self._ra = ra
+        self._dec = dec
         self.prev_sidereal_time = 0     # Used to avoid redundant map calc.
     def gen_uvw_map(self, observer):
         """Generate a uvw map useful for projecting baselines."""
         self.compute(observer)
-        if self.alt < 0: raise PointingError('%s is below horizon' % self.name)
+        if self.alt < 0:
+            raise PointingError('%s is below horizon' % self.src_name)
         t = observer.sidereal_time()
         if t != self.prev_sidereal_time:
             self.prev_sidereal_time = t
@@ -95,14 +100,9 @@ class RadioFixedBody(ephem.FixedBody, RadioBody):
     def __init__(self, ra, dec, name=''):
         """ra:           source's right ascension
         dec:          source's declination"""
-        RadioBody.__init__(self)
+        RadioBody.__init__(self, name=name)
         ephem.FixedBody.__init__(self)
-        self._ra = ra
-        self._dec = dec
-        self.name = name
-    def __repr__(self):
-        """Return a string which can be used to hash src."""
-        return 'RadioFixedBody(%s,%s,name=%s)' % (self._ra,self._dec,self.name)
+        self.set_pos(ra, dec)
 
 #  ____           _ _      ____              
 # |  _ \ __ _  __| (_) ___/ ___| _   _ _ __  
@@ -112,8 +112,8 @@ class RadioFixedBody(ephem.FixedBody, RadioBody):
 
 class RadioSun(RadioBody, object):
     """A class combining ephem's Sun with a RadioBody."""
-    def __init__(self):
-        RadioBody.__init__(self)
+    def __init__(self, name='sun'):
+        RadioBody.__init__(self, name=name)
         self.Sun = ephem.Sun()
     def __getattr__(self, nm):
         try: return object.__getattr__(self, nm)
@@ -121,8 +121,6 @@ class RadioSun(RadioBody, object):
     def __setattr__(self, nm, val):
         try: object.__setattr__(self, nm, val)
         except(AttributeError): return setattr(self.Sun, nm, val)
-    def __repr__(self):
-        return 'RadioSun()'
 
 #     _          _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _ 

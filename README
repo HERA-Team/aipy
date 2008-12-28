@@ -1,17 +1,64 @@
+AIPY (Astronomical Interferometry in PYthon)
+
 This package collects together tools for radio astronomical interferometry.
 In addition to pure-python implementations of rotation and phasing code,
 this package provides interfaces to MIRIAD (a Fortran interferometry package)
-and LBFGSB (an optimization algorithm).
+and LBFGSB (an optimization algorithm).  Please see doc/LBFGSB_README for
+the terms of use for the LBFGSB code.
 
 BEFORE YOU INSTALL
-You'll need to have the following packages:
-    pyephem
-    numpy
-    pylab
-    scipy
+    This is a *nix package.  It is unknown whether it installs on MacOS, and
+    it pretty certainly doesn't install on Windows.  You also need to have
+    python >= 2.4.
+
+    For python, you'll need to have the following packages:
+    pyephem (any version)
+    numpy (most recent)
+        ** a note about numpy installation:  If you are getting a compile
+        error, this can be a result of a numpy-1.0.3 bug related to distutils.  
+        To circumvent this problem, download the latest svn checkout of numpy:
+        > svn co http://svn.scipy.org/svn/numpy/trunk numpy
+        and then proceed as normal with its installation.
+    matplotlib (aka pylab, most recent >= 90.0)
+    scipy (optional, but useful for some fitting routines)
 
 TO INSTALL AS ROOT
-> sudo python setup.py install
+    > sudo python setup.py install
 
+TO INSTALL AS USER
+    This is more complicated.  You'll first install to a directory of your
+    choice:
+    > python setup.py install --install-lib <module_dir> \
+        --install-scripts <scripts_dir>
+    This puts the python module in <module_dir>, and the command-line scripts
+    in <scripts_dir>.  The next thing is to tell python where to look for
+    the python module.  This is done by setting the PYTHONPATH variable to
+    point to <module_dir>.  In bash, this looks like:
+    > export PYTHONPATH=<module_dir>
+    However, you'll have to type this every time you open a terminal.  To
+    avoid this, add the export line to your .bashrc file in your home dir.
+
+COMMAND-LINE SCRIPTS
+    Unless you installed as user, these will be in /usr/bin.  For more info
+    use the "-h" option with any of these commands:
+
+    apply_bp.py:        Apply the bandpass variable to UV data and write a 
+                        new file.  Also linearizes quantization gain.
+    combine_freqs.py:   Average multiple channels together (reducing the total
+                        number of channels).
+    compress_uv.py:     Applies "tar -cjf" to UV files, compressing them.
+    fit_dly_pos.py:     Fit antenna positions and delays by phasing on to
+                        multiple sources.  Still under development.
+    lst:                Prints out local sidereal time + julian date
+    phs2src.py:         Phase a zenith data set to a source, writing the
+                        result out to a new UV file.
+    plot_uv.py:         A very flexible tool for plotting data from a UV file.
+    rm_mdl.py:          Subtract a sky/system model from the measured data.
+                        Outputs to a new UV file.
+    xrfi.py:            Generate a new UV file with RFI flagged.  Currently
+                        only works with the "-s" option.
+    xtalk.py:           Generate a new UV file with crosstalk removed, and
+                        with signals at "non-sky" delays filtered.
+    
 Enjoy,
 Aaron Parsons

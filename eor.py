@@ -20,7 +20,7 @@ Revisions:
 """
 __version__ = '0.0.4'
 
-import numpy, ants, math, fit, os, sim
+import numpy, sim, math, fit, os, sim
 #import rfi
 
 #  _____           ____
@@ -65,10 +65,10 @@ class EorBeam(sim.Beam):
         self.BAm = numpy.dot(CsAm, mhz_freqs)
         self.BXo = numpy.dot(CsXo, mhz_freqs)
         self.BSd = numpy.dot(CsSd, mhz_freqs)
-        ants.Beam.__init__(self, freqs, active_chans)
+        sim.Beam.__init__(self, freqs, active_chans)
     def select_chans(self, active_chans):
         if active_chans is None: active_chans = numpy.arange(self.freqs.size)
-        ants.Beam.select_chans(self, active_chans)
+        sim.Beam.select_chans(self, active_chans)
         self.BAm_sel = self.BAm.take(active_chans, axis=1)
         self.BXo_sel = self.BXo.take(active_chans, axis=1)
         self.BSd_sel = self.BSd.take(active_chans, axis=1)
@@ -83,7 +83,6 @@ class EorBeam(sim.Beam):
     def response(self, zang, az, pol=1):
         """Return the beam response across the band for input zenith angle
         (zang) and azimuth (az).  Rotate beam model 90 degrees if pol == 2."""
-        return 1
         if pol == 2: az += math.pi/2
         a = numpy.cos(numpy.array([0, 2*az, 4*az, 6*az, 8*az, 10*az]))
         a[0] = 0.5
@@ -93,86 +92,86 @@ class EorBeam(sim.Beam):
         z = (180*zang/math.pi - a2) / a3
         return numpy.sqrt(a1 * numpy.exp(-z**2/2))
 
-#   ____                _              _       
-#  / ___|___  _ __  ___| |_ __ _ _ __ | |_ ___ 
-# | |   / _ \| '_ \/ __| __/ _` | '_ \| __/ __|
-# | |__| (_) | | | \__ \ || (_| | | | | |_\__ \
-#  \____\___/|_| |_|___/\__\__,_|_| |_|\__|___/
-
-# Define constants which are likely to change often
-ADC_CLK_RATE = .592         # GHz
-ACC_WINDOW = 8              # sync's per accumulation window
-CLK_PER_SYNC = 2**27        # clocks per sync
-NCHAN = 256
-NANTS = 8
-NPOL = 2
-
-# Derived contants
-SFREQ = ADC_CLK_RATE / 8.
-BANDWIDTH = ADC_CLK_RATE / 4.
-SDF = BANDWIDTH / NCHAN
-INTTIME = CLK_PER_SYNC / (BANDWIDTH * 1e9) * ACC_WINDOW
-
-freqs = numpy.arange(NCHAN) * SDF + SFREQ
-#active_chans = rfi.range2list((70,182), (194,235))
-active_chans = (155,)
-
-# A default passband fit from PAPER's measured receiver gain
-# (in Receiver_Gain.txt)
-#GAIN_POLY = [-8.25e1, 8.34e1, -3.50e1, 7.79e1, -9.71e-1, 6.41e-2, -1.75e-2]
-GAIN_POLY = [.054]
-
-
-#  ___       _ _   _       _ _          _   _             
-# |_ _|_ __ (_) |_(_) __ _| (_)______ _| |_(_) ___  _ __  
-#  | || '_ \| | __| |/ _` | | |_  / _` | __| |/ _ \| '_ \ 
-#  | || | | | | |_| | (_| | | |/ / (_| | |_| | (_) | | | |
-# |___|_| |_|_|\__|_|\__,_|_|_/___\__,_|\__|_|\___/|_| |_|
-
-# Current location
-#location = ('38:25:59.24', '-79:50:23:41', 806)     # Green Bank
-location = ('38:25:59.24', '-79:51:02.1', 806)     # Green Bank
-
-# Beam to use
-beam = sim.Beam(freqs)
-#beam = EorBeam(freqs)
-
-# Antenna positions
-antennas = (
-    fit.FitAntenna(  -8.48, 455.28,   9.82 ), # 1
-    fit.FitAntenna( 205.47, 319.53,-251.71 ), # 2
-    fit.FitAntenna( 187.10,-352.95,-232.59 ), # 3
-    fit.FitAntenna(-262.70,-219.07, 318.70 ), # 4
-    fit.FitAntenna(-293.44,  -7.66, 360.20 ), # 5
-    fit.FitAntenna(-286.04,  93.20, 352.23 ), # 6
-    fit.FitAntenna(-182.66, 353.23, 227.56 ), # 7
-    #fit.FitAntenna( -84.27, 434.46, 107.19, beam, gain_poly=GAIN_POLY, 
-    fit.FitAntenna( -75.51, 433.83,  97.02, beam, gain_poly=GAIN_POLY, 
-        offset=1.4967), # 8
-)
-
-# Sources for simulation
-src_dict = {
-    'Cygnus A':     fit.FitRadioFixedBody('19:57:44.5', '40:35.0',  freqs,
-        strength=[0, 13300.], spec_index=-1.),
-    #'0 Cygnus A':     fit.FitRadioFixedBody('19:57:44.5', '40:35.0',  freqs,
-    #    strength=10500, spec_index=-1.244),
-    'Cass A':       fit.FitRadioFixedBody('23:21:12.0', '58:32.1', freqs,
-        strength=[0, 11700.], spec_index=-1.),
-    #'2 Cass A':       fit.FitRadioFixedBody('23:21:12.0', '58:32.1', freqs,
-    #    strength=12800, spec_index=-0.770),
-    #'4 Crab':         fit.FitRadioFixedBody('05:31:31.5', '21:59.2', freqs,
-    #   strength=1500),
-    #'3 Virgo':        fit.FitRadioFixedBody('12:28:18.0', '12:40.1', freqs,
-    #   strength=1100),
-    #'1 Sun':          fit.FitRadioSun(freqs, strength=19996.)
-}
-
-fit_sim = fit.FitSimulator(antennas, location, src_dict, active_chans=active_chans)
-
-# RFI
-#bad_bins = rfi.range2list((0,69), (235,255), (183,194))
-#rfi_freq_flagger = rfi.gen_freq_mfunc(bad_bins)
+##   ____                _              _       
+##  / ___|___  _ __  ___| |_ __ _ _ __ | |_ ___ 
+## | |   / _ \| '_ \/ __| __/ _` | '_ \| __/ __|
+## | |__| (_) | | | \__ \ || (_| | | | | |_\__ \
+##  \____\___/|_| |_|___/\__\__,_|_| |_|\__|___/
+#
+## Define constants which are likely to change often
+#ADC_CLK_RATE = .592         # GHz
+#ACC_WINDOW = 8              # sync's per accumulation window
+#CLK_PER_SYNC = 2**27        # clocks per sync
+#NCHAN = 256
+#NANTS = 8
+#NPOL = 2
+#
+## Derived contants
+#SFREQ = ADC_CLK_RATE / 8.
+#BANDWIDTH = ADC_CLK_RATE / 4.
+#SDF = BANDWIDTH / NCHAN
+#INTTIME = CLK_PER_SYNC / (BANDWIDTH * 1e9) * ACC_WINDOW
+#
+#freqs = numpy.arange(NCHAN) * SDF + SFREQ
+##active_chans = rfi.range2list((70,182), (194,235))
+#active_chans = (155,)
+#
+## A default passband fit from PAPER's measured receiver gain
+## (in Receiver_Gain.txt)
+##GAIN_POLY = [-8.25e1, 8.34e1, -3.50e1, 7.79e1, -9.71e-1, 6.41e-2, -1.75e-2]
+#GAIN_POLY = [.054]
+#
+#
+##  ___       _ _   _       _ _          _   _             
+## |_ _|_ __ (_) |_(_) __ _| (_)______ _| |_(_) ___  _ __  
+##  | || '_ \| | __| |/ _` | | |_  / _` | __| |/ _ \| '_ \ 
+##  | || | | | | |_| | (_| | | |/ / (_| | |_| | (_) | | | |
+## |___|_| |_|_|\__|_|\__,_|_|_/___\__,_|\__|_|\___/|_| |_|
+#
+## Current location
+##location = ('38:25:59.24', '-79:50:23:41', 806)     # Green Bank
+#location = ('38:25:59.24', '-79:51:02.1', 806)     # Green Bank
+#
+## Beam to use
+#beam = sim.Beam(freqs)
+##beam = EorBeam(freqs)
+#
+## Antenna positions
+#antennas = (
+#    fit.FitAntenna(  -8.48, 455.28,   9.82 ), # 1
+#    fit.FitAntenna( 205.47, 319.53,-251.71 ), # 2
+#    fit.FitAntenna( 187.10,-352.95,-232.59 ), # 3
+#    fit.FitAntenna(-262.70,-219.07, 318.70 ), # 4
+#    fit.FitAntenna(-293.44,  -7.66, 360.20 ), # 5
+#    fit.FitAntenna(-286.04,  93.20, 352.23 ), # 6
+#    fit.FitAntenna(-182.66, 353.23, 227.56 ), # 7
+#    #fit.FitAntenna( -84.27, 434.46, 107.19, beam, gain_poly=GAIN_POLY, 
+#    fit.FitAntenna( -75.51, 433.83,  97.02, beam, gain_poly=GAIN_POLY, 
+#        offset=1.4967), # 8
+#)
+#
+## Sources for simulation
+#src_dict = {
+#    'Cygnus A':     fit.FitRadioFixedBody('19:57:44.5', '40:35.0',  freqs,
+#        strength=[0, 13300.], spec_index=-1.),
+#    #'0 Cygnus A':     fit.FitRadioFixedBody('19:57:44.5', '40:35.0',  freqs,
+#    #    strength=10500, spec_index=-1.244),
+#    'Cass A':       fit.FitRadioFixedBody('23:21:12.0', '58:32.1', freqs,
+#        strength=[0, 11700.], spec_index=-1.),
+#    #'2 Cass A':       fit.FitRadioFixedBody('23:21:12.0', '58:32.1', freqs,
+#    #    strength=12800, spec_index=-0.770),
+#    #'4 Crab':         fit.FitRadioFixedBody('05:31:31.5', '21:59.2', freqs,
+#    #   strength=1500),
+#    #'3 Virgo':        fit.FitRadioFixedBody('12:28:18.0', '12:40.1', freqs,
+#    #   strength=1100),
+#    #'1 Sun':          fit.FitRadioSun(freqs, strength=19996.)
+#}
+#
+#fit_sim = fit.FitSimulator(antennas, location, src_dict, active_chans=active_chans)
+#
+## RFI
+##bad_bins = rfi.range2list((0,69), (235,255), (183,194))
+##rfi_freq_flagger = rfi.gen_freq_mfunc(bad_bins)
 
 
 #  ____            _       _     ___       _             __

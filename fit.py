@@ -60,11 +60,15 @@ def print_params(prms, indent='', grad=None):
         else:
             print indent, k
             if grad is None:
-                if not type(v) is list: v = [v]
+                if not type(v) is list:
+                    try: v = [list(v)]
+                    except(TypeError): v = [v]
                 for i in v: print indent, ' ', i
             else:
                 print indent, v, '\t<', grad[k], '>'
-                if not type(v) is list: v = [v]
+                if not type(v) is list:
+                    try: v = [list(v)]
+                    except(TypeError): v = [v]
                 for i in len(v):
                     print indent, ' ', v[i], '\t<', grad[k][i], '>'
 
@@ -76,11 +80,12 @@ def print_params(prms, indent='', grad=None):
 # |_|   |_|\__|_| \_\__,_|\__,_|_|\___/|____/ \___/ \__,_|\__, |
 #                                                         |___/ 
 
-class FitRadioBody(ants.RadioBody):
+class FitRadioBody:
     """A class adding parameter fitting to RadioBody"""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {'strength':self._strength, 'spec_index':self._spec_index}
+        aprms['pos'] = [float(self._ra), float(self._dec)]
         prms = {}
         for p in prm_list:
             if p.startswith('*'): return aprms
@@ -93,9 +98,17 @@ class FitRadioBody(ants.RadioBody):
         except(KeyError): strength = self._strength
         try: spec_index = prms['spec_index']
         except(KeyError): spec_index = self._spec_index
+        try:
+            ra, dec = prms['pos']
+            self.set_pos(ra, dec)
+        except(KeyError): pass
         self.update(strength, spec_index)
 
-class FitRadioFixedBody(ants.RadioFixedBody, FitRadioBody):
+class FitRadioFixedBody(sim.SimRadioFixedBody, FitRadioBody):
+    """A class adding parameter fitting to RadioFixedBody"""
+    pass
+
+class FitRadioSun(sim.SimRadioSun, FitRadioBody):
     """A class adding parameter fitting to RadioFixedBody"""
     pass
 
@@ -134,6 +147,7 @@ class FitSimAntenna(sim.SimAntenna):
         """Return all fitable parameters in a dictionary."""
         aprms = {'pos':list(self.pos), 'delay':self.delay, 'offset':self.offset}
         aprms['gain_poly'] = list(self.gain_poly)
+        aprms['amp'] = self.amp
         prms = {}
         for p in prm_list:
             if p.startswith('*'): return aprms
@@ -148,7 +162,9 @@ class FitSimAntenna(sim.SimAntenna):
         except(KeyError): pass
         try: self.offset = prms['offset']
         except(KeyError): pass
-        try: self.update_gain(prms['gain_poly'])
+        try: self.update_gain(gain_poly=prms['gain_poly'])
+        except(KeyError): pass
+        try: self.update_gain(amp=prms['amp'])
         except(KeyError): pass
 
 # ,---.o|    ,---.     |                        ,---.                    
@@ -177,7 +193,7 @@ class FitAA:
             except(KeyError): pass
         self.update_antennas(self.antennas)
 
-class FitAntennaArray(ants.PhsAntennaArray, FitAA):
+class FitAntennaArray(ants.AntennaArray, FitAA):
     pass
 
 class FitSimAntennaArray(sim.SimAntennaArray, FitAA):
@@ -189,7 +205,7 @@ class FitSimAntennaArray(sim.SimAntennaArray, FitAA):
 # |  _| | | |_ ___) | (_) | |_| | | | (_|  __/ |___| \__ \ |_ 
 # |_|   |_|\__|____/ \___/ \__,_|_|  \___\___|_____|_|___/\__|
 
-class FitSourceList(ants.SourceList):
+class FitSourceList(sim.SourceList):
     """A class for fitting several celestial sources simultaneously."""
     def get_params(self, src_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""

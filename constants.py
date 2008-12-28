@@ -20,10 +20,3 @@ s_per_yr = 3.1556926e7      # seconds in a year
 sidereal_day = 86164.0908   # seconds
 len_ns = c * 1e-9           # Length of a nanosecond in cm
 
-# SourceName: (ra, dec)
-srcs = {
-    'CassA':    ('23:23:25.4', '58:48:38'),
-    'CygA':     ('19:59:28.3', '40:44:02'),
-    'Crab':     ('05:34:32.0', '22:00:52'),
-    'Virgo':    ('12:30:49.4', '12:23:28'),
-}

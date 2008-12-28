@@ -13,24 +13,23 @@ Revisions:
                     streamlined support for phasing antenna data.
 """
 
-import ants, numpy
+import ants, numpy, ephem
 
-class SimRadioBody(ants.RadioBody):
+class SimRadioBody:
     """A class redefining ephem's sense of brightness for radio astronomy."""
-    def __init__(self, strength, freqs, meas_freq, spec_index,
-            active_chans=None, t0=0):
+    def __init__(self, strength, freqs, meas_freq=.150, spec_index=-1,
+            active_chans=None, ang_size=0.):
         """strength:     source flux measured at 'meas_freq'
         freqs:        frequencies (in GHz) at bin centers across spectrum
         meas_freq:    frequency (in GHz) where 'strength' was measured
         spec_index:   index of power-law spectral model of source emission
         active_chans: channels to be selected for future freq calculations"""
+        self._strength = strength
         self.freqs = freqs
         self._meas_freq = meas_freq
-        self._strength = strength
-        self._t0 = t0
         self._spec_index = spec_index
+        self._ang_size = ang_size
         self.select_chans(active_chans)
-        self.prev_sidereal_time = 0     # Used to avoid redundant map calc.
     def select_chans(self, active_chans):
         """Choose only 'active_chans' for future freq calculations."""
         if active_chans is None: active_chans = numpy.arange(self.freqs.size)
@@ -38,27 +37,17 @@ class SimRadioBody(ants.RadioBody):
         self.update(self._strength, self._spec_index)
     def update(self, strength, spec_index):
         """Update parameters for source strength and spectral index."""
-        try: len(strength)
-        except(TypeError): strength = [strength]
         self._strength = strength
-        try: len(spec_index)
-        except(TypeError): spec_index = [spec_index]
         self._spec_index = spec_index
-        self._emission = (self.freqs.take(self.chans) / self._meas_freq)
-    def emission(self, observer):
-        # This may be a redundant compute
-        # Could optimize to buffer result for same times
-        # or if strength, spec_index polynomials are of order 1
-        self.compute(observer)
-        t = observer.date - self._t0
-        cur_strength = numpy.polyval(self._strength, t)
-        cur_spec_index = numpy.polyval(self._spec_index, t)
-        return cur_strength * self._emission**cur_spec_index
+        self.emission = (self.freqs.take(self.chans) / self._meas_freq)
+        self.emission = self._strength * self.emission**self._spec_index
+    def bl_response(self, u, v):
+        return numpy.sinc(self._ang_size * numpy.sqrt(u**2+v**2))
 
-class SimRadioFixedBody(ephem.FixedBody, SimRadioBody):
-    """A class combining ephem's FixedBody with a RadioBody."""
-    def __init__(self, ra, dec, freqs,
-            strength=1., meas_freq=.150, spec_index=-1., active_chans=None):
+class SimRadioFixedBody(ants.RadioFixedBody, SimRadioBody):
+    """A class adding simulation capability to ants.RadioFixedBody"""
+    def __init__(self, ra, dec, strength, freqs, meas_freq=.150, 
+            spec_index=-1., ang_size=0., active_chans=None, name=''):
         """ra:           source's right ascension
         dec:          source's declination
         freqs:        frequencies (in GHz) at bin centers across spectrum
@@ -66,39 +55,22 @@ class SimRadioFixedBody(ephem.FixedBody, SimRadioBody):
         meas_freq:    frequency (in GHz) where 'strength' was measured
         spec_index:   index of power-law spectral model of source emission
         active_chans: channels to be selected for future freq calculations"""
-        ephem.FixedBody.__init__(self)
-        self._ra = ra
-        self._dec = dec
-        RadioBody.__init__(self, strength, freqs, meas_freq, spec_index,
-            active_chans=active_chans)
-    def __repr__(self):
-        """This string is used to hash this source to avoid redundant
-        computations."""
-        return 'RadioFixedBody(%f, %f, strength=%s, spec_index=%s)' % \
-            (self._ra, self._dec, self._strength, self._spec_index)
+        ants.RadioFixedBody.__init__(self, ra, dec, name=name)
+        SimRadioBody.__init__(self, strength, freqs, meas_freq=meas_freq,
+            spec_index=spec_index, ang_size=ang_size, active_chans=active_chans)
 
-class SimRadioSun(SimRadioBody, object):
-    """A representation of the Sun in radio.  Uses blackbelt kung-fu to
-    subclass ephem.Sun()."""
-    def __init__(self, freqs, strength=1., meas_freq=.150, spec_index=-1.,
-            active_chans=None):
+class SimRadioSun(ants.RadioSun, SimRadioBody):
+    """A class adding simulation capability to ants.RadioSun"""
+    def __init__(self, strength, freqs, meas_freq=.150, spec_index=-1.,
+            ang_size=8.7e-3, active_chans=None, name='sun'):
         """freqs:        frequencies (in GHz) at bin centers across spectrum
         strength:     source flux measured at 'meas_freq'
         meas_freq:    frequency (in GHz) where 'strength' was measured
         spec_index:   index of power-law spectral model of source emission
         active_chans: channels to be selected for future freq calculations"""
-        RadioBody.__init__(self, strength, freqs, meas_freq, spec_index,
-            active_chans=active_chans)
-        self.Sun = ephem.Sun()
-    def __getattr__(self, nm):
-        try: return object.__getattr__(self, nm)
-        except(AttributeError): return self.Sun.__getattribute__(nm)
-    def __setattr__(self, nm, val):
-        try: object.__setattr__(self, nm, val)
-        except(AttributeError): return setattr(self.Sun, nm, val)
-    def __repr__(self):
-        return 'RadioSun(%f, %f, strength=%s, spec_index=%s)' % \
-            (self._ra, self._dec, self._strength, self._spec_index)
+        ants.RadioSun.__init__(self, name=name)
+        SimRadioBody.__init__(self, strength, freqs, meas_freq=meas_freq,
+            ang_size=ang_size, spec_index=spec_index, active_chans=active_chans)
 
 #  ____                           _     _     _
 # / ___|  ___  _   _ _ __ ___ ___| |   (_)___| |_
@@ -108,15 +80,13 @@ class SimRadioSun(SimRadioBody, object):
 
 class SourceList:
     """A class for holding celestial sources."""
-    def __init__(self, src_dict, active_chans=None):
-        self.names = src_dict.keys()
-        self.names.sort()
-        self.sources = [src_dict[s] for s in self.names]
+    def __init__(self, srcs, active_chans=None):
+        self.sources = srcs
+        self.names = [s.src_name for s in srcs]
         self.select_chans(active_chans)
     def select_chans(self, active_chans):
         """Choose only 'active_chans' for future freq calculations."""
         for s in self.sources: s.select_chans(active_chans)
-
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -155,7 +125,7 @@ class SimAntenna(ants.Antenna):
     """A representation of the physical location and beam pattern of an
     individual antenna in an array."""
     def __init__(self, x, y, z, beam, delay=0., offset=0.,
-            gain_poly=DFLT_GAIN_POLY, active_chans=None,
+            gain_poly=DFLT_GAIN_POLY, amp=1, active_chans=None,
             pointing=(0.,numpy.pi/2)):
         """x, y, z:    Antenna coordinates in equatorial (ns) coordinates
         beam:       Object with function 'response(zang, az)'
@@ -166,19 +136,22 @@ class SimAntenna(ants.Antenna):
         ants.Antenna.__init__(self, x, y, z, delay=delay)
         self.beam = beam
         self.offset = offset
-        self.gain_poly = gain_poly
+        self.update_gain(gain_poly, amp)
         self.select_chans(active_chans)
         self.update_pointing(pointing)
     def select_chans(self, active_chans):
         self.beam.select_chans(active_chans)
         self.update_gain(self.gain_poly)
-    def update_gain(self, gain_poly):
+    def update_gain(self, gain_poly=None, amp=None):
         """Set a passband gain based on the polynomial fit 'gain_poly'.  Select
         only 'active_chans' for future freq calculations."""
-        try: len(gain_poly)
-        except(TypeError): gain_poly = [gain_poly]
-        self.gain_poly = gain_poly
-        self.gain = numpy.polyval(gain_poly, self.beam.active_freqs)
+        if not gain_poly is None:
+            try: len(gain_poly)
+            except(TypeError): gain_poly = [gain_poly]
+            self.gain_poly = gain_poly
+        if not amp is None: self.amp = amp
+        self.gain = self.amp * numpy.polyval(self.gain_poly, 
+            self.beam.active_freqs)
     def update_pointing(self, azalt):
         """Set the antenna beam to point at azalt=(az, alt)."""
         self.pointing = azalt
@@ -187,7 +160,7 @@ class SimAntenna(ants.Antenna):
         including beam response, per-frequency gain, and a phase offset."""
         zang = ephem.separation(self.pointing, azalt)
         beam_resp = self.beam.response(zang, azalt[0], pol=pol)
-        offset = numpy.exp(2*math.pi*1j*self.offset)
+        offset = numpy.exp(2*numpy.pi*1j*self.offset)
         return beam_resp * self.gain * offset
 
 #  ___ _         _       _                        _                     
@@ -196,13 +169,13 @@ class SimAntenna(ants.Antenna):
 # |___/_|_|_|_/_/ \_\_||_\__\___|_||_|_||_\__,_/_/ \_\_| |_| \__,_|\_, |
 #                                                                  |__/ 
 
-class SimAntennaArray(ants.PhsAntennaArray):
+class SimAntennaArray(ants.AntennaArray):
     """A class which adds simulation functionality to AntennaArray."""
     def __init__(self, simantennas, location, active_chans=None):
         """simantennas:     a list of SimAntenna instances
         location:     location of the array in (lat, long, [elev])
         active_chans: channels to be selected for future freq calculations"""
-        ants.PhsAntennaArray.__init__(self, simantennas, location)
+        ants.AntennaArray.__init__(self, simantennas, location)
         self.select_chans(active_chans)
     def select_chans(self, active_chans):
         for a in self.antennas: a.select_chans(active_chans)
@@ -219,7 +192,7 @@ class SimAntennaArray(ants.PhsAntennaArray):
             s.compute(self)
             # Skip if source is below horizon
             if s.alt < 0: continue
-            GAS_sf[n] = a.response((s.az, s.alt), pol=pol) * s.emission(self)
+            GAS_sf[n] = a.response((s.az, s.alt), pol=pol) * s.emission
         return GAS_sf
     def sim_data(self, srcs, ant1, ant2=None, calc_grad=False, stokes=-5):
         r"""Calculates visibilities at a given time for a list of RadioBodys,
@@ -229,8 +202,9 @@ class SimAntennaArray(ants.PhsAntennaArray):
                             S_n\left(\nu\over\nu_0\right)^{\alpha_n}
                             e^{2\pi\vec b_{ij}\cdot\hat S_n(t)
                             + 2\pi\nu\tau_{ij}}}"""
-        bl = self.ij2bl(ant1, ant2)
-        i, j = self.bl2ij(bl)
+        if ant2 is None: i, j = self.bl2ij(ant1)
+        else: i, j = ant1, ant2
+        bl = self.ij2bl(i, j)
         if   stokes == -5: pol1, pol2 = 1, 1
         elif stokes == -6: pol1, pol2 = 2, 2
         elif stokes == -7: pol1, pol2 = 1, 2
@@ -246,9 +220,15 @@ class SimAntennaArray(ants.PhsAntennaArray):
         W_sf = numpy.zeros(GBS_sf.shape, dtype=numpy.float)
         for n, s in enumerate(srcs):
             # Nanosec coords
-            z = self.get_projected_baseline(bl, body=s)[2]
+            try: x, y, z = self.get_projected_baseline(bl, body=s)
+            except(ants.PointingError):
+                GBS_sf[n] = 0
+                continue
+            u, v, w = x*self.freqs, y*self.freqs, z*self.freqs
             # Actual wavenumber coords
-            W_sf[n] = z * self.freqs
+            W_sf[n] = w
+            # Take into account effects of resolving source
+            GBS_sf[n] *= s.bl_response(u, v)
         # <T> -> tau -> baseline delay
         T__f = self.get_delay(bl) * self.freqs
         # <E> -> exp(w component + baseline delay)
@@ -266,20 +246,20 @@ class SimAntennaArray(ants.PhsAntennaArray):
 #  ___) | | | | | | | |_| | | (_| | || (_) | |   
 # |____/|_|_| |_| |_|\__,_|_|\__,_|\__\___/|_|   
 
-class Simulator(SimAntennaArray, ants.SourceList):
+class Simulator(SimAntennaArray, SourceList):
     """Contains all information for simulating interferometric data from a
     list of sources."""
     def __init__(self, antennas, location, src_dict, active_chans=None):
         SimAntennaArray.__init__(self, antennas, location,
             active_chans=active_chans)
-        ants.SourceList.__init__(self, src_dict, active_chans=active_chans)
+        SourceList.__init__(self, src_dict, active_chans=active_chans)
         self.set_activity()
         self.chans = self.antennas[0].beam.chans
     def select_chans(self, active_chans):
         """Choose only 'active_chans' for future freq calculations."""
         try: SimAntennaArray.select_chans(self, active_chans)
         except(AttributeError): pass
-        try: ants.SourceList.select_chans(self, active_chans)
+        try: SourceList.select_chans(self, active_chans)
         except(AttributeError): pass
     def set_activity(self, antennas=[], baselines=[], stokes=[],
             sources=[]):

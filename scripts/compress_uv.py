@@ -11,11 +11,16 @@ p.set_usage('compress_uv.py [options] *.uv')
 p.set_description(__doc__)
 p.add_option('-d', '--delete', dest='delete', action='store_true',
     help='Delete a uv file after compressing it')
+p.add_option('-x', '--expand', dest='expand', action='store_true',
+    help='Inflate tar.bz2 files')
 
 opts, args = p.parse_args(sys.argv[1:])
 
 for i in args:
     print i
+    if opts.expand:
+        os.system('tar xjf %s' % i)
+        continue
     cmp_name = i + '.tar.bz2'
     if os.path.exists(cmp_name):
         print cmp_name, 'exists; skipping...'
