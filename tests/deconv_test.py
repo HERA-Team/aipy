@@ -41,3 +41,4 @@ p.imshow(n.log10(c), vmin=-5, vmax=1)
 p.colorbar()
 
 p.show()
+

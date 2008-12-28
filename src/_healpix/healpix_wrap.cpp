@@ -57,38 +57,6 @@
 
 // Some helper functions
 
-void option_err(char *options[]) {
-    // Raise a python error if invalid option was provided
-    char errstr[256];
-    int i = 1;
-    strcpy(errstr, "option not in ["); strcat(errstr, options[0]);
-    while (options[i] != NULL) {
-        strcat(errstr, ",");
-        strcat(errstr, options[i]);
-        i++;
-    }
-    strcat(errstr, "]");
-    PyErr_Format(PyExc_ValueError, errstr);
-}
-    
-int get_option(char *options[], PyObject *choice) {
-    // Return index of choice in options, -1 if failure.  Defaults to 0.
-    int i = 0;
-    char *c;
-    if (choice == NULL) return 0;
-    if (!PyString_Check(choice)) {
-        option_err(options);
-        return -1;
-    }
-    c = PyString_AsString(choice);
-    while (options[i] != NULL) {
-        if (strcmp(c, options[i]) == 0) return i;
-        i++;
-    }
-    option_err(options);
-    return -1;
-}
-
 /*____                           _                    _    
  / ___|_ __ ___  _   _ _ __   __| |_      _____  _ __| | __
 | |  _| '__/ _ \| | | | '_ \ / _` \ \ /\ / / _ \| '__| |/ /
@@ -117,15 +85,18 @@ static PyObject *HPBObject_new(PyTypeObject *type,
 // Initialize object (__init__)
 static int HPBObject_init(HPBObject *self, PyObject *args, PyObject *kwds) {
     int nside=-1;
-    PyObject *order = NULL;
-    static char *options[] = {"RING", "NEST", NULL};
-    static char *kwlist[] = {"nside", "scheme", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"|iO", kwlist, &nside, &order))
-        return -1;
-    int use_nest = get_option(options, order);
-    if (use_nest == -1) return -1;
     Healpix_Ordering_Scheme scheme = RING;
-    if (use_nest == 1) scheme = NEST;
+    PyObject *scheme_str=NULL;
+    static char *kwlist[] = {"nside", "scheme", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"|iO", kwlist, \
+            &nside, &scheme_str))
+        return -1;
+    if (scheme_str == NULL) scheme = RING;
+    else if (strcmp(PyString_AsString(scheme_str), "NEST") == 0) scheme = NEST;
+    else if (strcmp(PyString_AsString(scheme_str), "RING") != 0) {
+        PyErr_Format(PyExc_ValueError, "scheme must be 'RING' or 'NEST'.");
+        return -1;
+    }
     // Carefully try to create a new Healpix_Base
     try {
         if (nside == -1) self->hpb = Healpix_Base();
@@ -259,11 +230,8 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
             v.x = c1; v.y = c2; v.z = c3;
         }
         if (interpolate == 0) {
-            if (crd3 == NULL) {
-                IND1(rv,i,long) = self->hpb.ang2pix(p);
-            } else {
-                IND1(rv,i,long) = self->hpb.vec2pix(v);
-            }
+            if (crd3 == NULL) IND1(rv,i,long) = self->hpb.ang2pix(p);
+            else IND1(rv,i,long) = self->hpb.vec2pix(v);
         } else {    // Do interpolation
             if (crd3 != NULL) p = pointing(v);
             self->hpb.get_interpol(p, fix_pix, fix_wgt);

@@ -266,15 +266,14 @@ class Antenna(ant.Antenna):
 
 class AntennaArray(ant.AntennaArray):
     """A class which adds simulation functionality to AntennaArray."""
-    def sim(self, i, j, s_eqs, fluxes, 
-            indices=0., mfreqs=n.array([.150]), pol='xx'):
-        """Simulate visibilites for the (i,j) baseline based on source
-        locations (in equatorial coordinates), fluxes, spectral indices,
-        the frequencies at which fluxes were measured, and the polarization."""
-        assert(pol in ('xx','yy','xy','yx'))
+    def set_jultime(self, t=None):
+        ant.AntennaArray.set_jultime(self, t=t)
+        self.eq2top_m = coord.eq2top_m(-self.sidereal_time(), self.lat)
+        self._cache = None
+    def sim_cache(self, s_eqs, fluxes, indices=0., mfreqs=n.array([.150]), 
+            pols=['x','y']):
         # Get topocentric coordinates of all srcs
-        m = coord.eq2top_m(-self.sidereal_time(), self.lat)
-        src_top = n.dot(m, s_eqs)
+        src_top = n.dot(self.eq2top_m, s_eqs)
         # Throw out everthing that is below the horizon
         valid = n.logical_and(src_top[2,:] > 0, fluxes > 0)
         if n.all(valid == 0): return n.zeros_like(self.ants[i].beam.afreqs)
@@ -283,16 +282,32 @@ class AntennaArray(ant.AntennaArray):
         mfreqs = mfreqs.compress(valid)
         src_top = src_top.compress(valid, axis=1)
         s_eqs = s_eqs.compress(valid, axis=1)
-        # Get antenna source-dependent gains
-        GAi_sf = self.ants[i].response(src_top, pol=pol[0]).transpose()
-        GAj_sf = self.ants[j].response(src_top, pol=pol[1]).transpose()
         # Get src fluxes vs. freq
         fluxes.shape = (fluxes.size, 1)
         mfreqs.shape = (mfreqs.size, 1)
         indices.shape = (indices.size, 1)
-        freqs = n.resize(self.ants[i].beam.afreqs, 
-            (fluxes.size, self.ants[i].beam.afreqs.size))
-        I_sf = fluxes * (freqs / mfreqs)**indices
+        freqs = n.resize(self.ants[0].beam.afreqs, 
+            (fluxes.size, self.ants[0].beam.afreqs.size))
+        self._cache = {
+            'I_sf':fluxes * (freqs / mfreqs)**indices,
+            's_eqs': s_eqs,
+        }
+        # Get antenna responses to provided coordinates
+        for i,ant in enumerate(self.ants):
+            self._cache[i] = {}
+            for p in pols:
+                self._cache[i][p] = ant.response(src_top, pol=p).transpose()
+    def sim(self, i, j, pol='xx'):
+        """Simulate visibilites for the (i,j) baseline based on source
+        locations (in equatorial coordinates), fluxes, spectral indices,
+        the frequencies at which fluxes were measured, and the polarization."""
+        assert(pol in ('xx','yy','xy','yx'))
+        if self._cache is None:
+            raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')
+        I_sf = self._cache['I_sf']
+        s_eqs = self._cache['s_eqs']
+        GAi_sf = self._cache[i][pol[0]]
+        GAj_sf = self._cache[j][pol[1]]
         # Get the phase of each src vs. freq
         E_sf = n.conjugate(self.gen_phs(s_eqs.transpose(), i, j))
         # Combine and sum over sources

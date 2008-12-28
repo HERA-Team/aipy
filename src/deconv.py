@@ -18,10 +18,26 @@ Revisions:
                         returned, and addition of annealing.
 """
 
-import numpy as n, sys
+import numpy as n, sys, _deconv
 
 # Find smallest representable # > 0 for setting clip level
 lo_clip_lev = n.finfo(n.float).tiny 
+
+def clean1d(im, ker, mdl=None, gain=.1, maxiter=10000, tol=1e-3):
+    if mdl is None:
+        mdl = n.zeros_like(im)
+        res = im.copy()
+    else:
+        mdl = mdl.copy()
+        res = im - n.fft.ifft(n.fft.fft(mdl) * n.fft.fft(ker)).astype(im.dtype)
+    mdl, iter = _deconv.clean1d(res,ker,mdl,gain=gain,maxiter=maxiter,tol=tol)
+    score = n.sqrt(n.average(n.abs(res)**2))
+    info = {'success':iter > 0 and iter < maxiter, 'tol':tol}
+    if iter < 0: info.update({'term':'divergence', 'iter':-iter})
+    elif iter < maxiter: info.update({'term':'tol', 'iter':iter})
+    else: info.update({'term':'maxiter', 'iter':iter})
+    info.update({'res':res, 'score':score})
+    return mdl, info
 
 def recenter(a, c):
     """Slide the (0,0) point of matrix a to a new location tuple c."""

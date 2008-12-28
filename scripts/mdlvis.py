@@ -9,6 +9,7 @@ Date: 03/06/08
 Revisions:
     04/30/08    arp Added option of using a Map (stored in a fits file) 
                     for simulation.
+    05/07/08    arp Changed to sim_cache() and pipe(raw=True) for 2.5x speedup
 """
 import numpy as n, aipy as a, optparse, os, sys, ephem
 
@@ -37,6 +38,8 @@ opts, args = p.parse_args(sys.argv[1:])
 uv = a.miriad.UV(args[0])
 aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'],
     use_bp=not opts.omit_bp)
+p,d,f = uv.read(raw=True)
+no_flags = n.zeros_like(f)
 del(uv)
 
 # Generate a model of the sky with point sources and a pixel map
@@ -74,26 +77,28 @@ mfq = n.concatenate(mfq)
 # A pipe for just outputting the model
 curtime = None
 eqs = []
-def mdl(uv, p, d):
+def mdl(uv, p, d, f):
     global curtime, eqs
     uvw, t, (i,j) = p
-    if i == j: return p, d
+    if i == j: return p, d, f
     if curtime != t:
         curtime = t
         aa.set_jultime(t)
         eqs = []
         if not opts.cat is None:
             cat.compute(aa)
-            eqs.append(cat.get_crds('eq', n_crd=3))
+            eqs.append(cat.get_crds('eq', ncrd=3))
         if not opts.map is None:
             m_precess = a.coord.convert_m('eq','eq',
                 iepoch=opts.iepoch, oepoch=aa.epoch)
             eqs.append(n.dot(m_precess, m_eq))
         eqs = n.concatenate(eqs, axis=-1)
-    sd = aa.sim(i, j, eqs, flx, indices=ind, mfreqs=mfq, 
-        pol=a.miriad.pol2str[uv['pol']])
-    sd = n.ma.array(sd, mask=n.zeros_like(sd))
-    if opts.sim: d = sd
+        aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq)
+    sd = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
+    #sd = n.ma.array(sd, mask=n.zeros_like(sd))
+    if opts.sim:
+        d = sd
+        f = no_flags
     else: d -= sd
     if opts.noiselev != 0:
         # Add on some noise for a more realistic experience
@@ -101,7 +106,7 @@ def mdl(uv, p, d):
         noise_phs = n.random.random(d.shape) * 2*n.pi * 1j
         noise = noise_amp * n.exp(noise_phs)
         d += noise
-    return p, d
+    return p, d, f
 
 # Run mdl on all files
 for filename in args:
@@ -113,5 +118,5 @@ for filename in args:
     uvi = a.miriad.UV(filename)
     uvo = a.miriad.UV(uvofile, status='new')
     uvo.init_from_uv(uvi)
-    uvo.pipe(uvi, mfunc=mdl)
+    uvo.pipe(uvi, mfunc=mdl, raw=True)
 

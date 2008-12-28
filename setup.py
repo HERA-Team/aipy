@@ -50,6 +50,8 @@ sets), and fitting routines from SciPy.
                 'dio.c','headio.c','maskio.c']),
             include_dirs = [numpy.get_include(), 'src/_miriad', 
                 'src/_miriad/mir']),
+        Extension('aipy._deconv', ['src/_deconv/deconv.cpp'],
+            include_dirs = [numpy.get_include()]),
         Extension('aipy.utils', ['src/utils/utils.cpp'],
             include_dirs = [numpy.get_include()])
     ],

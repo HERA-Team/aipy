@@ -49,6 +49,8 @@ o.add_option('--time_axis', dest='time_axis', default='index',
     help='Choose time axis to be integration/fringe index (index), or physical coordinates (physical), or if doing xy plot in time-mode, (lst) is also available.  Default is index.')
 o.add_option('--chan_axis', dest='chan_axis', default='index',
     help='Choose channel axis to be channel/delay index (index), or physical coordinates (physical).  Default is index.')
+o.add_option('--clean', dest='clean', action='store_true',
+    help='Deconvolve delay-domain data by the "beam response" that results from flagged data.')
 
 def convert_arg_range(arg):
     """Split apart command-line lists/ranges into a list of numbers."""
@@ -159,9 +161,22 @@ for uvfile in args:
         if not use_this_time: continue
         # Do delay transform if required
         if opts.delay:
-            if opts.unmask: d = d.data
-            else: d = d.filled(0)
-            d = n.ma.array(n.fft.ifft(d))
+            if opts.unmask:
+                d = d.data
+                ker = n.zeros_like(d)
+                ker[0] = 1.
+                gain = 1.
+            else:
+                flags = n.logical_not(d.mask).astype(n.float)
+                ker = n.fft.ifft(flags)
+                d = d.filled(0)
+                gain = flags.sum()
+            flags = n.where
+            d = n.fft.ifft(d)
+            if opts.clean and not n.all(d == 0):
+                d, info = a.deconv.clean1d(d, ker, tol=1e-10)
+                d += info['res'] / gain
+            d = n.ma.array(d)
             d = n.ma.concatenate([d[d.shape[0]/2:], d[:d.shape[0]/2]], 
                 axis=0)
         elif opts.unmask: d = d.data

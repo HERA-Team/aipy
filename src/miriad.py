@@ -285,5 +285,6 @@ def bl2ij(bl):
     return (bl>>8)-1, (bl&255) - 1
 
 def ij2bl(i, j):
+    if i > j: i,j = j,i
     return (i+1)<<8 | (j+1)
 

@@ -20,7 +20,7 @@ default_fits_format_codes = {
 }
 
 def mk_arr(val, dtype=n.double):
-    if type(val) is n.ndarray: return val.astype(dtype).flatten()
+    if type(val) is n.ndarray: return val.astype(dtype)
     return n.array(val, dtype=dtype).flatten()
 
 class HealpixMap(HealpixBase):

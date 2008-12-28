@@ -201,7 +201,7 @@ def get_aa(loc_key, sdf, sfreq, nchan, use_bp=True, use_ants=None):
                 amp=amp, bp=dec_bp)
         )
     if not use_ants is None: antennas = [antennas[i] for i in use_ants]
-    return fit.AntennaArray(antennas, dat['loc'])
+    return fit.AntennaArray(dat['loc'], antennas)
 
 def get_loc(loc_key):
     """Return an array location (with information about lat and long)."""

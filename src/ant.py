@@ -187,14 +187,11 @@ class Antenna:
 
 class ArrayLocation(ephem.Observer):
     """Collected information about where and when an array is."""
-    def __init__(self, location=None, uv=None):
-        """location:   location of the array in (lat, long, [elev])
-        uv:         Miriad UV file"""
-        assert(location != None or uv != None)
+    def __init__(self, location):
+        """location:   location of the array in (lat, long, [elev])"""
         ephem.Observer.__init__(self)
         self.pressure = 0
-        if not uv is None: self.from_uv(uv)
-        else: self.update_location(location)
+        self.update_location(location)
     def update_location(self, location):
         """Initialize the antenna array for the provided location.  Locations
         may be (lat, long) or (lat, long, elev)."""
@@ -208,9 +205,6 @@ class ArrayLocation(ephem.Observer):
         """Set the current time to a time derived from the ephem package."""
         if t is None: t = ephem.now()
         self.date, self.epoch = t, t
-    def from_uv(self, uv):
-        """Update location from 'latitud' and 'longitu' in Miriad UV file."""
-        self.update_location((uv['latitud'], uv['longitu']))
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -222,27 +216,12 @@ class ArrayLocation(ephem.Observer):
 class AntennaArray(ArrayLocation):
     """A representation of a collection of antennas, their spacings, and
        information about when and where the array is."""
-    def __init__(self, ants=None, location=None, uv=None, **kwargs):
-        """ants:       a list of Antenna instances
-        location:   location of the array in (lat, long, [elev])
-        uv:         Miriad UV file"""
-        assert(uv != None or (ants != None and location != None))
-        ArrayLocation.__init__(self, location=location, uv=uv)
-        if not uv is None: self.from_uv(uv)
-        else:
-            self.update_antennas(ants)
-            self.select_chans()
-    def from_uv(self, uv):
-        """Update ant positions, array loc, and freqs from Miriad UV file."""
-        ArrayLocation.from_uv(self, uv)
-        # Generate frequency information
-        freqs = n.arange(uv['nchan'], dtype=n.float) * uv['sdf'] + uv['sfreq']
-        beam = Beam(freqs)
-        # Generate antenna positions
-        ants = n.reshape(uv['antpos'], 3, uv['nants']).transpose()
-        # Should get delay information..., and what about offsets?
-        ants = [Antenna(x,y,z, beam=beam, delay=0.) for x,y,z in ants]
+    def __init__(self, location, ants, **kwargs):
+        """ location:   location of the array in (lat, long, [elev])
+        ants:       a list of Antenna instances"""
+        ArrayLocation.__init__(self, location=location)
         self.update_antennas(ants)
+        self.select_chans()
     def update_antennas(self, ants):
         """Update the antenna array to use the provided list of antennas."""
         self.ants = ants
