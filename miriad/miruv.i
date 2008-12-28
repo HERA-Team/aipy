@@ -7,6 +7,8 @@ Revisions:
     11/02/06 arp Added support for arbitrary length preambles.
     01/21/07 arp Made preamble an array b/c of memory allocation issues
     01/28/07 arp Added uvselect, uvtrack, uvcopyvr
+    06/10/07 arp Addio hio_c, but had to change off_t to size_t in hio.c
+                 miriad.h, and miruv.i
 
 ToDo:
     Find a way to have bug_c raise python exceptions.
@@ -226,25 +228,6 @@ Input:
 */
 
 
-%define HOPEN_DOCSTRING
-"This opens a Miriad data-set, and readies it to be read or written.
-Input:
-    name    The name of the data set.
-    status  Either 'old' or 'new'.
-Output:
-    tno     The file handle of the opened data set.
-    iostat  I/O status indicator. 0 indicates success. Other values
-            are standard system error numbers. "
-%enddef
-
-%define HCLOSE_DOCSTRING
-"This closes a Miriad data set. The data set cannot be accessed after the
-close.
-
-Input:
-    tno     The handle of the Miriad data set. "
-%enddef
-
 %define HACCESS_DOCSTRING
 "Miriad data sets consist of a collection of items. Before an item within
 a data set can be read/written, etc, it must be 'opened' with the haccess
@@ -271,11 +254,37 @@ Output:
             are standard system error numbers.  "
 %enddef
 
+%define HIO_DOCSTRING
+"Read or write items of a Miriad data set.
+Input:
+    ihandle The handle of the item to perform I/O on.
+    dowrite Perform a write (as opposed to a read).
+    type    Miriad number code for data type.
+    offset  The byte offset into the item where I/O is to be
+            performed.
+    length  The number of bytes to be read.
+Output:
+    iostat  I/O status indicator. 0 indicates success. -1 indicates
+            end-of-file. Other values are standard system
+            error numbers. 
+Either:
+    buf     In write mode, the data to be written.  In read mode, returns
+            the data read."
+%enddef
+
 %define HREADA_DOCSTRING
 ""
 %enddef
 
 %define HWRITEA_DOCSTRING
+""
+%enddef
+
+%define RDHD_DOCSTRING
+""
+%enddef
+
+%define WRHD_DOCSTRING
 ""
 %enddef
 
@@ -368,7 +377,6 @@ extern void uvread_c_wrap (int tno, double *preamble, int n0, float *data, int n
 %apply (double *IN_ARRAY1, int DIM1) {(double *preamble, int n0)};
 %apply (float *IN_ARRAY1, int DIM1) {(float *data, int n1)};
 %apply (int *IN_ARRAY1, int DIM1) {(int *flags, int n2)};
-
 extern void uvwrite_c_wrap (int tno, double *preamble, int n0, float *data, int n1, int *flags, int n2);
 
 /* uvprobvr_c */
@@ -399,6 +407,57 @@ extern void uvtrack_c (int tno, const char *name, const char *switches);
 extern void uvcopyvr_c (int tin, int tout);
 
 /*
+ _                    _ _            
+| |__   ___  __ _  __| (_) ___   ___ 
+| '_ \ / _ \/ _` |/ _` | |/ _ \ / __|
+| | | |  __/ (_| | (_| | | (_) | (__ 
+|_| |_|\___|\__,_|\__,_|_|\___(_)___|
+*/
+
+/* rdhdc_c */
+%feature("docstring", RDHD_DOCSTRING);
+%apply (float *INPLACE_ARRAY1, int DIM1) {(float *value, int n)};
+extern size_t rdhdc_c_wrap (int thandle, const char *keyword, float *value, int n);
+
+/* wrhdr_c */
+%feature("docstring", WRHD_DOCSTRING);
+extern void wrhdr_c (int tno, const char *keyword, double value);
+
+/* wrhdd_c */
+%feature("docstring", WRHD_DOCSTRING);
+extern void wrhdd_c (int tno, const char *keyword, double value);
+
+/* wrhdi_c */
+%feature("docstring", WRHD_DOCSTRING);
+extern void wrhdi_c (int tno, const char *keyword, int value);
+
+/* wrhdc_c */
+%feature("docstring", WRHD_DOCSTRING);
+%apply (float *IN_ARRAY1, int DIM1) {(const float *value, int n)};
+extern void wrhdc_c_wrap (int thandle, const char *keyword, const float *value, int n);
+
+/* rdhdr_c */
+%feature("docstring", RDHD_DOCSTRING);
+%apply float *OUTPUT {float *value};
+extern void rdhdr_c (int tno, const char *keyword, float *value, double defval);
+
+/* rdhdd_c */
+%feature("docstring", RDHD_DOCSTRING);
+%apply double *OUTPUT {double *value};
+extern void rdhdd_c (int tno, const char *keyword, double *value, double defval);
+
+/* rdhdi_c */
+%feature("docstring", RDHD_DOCSTRING);
+%apply int *OUTPUT {int *value};
+extern void rdhdi_c (int tno, const char *keyword, int *value, int defval);
+
+/*%cstring_output_withsize(char *value, int *len);
+extern void rdhda_c_wrap (int tno, const char *keyword, char *value, int *len, const char *defval);*/
+/*extern void rdhdl_c (int tno, const char *keyword, int8 *value,int8 defval);*/
+/*extern void wrhdl_c (int tno, const char *keyword, int8 value);*/
+/*extern void wrhda_c (int tno, const char *keyword, const char *value);*/
+
+/*
  _     _
 | |__ (_) ___   ___
 | '_ \| |/ _ \ / __|
@@ -427,12 +486,7 @@ extern void hreada_c(int ihandle, char *line, size_t length, int *iostat);
 %apply int *OUTPUT {int *iostat};
 extern void hwritea_c(int ihandle, const char *line, size_t length, int *iostat);
 
-/* hopen_c */
-%feature("docstring", HOPEN_DOCSTRING);
-%apply int *OUTPUT {int *tno, int *iostat};
-extern void hopen_c (int *tno, const char *name, const char *status, int *iostat);
+extern size_t hsize_c_wrap(int thandle, const char *keyword);
 
-/* hclose_c */
-%feature("docstring", HCLOSE_DOCSTRING);
-extern void hclose_c (int tno);
+extern void write_freqs(int thandle, int nspect, int nschan, double sfreq, double sdf);
 

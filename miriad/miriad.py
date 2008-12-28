@@ -44,13 +44,6 @@ MAX_VAR_LEN = 1024
 MAX_VARTABLE_LEN = 1024
 MAX_PREAMBLE = 9            # This value comes from uvio.c
 
-#  _____                  ____          _      
-# |_   _|   _ _ __   ___ / ___|___   __| | ___ 
-#   | || | | | '_ \ / _ \ |   / _ \ / _` |/ _ \
-#   | || |_| | |_) |  __/ |__| (_) | (_| |  __/
-#   |_| \__, | .__/ \___|\____\___/ \__,_|\___|
-#       |___/|_|      
-
 class TypeCode:
     """Class for interfacing Miriad UV variable types with python."""
     def __init__(self, mircode, bytes, numpytype):
@@ -108,49 +101,49 @@ item_types = {'obstype' : 'a',
 
 class UVItem:
     """Class for reading/writing UV items."""
-    def __init__(self, name, uvhandle, typecode):
-        self.uvhandle = uvhandle
+    def __init__(self, name, uvhandle, typestr):
+        self.typestr = typestr
         self.name = name
-        self.tc = typecodes[typecode]
-    def _access(self, mode):
-        """Acceptable modes are 'read', 'write', 'append', and 'scratch'."""
-        self.handle, status = miruv.haccess_c(self.uvhandle, self.name, mode)
-        if status != 0:
-            raise ValueError('miruv.haccess_c failed for "%s".' % (self.name))
-        self.curmode = mode
-    def _daccess(self):
-        if self.curmode is not None: miruv.hdaccess_c(self.handle)
-        self.curmode = None
-    def read(self):
-        """Read the (semi-static) value of this item from the UV dataset."""
-        self._access('read')
-        val = []; status = 0
-        while status == 0:
-            s, status = miruv.hreada_c(self.handle, MAX_VARTABLE_LEN)
-            if status == 0: val.append(self.tc.unpack(s))
-        self._daccess()
-        if len(val) == 0: return ''
-        elif type(val[0]) is str: return '\n'.join(val)
-        elif len(val) == 1:
-            val = val[0]
-            if val.size == 1: val = val[0]
-        return val
-    def write(self, val):
-        """Overwrite the value of this item from the UV dataset."""
-        self._access('write')
-        binstr = self.tc.pack(val)
-        status = miruv.hwritea_c(self.handle, binstr, len(binstr))
-        if status != 0:
-            raise IOError('Write failed for miruv.hwritea_c.')
-        self._daccess()
-    def append(self, val):
-        """Append to the value of this item in the UV dataset."""
-        self._access('append')
-        binstr = self.tc.pack(val)
-        status = miruv.hwritea_c(self.handle, binstr, len(binstr))
-        if status != 0:
-            raise IOError('Write failed for miruv.hwritea_c.')
-        self._daccess()
+        if typestr == 'r':
+            self.read = lambda: miruv.rdhdr_c(uvhandle, self.name, 0.)
+            self.write = lambda x: miruv.wrhdr_c(uvhandle, self.name, x)
+        if typestr == 'd':
+            self.read = lambda: miruv.rdhdd_c(uvhandle, self.name, 0.)
+            self.write = lambda x: miruv.wrhdd_c(uvhandle, self.name, x)
+        if typestr == 'i':
+            self.read = lambda: miruv.rdhdi_c(uvhandle, self.name, 0)
+            self.write = lambda x: miruv.wrhdi_c(uvhandle, self.name, x)
+        if typestr == 'c':
+            def read():
+                n = miruv.hsize_c_wrap(uvhandle, self.name)
+                d = numpy.zeros(n, dtype=numpy.float32)
+                n = miruv.rdhdc_c_wrap(uvhandle, self.name, d)
+                d = d[:n]
+                d.shape = (d.size/2, 2)
+                return d[:,0] + d[:,1]*1j
+            self.read = read
+            def write(x):
+                nx = numpy.zeros((x.size, 2), dtype=numpy.float32)
+                nx[:,0] = x.real; nx[:,1] = x.imag
+                miruv.wrhdc_c_wrap(uvhandle, self.name, nx.flatten())
+            self.write = write
+        if typestr == 'a':
+            def read():
+                handle, status = miruv.haccess_c(uvhandle, self.name, 'read')
+                if status != 0: return ''
+                val = []
+                while status == 0:
+                    s, status = miruv.hreada_c(handle, MAX_VARTABLE_LEN)
+                    if status == 0: val.append(s)
+                miruv.hdaccess_c(handle)
+                return '\n'.join(val)
+            self.read = read
+            def write(x):
+                handle, status = miruv.haccess_c(uvhandle, self.name, 'write')
+                if status != 0: return
+                status = miruv.hwritea_c(handle, x, len(x))
+                miruv.hdaccess_c(handle)
+            self.write = write
 
 #  _   ___     _____ _               _____     _     _      
 # | | | \ \   / /_ _| |_ ___ _ __ __|_   _|_ _| |__ | | ___ 
@@ -159,17 +152,12 @@ class UVItem:
 #  \___/   \_/  |___|\__\___|_| |_| |_|_|\__,_|_.__/|_|\___|
 
 class UVItemTable(dict):
-    def __init__(self, uvhandle, status):
+    def __init__(self, uvhandle):
         dict.__init__(self)
-        self.status = status
         self.uvhandle = uvhandle
         for i in item_types:
             uvi = UVItem(i, uvhandle, item_types[i])
-            try: 
-                uvi._access('read')
-                uvi._daccess()
-                dict.__setitem__(self, i, uvi)
-            except(ValueError): pass
+            dict.__setitem__(self, i, uvi)
     def __getitem__(self, k):
         uvi = dict.__getitem__(self, k)
         return uvi.read()
@@ -177,8 +165,8 @@ class UVItemTable(dict):
         uvi = self.get(k, UVItem(k, self.uvhandle, item_types[k]))
         uvi.write(val)
         dict.__setitem__(self, k, uvi)
-    def gen_uvvartable(self):
-        vt = UVVarTable(self.uvhandle, self.status)
+    def gen_uvvartable(self, status):
+        vt = UVVarTable(self.uvhandle, status)
         try: vartablestr = self['vartable']
         except(KeyError): return vt
         for v in vartablestr.splitlines():
@@ -284,8 +272,8 @@ class UV:
         self.handle = miruv.uvopen_c(name, status)
         # Initialize to use the standard preamble mode: uvw/time/baseline
         self.configure_preamble()
-        self.items = UVItemTable(self.handle, status)
-        self.vars = self.items.gen_uvvartable()
+        self.items = UVItemTable(self.handle)
+        self.vars = self.items.gen_uvvartable(status)
         # Define buffers for holding data and flags which are reused on reads.
         self._data = numpy.zeros((2*MAX_CHANNELS,), dtype=numpy.float32)
         self._flags = numpy.zeros((MAX_CHANNELS,), dtype=numpy.int32)
@@ -442,8 +430,11 @@ if __name__ == '__main__':
     # Create a test UV file
     time = 12345.
     HIST_STR = 'A test history.'
+    BANDPASS = numpy.array([1+1j,2+2j,3+3j], dtype=numpy.complex64)
     uv = UV(sys.argv[1], status='new')
     uv.items['history'] = HIST_STR
+    uv.items['ngains'] = 1
+    uv.items['bandpass'] = BANDPASS
     a = numpy.ma.array([1+1j, 2+2j, 3+3j], mask=[0, 0, 1], 
         dtype=numpy.complex64)
     uv.vars.add_var('pol', 'i')
@@ -460,8 +451,9 @@ if __name__ == '__main__':
     # Make sure you can read everything from the UV file.
     time = 12345.
     uv = UV(sys.argv[1], status='old')
-    if uv.items['history'] != HIST_STR:
-        raise ValueError('UVItem read/write failed.')
+    assert(uv.items['history'] == HIST_STR)
+    assert(uv.items['ngains'] == 1)
+    assert(numpy.all(uv.items['bandpass'] == BANDPASS))
     for t in range(100):
       for i in range(8):
         for j in range(8):
@@ -470,8 +462,7 @@ if __name__ == '__main__':
             p, d = uv.read_data()
             if numpy.any(d.filled() != a.filled()) or numpy.any(p != preamble):
                 raise ValueError('Data was not written correctly.')
-            if uv.vars['pol'] != i:
-                raise ValueError('UVVar read/write failed.')
+            if uv.vars['pol'] != i: raise ValueError('UVVar read/write failed.')
       time += 10
     del(uv)
 
