@@ -110,12 +110,12 @@ class Img:
     def image(self, center=(0,0)):
         """Return the inverse FFT of the UV matrix, with the 0,0 point moved
         to 'center'.  Tranposes to put up=North, right=East."""
-        data = self.uv.transpose()
+        data = self.uv.transpose() / self.bm.sum()
         return recenter(n.abs(n.fft.ifft2(data)), center)
     def bm_image(self, center=(0,0)):
         """Return the inverse FFT of the sample weightings, with the 0,0 point
         moved to 'center'.  Tranposes to put up=North, right=East."""
-        data = self.bm.transpose()
+        data = self.bm.transpose() / self.bm.sum()
         return recenter(n.abs(n.fft.ifft2(data)), center)
     def get_top(self, center=(0,0)):
         """Return the topocentric coordinates of each pixel in the image."""
@@ -180,6 +180,7 @@ class ImgW(Img):
         G_hat = n.fft.fft2(G.filled(0))
         return G_hat
 
+'''
 class SkyMap:
     """DEPRECIATED.  A class for combining data from multiple pointings into a 
     map of the sky in cylindrical coordinates."""
@@ -233,22 +234,17 @@ class SkyMap:
         return n.abs(self.map / w)
 
 class SkyHMap:
-    def __init__(self, nside=128, ordering='RING', fromfits=None,
-            use_interp=False):
-        self.map = healpix.HealpixMap(nside, ordering=ordering)
-        self.wgt = healpix.HealpixMap(nside, ordering=ordering)
-        self.map.use_interp = use_interp
-        self.wgt.use_interp = use_interp
+    def __init__(self, nside=128, scheme='RING', fromfits=None,
+            dtype=n.float, interp=False):
+        self.map = healpix.HealpixMap(nside, scheme=scheme, 
+            dtype=dtype, interp=interp)
+        self.wgt = healpix.HealpixMap(nside, scheme=scheme,
+            dtype=dtype, interp=interp)
         if not fromfits is None: self.from_fits(fromfits)
-        else:
-            m = n.zeros(self.map.Npix(), dtype=n.float)
-            w = n.zeros(self.wgt.Npix(), dtype=n.float)
-            self.map.SetData(m, ordering=ordering)
-            self.wgt.SetData(w, ordering=ordering)
-    def __setitem__(self, crds, value):
-        data, weights = value
-        self.map[crds] += data * weights
-        self.wgt[crds] += weights
+    def __setitem__(self, crds, vals):
+        m, w = vals
+        self.map[crds] += m * w
+        self.wgt[crds] += w
     def __getitem__(self, crds):
         m = self.map[crds]
         w = self.wgt[crds]
@@ -267,3 +263,4 @@ class SkyHMap:
         self.map._set_fits_header(tbhdu.header)
         hdulist = pyfits.HDUList([hdu0, tbhdu])
         hdulist.writeto(filename, clobber=clobber)
+'''

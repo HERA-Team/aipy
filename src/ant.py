@@ -52,8 +52,22 @@ class RadioBody:
     def compute(self, observer):
         # Generate a map for projecting baselines to uvw coordinates
         self.map = coord.eq2top_m(observer.sidereal_time()-self.ra, self.dec)
-        # Generate a vector in eq coordinates pointing at src
-        self.eq = coord.radec2eq((self.ra, self.dec))
+        # Generate a vector coordinates pointing at src
+        self.e_vec = coord.radec2eq((self.ra, self.dec))
+        self.t_vec = coord.azalt2top((self.az, self.alt))
+    def get_crd(self, crdsys, ncrd=3):
+        """Return the coordinates of this location in the desired coordinate
+        system ('eq','top') in the current epoch.  If ncrd=2, angular
+        coordinates (ra/dec,lat/long,az/alt) are returned, and if ncrd=3,
+        xyz coordinates are returned."""
+        assert(crdsys in ('eq','top'))
+        assert(ncrd in (2,3))
+        if crdsys == 'eq':
+            if ncrd == 2: return (self.ra, self.dec)
+            return self.e_vec
+        else:
+            if ncrd == 2: return (self.az, self.alt)
+            return self.t_vec
 
 #  ____           _ _       _____ _              _ ____            _       
 # |  _ \ __ _  __| (_) ___ |  ___(_)_  _____  __| | __ )  ___   __| |_   _ 
@@ -114,6 +128,9 @@ class SrcCatalog(dict):
         return [self[s] for s in args]
     def compute(self, observer):
         for s in self: self[s].compute(observer)
+    def get_crds(self, crdsys, ncrd=3):
+        crds = n.array([s.get_crd(crdsys, ncrd=ncrd) for s in self.values()])
+        return crds.transpose()
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -291,7 +308,7 @@ class AntennaArray(ArrayLocation):
         return xyz * n.reshape(afreqs, (afreqs.size, 1))
     def gen_phs(self, src, i, j):
         """Return the phasing to be multiplied to data to point to src."""
-        try: src = src.eq
+        try: src = src.e_vec
         except(AttributeError): pass
         bl_dot_s = n.dot(src, self.get_baseline(i,j,src='e'))
         if len(bl_dot_s.shape) >= 1: bl_dot_s.shape = (bl_dot_s.size, 1)

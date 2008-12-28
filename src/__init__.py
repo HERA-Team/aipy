@@ -13,4 +13,4 @@ Revisions: lots
 """
 
 import ant, const, coord, deconv, fit, img, loc, sim, src
-import miriad, interp, optimize, utils, healpix
+import miriad, interp, optimize, utils, healpix, map

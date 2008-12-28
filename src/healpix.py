@@ -19,15 +19,28 @@ default_fits_format_codes = {
     n.float32:'E', n.float64:'D', n.complex64:'C', n.complex128:'M'
 }
 
+def mk_arr(val, dtype=n.double):
+    if type(val) is n.ndarray: return val.astype(dtype).flatten()
+    return n.array(val, dtype=dtype).flatten()
+
 class HealpixMap(HealpixBase):
     """Adds a data map to the HealpixBase infrastructure."""
-    _use_interpol = True
-    def set_interpolation(self, onoff):
-        """Choose whether __getitem___ (=HealpixMap[crd]) returns an
+    def __init__(self, *args, **kwargs):
+        dtype = kwargs.pop('dtype', n.double)
+        interp = kwargs.pop('interp', False)
+        fromfits = kwargs.pop('fromfits', None)
+        HealpixBase.__init__(self, *args, **kwargs)
+        self._use_interpol = interp
+        if fromfits is None:
+            m = n.zeros((self.npix(),), dtype=dtype)
+            self.set_map(m, scheme=self.scheme())
+        else: self.from_fits(fromfits)
+    def set_interpol(self, onoff):
+        """Choose whether __getitem___ (i.e. HealpixMap[crd]) returns an
         interpolated value or just nearest pixel.  Default upon creating a
-        HealpixMap is to interpolate."""
+        HealpixMap is to not interpolate."""
         self._use_interpol = onoff
-    def SetData(self, data, ordering="RING"):
+    def set_map(self, data, scheme="RING"):
         """Assign data to HealpixMap.map.  Infers Nside from # of pixels via
         Npix = 12 * Nside**2."""
         try:
@@ -35,44 +48,64 @@ class HealpixMap(HealpixBase):
             nside = self.npix2nside(data.shape[0])
         except(AssertionError,ValueError):
             raise ValueError("Data must be a 1 dim array with 12*N**2 entries.")
-        self.SetNside(nside, ordering)
+        self.set_nside_scheme(nside, scheme)
         self.map = data
-    def set_ordering(self, ordering):
+    def get_map(self):
+        return self.map
+    def change_scheme(self, scheme):
         """Reorder the pixels in map to be "RING" or "NEST" ordering."""
-        assert(ordering in ["RING", "NEST"])
-        if ordering == self.Scheme(): return
-        newmap = n.zeros_like(self.map)
-        i = n.arange(self.map.shape[0])
-        i = self.nest_ring_conv(i, ordering)
-        newmap[i] = self.map
-        self.SetNside(self.Nside(), ordering)
-        self.map = newmap
-    def interpolated_get_val(self, crd):
-        """Interpolate value of map at provided coordinates from neighboring
-        pixels."""
-        px, wgts = self.get_interpol(crd)
-        return n.sum(self.map[px] * wgts, axis=-1)
-    def interpolated_add_val(self, crd, data):
-        """Add data into map at provided coordinates, dividing the data among
-        adjacent pixels according to their weights."""
-        px, wgts = self.get_interpol(crd)
-        data.shape += (1,)
-        wgts *= data
-        data.shape = (data.size,)
-        px.shape = (px.size, 1); wgts = wgts.flatten()
-        utils.add2array(self.map, px, wgts)
+        assert(scheme in ["RING", "NEST"])
+        if scheme == self.scheme(): return
+        i = self.nest_ring_conv(n.arange(self.npix()), scheme)
+        self[i] = self.map
+        self.set_nside_scheme(self.nside(), scheme)
     def __getitem__(self, crd):
-        if type(crd) != n.ndarray or crd.ndim == 1: return self.map[crd]
-        elif self._use_interpol: return self.interpolated_get_val(crd)
-        else: return self.map[self.crd2px(crd)]
+        if type(crd) is tuple:
+            crd = [mk_arr(c, dtype=n.double) for c in crd]
+            if self._use_interpol:
+                px,wgts = self.crd2px(*crd, **{'interpolate':1})
+                return n.sum(self.map[px] * wgts, axis=-1)
+            else: px = self.crd2px(*crd)
+        else: px = mk_arr(crd, dtype=n.long)
+        return self.map[px]
     def __setitem__(self, crd, val):
-        if type(crd) != n.ndarray or crd.ndim == 1: self.map[crd] = val
-        elif self._use_interpol: return self.interpolated_add_val(crd, val)
-        else: self.map[self.crd2px(crd)] = val
+        if type(crd) is tuple:
+            crd = [mk_arr(c, dtype=n.double) for c in crd]
+            px = self.crd2px(*crd)
+        else: px = mk_arr(crd, dtype=n.int)
+        if px.size == 1: self.map[px] = val
+        else:
+            m = n.zeros_like(self.map)
+            px = px.reshape(px.size,1)
+            cnt = n.zeros(self.map.shape, dtype=n.bool)
+            val = mk_arr(val, dtype=m.dtype)
+            utils.add2array(m, px, val)
+            utils.add2array(cnt, px, n.ones(val.shape, dtype=n.bool))
+            self.map = n.where(cnt, m, self.map)
+    def from_hpm(self, hpm):
+        """Initialize this HealpixMap with data from another.  Takes care
+        of upgrading or downgrading the resolution, and swaps the ordering
+        scheme if necessary."""
+        if hpm.nside() < self.nside():
+            interpol = hpm._use_interpol
+            hpm.set_interpol(True)
+            px = n.arange(self.npix())
+            th,phi = self.px2crd(px, ncrd=2)
+            self[px] = hpm[th,phi]
+        elif hpm.nside() > self.nside():
+            factor = hpm.nside() / self.nside()
+            px = n.arange(hpm.npix())
+            th,phi = hpm.px2crd(px, ncrd=2)
+            self[th,phi] = hpm[px] / factor
+        else:
+            if hpm.scheme() == self.scheme(): self.map = hpm.map
+            else:
+                i = self.nest_ring_conv(n.arange(self.npix()), hpm.scheme())
+                self.map = hpm.map[i]
     def from_alm(self, alm):
         """Set data to the map generated by the spherical harmonic
         coefficients contained in alm."""
-        self.SetData(alm.to_map(self.Nside(), self.Scheme()))
+        self.set_map(alm.to_map(self.nside(), self.scheme()))
     def to_alm(self, lmax, mmax, iter=1):
         """Return an Alm object containing the spherical harmonic components
         of a map (in RING mode) up to the specified lmax,mmax.  Greater
@@ -85,17 +118,17 @@ class HealpixMap(HealpixBase):
         """Read a HealpixMap from the specified location in a fits file."""
         hdu = pyfits.open(filename)[hdunum]
         data = hdu.data.field(colnum)
-        ordering = hdu.header['ORDERING'][:4]
-        self.SetData(data, ordering=ordering)
+        scheme= hdu.header['ORDERING'][:4]
+        self.set_map(data, scheme=scheme)
     def _set_fits_header(self, hdr):
         hdr.update('PIXTYPE', 'HEALPIX', 'HEALPIX pixelisation')
-        ordering = self.Scheme()
-        if ordering == 'NEST': ordering == 'NESTED'
-        hdr.update('ORDERING', ordering,
+        scheme = self.scheme()
+        if scheme == 'NEST': scheme == 'NESTED'
+        hdr.update('ORDERING', scheme,
             'Pixel ordering scheme, either RING or NESTED')
-        hdr.update('NSIDE', self.Nside(), 'Resolution parameter for HEALPIX')
+        hdr.update('NSIDE', self.nside(), 'Resolution parameter for HEALPIX')
         hdr.update('FIRSTPIX', 0, "First pixel # (0 based)")
-        hdr.update('LASTPIX', self.Npix()-1, "Last pixel # (0 based)")
+        hdr.update('LASTPIX', self.npix()-1, "Last pixel # (0 based)")
         hdr.update('INDXSCHM', 'IMPLICIT', "Indexing: IMPLICIT or EXPLICIT")
     def to_fits(self, filename, format=None):
         """Write a HealpixMap to a fits file in the fits format specified by

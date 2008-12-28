@@ -16,7 +16,11 @@ o.add_option('--tol', dest='tol', type='float', default=1e-6,
     help='Tolerance for successful deconvolution.  For annealing, interpreted as cooling speed.')
 o.add_option('--maxiter', dest='maxiter', type='int', default=200,
     help='Number of allowable iterations per deconvolve attempt.')
-o.add_option('-a', '--ants', dest='ants', default='cross',
+o.add_option('-a', '--amp', dest='amp', action='store_true',
+    help='Use amplitude information to normalize visibilities.')
+o.add_option('-w', '--wgt_bm', dest='wgt_bm', action='store_true',
+    help='Weight visibilities by the strength of the primary beam.')
+o.add_option('-b', '--baselines', dest='baselines', default='cross',
     help='Select which antennas/baselines to include in plot.  Options are: "all", "auto", "cross", "<ant1 #>_<ant2 #>" (a specific baseline), or "<ant1 #>,..." (a list of active antennas).')
 o.add_option('-p', '--pol', dest='pol', default=None,
     help='Choose which polarization (xx, yy, xy, yx) to plot.')
@@ -70,7 +74,7 @@ opts, args = o.parse_args(sys.argv[1:])
 
 uv = a.miriad.UV(args[0])
 aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'],
-    use_bp=False)
+    use_bp=opts.amp)
 if opts.pol is None: active_pol = uv['pol']
 else: active_pol = a.miriad.str2pol[opts.pol]
 chans = gen_chans(opts.chan, uv)
@@ -91,7 +95,7 @@ uvw, dat, wgt = [], [], []
 for filename in args:
     sys.stdout.write('.'); sys.stdout.flush()
     uv = a.miriad.UV(filename)
-    data_selector(opts.ants, active_pol, uv)
+    data_selector(opts.baselines, active_pol, uv)
     for (crd,t,(i,j)),d in uv.all():
         if curtime != t:
             curtime = t
@@ -101,11 +105,19 @@ for filename in args:
                 src.compute(aa)
         if cnt != 0: continue
         d = d.take(chans)
+        if opts.amp: d /= aa.ants[i].gain * aa.ants[j].gain
         try:
             d = aa.phs2src(d, src, i, j)
             xyz = aa.gen_uvw(i,j,src=src)
-            #w = aa.ants[0].response((src.az, src.alt), pol=2)**2
-            w = n.ones(d.shape, dtype=n.float)
+            if opts.wgt_bm:
+                src_top = a.coord.azalt2top((src.az,src.alt))
+                w = aa.ants[i].response(src_top, pol=opts.pol[0]) *\
+                    aa.ants[j].response(src_top, pol=opts.pol[1])
+                w = w.flatten()
+# For optimal SNR, down-weight data that is already attenuated by beam 
+# by another factor of the beam response (modifying weight accordingly).
+                #d *= w; w *= w
+            else: w = n.ones(d.shape, dtype=n.float)
         except(a.ant.PointingError): continue
         valid = n.logical_not(d.mask)
         d = d.compress(valid).data
@@ -118,7 +130,6 @@ for filename in args:
             dat = n.concatenate(dat)
             uvw = n.concatenate(uvw); uvw.shape = (uvw.size / 3, 3)
             wgt = n.concatenate(wgt).flatten()
-            dat /= wgt; wgt = wgt * 0 + 1
             uvw,dat,wgt = im.append_hermitian(uvw,dat,wgt)
             im.put(uvw, dat, wgt)
             uvw, dat, wgt = [], [], []
@@ -129,10 +140,6 @@ sys.stdout.write('|\n'); sys.stdout.flush()
 dat = n.concatenate(dat)
 uvw = n.concatenate(uvw); uvw.shape = (uvw.size / 3, 3)
 wgt = n.concatenate(wgt).flatten()
-# For optimal SNR, down-weight data which is already attenuated by beam 
-# by another factor of the beam response (modifying weight accordingly).
-#data *= wgt; wgt *= wgt
-dat /= wgt; wgt = wgt * 0 + 1
 uvw,dat,wgt = im.append_hermitian(uvw,dat,wgt)
 im.put(uvw, dat, wgt)
 
@@ -156,7 +163,7 @@ elif opts.deconv == 'cln':
 elif opts.deconv == 'ann':
     cl_img,info = a.deconv.anneal(im_img, bm_img, maxiter=opts.maxiter, 
         cooling=lambda i,x: opts.tol*(1-n.cos(i/50.))*(x**2), verbose=True)
-if opts.deconv != None: rs_img = info['res']
+if opts.deconv != 'none': rs_img = info['res']
 
 p.subplot(221)
 im_img = n.log10(im_img + 1e-15)
@@ -174,32 +181,37 @@ p.colorbar(shrink=.5, fraction=.05)
 p.title('Dirty Beam')
 
 p.subplot(223)
-if opts.deconv != None:
+if opts.deconv != 'none':
     cl_img = n.log10(cl_img + 1e-15)
-    # Generate a little info about where the strongest src is
-    src_loc = cl_img.argmax()
-    eq = im.get_eq(ra=src.ra, dec=src.dec, center=(DIM/2,DIM/2))
-    ra,dec = a.coord.eq2radec(eq)
-    ra,dec = ra.flat[src_loc], dec.flat[src_loc]
-    eq = ephem.Equatorial(ra, dec)
-    print 'Phase center:', (src.ra, src.dec)
-    x,y = n.indices(cl_img.shape)
-    print 'Max src:', eq.get(), 'at pixel', (y.flat[src_loc], x.flat[src_loc])
-    # ... and then finish plotting
 else: cl_img = n.log10(n.abs(im.uv))
 mx = cl_img.max()
-p.imshow(cl_img, vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')
+p.imshow(cl_img.copy(), vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')
 p.colorbar(shrink=.5, fraction=.05)
-if opts.deconv != None: p.title('%s Image' % opts.deconv.upper())
+if opts.deconv != 'none': p.title('%s Image' % opts.deconv.upper())
 else: p.title('UV Sampling')
+if opts.deconv != 'none':
+    # Generate a little info about where the strongest src is
+    eq = im.get_eq(ra=src.ra, dec=src.dec, center=(DIM/2,DIM/2))
+    ra,dec = a.coord.eq2radec(eq)
+    print 'Phase center:', (src.ra, src.dec)
+    # Print top 10 srcs (destructively for cl_img)
+    for i in range(10):
+        src_loc = cl_img.argmax()
+        src_ra,src_dec = ra.flat[src_loc], dec.flat[src_loc]
+        eq = ephem.Equatorial(src_ra, src_dec, epoch=aa.epoch)
+        eq = ephem.Equatorial(eq, epoch=ephem.J2000)
+        x,y = n.indices(cl_img.shape)
+        print 'Src %2d:' % i, eq.get(), 'J2000,',
+        print 'at pixel', (y.flat[src_loc], x.flat[src_loc])
+        cl_img.flat[src_loc] = 0
 
 p.subplot(224)
-if opts.deconv != None: rs_img = n.log10(n.abs(rs_img) + 1e-15)
+if opts.deconv != 'none': rs_img = n.log10(n.abs(rs_img) + 1e-15)
 else: rs_img = n.log10(n.abs(im.bm))
 mx = rs_img.max()
 p.imshow(rs_img, vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')
 p.colorbar(shrink=.5, fraction=.05)
-if opts.deconv != None: p.title('Residual Image')
+if opts.deconv != 'none': p.title('Residual Image')
 else: p.title('Beam Sampling')
 
 p.show()

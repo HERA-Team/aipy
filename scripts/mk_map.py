@@ -6,17 +6,21 @@ o.set_usage('mk_map.py [options] *.uv')
 o.set_description(__doc__)
 o.add_option('-l', '--loc', dest='loc',
     help='Use location-specific info for this location.')
-o.add_option('--tol', dest='tol', type='float', default=1e-6,
-    help='Tolerance for successful deconvolution.')
-o.add_option('--var', dest='var', type='float', default=.8,
-    help='Starting variance guess for deconvolution, as a fraction of the total image variance.')
-o.add_option('--maxiter', dest='maxiter', type='int', default=200,
-    help='Number of allowable iterations per deconvolve attempt.')
 o.add_option('-d', '--deconv', dest='deconv', default='mem',
     help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).')
+o.add_option('--var', dest='var', type='float', default=.8,
+    help='Starting variance guess for deconvolution, as a fraction of the total image variance.')
+o.add_option('--tol', dest='tol', type='float', default=1e-6,
+    help='Tolerance for successful deconvolution.')
+o.add_option('--maxiter', dest='maxiter', type='int', default=200,
+    help='Number of allowable iterations per deconvolve attempt.')
+o.add_option('-a', '--amp', dest='amp', action='store_true',
+    help='Use amplitude information to normalize visibilities.')
+o.add_option('-w', '--wgt_bm', dest='wgt_bm', action='store_true',
+    help='Weight visibilities by the strength of the primary beam.')
 o.add_option('-i', '--interpolate', dest='interpolate', action='store_true',
     help='Use sub-pixel interpolation when gridding data to healpix map.')
-o.add_option('-a', '--ants', dest='ants', default='cross',
+o.add_option('-b', '--baselines', dest='baselines', default='cross',
     help='Select which antennas/baselines to include in plot.  Options are: "all", "auto", "cross", "<ant1 #>_<ant2 #>" (a specific baseline), or "<ant1 #>,..." (a list of active antennas).')
 o.add_option('-p', '--pol', dest='pol', default=None,
     help='Choose which polarization (xx, yy, xy, yx) to plot.')
@@ -28,7 +32,7 @@ o.add_option('--size', dest='size', type='int', default=200,
     help='Size of maximum UV baseline.')
 o.add_option('--res', dest='res', type='float', default=0.5,
     help='Resolution of UV matrix.')
-o.add_option('-b', '--buf_thresh', dest='buf_thresh', default=1e6, type='float',
+o.add_option('--buf', dest='buf_thresh', default=1e6, type='float',
     help='Maximum amount of data to buffer before gridding.  Excessive gridding takes performance hit, but if buffer exceeds memory available... ouch.')
 o.add_option('-m', '--map', dest='map',
     help='The skymap file to use.  If it exists, new data will be added to the map.  Othewise, the file will be created.')
@@ -103,7 +107,7 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
     for filename in args:
         sys.stdout.write('.'); sys.stdout.flush()
         uv = a.miriad.UV(filename)
-        data_selector(opts.ants, active_pol, uv)
+        data_selector(opts.baselines, active_pol, uv)
         for (crd,t,(i,j)),d in uv.all():
             if curtime != t:
                 curtime = t
@@ -113,13 +117,19 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
                     src.compute(aa)
             if cnt != 0: continue
             d = d.take(chans)
+            if opts.amp: d /= aa.ants[i].gain * aa.ants[j].gain
             try:
                 d = aa.phs2src(d, src, i, j)
                 xyz = aa.gen_uvw(i,j,src=src)
-                #topo_azalt = a.coord.az_alt_to_xyz((s.az, s.alt))
-                w = n.ones(d.shape, dtype=n.float)
-                #w = aa.ants[j].response(topo_azalt, pol=opts.pol[0]) * \
-                #    aa.ants[i].response(topo_azalt, pol=opts.pol[1])
+                if opts.wgt_bm:
+                    src_top = a.coord.azalt2top((src.az,src.alt))
+                    w = aa.ants[i].response(src_top, pol=opts.pol[0]) *\
+                        aa.ants[j].response(src_top, pol=opts.pol[1])
+                    w = w.flatten()
+# For optimal SNR, down-weight data that is already attenuated by beam 
+# by another factor of the beam response (modifying weight accordingly).
+                    #d *= w; w *= w
+                else: w = n.ones(d.shape, dtype=n.float)
             except(a.ant.PointingError): continue
             valid = n.logical_not(d.mask)
             d = d.compress(valid).data
@@ -133,7 +143,6 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
                 dat = n.concatenate(dat)
                 uvw = n.concatenate(uvw); uvw.shape = (uvw.size / 3, 3)
                 wgt = n.concatenate(wgt).flatten()
-                dat /= wgt; wgt = wgt * 0 + 1
                 uvw,dat,wgt = im.append_hermitian(uvw,dat,wgt)
                 im.put(uvw, dat, wgt)
                 uvw, dat, wgt = [], [], []
@@ -145,17 +154,13 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
     dat = n.concatenate(dat)
     uvw = n.concatenate(uvw); uvw.shape = (uvw.size / 3, 3)
     wgt = n.concatenate(wgt).flatten()
-    # For optimal SNR, down-weight data which is already attenuated by beam 
-    # by another factor of the beam response (modifying weight accordingly).
-    #data *= wgt; wgt *= wgt
-    dat /= wgt; wgt = wgt * 0 + 1
     uvw,dat,wgt = im.append_hermitian(uvw,dat,wgt)
     im.put(uvw, dat, wgt)
 
     im_img = im.image((DIM/2, DIM/2))
     bm_img = im.bm_image()
 
-    if opts.deconv == 'none': img = im_img / n.sqrt((bm_img**2).sum())
+    if opts.deconv == 'none': img = im_img #/ n.sqrt((bm_img**2).sum())
     elif opts.deconv == 'mem':
         cl_img,info = a.deconv.maxent_findvar(im_img, bm_img, f_var0=opts.var,
             maxiter=opts.maxiter, verbose=True, tol=opts.tol)

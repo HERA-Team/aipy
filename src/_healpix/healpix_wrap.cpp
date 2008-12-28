@@ -9,6 +9,7 @@
  * Date: 12/05/07
  * Revisions:
  *      01/23/08    arp     bugfix on get_interpol for memory leak
+ *      04/24/08    arp     moved interpol into crd2px functions
  */
 
 #include <Python.h>
@@ -118,7 +119,7 @@ static int HPBObject_init(HPBObject *self, PyObject *args, PyObject *kwds) {
     int nside=-1;
     PyObject *order = NULL;
     static char *options[] = {"RING", "NEST", NULL};
-    static char *kwlist[] = {"nside", "ordering", NULL};
+    static char *kwlist[] = {"nside", "scheme", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds,"|iO", kwlist, &nside, &order))
         return -1;
     int use_nest = get_option(options, order);
@@ -157,25 +158,25 @@ static PyObject * HPBObject_npix2nside(HPBObject *self, PyObject *args) {
 
 /* Wrapper over Healpix_Base::nest2ring and Healpix_Base::ring2nest
  * to convert an array of pixel indices into output order specified in
- * 'ordering'.  Modifies pixel array in place.
+ * 'scheme'.  Modifies pixel array in place.
  */
 static PyObject * HPBObject_nest_ring_conv(HPBObject *self, PyObject *args) {
     PyArrayObject *px;
-    PyObject *ordering;
+    PyObject *scheme;
     // Parse and check input arguments
-    if (!PyArg_ParseTuple(args, "O!O", &PyArray_Type, &px, &ordering))
+    if (!PyArg_ParseTuple(args, "O!O", &PyArray_Type, &px, &scheme))
         return NULL;
     CHK_ARRAY_TYPE(px,NPY_LONG);
     CHK_ARRAY_RANK(px,1);
     try {
-        if (strcmp(PyString_AsString(ordering), "NEST") == 0) {
+        if (strcmp(PyString_AsString(scheme), "NEST") == 0) {
             for (int i=0; i < DIM(px,0); i++)
                 IND1(px,i,long) = self->hpb.ring2nest(IND1(px,i,long));
-        } else if (strcmp(PyString_AsString(ordering), "RING") == 0) {
+        } else if (strcmp(PyString_AsString(scheme), "RING") == 0) {
             for (int i=0; i < DIM(px,0); i++)
                 IND1(px,i,long) = self->hpb.nest2ring(IND1(px,i,long));
         } else {
-            PyErr_Format(PyExc_ValueError,"ordering must be 'RING' or 'NEST'.");
+            PyErr_Format(PyExc_ValueError,"scheme must be 'RING' or 'NEST'.");
             return NULL;
         }
     } catch (Message_error &e) {
@@ -188,116 +189,142 @@ static PyObject * HPBObject_nest_ring_conv(HPBObject *self, PyObject *args) {
 
 // Thin wrapper over Healpix_Base::SetNside
 static PyObject * HPBObject_SetNside(HPBObject *self, PyObject *args) {
-    Healpix_Ordering_Scheme scheme = RING;
+    Healpix_Ordering_Scheme hp_scheme = RING;
     int nside;
-    PyObject *ordering = NULL;
-    if (!PyArg_ParseTuple(args, "iO", &nside, &ordering)) return NULL;
-    if (strcmp(PyString_AsString(ordering), "NEST") == 0) scheme = NEST;
-    else if (strcmp(PyString_AsString(ordering), "RING") != 0) {
-        PyErr_Format(PyExc_ValueError, "ordering must be 'RING' or 'NEST'.");
+    PyObject *scheme = NULL;
+    if (!PyArg_ParseTuple(args, "iO", &nside, &scheme)) return NULL;
+    if (strcmp(PyString_AsString(scheme), "NEST") == 0) hp_scheme = NEST;
+    else if (strcmp(PyString_AsString(scheme), "RING") != 0) {
+        PyErr_Format(PyExc_ValueError, "scheme must be 'RING' or 'NEST'.");
         return NULL;
     }
-    self->hpb.SetNside(nside, scheme);
+    self->hpb.SetNside(nside, hp_scheme);
     Py_INCREF(Py_None);
     return Py_None;
 }
     
 
-/* Wraps together ang2pix and vec2pix for a unified "coordinate input", and 
- * uses input array to do many at once.  If 2nd axis of input array has
- * length 2, it is interpreted as angles for a Pointing.  If it has length
- * 3, it is interpreted as x,y,z for a Vector.
- */
-static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args) {
-    PyArrayObject *crd, *rv;
+/* Wraps ang2pix, and uses arrays to do many at once. */
+static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
+        PyObject *kwds) {
+    int interpolate=0;
+    double c1, c2, c3=0;
+    fix_arr<int,4> fix_pix;
+    fix_arr<double,4> fix_wgt;
+    pointing p;
+    vec3 v;
+    PyArrayObject *crd1, *crd2, *crd3=NULL, *rv, *wgt=NULL;
+    static char *kwlist[] = {"crd1", "crd2", "crd3", "interpolate", NULL};
     // Parse and check input arguments
-    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &crd)) return NULL;
-    CHK_ARRAY_RANK(crd,2);
-    if (DIM(crd,1) != 2 and DIM(crd,1) != 3) {
-        PyErr_Format(PyExc_RuntimeError, "2nd axis must have length 2 or 3.");
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!O!|O!i", kwlist, 
+            &PyArray_Type, &crd1, &PyArray_Type, &crd2, &PyArray_Type, &crd3,
+            &interpolate))
+        return NULL;
+    CHK_ARRAY_RANK(crd1,1);
+    CHK_ARRAY_RANK(crd2,1);
+    if (crd3 != NULL) CHK_ARRAY_RANK(crd3,1);
+    int sz = DIM(crd1,0);
+    if (DIM(crd2,0) != sz || (crd3 != NULL && DIM(crd3,0) != sz)) {
+        PyErr_Format(PyExc_RuntimeError, "input crds must have same length.");
         return NULL;
     }
-    CHK_ARRAY_TYPE(crd, NPY_DOUBLE);
-    // Make an array to hold the results
-    int sz = DIM(crd,0);
-    int dimens[1] = {sz};
-    rv = (PyArrayObject *) PyArray_FromDims(1, dimens, PyArray_LONG);
-    CHK_NULL(rv);
+    CHK_ARRAY_TYPE(crd1, NPY_DOUBLE);
+    CHK_ARRAY_TYPE(crd2, NPY_DOUBLE);
+    if (crd3 != NULL) CHK_ARRAY_TYPE(crd3, NPY_DOUBLE);
+    // Make array(s) to hold the results
+    if (interpolate == 0) {
+        int dimens[1] = {sz};
+        rv = (PyArrayObject *) PyArray_FromDims(1, dimens, PyArray_LONG);
+        CHK_NULL(rv);
+    } else {
+        int dimens[2] = {sz, 4};
+        rv = (PyArrayObject *) PyArray_FromDims(2, dimens, PyArray_LONG);
+        wgt = (PyArrayObject *) PyArray_FromDims(2, dimens, PyArray_DOUBLE);
+        CHK_NULL(rv);
+        CHK_NULL(wgt);
+    }     
     // Interpret coordinates
-    if (DIM(crd,1) == 2) {
-        pointing p;
-        for (int i=0; i < sz; i++) {
-            p.theta = IND2(crd,i,0,double);
-            p.phi = IND2(crd,i,1,double);
-            if (std::isfinite(p.theta) && std::isfinite(p.phi))
-                IND1(rv,i,long) = self->hpb.ang2pix(p);
-            else {
-                printf("Warning: encountered NaN/Inf in crd2px\n");
-                IND1(rv,i,long) = 0;
-            }
+    for (int i=0; i < sz; i++) {
+        c1 = IND1(crd1,i,double);
+        c2 = IND1(crd2,i,double);
+        if (crd3 != NULL) c3 = IND1(crd3,i,double);
+        if (!std::isfinite(c1) || !std::isfinite(c2) ||
+                (crd3 != NULL && !std::isfinite(c3))) {
+                    printf("Warning: encountered NaN/Inf in crd2px\n");
+                    c1 = 0; c2 = 0; c3 = 1;
         }
-    } else { // DIM(crd,1) == 3
-        vec3 v;
-        for (int i=0; i < sz; i++) {
-            v.x = IND2(crd,i,0,double);
-            v.y = IND2(crd,i,1,double);
-            v.z = IND2(crd,i,2,double);
-            if (std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z))
+        if (crd3 == NULL) {
+            p.theta = c1; p.phi = c2;
+        } else {
+            v.x = c1; v.y = c2; v.z = c3;
+        }
+        if (interpolate == 0) {
+            if (crd3 == NULL) {
+                IND1(rv,i,long) = self->hpb.ang2pix(p);
+            } else {
                 IND1(rv,i,long) = self->hpb.vec2pix(v);
-            else {
-                printf("Warning: encountered NaN/Inf in crd2px\n");
-                IND1(rv,i,long) = 0;
+            }
+        } else {    // Do interpolation
+            if (crd3 != NULL) p = pointing(v);
+            self->hpb.get_interpol(p, fix_pix, fix_wgt);
+            for (int j=0; j < 4; j++) {
+                IND2(rv,i,j,long) = fix_pix[j];
+                IND2(wgt,i,j,double) = fix_wgt[j];
             }
         }
     }
-    return PyArray_Return(rv);
+    if (interpolate == 0) return PyArray_Return(rv);
+    return Py_BuildValue("(OO)", PyArray_Return(rv), PyArray_Return(wgt));
 }
-
-/* Wraps pix2ang, but adds possibility of vector output as well.  Similarly
+    
+/* Wraps pix2ang, but adds option of vector output as well.  Similarly
  * uses array I/O to do many at once.
  */
 static PyObject * HPBObject_px2crd(HPBObject *self,
         PyObject *args, PyObject *kwds) {
     pointing p;
     vec3 v;
-    PyArrayObject *px, *rv;
-    static char *options[] = {"pnt", "vec", NULL};
-    static char *kwlist[] = {"px", "crd_type", NULL};
-    PyObject *crd_type = NULL;
+    int ncrd=3;
+    PyArrayObject *px, *crd1, *crd2, *crd3;
+    static char *kwlist[] = {"px", "ncrd", NULL};
     // Parse and check input arguments
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!|O", kwlist, 
-            &PyArray_Type, &px, &crd_type))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!|i", kwlist, 
+            &PyArray_Type, &px, &ncrd))
         return NULL;
-    int return_type = get_option(options, crd_type);
-    if (return_type == -1) return NULL;
+    if (ncrd != 2 && ncrd != 3) {
+        PyErr_Format(PyExc_ValueError, "ncrd must be 2 or 3.");
+        return NULL;
+    }
     CHK_ARRAY_RANK(px,1);
     CHK_ARRAY_TYPE(px,NPY_LONG);
     // Make an array to hold the results
     int sz = px->dimensions[0];
-    if (return_type == 0) {
-        int dimens[2] = {sz, 2};
-        rv = (PyArrayObject *) PyArray_FromDims(2, dimens, PyArray_DOUBLE);
-    } else {
-        int dimens[2] = {sz, 3};
-        rv = (PyArrayObject *) PyArray_FromDims(2, dimens, PyArray_DOUBLE);
-    }
-    CHK_NULL(rv);
-    // Interpret coordinates
-    for (int i=0; i < sz; i++) {
-        p = self->hpb.pix2ang(IND1(px,i,int));
-        if (return_type == 0) {
-            IND2(rv,i,0,double) = p.theta;
-            IND2(rv,i,1,double) = p.phi;
-        } else {
-            v = p.to_vec3();
-            IND2(rv,i,0,double) = v.x;
-            IND2(rv,i,1,double) = v.y;
-            IND2(rv,i,2,double) = v.z;
+    int dimens[1] = {sz};
+    crd1 = (PyArrayObject *) PyArray_FromDims(1, dimens, PyArray_DOUBLE);
+    crd2 = (PyArrayObject *) PyArray_FromDims(1, dimens, PyArray_DOUBLE);
+    CHK_NULL(crd1);
+    CHK_NULL(crd2);
+    if (ncrd == 2) {
+        for (int i=0; i < sz; i++) {
+            p = self->hpb.pix2ang(IND1(px,i,int));
+            IND1(crd1,i,double) = p.theta;
+            IND1(crd2,i,double) = p.phi;
         }
+        return Py_BuildValue("(OO)",PyArray_Return(crd1),PyArray_Return(crd2));
+    } else {
+        crd3 = (PyArrayObject *) PyArray_FromDims(1, dimens, PyArray_DOUBLE);
+        for (int i=0; i < sz; i++) {
+            p = self->hpb.pix2ang(IND1(px,i,int));
+            v = p.to_vec3();
+            IND1(crd1,i,double) = v.x;
+            IND1(crd2,i,double) = v.y;
+            IND1(crd3,i,double) = v.z;
+        }
+        return Py_BuildValue("(OOO)", PyArray_Return(crd1),
+            PyArray_Return(crd2), PyArray_Return(crd3));
     }
-    return PyArray_Return(rv);
 }
-            
+        
 // Thin wrapper over Healpix_Base::Order
 static PyObject * HPBObject_Order(HPBObject *self) {
     return PyInt_FromLong(self->hpb.Order());
@@ -320,70 +347,6 @@ static PyObject * HPBObject_Scheme(HPBObject *self) {
     return PyString_FromString("NEST");
 }
 
-/* Wraps get_interpol and get_interpol2 to return nearby pixels and weights
- * for an array of input coordinates, allowing you to choose between them for 
- * RING and NEST schemes.  
- */
-static PyObject * HPBObject_get_interpol(HPBObject *self,
-        PyObject *args, PyObject *kwds) {
-    pointing p;
-    vec3 v;
-    fix_arr<int,4> fix_pix;
-    fix_arr<double,4> fix_wgt;
-    PyArrayObject *crd, *px, *wgt;
-    PyObject *rv = NULL;
-    // Parse and check input arguments
-    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &crd)) return NULL;
-    CHK_ARRAY_RANK2(crd,1,2);
-    if (RANK(crd) == 1) {
-        CHK_ARRAY_TYPE(crd, NPY_LONG);
-    } else if (DIM(crd,1) != 2 and DIM(crd,1) != 3) {
-        PyErr_Format(PyExc_RuntimeError, "2nd dim must be 2 or 3");
-        return NULL;
-    } else {
-        CHK_ARRAY_TYPE(crd, NPY_DOUBLE);
-    }
-    // Make arrays to hold the results
-    int sz = DIM(crd,0);
-    int dimens[2] = {sz, 4};
-    px = (PyArrayObject *) PyArray_FromDims(2, dimens, PyArray_LONG);
-    wgt = (PyArrayObject *) PyArray_FromDims(2, dimens, PyArray_DOUBLE);
-    CHK_NULL(px);
-    CHK_NULL(wgt);
-    // Interpret coordinates
-    for (int i=0; i < sz; i++) {
-        if (RANK(crd) == 1) {
-            p = self->hpb.pix2ang(IND1(crd,i,long));
-        } else if (DIM(crd,1) == 2) {
-            p.theta = IND2(crd,i,0,double);
-            p.phi = IND2(crd,i,1,double);
-            if (!std::isfinite(p.theta) || !std::isfinite(p.phi)) {
-                printf("Warning: encountered NaN/Inf in get_interpol\n");
-                p.theta = 0; p.phi = 0;
-            }
-        } else { // DIM(crd,1) == 3
-            v.x = IND2(crd,i,0,double);
-            v.y = IND2(crd,i,1,double);
-            v.z = IND2(crd,i,2,double);
-            if (std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z))
-                p = pointing(v);
-            else {
-                printf("Warning: encountered NaN/Inf in get_interpol\n");
-                p.theta = 0; p.phi = 0;
-            }
-        }
-        self->hpb.get_interpol(p, fix_pix, fix_wgt);
-        for (int j=0; j < 4; j++) {
-            IND2(px,i,j,long) = fix_pix[j];
-            IND2(wgt,i,j,double) = fix_wgt[j];
-        }
-    }
-    rv = PyTuple_Pack(2, (PyObject *) px, (PyObject *) wgt);
-    // We now have duplicate references, so DECREF to avoid memory leak
-    Py_DECREF(px); Py_DECREF(wgt);
-    return rv;
-}
-
 /*_        __                     _               _   _       
  \ \      / / __ __ _ _ __  _ __ (_)_ __   __ _  | | | |_ __  
   \ \ /\ / / '__/ _` | '_ \| '_ \| | '_ \ / _` | | | | | '_ \ 
@@ -397,24 +360,21 @@ static PyMethodDef HPBObject_methods[] = {
         "npix2nside(npix)\nConvert number of pixels to number of sides."},
     {"nest_ring_conv", (PyCFunction)HPBObject_nest_ring_conv,
         METH_VARARGS,
-        "nest_ring_conv(px, ordering)\nTranslate an array of pixel numbers to index data in the scheme specified in 'ordering' ('NEST' or 'RING').  Returns px, which has been modified in place (so beware!)."},
-    {"SetNside", (PyCFunction)HPBObject_SetNside, METH_VARARGS,
-        "SetNside(nside, ordering)\nAdjust Nside and ordering scheme ('RING' or 'NEST')."},
-    {"crd2px", (PyCFunction)HPBObject_crd2px, METH_VARARGS,
-        "crd2px(crd)\nConvert a 2 dimensional input array of coordinates to pixel indices.  If 2nd axis has length 2, it is interpreted as (theta,phi) coordinates on a sphere.  If 2nd axis has length 3, it is interpreted as (x,y,z) coordinates, which will point to a pixel on the sphere."},
+        "nest_ring_conv(px,scheme)\nTranslate an array of pixel numbers to index data in the scheme specified in 'scheme' ('NEST' or 'RING').  Returns px, which has been modified in place (so beware!)."},
+    {"set_nside_scheme", (PyCFunction)HPBObject_SetNside, METH_VARARGS,
+        "set_nside_scheme(nside,scheme)\nAdjust Nside and Scheme ('RING' or 'NEST')."},
+    {"crd2px", (PyCFunction)HPBObject_crd2px, METH_VARARGS|METH_KEYWORDS,
+        "crd2px(c1,c2,c3=None,interpolate=False)\nConvert 1 dimensional arrays of input coordinates to pixel indices. If only c1,c2 provided, then read them as th,phi.  If c1,c2,c3 provided, read them as x,y,z. If interpolate is False, return a single pixel coordinate.  If interpolate is True, return px,wgts where each entry in px contains the 4 pixels adjacent to the specified location, and wgt contains the 4 corresponding weights of those pixels."},
     {"px2crd", (PyCFunction)HPBObject_px2crd,METH_VARARGS|METH_KEYWORDS,
-        "px2crd(px, crd_type='vec')\nConvert a 1 dimensional input array of pixel numbers to the type of coordinates specified by 'crd_type'.  If crd_type='vec', the returned array will have (x,y,z) for each pixel.  Otherwise if crd_type='pnt', the returned array will have (theta,phi) for each pixel."},
-    {"Order", (PyCFunction)HPBObject_Order,METH_NOARGS,
-        "Order()\nReturn the order parameter."},
-    {"Nside", (PyCFunction)HPBObject_Nside,METH_NOARGS,
-        "Nside()\nReturn the Nside parameter."},
-    {"Npix", (PyCFunction)HPBObject_Npix,METH_NOARGS,
-        "Npix()\nReturn the number of pixels in the map."},
-    {"Scheme", (PyCFunction)HPBObject_Scheme,METH_NOARGS,
-        "Scheme()\nReturn the ordering scheme of the map ('NEST' or 'RING')."},
-    {"get_interpol", (PyCFunction)HPBObject_get_interpol,
-        METH_VARARGS|METH_KEYWORDS,
-        "get_interpol(crd, ordering='RING')\nReturn px,wgts where each entry in px contains the 4 pixels adjacent to the coordinates in 'crd', and wgt contains the 4 corresponding weights of those pixels.  'ordering' should generally represent the current ordering scheme of the map for most efficient computation (although it will still give you the right answer otherwise)."},
+        "px2crd(px,ncrd=3)\nConvert a 1 dimensional input array of pixel numbers to the type of coordinates specified by ncrd.  If ncrd=3 (default), the returned array will have (x,y,z) for each pixel.  Otherwise if ncrd=2, the returned array will have (theta,phi) for each pixel."},
+    {"order", (PyCFunction)HPBObject_Order,METH_NOARGS,
+        "order()\nReturn the order parameter."},
+    {"nside", (PyCFunction)HPBObject_Nside,METH_NOARGS,
+        "nside()\nReturn the Nside parameter."},
+    {"npix", (PyCFunction)HPBObject_Npix,METH_NOARGS,
+        "npix()\nReturn the number of pixels in the map."},
+    {"scheme", (PyCFunction)HPBObject_Scheme,METH_NOARGS,
+        "scheme()\nReturn the scheme of the map ('NEST' or 'RING')."},
     {NULL}  /* Sentinel */
 };
 
@@ -440,7 +400,7 @@ static PyTypeObject HPBType = {
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,        /*tp_flags*/
-    "Functionality related to the HEALPix pixelisation.  HPM() or HPM(nside, ordering='RING').",       /* tp_doc */
+    "Functionality related to the HEALPix pixelisation.  HealpixBase() or HealpixBase(nside, scheme='RING').",       /* tp_doc */
     0,                     /* tp_traverse */
     0,                     /* tp_clear */
     0,                     /* tp_richcompare */

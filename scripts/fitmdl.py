@@ -83,7 +83,7 @@ if opts.other_prms != None:
     src_prms = [w.split('=') for w in opts.other_prms.split(',')]
     sprm_dict = {}
     for src,prm in src_prms:
-        if sprm_dict.has_key(src): sprm_dict.append(prm)
+        if sprm_dict.has_key(src): sprm_dict[src].append(prm)
         else: sprm_dict[src] = [prm]
     start_prms.update(cat.get_params(sprm_dict))
 
@@ -103,7 +103,6 @@ def fit_func(prms):
             prms[ant][prm] = prms[ants[0]][prm]
     aa.set_params(prms)
     cat.set_params(prms)
-    #s_eqs,fluxes,indices,mfreqs = cat.get_vecs()
     score,cnt,curtime = 0,0,None
     for uvfile in args:
         sys.stdout.write('.'), ; sys.stdout.flush()
@@ -119,7 +118,10 @@ def fit_func(prms):
                 if cnt == 0:
                     aa.set_jultime(t)
                     cat.compute(aa)
-                    s_eqs,fluxes,indices,mfreqs = cat.get_vecs()
+                    s_eqs = cat.get_crds('eq', n_crds=3)
+                    fluxes = cat.get_fluxes()
+                    indices = cat.get_indices()
+                    mfreqs = cat.get_mfreqs()
             if cnt != 0: continue
             sim_d = aa.sim(i, j, s_eqs, fluxes, indices=indices, mfreqs=mfreqs,
                 pol=a.miriad.pol2str[uv['pol']])
@@ -133,7 +135,8 @@ def fit_func(prms):
     print '-------------------------------------------------------------------'
     return score / first_fit
 
-a.optimize.fmin(fit_func, prm_list, maxfun=n.Inf, maxiter=n.Inf)
+a.optimize.fmin(fit_func, prm_list,
+    maxfun=n.Inf, maxiter=n.Inf, ftol=1e-100, xtol=1e-100)
 '''
 def anneal(func, x0, T_x, cooling=lambda i: 3*(n.cos(i/50.)+1), 
         maxiter=1000, verbose=True):

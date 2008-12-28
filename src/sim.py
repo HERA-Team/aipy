@@ -76,17 +76,12 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
 
 class SrcCatalog(ant.SrcCatalog):
     """A class adding simulation capability to SrcCatalog"""
-    def get_vecs(self):
-        """Return the 4 arrays needed by sim(): the 
-        equatorial vector locations, fluxes, spectral indices, and the 
-        frequencies at which the fluxes were measured."""
-        srcs = self.values()
-        s_eqs = n.array([s.eq for s in srcs]).transpose()
-        fluxes = n.array([s.janskies for s in srcs])
-        indices = n.array([s.index for s in srcs])
-        mfreqs = n.array([s.mfreq for s in srcs])
-        return s_eqs, fluxes, indices, mfreqs
-
+    def get_fluxes(self):
+        return n.array([s.janskies for s in self.values()])
+    def get_indices(self):
+        return n.array([s.index for s in self.values()])
+    def get_mfreqs(self):
+        return n.array([s.mfreq for s in self.values()])
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -185,7 +180,7 @@ class BeamCosSeries(ant.Beam):
 class BeamAlm(ant.Beam):
     def __init__(self, freqs, lmax=3, mmax=3, coeffs=None, nside=32):
         self.alm = healpix.Alm(lmax,mmax)
-        self.hmap = healpix.HealpixMap(nside, ordering='RING')
+        self.hmap = healpix.HealpixMap(nside, scheme='RING')
         ant.Beam.__init__(self, freqs)
         self.update(coeffs)
     def select_chans(self, active_chans):
@@ -196,11 +191,14 @@ class BeamAlm(ant.Beam):
         self.alm.set_data(coeffs)
         self.hmap.from_alm(self.alm)
     def response(self, top):
+        rv = self.hmap[n.array(top).transpose()]
+        rv.shape = (1,) + rv.shape
+        return rv.clip(0, n.Inf)
+
+class BeamAlmSymm(BeamAlm):
+    def response(self, top):
         x,y,z = top
-        top1 = (x, y, z)
-        top2 = (-x, -y, z)
-        rv = .5*self.hmap[n.array(top1).transpose()]
-        rv += .5*self.hmap[n.array(top2).transpose()]
+        rv = .5*self.hmap[x,y,z] + .5*self.hmap[-x,-y,z]
         rv.shape = (1,) + rv.shape
         return rv.clip(0, n.Inf)
     
@@ -236,7 +234,7 @@ class Antenna(ant.Antenna):
         bp = self.bp
         dec_factor = self.beam.freqs.size / self.bp.size
         if dec_factor != 1: bp = interpolate(self.bp, dec_factor)
-        gain = self.amp * bp
+        gain = self.amp * bp.clip(0, n.Inf)
         self.gain = gain.take(self.beam.chans)
     def update_pointing(self, az=0, alt=n.pi/2, twist=0):
         """Set the antenna beam to point at (az, alt) with the specified
@@ -298,7 +296,6 @@ class AntennaArray(ant.AntennaArray):
         # Get the phase of each src vs. freq
         E_sf = n.conjugate(self.gen_phs(s_eqs.transpose(), i, j))
         # Combine and sum over sources
-        #GBIE_sf = GAi_sf * GAj_sf * I_sf**2 * E_sf
         GBIE_sf = GAi_sf * GAj_sf * I_sf * E_sf
         Vij_f = GBIE_sf.sum(axis=0)
         return Vij_f
