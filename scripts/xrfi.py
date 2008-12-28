@@ -4,10 +4,14 @@ A script for detecting and flagging RFI related effects in UV files.
 
 Author: Aaron Parsons
 Date: 5/31/07
-Revisions: None
+Revisions:
+    10/10/07    arp Lowered thresh for flagging an integration to coincidence
+                    on 2 antennas.
 """
 
-import numpy, aipy.miriad, scipy.optimize
+__version__ = '0.0.2'
+
+import numpy, aipy, scipy.optimize
 
 def gaussian(amp, sig, off, x):
     """Generate gaussian value at x given amplitude, sigma, and x offset."""
@@ -28,6 +32,7 @@ def gen_rfi_thresh(data, nsig=2, per_bin=1000):
     if numpy.ma.isMA(data): histdata = numpy.log10(abs(data.filled(0))+1e-6)
     else: histdata = numpy.log10(abs(data)+1e-6)
     h, bvals = numpy.histogram(histdata, bins=histdata.size/per_bin)
+    if h.size == 0: return 0, 0
     amp, sig, off = fit_gaussian(numpy.arange(h.size), h)
     hi_thresh = numpy.clip(numpy.round(off + nsig*sig), 0, len(bvals)-1)
     lo_thresh = numpy.clip(numpy.round(off - nsig*sig), 0, len(bvals)-1)
@@ -43,7 +48,7 @@ def flag_by_int(preflagged_auto):
     spikey_pwr_vs_t = abs(pwr_vs_t - remove_spikes(pwr_vs_t))
     hi_thr, lo_thr = gen_rfi_thresh(spikey_pwr_vs_t, per_bin=20, nsig=1)
     mask = spikey_pwr_vs_t > hi_thr
-    return mask
+    return mask.astype(numpy.int)
 
 def remove_spikes(data, order=6, iter=3, return_poly=False):
     """Iteratively fits a smooth function by removing outliers and fitting
@@ -71,8 +76,6 @@ if __name__ == '__main__':
 
     p = OptionParser()
     p.set_usage('xrfi.py [options] *.uv')
-    p.add_option('-s', '--sky_removal', dest='sky_removal', action='store_true',
-        help='Window to filter out sky-based sources before flagging rfi.  Applies Parzen window to lag-domain data.')
     p.set_description(__doc__)
 
     opts, args = p.parse_args(sys.argv[1:])
@@ -93,33 +96,20 @@ if __name__ == '__main__':
             p, d = uvi.read_data()
             if d.size == 0: break
             i, j = aipy.miriad.bl2ij(p[-1])
-            if i != j and opts.sky_removal:
+            if i != j:
                 if window is None: 
                     window = d.size/2 - abs(numpy.arange(d.size) - d.size/2)
-                img = numpy.fft.ifft(d)
-                img *= window
-                d = numpy.fft.fft(img)
-            d.shape = (1,) + d.shape
+                d = numpy.fft.fft(numpy.fft.ifft(d) * window)
             try: data[p[-1]].append(d)
             except(KeyError): data[p[-1]] = [d]
             if len(times) == 0 or times[-1] != p[-2]: times.append(p[-2])
-
-        #import pylab
-        #ks = data.keys()
-        #ks.sort()
-        #for n, k in enumerate(ks):
-        #    d = numpy.ma.concatenate(data[k], axis=0)
-        #    pylab.subplot(4, 3, n+1)
-        #    pylab.imshow(numpy.log10(numpy.abs(d)+1e-6))
-        #    pylab.title(str(aipy.miriad.bl2ij(k)))
-        #pylab.show()
 
         # Generate a single mask for all baselines which masks if any
         # baseline has an outlier at that freq/time.  Data flagged
         # strictly on basis of nsigma above mean.
         total_mask = 0
         for k in data:
-            data[k] = numpy.ma.concatenate(data[k], axis=0)
+            data[k] = numpy.array(data[k])
             i, j = aipy.miriad.bl2ij(k)
             if i == j: continue
             hi_thresh, lo_thresh = gen_rfi_thresh(data[k])
@@ -128,12 +118,12 @@ if __name__ == '__main__':
         # Use autocorrelations to flag entire integrations which have
         # anomalous powers.  All antennas must agree for a integration
         # to get flagged.
-        int_mask = 1
-        for k in data:
-            data[k] = numpy.ma.array(data[k], mask=total_mask)
-            i, j = aipy.miriad.bl2ij(k)
-            if i == j: int_mask &= flag_by_int(data[k])
-        for n in numpy.where(int_mask): total_mask[n] = 1
+        int_mask = 0
+        for bl in data:
+            data[bl] = numpy.ma.array(data[bl], mask=total_mask)
+            i, j = aipy.miriad.bl2ij(bl)
+            if i == j: int_mask += flag_by_int(data[bl])
+        for n in numpy.where(int_mask > 1): total_mask[n] = 1
 
         # Generate a pipe for applying both the total_mask and the int_mask
         # to the data as it comes it.
@@ -143,12 +133,11 @@ if __name__ == '__main__':
             bl = preamble[-1]
             i, j = aipy.miriad.bl2ij(bl)
             t = times.index(preamble[-2])
-            if i == j: mask = numpy.logical_or(total_mask[t], int_mask[t])
-            else: mask = total_mask[t]
-            data = numpy.ma.array(data.data, mask=mask)
+            data = numpy.ma.array(data.data, mask=total_mask[t])
             return preamble, data
 
         # Apply the pipe to the data
-        aipy.miriad.pipe_uv(uvi, uvo, mfunc=rfi_mfunc)
+        aipy.miriad.pipe_uv(uvi, uvo, mfunc=rfi_mfunc,
+            append2hist='XRFI: version %s\n' % __version__)
         del(uvi)
         del(uvo)

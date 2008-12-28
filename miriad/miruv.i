@@ -490,3 +490,9 @@ extern size_t hsize_c_wrap(int thandle, const char *keyword);
 
 extern void write_freqs(int thandle, int nspect, int nschan, double sfreq, double sdf);
 
+%apply int *OUTPUT {int *nspect};
+%apply int *OUTPUT {int *nschan};
+%apply double *OUTPUT {double *sfreq};
+%apply double *OUTPUT {double *sdf};
+extern void read_freqs(int thandle, int *nspect, int *nschan, double *sfreq, double *sdf);
+

@@ -20,16 +20,20 @@ Revisions:
 """
 __version__ = '0.0.4'
 
-import numpy, sim, math, fit
+import numpy, sim
 
-#  _____           ____
-# | ____|___  _ __| __ )  ___  __ _ _ __ ___
-# |  _| / _ \| '__|  _ \ / _ \/ _` | '_ ` _ \
-# | |__| (_) | |  | |_) |  __/ (_| | | | | | |
-# |_____\___/|_|  |____/ \___|\__,_|_| |_| |_|
+#  ____
+# | __ )  ___  __ _ _ __ ___
+# |  _ \ / _ \/ _` | '_ ` _ \
+# | |_) |  __/ (_| | | | | | |
+# |____/ \___|\__,_|_| |_| |_|
 
 class Beam(sim.Beam):
+    """A specific beam model for the PAPER experiment.  This model is for
+    a single dipole element."""
     def __init__(self, freqs, active_chans=None, **kwargs):
+        """The axes of the Cs matrices are polynomials in frequency going
+        to the right, and polys in cos(2*az) going down."""
         CsAm = numpy.array([        # N. Gugliucci 08/07
             [ 2.3541326  ,-0.0039133512 , 1.6055088e-05,-2.7468911e-08], 
             [-0.46909345 , 0.0084471178 ,-5.1260711e-05, 1.0299793e-07],
@@ -106,136 +110,12 @@ class Beam(sim.Beam):
     def response(self, zang, az, pol=1):
         """Return the beam response across the band for input zenith angle
         (zang) and azimuth (az).  Rotate beam model 90 degrees if pol == 2."""
-        if pol == 2: az += math.pi/2
+        if pol == 2: az += numpy.pi/2
         a = numpy.cos(numpy.array([0, 2*az, 4*az, 6*az, 8*az, 10*az]))
         a[0] = 0.5
         a1 = numpy.dot(a, self.BAm_sel)
         a2 = numpy.dot(a, self.BXo_sel)
         a3 = numpy.dot(a, self.BSd_sel)
-        z = (180*zang/math.pi - a2) / a3
+        z = (180*zang/numpy.pi - a2) / a3
         return numpy.sqrt(a1 * numpy.exp(-z**2/2))
 
-##   ____                _              _       
-##  / ___|___  _ __  ___| |_ __ _ _ __ | |_ ___ 
-## | |   / _ \| '_ \/ __| __/ _` | '_ \| __/ __|
-## | |__| (_) | | | \__ \ || (_| | | | | |_\__ \
-##  \____\___/|_| |_|___/\__\__,_|_| |_|\__|___/
-#
-## Define constants which are likely to change often
-#ADC_CLK_RATE = .592         # GHz
-#ACC_WINDOW = 8              # sync's per accumulation window
-#CLK_PER_SYNC = 2**27        # clocks per sync
-#NCHAN = 256
-#NANTS = 8
-#NPOL = 2
-#
-## Derived contants
-#SFREQ = ADC_CLK_RATE / 8.
-#BANDWIDTH = ADC_CLK_RATE / 4.
-#SDF = BANDWIDTH / NCHAN
-#INTTIME = CLK_PER_SYNC / (BANDWIDTH * 1e9) * ACC_WINDOW
-#
-#freqs = numpy.arange(NCHAN) * SDF + SFREQ
-##active_chans = rfi.range2list((70,182), (194,235))
-#active_chans = (155,)
-#
-## A default passband fit from PAPER's measured receiver gain
-## (in Receiver_Gain.txt)
-##GAIN_POLY = [-8.25e1, 8.34e1, -3.50e1, 7.79e1, -9.71e-1, 6.41e-2, -1.75e-2]
-#GAIN_POLY = [.054]
-#
-#
-##  ___       _ _   _       _ _          _   _             
-## |_ _|_ __ (_) |_(_) __ _| (_)______ _| |_(_) ___  _ __  
-##  | || '_ \| | __| |/ _` | | |_  / _` | __| |/ _ \| '_ \ 
-##  | || | | | | |_| | (_| | | |/ / (_| | |_| | (_) | | | |
-## |___|_| |_|_|\__|_|\__,_|_|_/___\__,_|\__|_|\___/|_| |_|
-#
-## Current location
-##location = ('38:25:59.24', '-79:50:23:41', 806)     # Green Bank
-#location = ('38:25:59.24', '-79:51:02.1', 806)     # Green Bank
-#
-## Beam to use
-#beam = sim.Beam(freqs)
-##beam = EorBeam(freqs)
-#
-## Antenna positions
-#antennas = (
-#    fit.FitAntenna(  -8.48, 455.28,   9.82 ), # 1
-#    fit.FitAntenna( 205.47, 319.53,-251.71 ), # 2
-#    fit.FitAntenna( 187.10,-352.95,-232.59 ), # 3
-#    fit.FitAntenna(-262.70,-219.07, 318.70 ), # 4
-#    fit.FitAntenna(-293.44,  -7.66, 360.20 ), # 5
-#    fit.FitAntenna(-286.04,  93.20, 352.23 ), # 6
-#    fit.FitAntenna(-182.66, 353.23, 227.56 ), # 7
-#    #fit.FitAntenna( -84.27, 434.46, 107.19, beam, gain_poly=GAIN_POLY, 
-#    fit.FitAntenna( -75.51, 433.83,  97.02, beam, gain_poly=GAIN_POLY, 
-#        offset=1.4967), # 8
-#)
-#
-## Sources for simulation
-#src_dict = {
-#    'Cygnus A':     fit.FitRadioFixedBody('19:57:44.5', '40:35.0',  freqs,
-#        strength=[0, 13300.], spec_index=-1.),
-#    #'0 Cygnus A':     fit.FitRadioFixedBody('19:57:44.5', '40:35.0',  freqs,
-#    #    strength=10500, spec_index=-1.244),
-#    'Cass A':       fit.FitRadioFixedBody('23:21:12.0', '58:32.1', freqs,
-#        strength=[0, 11700.], spec_index=-1.),
-#    #'2 Cass A':       fit.FitRadioFixedBody('23:21:12.0', '58:32.1', freqs,
-#    #    strength=12800, spec_index=-0.770),
-#    #'4 Crab':         fit.FitRadioFixedBody('05:31:31.5', '21:59.2', freqs,
-#    #   strength=1500),
-#    #'3 Virgo':        fit.FitRadioFixedBody('12:28:18.0', '12:40.1', freqs,
-#    #   strength=1100),
-#    #'1 Sun':          fit.FitRadioSun(freqs, strength=19996.)
-#}
-#
-#fit_sim = fit.FitSimulator(antennas, location, src_dict, active_chans=active_chans)
-#
-## RFI
-##bad_bins = rfi.range2list((0,69), (235,255), (183,194))
-##rfi_freq_flagger = rfi.gen_freq_mfunc(bad_bins)
-
-
-#  ____            _       _     ___       _             __
-# / ___|  ___ _ __(_)_ __ | |_  |_ _|_ __ | |_ ___ _ __ / _| __ _  ___ ___
-# \___ \ / __| '__| | '_ \| __|  | || '_ \| __/ _ \ '__| |_ / _` |/ __/ _ \
-#  ___) | (__| |  | | |_) | |_   | || | | | ||  __/ |  |  _| (_| | (_|  __/
-# |____/ \___|_|  |_| .__/ \__| |___|_| |_|\__\___|_|  |_|  \__,_|\___\___|
-#                   |_|
-
-#if __name__ == '__main__':
-#    import sys, os, miriad
-#    from optparse import OptionParser
-#
-#    p = OptionParser()
-#    p.set_usage('params.py [options] *.uv')
-#    p.set_description(__doc__)
-#    opts, args = p.parse_args(sys.argv[1:])
-#
-#    mirparams = MiriadParams()
-#
-#    # Make a map function which changes uvw coordinates
-#    def mfunc(p, d, v, c):
-#        bl = int(p[-1])
-#        u, v, w = mirparams.baselines[bl] 
-#        return (u, v, w) + p[-2:], d
-#        
-#    for a in args:
-#        print 'Working on file: ' + a
-#        uvi = miriad.UV(a)
-#        uvo = miriad.UV(a + '.new', 'new')
-#        # Initialize uvo
-#        for k in uvi.items: uvo.items[k] = uvi.items[k]
-#        for v in mirparams:
-#            val = mirparams[v]
-#            uvo.vars.add_var(v, val[0])
-#            try: uvo.vars[v] = val[1]
-#            except: pass
-#        hist_lines = 'PARAMS: Changed ant/baseline coords to version %s.' \
-#                % (__version__)
-#        # Fix uvw coordinates
-#        miriad.map_uv(uvi, uvo, mfunc, append2history=hist_lines, 
-#            ignorevars=('coord', 'baseline') + mirparams.statics)
-#        del(uvi); del(uvo)
-#        print '    Done.'

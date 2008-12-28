@@ -1,6 +1,13 @@
 #! /usr/bin/env python
+"""
+A script for applying the flux calibration modeled in "aipy.loc" to the data.
 
-import sys, aipy.miriad, numpy, os
+Author: Aaron Parsons
+Date: 6/03/07
+Revisions: None
+"""
+
+import sys, aipy, numpy, os
 from optparse import OptionParser
 
 p = OptionParser()
@@ -10,10 +17,9 @@ p.add_option('-l', '--loc', dest='loc', default='pwa303',
     help='Use location-specific info for this location (default pwa303).')
 opts, args = p.parse_args(sys.argv[1:])
 
-chan = range(64)
-exec('from aipy.%s import get_aa' % opts.loc)
-aa = get_aa()
-aa.select_chans(chan)
+uv = aipy.miriad.UV(args[0])
+aa = aipy.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+del(uv)
 
 opts, args = p.parse_args(sys.argv[1:])
 

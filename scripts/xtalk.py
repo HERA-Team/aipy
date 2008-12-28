@@ -7,7 +7,9 @@ Date: 6/03/07
 Revisions: None
 """
 
-import aipy.miriad, numpy, os, sys
+__version__ = '0.0.1'
+
+import aipy, numpy, os, sys
 from optparse import OptionParser
 
 p = OptionParser()
@@ -49,22 +51,12 @@ assert(d0 * d1 < 0)     # d0 and d1 have to be of opposite signs
 assert(max_dly_bin > 0)
 del(uv)
 
-# Group files into 1/10 of a julian day for processing in batches.
-groups = {}
-for uvfile in args:
-    uv = aipy.miriad.UV(uvfile)
-    p, d = uv.read_data()
-    t = p[-2]
-    t = int(t*10) / 2
-    if not groups.has_key(t): groups[t] = [uvfile]
-    else: groups[t].append(uvfile)
-    del(uv)
-
-for g in groups:
+# Group files into batches of 4
+args.sort()
+for g in range(0, len(args), 4):
     phs_off = {}
     cnt = {}
-    files = groups[g]
-    files.sort()
+    files = args[g:g+4]
     print 'Processing group', files
     flag = 0
     for uvfile in files:
@@ -137,6 +129,7 @@ for g in groups:
         uvofile = uvfile+'x'
         uvi = aipy.miriad.UV(uvfile)
         uvo = aipy.miriad.UV(uvofile, status='new')
-        aipy.miriad.pipe_uv(uvi, uvo, mfunc=phs_corr_mfunc)
+        aipy.miriad.pipe_uv(uvi, uvo, mfunc=phs_corr_mfunc,
+            append2hist='XTALK: version=%s\n' % __version__)
         del(uvo)
         del(uvi)

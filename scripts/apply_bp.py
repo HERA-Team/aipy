@@ -13,8 +13,9 @@ Revisions:
                 associated with bandpass (correctly).
 """
 
+__version__ = '0.0.1'
 
-import sys, aipy.miriad, numpy, os
+import sys, aipy, numpy, os
 from optparse import OptionParser
 
 p = OptionParser()
@@ -154,25 +155,24 @@ for filename in args:
     if opts.plot_chan == -1:
         uvo = aipy.miriad.UV(filename+'b', status='new')
         aipy.miriad.init_from_uv(uvi, uvo,
-            append2hist='APPLY_BP: Corr type = %s\n' % (opts.linearization),
+            append2hist='APPLY_BP: version=%s, corr type = %s\n' % \
+                (__version__, opts.linearization),
             exclude=ignore_vars)
-    #bp = 1/uvi['bandpass'].real    # From old c2m
-    bp = uvi['bandpass'].real       # Sync'd with pocket_corr.py in corr pkg.
     nchan = uvi['nchan']
     nants = uvi['nants']
     try:
-        #bp.shape = (nchan, nants) ; bp = bp.transpose() # From old c2m
+        # If there is a bandpass item, we're going apply it to data
+        bp = uvi['bandpass'].real   # Sync'd with pocket_corr.py in corr pkg.
         bp.shape = (nants, nchan)   # Sync'd to c2m.py in corr pkg.
         print
     except:
-        bp = numpy.ones((nchan, nants))
+        bp = numpy.ones((nants, nchan))
         print '.'
     def f(uv, preamble, data):
         i, j = aipy.miriad.bl2ij(preamble[-1])
         d = data.data
         if opts.plot_chan == -1:
             if i == j: d = numpy.polyval(cpoly, d)
-            #d *= bp[:,i] * bp[:,j] # From old c2m
             d *= bp[i,:] * bp[j,:]
             data = numpy.ma.array(d, mask=data.mask)
             return preamble, data

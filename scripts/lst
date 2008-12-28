@@ -1,19 +1,22 @@
 #! /usr/bin/env python
 """
-Output LST at Green Bank, and the Julian date.
+Output LST and Julian date at the provided location.
 """
 
-import aipy.ants, ephem, sys
+import aipy, ephem, sys
 from optparse import OptionParser
 p = OptionParser()
-p.set_usage('lst [-f <julian_date>]')
+p.set_usage('lst [options]')
 p.set_description(__doc__)
 p.add_option('-j', '--juldate', dest='juldate', type='float', 
     default=ephem.julian_date(), help='Use provided julian date.')
+p.add_option('-l', '--loc', dest='loc', default='pwa303',
+    help='Use location-specific info for this location (default pwa303).')
 opts, args = p.parse_args(sys.argv[1:])
 
-loc = ('38:25:59.24', '-79:51:02.1', 806) # Green Bank
-a = aipy.ants.ArrayLocation(loc)
-a.set_jultime(opts.juldate)
-print 'LST:', a.sidereal_time(),
-print '     Julian Date:', opts.juldate
+aa = aipy.loc.get_loc(opts.loc)
+aa.set_jultime(opts.juldate)
+print 'LST:', aa.sidereal_time(),
+print '     Julian Date:', opts.juldate,
+print '     Day:', aa.date
+

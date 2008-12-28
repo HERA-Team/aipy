@@ -91,7 +91,7 @@ item_types = {'obstype' : 'a',
          'interval': 'd',
          'leakage' : 'c',
          'freq0'   : 'd',
-         #'freqs'   : '?',
+         'freqs'   : '?',
          'bandpass': 'c',
          'nspect0' : 'i',
          'nchan0'  : 'i',}
@@ -110,13 +110,13 @@ class UVItem:
         if typestr == 'r':
             self.read = lambda: miruv.rdhdr_c(uvhandle, self.name, 0.)
             self.write = lambda x: miruv.wrhdr_c(uvhandle, self.name, x)
-        if typestr == 'd':
+        elif typestr == 'd':
             self.read = lambda: miruv.rdhdd_c(uvhandle, self.name, 0.)
             self.write = lambda x: miruv.wrhdd_c(uvhandle, self.name, x)
-        if typestr == 'i':
+        elif typestr == 'i':
             self.read = lambda: miruv.rdhdi_c(uvhandle, self.name, 0)
             self.write = lambda x: miruv.wrhdi_c(uvhandle, self.name, x)
-        if typestr == 'c':
+        elif typestr == 'c':
             def read():
                 n = miruv.hsize_c_wrap(uvhandle, self.name)
                 d = numpy.zeros(n, dtype=numpy.float32)
@@ -130,7 +130,7 @@ class UVItem:
                 nx[:,0] = x.real; nx[:,1] = x.imag
                 miruv.wrhdc_c_wrap(uvhandle, self.name, nx.flatten())
             self.write = write
-        if typestr == 'a':
+        elif typestr == 'a':
             def read():
                 handle, status = miruv.haccess_c(uvhandle, self.name, 'read')
                 if status != 0: return ''
@@ -147,6 +147,11 @@ class UVItem:
                 status = miruv.hwritea_c(handle, x, len(x))
                 miruv.hdaccess_c(handle)
             self.write = write
+        elif typestr == '?':
+            # Special cases... 
+            if self.name == 'freqs':
+                self.write = lambda x: miruv.write_freqs(uvhandle, *x)
+                self.read = lambda: miruv.read_freqs(uvhandle)
 
 #  _   ___     _____ _               _____     _     _      
 # | | | \ \   / /_ _| |_ ___ _ __ __|_   _|_ _| |__ | | ___ 

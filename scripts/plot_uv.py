@@ -10,7 +10,7 @@ Revisions:
                     unmask option.
 """
 
-import aipy.miriad, sys, pylab, numpy, math
+import aipy, sys, pylab, numpy, math
 from optparse import OptionParser
 
 p = OptionParser()

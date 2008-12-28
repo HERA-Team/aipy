@@ -3,18 +3,43 @@ Module for adding data simulation support to AntennaArrays.  For most classes,
 this means adding gain/amplitude information (as a function of frequency).
 
 Author: Aaron Parsons
-Date: 11/07/2006
+Date: 11/07/06
 Revisions:
-    12/05/2006  arp Conjugated sim_data (-2pi1j, instead of 2pi1j).
-    01/01/2007  arp Added gain information for antennas.  Expanded sim_data to 
+    12/05/06    arp Conjugated sim_data (-2pi1j, instead of 2pi1j).
+    01/01/07    arp Added gain information for antennas.  Expanded sim_data to 
                     have optional compute of gradient.
-    03/02/2007  arp Changed sim_data to do 1 baseline at a time.  Substantial
+    03/02/07    arp Changed sim_data to do 1 baseline at a time.  Substantial
                     restructuring of parameter passing.  More documentation.
-    05/15/2007  arp Split part of Antennas into PhsAntennas to have more
+    05/15/07    arp Split part of Antennas into PhsAntennas to have more
                     streamlined support for phasing antenna data.
+    10/10/07    arp Switched bandpass parameterization from polynomial to
+                    splines.
 """
 
 import ant, numpy, ephem
+from scipy.interpolate import splrep, splev
+
+#  _   _ _   _ _ _ _           _____                 _   _                 
+# | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
+# | | | | __| | | | __| | | | | |_ | | | | '_ \ / __| __| |/ _ \| '_ \/ __|
+# | |_| | |_| | | | |_| |_| | |  _|| |_| | | | | (__| |_| | (_) | | | \__ \
+#  \___/ \__|_|_|_|\__|\__, | |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
+#                      |___/        
+
+def splinefit(x, y, smooth=1e-4, order=3):
+    """Return a spline interpolation of y as a function of x."""
+    return splrep(x, y, s=smooth, k=order)
+
+def splineval(spline, x):
+    """Return the values of spline evaluated at x."""
+    return splev(x, spline)
+
+#  ____           _ _       ____            _       
+# |  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _ 
+# | |_) / _` |/ _` | |/ _ \|  _ \ / _ \ / _` | | | |
+# |  _ < (_| | (_| | | (_) | |_) | (_) | (_| | |_| |
+# |_| \_\__,_|\__,_|_|\___/|____/ \___/ \__,_|\__, |
+#                                             |___/ 
 
 class RadioBody:
     """A class redefining ephem's sense of brightness for radio astronomy."""
@@ -32,6 +57,13 @@ class RadioBody:
         afreqs = observer.ants[0].beam.afreqs
         emission = (afreqs / self._meas_freq)**self._spec_index
         return emission * self._strength
+
+#  ____           _ _       _____ _              _ ____            _       
+# |  _ \ __ _  __| (_) ___ |  ___(_)_  _____  __| | __ )  ___   __| |_   _ 
+# | |_) / _` |/ _` | |/ _ \| |_  | \ \/ / _ \/ _` |  _ \ / _ \ / _` | | | |
+# |  _ < (_| | (_| | | (_) |  _| | |>  <  __/ (_| | |_) | (_) | (_| | |_| |
+# |_| \_\__,_|\__,_|_|\___/|_|   |_/_/\_\___|\__,_|____/ \___/ \__,_|\__, |
+#                                                                    |___/ 
 
 class RadioFixedBody(ant.RadioFixedBody, RadioBody):
     """A class adding simulation capability to ant.RadioFixedBody"""
@@ -51,6 +83,13 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
         self.emission = self.gen_emission(observer)
         self.cache(observer, refract)
 
+#  ____           _ _      ____                  _       _ 
+# |  _ \ __ _  __| (_) ___/ ___| _ __   ___  ___(_) __ _| |
+# | |_) / _` |/ _` | |/ _ \___ \| '_ \ / _ \/ __| |/ _` | |
+# |  _ < (_| | (_| | | (_) |__) | |_) |  __/ (__| | (_| | |
+# |_| \_\__,_|\__,_|_|\___/____/| .__/ \___|\___|_|\__,_|_|
+#                               |_|                        
+
 class RadioSpecial(ant.RadioSpecial, RadioBody):
     """A class adding simulation capability to ant.RadioSun"""
     def __init__(self, name, strength, f_c=.012, meas_freq=.150, spec_index=-1.,
@@ -67,43 +106,49 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
         self.emission = self.gen_emission(observer)
         self.cache(observer, refract)
 
+#  ____
+# | __ )  ___  __ _ _ __ ___
+# |  _ \ / _ \/ _` | '_ ` _ \
+# | |_) |  __/ (_| | | | | | |
+# |____/ \___|\__,_|_| |_| |_|
+
 class Beam(ant.Beam):
     def response(self, zang, az, pol=1):
         """Return the beam response across the band for input zenith angle
         (zang), and azimuth (az).  Rotate beam model 90 degrees if pol == 2."""
         return numpy.ones_like(self.afreqs)
 
-#  ____  _              _          _                         
-# / ___|(_)_ __ ___    / \   _ __ | |_ ___ _ __  _ __   __ _ 
-# \___ \| | '_ ` _ \  / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` |
-#  ___) | | | | | | |/ ___ \| | | | ||  __/ | | | | | | (_| |
-# |____/|_|_| |_| |_/_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
-                                                           
+#     _          _                         
+#    / \   _ __ | |_ ___ _ __  _ __   __ _ 
+#   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` |
+#  / ___ \| | | | ||  __/ | | | | | | (_| |
+# /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
+
 class Antenna(ant.Antenna):
     """A representation of the physical location and beam pattern of an
     individual antenna in an array."""
     def __init__(self, x, y, z, beam, delay=0., offset=0.,
-            gain_poly=[1], amp=1, pointing=(0.,numpy.pi/2), **kwargs):
+            spline=None, amp=1, pointing=(0.,numpy.pi/2), **kwargs):
         """x, y, z:    Antenna coordinates in equatorial (ns) coordinates
         beam:       Object with function 'response(zang, az)'
         delay:      Cable/systematic delay in ns
         offset:     Frequency-independent phase offset
-        gain_poly:  Polynomial fit of passband
+        spline:     Spline fit of passband.  Default is flat.
         pointing:   Antenna pointing=(az, alt).  Default is zenith"""
         ant.Antenna.__init__(self, x,y,z, beam=beam, delay=delay, offset=offset)
-        self.update_gain(gain_poly, amp)
+        # Implement a flat = 1 passband if no spline is provided.
+        if spline is None:
+            spline = (numpy.array([ 0.,  0.,  0.,  0., 1., 1.,  1.,  1.]),
+                numpy.array([ 1.,  1.,  1.,  1.]), 3)
+        self.update_gain(spline, amp)
         self.update_pointing(pointing)
     def select_chans(self, active_chans=None):
         ant.Antenna.select_chans(self, active_chans)
-        self.update_gain(self.gain_poly)
-    def update_gain(self, gain_poly=None, amp=None):
-        """Set a passband gain based on the polynomial fit 'gain_poly'."""
-        if not gain_poly is None:
-            try: len(gain_poly)
-            except(TypeError): gain_poly = [gain_poly]
-            self.gain_poly = gain_poly
+        self.update_gain(spline=self.spline)
+    def update_gain(self, spline=None, amp=None):
+        if not spline is None: self.spline = spline
         if not amp is None: self.amp = amp
-        self.gain = self.amp * numpy.polyval(self.gain_poly, self.beam.afreqs)
+        self.gain = self.amp * splineval(self.spline, self.beam.afreqs)
     def update_pointing(self, azalt):
         """Set the antenna beam to point at azalt=(az, alt)."""
         self.pointing = azalt
@@ -114,11 +159,12 @@ class Antenna(ant.Antenna):
         beam_resp = self.beam.response(zang, azalt[0], pol=pol)
         return beam_resp * self.gain
 
-#  ___ _         _       _                        _                     
-# / __(_)_ __   /_\  _ _| |_ ___ _ _  _ _  __ _  /_\  _ _ _ _ __ _ _  _ 
-# \__ \ | '  \ / _ \| ' \  _/ -_) ' \| ' \/ _` |/ _ \| '_| '_/ _` | || |
-# |___/_|_|_|_/_/ \_\_||_\__\___|_||_|_||_\__,_/_/ \_\_| |_| \__,_|\_, |
-#                                                                  |__/ 
+#     _          _                            _                         
+#    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
+#   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |
+#  / ___ \| | | | ||  __/ | | | | | | (_| |/ ___ \| |  | | | (_| | |_| |
+# /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
+#                                                                 |___/ 
 
 class AntennaArray(ant.AntennaArray):
     """A class which adds simulation functionality to AntennaArray."""

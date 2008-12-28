@@ -1,13 +1,13 @@
 #! /usr/bin/env python
 """
-A script for removing stable crosstalk from UV files.
+A script for removing a source using a fringe-rate/delay transform.
 
 Author: Aaron Parsons
 Date: 6/03/07
 Revisions: None
 """
 
-import aipy.miriad, numpy, os, sys, aipy.ant, aipy.src
+import aipy, numpy, os, sys
 from optparse import OptionParser
 
 p = OptionParser()
@@ -25,8 +25,9 @@ p.add_option('-l', '--loc', dest='loc', default='pwa303',
     help='Use location-specific info for this location (default pwa303).')
 opts, args = p.parse_args(sys.argv[1:])
 
-exec('from aipy.%s import get_aa' % opts.loc)
-aa = get_aa()
+uv = aipy.miriad.UV(args[0])
+aa = aipy.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+del(uv)
 
 src = aipy.src.get_src(opts.src, type='ant')
 

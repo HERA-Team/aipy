@@ -122,13 +122,36 @@ void write_freqs(int thandle, int nspect, int nschan, double sfreq,
                  double sdf) {
   int item,offset,iostat,i;
   haccess_c(thandle,&item,"freqs","write",&iostat); if(iostat)return;
-  offset = 8;
+  offset = 0;
+  /* I think I can put anything here, so i'm putting nspect */
+  hwritei_c(item,&nspect,offset,4,&iostat); if(iostat)return;
+  offset += 8;
   for(i=0; i < nspect; i++) {
       hwritei_c(item,&nschan,offset,4,&iostat); if(iostat)return;
       offset += 8;
       hwrited_c(item,&sfreq,offset,8,&iostat); if(iostat)return;
       offset += 8;
       hwrited_c(item,&sdf,offset,8,&iostat); if(iostat)return;
+      offset += 8;
+  }
+  hdaccess_c(item,&iostat);
+}
+
+void read_freqs(int thandle, int *nspect, int *nschan, double *sfreq,
+                double *sdf) {
+  int item,offset,iostat,i;
+  haccess_c(thandle,&item,"freqs","read",&iostat); if(iostat)return;
+  offset = 0;
+  hreadi_c(item,nspect,offset,4,&iostat); if(iostat)return;
+  offset += 8;
+  /* for(i=0; i < *nspect; i++) { */
+  /* Only supporting that there is 1 set of nschan,sfreq,sdf for all ants */
+  for(i=0; i < 1; i++) {
+      hreadi_c(item,nschan,offset,4,&iostat); if(iostat)return;
+      offset += 8;
+      hreadd_c(item,sfreq,offset,8,&iostat); if(iostat)return;
+      offset += 8;
+      hreadd_c(item,sdf,offset,8,&iostat); if(iostat)return;
       offset += 8;
   }
   hdaccess_c(item,&iostat);

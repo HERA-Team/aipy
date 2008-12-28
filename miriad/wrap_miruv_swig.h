@@ -27,3 +27,5 @@ extern size_t rdhdc_c_wrap(int thandle, const char *keyword, float *value, int n
 extern size_t hsize_c_wrap(int thandle, const char *keyword);
 
 extern void write_freqs(int thandle, int nspect, int nschan, double sfreq, double sdf);
+
+extern void read_freqs(int thandle, int *nspect, int *nschan, double *sfreq, double *sdf);

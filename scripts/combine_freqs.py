@@ -1,5 +1,14 @@
 #! /usr/bin/env python
-import aipy.miriad, sys, os, numpy
+"""
+A script for reducing the number of channels in a UV data set by coherently
+adding adjacent channels together.
+
+Author: Aaron Parsons
+Date: 6/03/07
+Revisions: None
+"""
+
+import aipy, sys, os, numpy
 from optparse import OptionParser
 
 p = OptionParser()
