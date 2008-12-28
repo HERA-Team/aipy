@@ -5,14 +5,14 @@ specials = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter',
 src_data = {
     #             RA          DEC         FLUX  FREQ, INDEX
     #'Sun'  : (None        , None,        18800, .150,  0.10 ), #  y   y
-    'Moon'  : (None        , None,           0, .150,  0.10 ), #  y   y
-    'Mercury': (None        , None,          0, .150,  0.10 ), #  y   y
-    'Venus':   (None        , None,          0, .150,  0.10 ), #  y   y
-    'Mars':    (None        , None,          0, .150,  0.10 ), #  y   y
-    'Jupiter': (None        , None,          0, .150,  0.10 ), #  y   y
-    'Saturn' : (None        , None,          0, .150,  0.10 ), #  y   y
-    'Uranus' : (None        , None,          0, .150,  0.10 ), #  y   y
-    'Neptune': (None        , None,          0, .150,  0.10 ), #  y   y
+    #'Moon'  : (None        , None,           0, .150,  0.10 ), #  y   y
+    #'Mercury': (None        , None,          0, .150,  0.10 ), #  y   y
+    #'Venus':   (None        , None,          0, .150,  0.10 ), #  y   y
+    #'Mars':    (None        , None,          0, .150,  0.10 ), #  y   y
+    #'Jupiter': (None        , None,          0, .150,  0.10 ), #  y   y
+    #'Saturn' : (None        , None,          0, .150,  0.10 ), #  y   y
+    #'Uranus' : (None        , None,          0, .150,  0.10 ), #  y   y
+    #'Neptune': (None        , None,          0, .150,  0.10 ), #  y   y
     'b0320': ('03:20:00.0', '-37:18:00',   259, .408, -0.8  ), #  y
     '3c123': ('04:33:55.4', '+29:35:15',   247, .160, -0.73 ), #  n
     'pic'  : ('05:18:20.2', '-45:49:31',   452, .160, -0.8  ), #  y

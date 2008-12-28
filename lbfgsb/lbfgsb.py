@@ -27,7 +27,8 @@ Python Interface:
 
 Author: Aaron Parsons
 Date: 10/21/06
-Revisions: None
+Revisions:
+    09/27/07 arp Fixed nbd in Var.
 """
 
 __lbfgsb_version__ = '2.1'
@@ -50,12 +51,11 @@ class Var:
         self.nbd = 0
         self.l = 0
         self.u = 0
-        if lower_limit is not None:
-            self.l = lower_limit
-            self.nbd = self.nbd | 1
-        if upper_limit is not None:
-            self.u = upper_limit
-            self.nbd = self.nbd | 2
+        if lower_limit is not None: self.l = lower_limit
+        if upper_limit is not None: self.u = upper_limit
+        if lower_limit is not None and upper_limit is None: self.nbd = 1
+        elif lower_limit is not None: self.nbd = 2
+        elif upper_limit is not None: self.nbd = 3
 
 #            _       _           _         
 #  _ __ ___ (_)_ __ (_)_ __ ___ (_)_______ 
@@ -138,6 +138,68 @@ def minimize(fun, vars, gradfun=None, m=5, factr=1e7, pgtol=1e-5, iprint=-1):
         elif task[:5] == 'NEW_X': pass
         else: break
     return x, f
+
+def maxent_deconv(im, ker, mdl, var0, m=20, factr=1e7,
+        pgtol=1e-5, iprint=-1):
+    d_i = im.flatten()
+    m_i = mdl.flatten()
+    flux0 = mdl.sum()
+    n = m_i.size + 2
+    h_i = ker.flatten()
+    inv_ker = numpy.fft.fft2(ker)
+    q = numpy.sqrt(numpy.dot(h_i,h_i))
+    x = numpy.concatenate([m_i, [0,0]]).astype(numpy.double) # add alpha,beta
+    # Constrain image for positivity
+    nbd = 2*numpy.ones((n,), dtype=numpy.int) ; nbd[-2:] = 1
+    ubd = flux0*numpy.ones((n,), dtype=numpy.double)
+    lbd = 1e-95*numpy.ones((n,), dtype=numpy.double)
+    lsave = numpy.zeros((4,), dtype=numpy.bool)
+    isave = numpy.zeros((44,), dtype=numpy.int)
+    dsave = numpy.zeros((29,), dtype=numpy.double)
+    task = 'START'
+    csave = numpy.array('CSAVE')
+    wa = numpy.zeros((2*m*n+4*n+12*m**2+12*m,), dtype=numpy.double)
+    iwa = numpy.zeros((3*n,), dtype=numpy.int)
+    f, g = 0., numpy.zeros_like(x)
+    while True:
+        x, task = _lbfgsb.setulb(m, x, lbd, ubd, nbd, f, g, pgtol, wa, iwa, 
+            task, csave, lsave, isave, dsave, iprint=iprint, factr=factr)
+        if task[:2] == 'FG':
+            b_i, alpha, beta = x[:-2], x[-2], x[-1]
+            print b_i
+            #H = -numpy.dot(b_i, numpy.log(b_i/m_i))
+            H = 0
+            #g_H = -numpy.log(b_i/m_i) - 1
+            g_H = 0
+            g_chi2 = -2*q*(d_i - q*b_i)
+            b_i.shape = im.shape
+            b_i_conv_h_i = numpy.fft.ifft2(numpy.fft.fft2(b_i) * inv_ker).real
+            chi2 = numpy.var(im - b_i_conv_h_i) - var0
+            F = b_i.sum() - flux0
+            g_F = 1
+            J = H - alpha*chi2 - beta*F
+            g_J = g_H - alpha*g_chi2 - beta*g_F
+            f = -J # Invert J because we are minimizing
+            print -f
+            print alpha, beta, chi2, F
+            # Add grad alpha,beta
+            g = -numpy.concatenate([g_J, [-chi2, -F]]).astype(numpy.double)
+            print '----------------------------------------------'
+            import pylab
+            b_i.shape = im.shape
+            pylab.imshow(b_i, vmin=b_i.min()-1, vmax=b_i.max())
+            pylab.colorbar()
+            pylab.show()
+            #mx = b_i.max() ; mn = b_i.min()
+            #if mx == mn: mn -= 1
+            #pylab.imshow(b_i, vmin=mn, vmax=mx)
+            #pylab.colorbar()
+            #pylab.show()
+        elif task[:5] == 'NEW_X': pass
+        else: break
+    return x, f, g
+
+    
 
 #  _                _                                                __ _ _   
 # | | ___  __ _ ___| |_     ___  __ _ _   _  __ _ _ __ ___  ___     / _(_) |_ 

@@ -10,30 +10,6 @@ Revisions: None
 import aipy.miriad, numpy, os, sys, aipy.ant, aipy.src
 from optparse import OptionParser
 
-def uv2freqs(uv):
-    #sfreq = uv['sfreq']
-    sfreq = 0.1126
-    #sdf = uv['sdf']
-    sdf = 0.00234 / 2
-    return numpy.arange(uv['nchan'], dtype=numpy.float) * sdf + sfreq
-
-def uv2aa(uv):
-    freqs = uv2freqs(uv)
-    antpos = uv['antpos']
-    antpos.shape = (3, uv['nants'])
-    antpos = antpos.transpose()
-    try: delays = uv['delay']
-    except(KeyError):
-        delays = numpy.zeros((uv['nants'],), dtype=numpy.float64)
-    ants = []
-    for n, d in enumerate(delays):
-        b = aipy.ant.Beam(freqs)
-        ants.append(aipy.ant.Antenna(antpos[n,0], antpos[n,1], antpos[n,2],
-            b, delay=d))
-    location = (uv['latitud'], uv['longitu'])
-    return aipy.ant.AntennaArray(ants, location)
-
-
 p = OptionParser()
 p.set_usage('rm_src.py [options] *.uv')
 p.set_description(__doc__)
@@ -45,30 +21,14 @@ p.add_option('-d', '--dly_w', dest='dly_w',
     help='The number of delay bins to null.')
 p.add_option('-s', '--src', dest='src',
     help='The source to remove.')
-p.add_option('-o', '--override', dest='override', action='store_true',
-    help='Override antenna positions and delays.')
+p.add_option('-l', '--loc', dest='loc', default='pwa303',
+    help='Use location-specific info for this location (default pwa303).')
+opts, args = p.parse_args(sys.argv[1:])
 
+exec('from aipy.%s import get_aa' % opts.loc)
+aa = get_aa()
 
-opt, args = p.parse_args(sys.argv[1:])
-
-uv = aipy.miriad.UV(args[0])
-if opt.override:
-    print 'Overriding antenna parameters in UV file.'
-    freqs = uv2freqs(uv)
-    b = aipy.ant.Beam(freqs)
-    ants = [
-        aipy.ant.Antenna(    0.,    0.,    0.,b,delay=+0.0, offset=+0.0),
-        aipy.ant.Antenna(-100.7, 139.1,-197.7,b,delay=-1.62,offset=+0.16),
-        aipy.ant.Antenna( -68.7, 383.4,-132.6,b,delay=-1.41,offset=-0.20),
-        aipy.ant.Antenna(  59.4, 465.3, 120.7,b,delay=-1.67,offset=+0.28),
-    ]
-    location = (-0.466646451963, 2.03621421241) # Boolardy
-    aa = aipy.ant.AntennaArray(ants, location)
-else:
-    print 'Using antenna parameters from UV file.'
-    aa = uv2aa(uv)
-
-src = aipy.src.get_src(opt.src, type='ant')
+src = aipy.src.get_src(opts.src, type='ant')
 
 # Group files into 1/10 of a julian day for processing in batches.
 groups = {}
@@ -89,7 +49,7 @@ for g in groups:
     print 'Processing group', files
     flag = 0
     for uvfile in files:
-        uvofile = uvfile+'.'+opt.src
+        uvofile = uvfile+'.'+opts.src
         if os.path.exists(uvofile):
             print uvofile, 'exists, skipping group.'
             flag = 1
@@ -120,9 +80,9 @@ for g in groups:
         d = numpy.array(phs_dat[bl])
         d /= float(d.size - cnt.get(bl,0)) / d.size
         d = numpy.fft.fft(d, axis=0)
-        x1, x2 = opt.fng_w, -opt.fng_w+1
+        x1, x2 = opts.fng_w, -opts.fng_w+1
         if x2 == 0: x2 = d.shape[0]
-        y1, y2 = opt.dly_w, -opt.dly_w
+        y1, y2 = opts.dly_w, -opts.dly_w
         if y2 == 0: y2 = d.shape[1]
         d[x1:x2,:] = 0
         d[:,y1:y2] = 0
@@ -149,7 +109,7 @@ for g in groups:
     for uvfile in files:
         # Apply the pipe to the data
         print 'Working on', uvfile
-        uvofile = uvfile+'.'+opt.src
+        uvofile = uvfile+'.'+opts.src
         uvi = aipy.miriad.UV(uvfile)
         uvo = aipy.miriad.UV(uvofile, status='new')
         aipy.miriad.pipe_uv(uvi, uvo, mfunc=rm_mfunc)

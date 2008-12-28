@@ -17,18 +17,14 @@ def recenter(a, c):
     inverse fft of uv data."""
     s = a.shape
     c = (c[0] % s[0], c[1] % s[1])
-    na = numpy.zeros_like(a)
-    na[:s[0] - c[0]], na[s[0] - c[0]:] = a[c[0]:], a[:c[0]]
-    nna = numpy.zeros_like(a)
-    nna[:,:s[1] - c[1]], nna[:,s[1] - c[1]:] = na[:,c[1]:], na[:,:c[1]]
-    return nna
+    a1 = numpy.concatenate([a[c[0]:], a[:c[0]]], axis=0)
+    a2 = numpy.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
+    return a2
 
 def choose_coords(a, num=1):
     p = numpy.cumsum(a.flat / a.sum())
     r = numpy.random.random((num,))
-    s = numpy.searchsorted(p, r)
-    x, y = a.shape
-    return zip(s / y, s % y)
+    return numpy.searchsorted(p, r)
 
 def convolve2d(a, b):
     return numpy.fft.ifft2(numpy.fft.fft2(a) * numpy.fft.fft2(b))
@@ -45,28 +41,99 @@ def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
     g /= g.sum() / amp
     return recenter(g, center)
 
-def deconvolve(im, ker, mdl=None, iter=400, verbose=False):
-    dim = im.shape[0]
+def clean(im, ker, mdl=None, gain=.25, iter=10000, chk_iter=100, verbose=False):
+    dim = im.shape[1]
     ker_pwr = abs(ker).sum()
+    G = ker_pwr / gain
     if mdl is None: mdl = numpy.zeros_like(im)
-    diff = im - abs(convolve2d(mdl, ker))
-    score = numpy.average(diff**2)
+    dif = im - convolve2d(mdl, ker).real
+    score = numpy.average(abs(dif)**2)
+    prev_a = None
+    n_mdl = mdl.copy()
+    n_dif = dif.copy()
+    mode = 0
     for i in range(iter):
-        num = numpy.where(abs(diff).sum() > ker_pwr, 1, 0).sum()
-        num = random.randint(0, num)
-        xy = choose_coords(abs(diff), num=num)
-        n_mdl = mdl.copy()
-        for a, b in xy:
-            n_mdl[a,b] += diff[a,b] * .1 / ker_pwr
-        n_mdl = numpy.where(n_mdl < 0, 0, n_mdl)
-        n_diff = im - abs(convolve2d(n_mdl, ker))
-        n_sqr = n_diff**2
-        n_score = numpy.average(n_sqr)
-        if verbose: print i, score, n_score
-        if n_score < score:
-            mdl, diff, sqr, score  = n_mdl, n_diff, n_sqr, n_score
-    return mdl
+        a = numpy.argmax(n_dif)
+        if a != prev_a:
+            prev_a = a
+            rec_ker = recenter(ker, (-a/dim, -a%dim))
+        v = n_dif.flat[a] / G
+        n_mdl.flat[a] += v
+        n_dif -= v * rec_ker
+        if i % chk_iter == 0:
+            n_score = numpy.average(abs(n_dif)**2)
+            if verbose: print i, n_score
+            if n_score > score:
+                n_mdl, n_dif = mdl, dif
+                break
+            score = n_score
+            mdl = n_mdl.copy()
+            dif = n_dif.copy()
+    return n_mdl, n_dif / ker_pwr
 
+def calc_chi2(d_i, b_i, h_i, var0, shape):
+    orig_shape = b_i.shape
+    b_i.shape = shape
+    h_i.shape = shape
+    b_i_conv_h_i = convolve2d(b_i,h_i).real.flatten()
+    b_i.shape = orig_shape
+    h_i.shape = orig_shape
+    return numpy.var(d_i - b_i_conv_h_i) - var0
+def delta_alpha_beta(F, chi2, g_chi2, g_J):
+    D = numpy.dot(g_chi2,g_chi2) - (g_chi2.sum())**2
+    chi2_plus_g_chi2_g_J = chi2 + numpy.dot(g_chi2,g_J)
+    F_plus_g_J_sum = F + g_J.sum()
+    g_chi2_sum = g_chi2.sum()
+    g_chi2_sqr = numpy.dot(g_chi2,g_chi2)
+    d_alpha = (chi2_plus_g_chi2_g_J - g_chi2_sum * F_plus_g_J_sum)/D
+    d_beta = (g_chi2_sum * chi2_plus_g_chi2_g_J - g_chi2_sqr * F_plus_g_J_sum)/D
+    return d_alpha, d_beta
+def delta_b_alpha_beta(d_i, b_i, m_i, h_i, q, alpha, beta, flux0, var0, shape, gain):
+    g_H = -(numpy.log(b_i/m_i) + 1)
+    F = b_i.sum() - flux0
+    chi2 = calc_chi2(d_i, b_i, h_i, var0, shape)
+    g_chi2 = -2*q*(d_i-q*b_i) / d_i.size
+    g_J = g_H - alpha*g_chi2 - beta
+    ig2_J = 1 / (-1/b_i - 2*alpha*q**2)
+    d_alpha, d_beta = delta_alpha_beta(F, chi2, g_chi2, g_J)
+    d_alpha *= gain ; d_beta *= gain
+    d_b = -ig2_J * (g_J - d_alpha * g_chi2 - d_beta)
+    mag = numpy.sum(d_b**2 / b_i) / numpy.sum(b_i)
+    d_b *= gain / mag
+    return d_b, d_alpha, d_beta
+def mem(im, ker, mdl, var0, iter=10, gain=.1):
+    d_i = im.flatten()
+    m_i = mdl.flatten()
+    b_i = m_i.copy()
+    h_i = ker.flatten()
+    alpha, beta = 0, 0
+    q = numpy.sqrt(numpy.dot(h_i,h_i)) * 10
+    flux0 = mdl.sum()
+    clip_flux = 1e-10 * flux0 / mdl.size
+    #clip_flux = 1e-95 * flux0 / mdl.size
+    import pylab
+    for i in range(iter):
+        print i
+        d_b, d_alpha, d_beta = delta_b_alpha_beta(d_i, b_i, m_i, h_i,
+            q, alpha, beta, flux0, var0, im.shape, gain)
+        print alpha, d_alpha, beta, d_beta
+        mag = numpy.sum(d_b**2 / b_i) / numpy.sum(b_i)
+        #d_alpha *= gain
+        #d_beta *= gain
+        # Prevent stepping past the 0 flux edge:
+        #r = d_b / b_i
+        #d_b = numpy.where(r <= -1, d_b / -r, d_b)
+        #d_b *= numpy.sqrt(gain/mag)
+        # Apply change
+        b_i += d_b ; b_i = numpy.where(b_i < clip_flux, clip_flux, b_i)
+        orig_shape = b_i.shape
+        b_i.shape = im.shape
+        #pylab.imshow(b_i)
+        #pylab.show()
+        b_i.shape = orig_shape
+        alpha += d_alpha ; beta += d_beta
+    b_i.shape = im.shape
+    return b_i, im - convolve2d(b_i, ker).real
 
 class Img:
     def __init__(self, size=100, res=1):
@@ -89,8 +156,7 @@ class Img:
             i = tuple(i)
             try:
                 uv[i] += d
-                #bm[i] += w
-                bm[i] += abs(d)
+                bm[i] += w
             except(IndexError): pass
         if not apply: return uv, bm
     def append_hermitian(self, uvw, data, wgts=None):
@@ -100,11 +166,9 @@ class Img:
         wgts = numpy.concatenate([wgts, wgts], axis=0)
         return uvw, data, wgts
     def image(self, center=(0,0)):
-        im_img = recenter(numpy.abs(numpy.fft.ifft2(self.uv)), center)
-        return im_img
+        return recenter(numpy.abs(numpy.fft.ifft2(self.uv)), center)
     def bm_image(self, center=(0,0)):
-        bm_img = recenter(numpy.abs(numpy.fft.ifft2(self.bm)), center)
-        return bm_img
+        return recenter(numpy.abs(numpy.fft.ifft2(self.bm)), center)
     def __str__(self):
         return str(self.uv)
     def get_coords(self, ra=0, dec=0, fmt='rad'):

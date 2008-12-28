@@ -18,7 +18,7 @@ opts, args = p.parse_args(sys.argv[1:])
 chan = range(64)
 exec('from aipy.%s import get_aa' % opts.loc)
 aa = get_aa(opts.use_bp)
-cat = aipy.src.get_catalog(['vir', 'crab'], type='sim')
+cat = aipy.src.get_catalog(['Sun', 'cyg'], type='sim')
 aa.select_chans(chan)
 
 # A pipe for just outputting the model
