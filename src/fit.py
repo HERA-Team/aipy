@@ -97,8 +97,8 @@ class RadioFixedBody(sim.RadioFixedBody):
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {
-            'str':      self.janskies,
-            'index':    self.index,
+            'str':      list(self._janskies),
+            'index':    list(self._index),
             'ra':       float(self._ra),
             'dec':      float(self._dec),
         }
@@ -110,10 +110,16 @@ class RadioFixedBody(sim.RadioFixedBody):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        try: self.janskies = prms['str']
-        except(KeyError): pass
-        try: self.index = prms['index']
-        except(KeyError): pass
+        if prms.has_key('str'):
+            try:
+                len(prms['str'])
+                self._janskies = prms['str']
+            except: self._janskies = [prms['str']]
+        if prms.has_key('index'):
+            try:
+                len(prms['index'])
+                self._janskies = prms['index']
+            except: self._janskies = [prms['index']]
         try: self._ra = prms['ra']
         except(KeyError): pass
         try: self._dec = prms['dec']
@@ -131,8 +137,8 @@ class RadioSpecial(sim.RadioSpecial):
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {
-            'str':      self.janskies,
-            'index':    self.index,
+            'str':      list(self._janskies),
+            'index':    list(self._index),
         }
         prms = {}
         for p in prm_list:
@@ -142,9 +148,9 @@ class RadioSpecial(sim.RadioSpecial):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        try: self.janskies = prms['str']
+        try: self._janskies = prms['str']
         except(KeyError): pass
-        try: self.index = prms['index']
+        try: self._index = prms['index']
         except(KeyError): pass
 
 #  ____            ____      _        _             
@@ -179,6 +185,12 @@ class SrcCatalog(sim.SrcCatalog):
 # |  _ \ / _ \/ _` | '_ ` _ \
 # | |_) |  __/ (_| | | | | | |
 # |____/ \___|\__,_|_| |_| |_|
+
+class BeamFlat(sim.BeamFlat):
+    def get_params(self, prm_list=None):
+        return {}
+    def set_params(self, prms):
+        pass
 
 class Beam2DGaussian(sim.Beam2DGaussian):
     """A class adding parameter fitting to sim.Beam2DGaussian"""
@@ -297,17 +309,12 @@ class BeamAlmSymm(sim.BeamAlmSymm):
 
 class Antenna(sim.Antenna):
     """A class adding parameter fitting to sim.Antenna"""
-    def sample_bp(self, nchan=None):
-        if nchan is None or nchan == len(self.bp): return list(self.bp)
-        bp = self.bp
-        dec_factor = self.beam.freqs.size / self.bp.size
-        if dec_factor != 1: bp = interpolate(self.bp, dec_factor)
-        return bp.take(n.arange(nchan) * bp.size / nchan)
-    def get_params(self, prm_list=None, nchan=None):
+    def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         x,y,z = self.pos
-        aprms = {'x':x, 'y':y, 'z':z, 'delay':self.delay, 'offset':self.offset}
-        aprms['bp'] = list(self.sample_bp(nchan=nchan))
+        aprms = {'x':x, 'y':y, 'z':z, 'delay':self.delay}
+        aprms['bp_r'] = list(self.bp_r)
+        aprms['bp_i'] = list(self.bp_i)
         aprms['amp'] = self.amp
         aprms.update(self.beam.get_params(prm_list))
         prms = {}
@@ -327,12 +334,8 @@ class Antenna(sim.Antenna):
         except(KeyError): pass
         try: self.delay = prms['delay']
         except(KeyError): pass
-        try: self.offset = prms['offset']
-        except(KeyError): pass
-        try: self.update_gain(bp=prms['bp'])
-        except(KeyError): pass
-        try: self.update_gain(amp=prms['amp'])
-        except(KeyError): pass
+        self.update_gain(bp_r=prms.get('bp_r', None),
+            bp_i=prms.get('bp_i', None), amp=prms.get('amp', None))
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -343,18 +346,17 @@ class Antenna(sim.Antenna):
 
 class AntennaArray(sim.AntennaArray):
     """A class adding parameter fitting to sim.AntennaArray"""
-    def get_params(self, ant_prms={'*':'*'}, nchan=None):
+    def get_params(self, ant_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
         prms = {}
         for k in ant_prms:
             if type(k) is str:
-                assert(k.startswith('*'))
-                ants = range(len(self.ants))
+                if k.startswith('*'): ants = range(len(self.ants))
+                else: continue
             else: ants = [k]
             prm_list = ant_prms[k]
             if type(prm_list) is str: prm_list = [prm_list]
-            for a in ants:
-                prms[a] = self.ants[a].get_params(prm_list, nchan=nchan)
+            for a in ants: prms[a] = self.ants[a].get_params(prm_list)
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""

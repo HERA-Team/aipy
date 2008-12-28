@@ -23,12 +23,12 @@ o.add_option('-p', '--prms', dest='prms',
     help='Comma delimited list of paramters to fit independently for each antenna (amp,passband,bm_xwidth,bm_ywidth).')
 o.add_option('-a', '--ants', dest='ants', default='*',
     help='Comma delimited list of antennas to fit. Default fits amp/passband for all antennas.')
+o.add_option('--aa', dest='aa', default='',
+    help='Comma delimited list of AntennaArray parameters to fit (x_<bl>).')
 o.add_option('-s', '--shared_prms', dest='shared_prms', 
     help='Comma delimited list of paramters to fit shared for all antennas (amp,passband,bm_xwidth,bm_ywidth).')
 o.add_option('-o', '--other_prms', dest='other_prms', 
     help='Source=param pairs')
-o.add_option('--nchan', dest='nchan', default=0, type='int',
-    help='Number of fit points along a bandpass (w/ interpolation inbetween).')
 o.add_option('--baselines', dest='baselines', default='all',
     help='Select which antennas/baselines to include in plot.  Options are: "all", "auto", "cross", "<ant1 #>_<ant2 #>" (a specific baseline), or "<ant1 #>,..." (a list of active antennas).')
 o.add_option('--chan', dest='chan', default='all',
@@ -56,9 +56,12 @@ def gen_chans(chanopt, uv):
 
 opts, args = o.parse_args(sys.argv[1:])
 
+# Get a catalog of point sources
 srcs = opts.cat.split(',')
 cat = a.src.get_catalog(srcs, type='fit')
+cat.set_params(a.loc.get_src_prms(opts.loc))
 
+# Initialize AntennaArray
 uv = a.miriad.UV(args[0])
 chans = gen_chans(opts.chan, uv)
 aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
@@ -74,11 +77,14 @@ if opts.prms is None: prms = []
 else: prms = opts.prms.split(',')
 if opts.shared_prms is None: sprms = []
 else: sprms = opts.shared_prms.split(',')
+if opts.aa is None: aaprms = []
+else: aaprms = opts.aa.split(',')
 prm_dict = {}
 for ant in ants: prm_dict[ant] = prms[:]
 prm_dict[ants[0]].extend(sprms)
+prm_dict['aa'] = aaprms
 print prm_dict
-start_prms = aa.get_params(prm_dict, nchan=opts.nchan)
+start_prms = aa.get_params(prm_dict)
 if opts.other_prms != None:
     src_prms = [w.split('=') for w in opts.other_prms.split(',')]
     sprm_dict = {}
@@ -88,6 +94,7 @@ if opts.other_prms != None:
     start_prms.update(cat.get_params(sprm_dict))
 
 prm_list, key_list = a.fit.flatten_prms(start_prms)
+
 first_fit = None    # Used to normalize fit values to the starting fit
 
 baselines = None
@@ -103,6 +110,7 @@ def fit_func(prms):
             prms[ant][prm] = prms[ants[0]][prm]
     aa.set_params(prms)
     cat.set_params(prms)
+    mfq = cat.get_mfreqs()
     score,cnt,curtime = 0,0,None
     for uvfile in args:
         sys.stdout.write('.'), ; sys.stdout.flush()
@@ -110,7 +118,7 @@ def fit_func(prms):
         if not baselines is None:
             for (i,j) in baselines: uv.select('antennae',i,j, include=True)
         else: uv.select('auto', 0, 0, include=False)
-        for (uvw,t,(i,j)),d in uv.all():
+        for (uvw,t,(i,j)),d,f in uv.all(raw=True):
             # Use only every Nth integration, if decimation is specified.
             if curtime != t:
                 curtime = t
@@ -118,16 +126,16 @@ def fit_func(prms):
                 if cnt == 0:
                     aa.set_jultime(t)
                     cat.compute(aa)
-                    s_eqs = cat.get_crds('eq', n_crds=3)
-                    fluxes = cat.get_fluxes()
-                    indices = cat.get_indices()
-                    mfreqs = cat.get_mfreqs()
+                    eqs = cat.get_crds('eq', ncrd=3)
+                    flx = cat.get_fluxes()
+                    ind = cat.get_indices()
+                    aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq)
             if cnt != 0: continue
-            sim_d = aa.sim(i, j, s_eqs, fluxes, indices=indices, mfreqs=mfreqs,
-                pol=a.miriad.pol2str[uv['pol']])
             d = d.take(chans)
+            f = f.take(chans)
+            sim_d = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
             difsq = n.abs(d - sim_d)**2
-            score += difsq.filled(0).sum()
+            score += n.where(f, 0, difsq).sum()
         
     print
     if first_fit is None: first_fit = score

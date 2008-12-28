@@ -12,21 +12,21 @@ Revisions:
                 Miriad expects from the bandpass variable.  Removes variables
                 associated with bandpass (correctly).
     12/11/07 arp    Updated to new miriad file interface
+    05/12/08 arp    Sped up reading w/ "raw" mode
 """
 
 __version__ = '0.0.1'
 
-import sys, aipy, numpy, os
-from optparse import OptionParser
+import aipy as a, numpy as n, sys, os, optparse
 
-p = OptionParser()
-p.set_usage('apply_bp.py [options] *.uv')
-p.set_description(__doc__)
-p.add_option('-l', '--linearization', dest='linearization', default='comb',
+o = optparse.OptionParser()
+o.set_usage('apply_bp.py [options] *.uv')
+o.set_description(__doc__)
+o.add_option('-l', '--linearization', dest='linearization', default='comb',
     help='Apply the specified quantization linearization function to raw correlator values before applying bandpass.  Options are null, digi, full, and comb.  Default is comb')
-p.add_option('-p', '--plot_chan', dest='plot_chan', default=-1, type='int',
-    help='Plot the provided channel from provided files (which need to have unapplied bandpasses).  Does not write output files.')
-opts, args = p.parse_args(sys.argv[1:])
+o.add_option('-s', '--scale', dest='scale', type='float', default=1.,
+    help='An additional numerical scaling to apply to the data.  Default: 1.')
+opts, args = o.parse_args(sys.argv[1:])
 
 # Digital Gain, Power Output (Channel 1024+512)
 # NOD-5109 Noise Generator (Coarse=20dB, Fine=0dB attenuation)
@@ -34,7 +34,7 @@ opts, args = p.parse_args(sys.argv[1:])
 # port A pocket_correlator, shift=x3ff, clk=600MHz
 # Data is [digital gain, power output]
 
-qdata1 = numpy.array([
+qdata1 = n.array([
      [12157.543882402342, 69.423910140999993],
      [10941.789494162109, 66.790805816700001],
      [9847.6105447458976, 63.422136306799999],
@@ -74,7 +74,7 @@ qdata1 = numpy.array([
 # port A pocket_correlator, shift=x3ff, gain=[3500], clk=600MHz
 # Data is [Attenuation (Coarse, Fine), Power Output]
 
-qdata2 = numpy.array([
+qdata2 = n.array([
     [40,  4,  0.43  ],
     [40,  3,  0.46  ],
     [40,  2,  0.50  ],
@@ -119,11 +119,11 @@ qdata2 = numpy.array([
 # and use them to apply the correction function.  Polynomials are normalized
 # to map a raw value of 10 to itself.
 
-digi_cpoly = numpy.polyfit(qdata1[:,1], qdata1[:,0]**2, 6)
-full_cpoly = numpy.polyfit(qdata2[:,2], 10**(-(qdata2[:,0]+qdata2[:,1])/10), 6)
-digi_cpoly *= 10 / numpy.polyval(digi_cpoly, 10)
-full_cpoly *= 10 / numpy.polyval(full_cpoly, 10)
-null_cpoly = numpy.array([0, 0, 0, 0, 0, 1, 0])
+digi_cpoly = n.polyfit(qdata1[:,1], qdata1[:,0]**2, 6)
+full_cpoly = n.polyfit(qdata2[:,2], 10**(-(qdata2[:,0]+qdata2[:,1])/10), 6)
+digi_cpoly *= 10 / n.polyval(digi_cpoly, 10)
+full_cpoly *= 10 / n.polyval(full_cpoly, 10)
+null_cpoly = n.array([0, 0, 0, 0, 0, 1, 0])
 # Unscientifically average the 3 linearization polynomials.  In practice, this
 # seems to work best.
 comb_cpoly = (null_cpoly + full_cpoly + digi_cpoly) / 3
@@ -132,14 +132,7 @@ cpolys = {'null':null_cpoly, 'digi':digi_cpoly,
 
 cpoly = cpolys[opts.linearization]
 
-if opts.plot_chan >= 0:
-    times = []
-    plot_data = {}
-    uvi = aipy.miriad.UV(args[0])
-    for i in range(int(uvi['nants'])):
-        plot_data[i] = {'null':[],'digi':[],'full':[],'comb':[]}
-else:
-    print 'Using %s quantization correction' % opts.linearization
+print 'Using %s quantization correction' % opts.linearization
 
 # These are all the items which should be removed once bandpass applied.
 ignore_vars = ['bandpass', 'freqs', 'ngains', 'nspect0', 
@@ -148,57 +141,28 @@ ignore_vars = ['bandpass', 'freqs', 'ngains', 'nspect0',
 # Process all files passed from the command line.
 for filename in args:
     print filename,
-    if opts.plot_chan == -1 and os.path.exists(filename+'b'):
+    if os.path.exists(filename+'b'):
         print 'File exists: skipping'
         continue
-    uvi = aipy.miriad.UV(filename)
-    if opts.plot_chan == -1:
-        uvo = aipy.miriad.UV(filename+'b', status='new')
-        uvo.init_from_uv(uvi, exclude=ignore_vars)
+    uvi = a.miriad.UV(filename)
+    uvo = a.miriad.UV(filename+'b', status='new')
+    uvo.init_from_uv(uvi, exclude=ignore_vars)
     nchan = uvi['nchan']
     nants = uvi['nants']
     try:
         # If there is a bandpass item, we're going apply it to data
         bp = uvi['bandpass'].real   # Sync'd with pocket_corr.py in corr pkg.
-        #bp.shape = (nchan, nants)   # Sync'd to c2m.py in corr pkg.
-        #bp = bp.transpose()
         bp.shape = (nants, nchan)
         print
     except:
         print 'No bandpass found'
-        bp = numpy.ones((nants, nchan))
+        bp = n.ones((nants, nchan))
         print '.'
-    def f(uv, preamble, data):
+    def f(uv, preamble, data, flags):
         uvw, t, (i,j) = preamble
-        d = data.data
-        if i == j: d = numpy.polyval(cpoly, d)
-        d *= bp[i,:] * bp[j,:]
-        data = numpy.ma.array(d, mask=data.mask)
-        return preamble, data
-    if opts.plot_chan == -1:
-        uvo.pipe(uvi, mfunc=f, 
-            append2hist='APPLY_BP: version=%s, corr type = %s\n' % \
-                (__version__, opts.linearization))
-    else:
-        for preamble, data in uvi.all():
-            if i == j:
-                d = d[opts.plot_chan]
-                for k in plot_data[i].keys():
-                    dk = numpy.polyval(cpolys[k], d) * bp[opts.plot_chan,i]**2
-                    plot_data[i][k].append(dk.real)
-                    if len(times) == 0 or times[-1] != preamble[-2]:
-                        times.append(preamble[-2])
-
-if opts.plot_chan >= 0:
-    import pylab
-    nk = len(plot_data.keys())
-    snk = int(numpy.sqrt(nk))
-    for k in plot_data.keys():
-        pylab.subplot(nk, 1, k+1)
-        for L in plot_data[k].keys():
-            pylab.plot(times, plot_data[k][L], '.', label=L)
-        if k == 0: pylab.legend()
-        pylab.xlabel('Julian Date')
-        pylab.ylabel('Power')
-        pylab.title('(%d, %d)' % (k, k))
-    pylab.show()
+        if i == j: data = n.polyval(cpoly, data)
+        data *= bp[i,:] * bp[j,:] * opts.scale
+        return preamble, data, flags
+    uvo.pipe(uvi, mfunc=f, raw=True,
+        append2hist='APPLY_BP: ver=%s, corr type=%s, scale=%f\n' % \
+            (__version__, opts.linearization, opts.scale))

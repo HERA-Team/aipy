@@ -3,7 +3,7 @@ AIPY (Astronomical Interferometry in PYthon)
 This package collects together tools for radio astronomical interferometry.  In
 addition to pure-python phasing, calibration, imaging, and
 deconvolution code, this package includes interfaces to MIRIAD (a Fortran
-interferometry package), HEALPix (a package for representing spherical data
+interferometry package) and HEALPix (a package for representing spherical data
 sets), and routines from SciPy for fitting. 
 
 BEFORE YOU INSTALL
@@ -17,7 +17,7 @@ BEFORE YOU INSTALL
         pyfits >= 1.1
         *matplotlib >= 0.91
         *matplotlib-basemap >= 0.9
-        (* installation can occur without these, but some scripts will choke)
+        (* installation can proceed without these, but some scripts won't work)
     Luckily, much of this is now automated through setuptools dependencies,
     but you have to have network access to take advantage of it.
 
@@ -51,24 +51,6 @@ COMMAND-LINE SCRIPTS
     Unless you installed as user, these will be in /usr/bin.  For more info
     use the "-h" option with any of these commands:
 
-    apply_bp.py:        Apply the bandpass variable to UV data and write a 
-                        new file.  Also linearizes quantization gain.
-    combine_freqs.py:   Average multiple channels together (reducing the total
-                        number of channels).
-    compress_uv.py:     Applies "tar -cjf" to UV files, compressing them.
-    fit_dly_pos.py:     Fit antenna positions and delays by phasing on to
-                        multiple sources.  Still under development.
-    lst:                Prints out local sidereal time + julian date
-    phs2src.py:         Phase a zenith data set to a source, writing the
-                        result out to a new UV file.
-    plot_uv.py:         A very flexible tool for plotting data from a UV file.
-    rm_mdl.py:          Subtract a sky/system model from the measured data.
-                        Outputs to a new UV file.
-    xrfi.py:            Generate a new UV file with RFI flagged.  Currently
-                        only works with the "-s" option.
-    xtalk.py:           Generate a new UV file with crosstalk removed, and
-                        with signals at "non-sky" delays filtered.
-    
 Enjoy,
 Aaron Parsons
 

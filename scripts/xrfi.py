@@ -10,7 +10,7 @@ Revisions:
     12/11/07 arp    Ported to use new miriad file interface
 """
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 import numpy, aipy
 
@@ -37,6 +37,7 @@ def gen_rfi_thresh(data, nsig=2, per_bin=1000):
     if h.size == 0: return 0, 0
     # Fit a gaussian to histogram (better than just std-dev of data)
     amp, sig, off = fit_gaussian(numpy.arange(h.size), h)
+    sig = abs(sig)
     hi_thresh = numpy.clip(numpy.round(off + nsig*sig), 0, len(bvals)-1)
     lo_thresh = numpy.clip(numpy.round(off - nsig*sig), 0, len(bvals)-1)
     hi_thresh = bvals[hi_thresh]
@@ -81,9 +82,13 @@ if __name__ == '__main__':
     p.set_usage('xrfi.py [options] *.uv')
     p.set_description(__doc__)
     p.add_option('-n', '--nsig', dest='nsig', default=2., type='float',
-        help='Number of standard deviations above mean to flag.')
+        help='Number of standard deviations above mean to flag.  Default 2.')
+    p.add_option('-m', '--flagmode', dest='flagmode', default='both',
+        help='Can be val,int,both for flagging my value only, integration only, or both.  Default both.')
     p.add_option('-c', '--chans', dest='chans', default='',
         help='Comma-delimited ranges (e.g. 1-3,5-10) of channels to manually flag before any other statistical flagging.')
+    p.add_option('-t', '--ch_thresh', dest='ch_thresh',type='float',default=.33,
+        help='Fraction of the data in a channel which, if flagged, will result in the entire channel begin flagged.  Default .33')
 
     opts, args = p.parse_args(sys.argv[1:])
     chans = opts.chans.split(',')
@@ -122,39 +127,45 @@ if __name__ == '__main__':
         # Generate a single mask for all baselines which masks if any
         # baseline has an outlier at that freq/time.  Data flagged
         # strictly on basis of nsigma above mean.
-        #total_mask = numpy.zeros((len(times), uvi['nchan']), dtype=numpy.int)
-        new_mask = {}
-        for k in mask:
-            mask[k][flag_chans] = 1
-            new_mask[k] = mask[k].copy()
-        for p in data:
-          for k in data[p]:
-            i, j = aipy.miriad.bl2ij(k)
-            if i == j: continue
-            data_times = data[p][k].keys()
-            d = numpy.ma.array([data[p][k][t] for t in data_times],
-                mask=[mask[t] for t in data_times])
-            hi_thr, lo_thr = gen_rfi_thresh(d, nsig=opts.nsig)
-            m = numpy.where(numpy.abs(d) > hi_thr,1,0)
-            for i, t in enumerate(data_times): new_mask[t] |= m[i]
-        mask = new_mask
+        if not opts.flagmode.startswith('int'):
+            new_mask = {}
+            for k in mask:
+                mask[k][flag_chans] = 1
+                new_mask[k] = mask[k].copy()
+            for p in data:
+              for k in data[p]:
+                i, j = aipy.miriad.bl2ij(k)
+                if i == j: continue
+                data_times = data[p][k].keys()
+                d = numpy.ma.array([data[p][k][t] for t in data_times],
+                    mask=[mask[t] for t in data_times])
+                hi_thr, lo_thr = gen_rfi_thresh(d, nsig=opts.nsig)
+                m = numpy.where(numpy.abs(d) > hi_thr,1,0)
+                for i, t in enumerate(data_times): new_mask[t] |= m[i]
+            mask = new_mask
+            # If more than half the data in a channel is flagged, flag the
+            # whole thing
+            msk_cnt = numpy.array([mask[t] for t in data_times]).sum(axis=0)
+            ch_msk = numpy.where(msk_cnt > msk_cnt.max() * opts.ch_thresh, 1, 0)
+            for k in mask: mask[k] |= ch_msk
 
         # Use autocorrelations to flag entire integrations which have
         # anomalous powers.  All antennas must agree for a integration
         # to get flagged.
-        new_mask = {}
-        for p in data:
-          for k in data[p]:
-            i, j = aipy.miriad.bl2ij(k)
-            if i != j: continue
-            data_times = data[p][k].keys()
-            d = numpy.ma.array([data[p][k][t] for t in data_times],
-                mask=[mask[t] for t in data_times])
-            for i in numpy.where(flag_by_int(d))[0]:
-                t = data_times[i]
-                new_mask[t] = new_mask.get(t, 0) + 1
-        for t in new_mask:
-            if new_mask[t] > 1: mask[t] |= 1
+        if not opts.flagmode.startswith('val'):
+            new_mask = {}
+            for p in data:
+              for k in data[p]:
+                i, j = aipy.miriad.bl2ij(k)
+                if i != j: continue
+                data_times = data[p][k].keys()
+                d = numpy.ma.array([data[p][k][t] for t in data_times],
+                    mask=[mask[t] for t in data_times])
+                for i in numpy.where(flag_by_int(d))[0]:
+                    t = data_times[i]
+                    new_mask[t] = new_mask.get(t, 0) + 1
+            for t in new_mask:
+                if new_mask[t] > 1: mask[t] |= 1
 
         # Generate a pipe for applying both the total_mask and the int_mask
         # to the data as it comes it.
@@ -166,4 +177,5 @@ if __name__ == '__main__':
         uvo = aipy.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
         uvo.pipe(uvi, mfunc=rfi_mfunc, raw=True,
-            append2hist='XRFI: version %s\n' % __version__)
+    append2hist='XRFI: ver %s, nsig %f, chans %s, mode %s, ch_thresh %f\n' %  \
+            (__version__, opts.nsig, opts.chans, opts.flagmode, opts.ch_thresh))

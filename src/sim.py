@@ -36,9 +36,17 @@ class RadioBody:
         """janskies:     source strength
         mfreq:    frequency (in GHz) where strength was measured
         index:   index of power-law spectral model of source emission"""
-        self.janskies = janskies
+        try: len(janskies)
+        except: janskies = [janskies]
+        try: len(index)
+        except: index = [index]
+        self._janskies = janskies
         self.mfreq = mfreq
-        self.index = index
+        self._index = index
+    def compute(self, observer):
+        self.janskies = n.clip(n.polyval(self._janskies, 
+                (observer.sidereal_time()-self.ra+n.pi) % (2*n.pi)), 0, n.Inf)
+        self.index = n.polyval(self._index, observer.sidereal_time())
 
 #  ____           _ _       _____ _              _ ____            _       
 # |  _ \ __ _  __| (_) ___ |  ___(_)_  _____  __| | __ )  ___   __| |_   _ 
@@ -53,6 +61,9 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
             index=-1., name='', **kwargs):
         ant.RadioFixedBody.__init__(self, ra, dec, name=name)
         RadioBody.__init__(self, janskies, mfreq=mfreq, index=index)
+    def compute(self, observer):
+        ant.RadioFixedBody.compute(self, observer)
+        RadioBody.compute(self, observer)
 
 #  ____           _ _      ____                  _       _ 
 # |  _ \ __ _  __| (_) ___/ ___| _ __   ___  ___(_) __ _| |
@@ -66,6 +77,9 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
     def __init__(self, name, janskies, mfreq=.150, index=-1., **kwargs):
         ant.RadioSpecial.__init__(self, name)
         RadioBody.__init__(self, janskies, mfreq=mfreq, index=index)
+    def compute(self, observer):
+        ant.RadioSpecial.compute(self, observer)
+        RadioBody.compute(self, observer)
 
 #  ____            ____      _        _             
 # / ___| _ __ ___ / ___|__ _| |_ __ _| | ___   __ _ 
@@ -88,6 +102,10 @@ class SrcCatalog(ant.SrcCatalog):
 # |  _ \ / _ \/ _` | '_ ` _ \
 # | |_) |  __/ (_| | | | | | |
 # |____/ \___|\__,_|_| |_| |_|
+
+class BeamFlat(ant.Beam):
+    def response(self, xyz):
+        return n.ones((self.afreqs.size, xyz.shape[1]))
 
 class Beam2DGaussian(ant.Beam):
     """A 2D Gaussian beam pattern, with default setting for a flat beam."""
@@ -212,30 +230,34 @@ class BeamAlmSymm(BeamAlm):
 class Antenna(ant.Antenna):
     """A representation of the physical location and beam pattern of an
     individual antenna in an array."""
-    def __init__(self, x, y, z, beam, delay=0., offset=0.,
-            bp=None, amp=1, pointing=(0.,n.pi/2,0), **kwargs):
+    def __init__(self, x, y, z, beam, delay=0., bp_r=n.array([1]), 
+            bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
         """x, y, z:    Antenna coordinates in equatorial (ns) coordinates
         beam:       Object with function 'response(xyz=None, azalt=None)'
         delay:      Cable/systematic delay in ns
-        offset:     Frequency-independent phase offset
-        bp:         Decimated sampling of passband. Default is flat.
+        bp_r:       Polynomial modeling the real component of the passband
+        bp_i:       Polynomial modeling the imag component of the passband
         pointing:   Antenna pointing=(az, alt).  Default is zenith"""
-        ant.Antenna.__init__(self, x,y,z, beam=beam, delay=delay, offset=offset)
+        ant.Antenna.__init__(self, x,y,z, beam=beam, delay=delay)
         # Implement a flat passband of ones if no bp is provided
-        if bp is None: bp = n.ones(beam.freqs.size, dtype=n.float)
-        self.update_gain(bp, amp)
+        self.update_gain(bp_r, bp_i, amp)
         self.update_pointing(*pointing)
     def select_chans(self, active_chans=None):
         ant.Antenna.select_chans(self, active_chans)
         self.update_gain()
-    def update_gain(self, bp=None, amp=None):
-        if not bp is None: self.bp = bp
+    def update_gain(self, bp_r=None, bp_i=None, amp=None):
+        if not bp_r is None:
+            try: len(bp_r)
+            except: bp_r = [bp_r]
+            self.bp_r = bp_r
+        if not bp_i is None:
+            try: len(bp_i)
+            except: bp_i = [bp_i]
+            self.bp_i = bp_i
         if not amp is None: self.amp = amp
-        bp = self.bp
-        dec_factor = self.beam.freqs.size / self.bp.size
-        if dec_factor != 1: bp = interpolate(self.bp, dec_factor)
-        gain = self.amp * bp.clip(0, n.Inf)
-        self.gain = gain.take(self.beam.chans)
+        bp = n.polyval(self.bp_r, self.beam.afreqs) + \
+             1j*n.polyval(self.bp_i, self.beam.afreqs)
+        self.gain = self.amp * bp
     def update_pointing(self, az=0, alt=n.pi/2, twist=0):
         """Set the antenna beam to point at (az, alt) with the specified
         right-hand twist to the polarizations.  Polarization y is assumed
@@ -274,24 +296,25 @@ class AntennaArray(ant.AntennaArray):
             pols=['x','y']):
         # Get topocentric coordinates of all srcs
         src_top = n.dot(self.eq2top_m, s_eqs)
-        # Throw out everthing that is below the horizon
+        # Throw out everything that is below the horizon
         valid = n.logical_and(src_top[2,:] > 0, fluxes > 0)
-        if n.all(valid == 0): return n.zeros_like(self.ants[i].beam.afreqs)
-        fluxes = fluxes.compress(valid)
-        indices = indices.compress(valid)
-        mfreqs = mfreqs.compress(valid)
-        src_top = src_top.compress(valid, axis=1)
-        s_eqs = s_eqs.compress(valid, axis=1)
-        # Get src fluxes vs. freq
-        fluxes.shape = (fluxes.size, 1)
-        mfreqs.shape = (mfreqs.size, 1)
-        indices.shape = (indices.size, 1)
-        freqs = n.resize(self.ants[0].beam.afreqs, 
-            (fluxes.size, self.ants[0].beam.afreqs.size))
-        self._cache = {
-            'I_sf':fluxes * (freqs / mfreqs)**indices,
-            's_eqs': s_eqs,
-        }
+        if n.all(valid == 0): self._cache = {'I_sf': 0, 's_eqs': s_eqs}
+        else:
+            fluxes = fluxes.compress(valid)
+            indices = indices.compress(valid)
+            mfreqs = mfreqs.compress(valid)
+            src_top = src_top.compress(valid, axis=1)
+            s_eqs = s_eqs.compress(valid, axis=1)
+            # Get src fluxes vs. freq
+            fluxes.shape = (fluxes.size, 1)
+            mfreqs.shape = (mfreqs.size, 1)
+            indices.shape = (indices.size, 1)
+            freqs = n.resize(self.ants[0].beam.afreqs, 
+                (fluxes.size, self.ants[0].beam.afreqs.size))
+            self._cache = {
+                'I_sf':fluxes * (freqs / mfreqs)**indices,
+                's_eqs': s_eqs,
+            }
         # Get antenna responses to provided coordinates
         for i,ant in enumerate(self.ants):
             self._cache[i] = {}

@@ -73,8 +73,7 @@ def gen_chans(chanopt, uv):
 opts, args = o.parse_args(sys.argv[1:])
 
 uv = a.miriad.UV(args[0])
-aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'],
-    use_bp=opts.amp)
+aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
 if opts.pol is None: active_pol = uv['pol']
 else: active_pol = a.miriad.str2pol[opts.pol]
 chans = gen_chans(opts.chan, uv)

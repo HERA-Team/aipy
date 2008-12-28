@@ -14,9 +14,12 @@ p.add_option('-l', '--loc', dest='loc', default='pwa303',
     help='Use location-specific info for this location (default pwa303).')
 opts, args = p.parse_args(sys.argv[1:])
 
-aa = aipy.loc.get_loc(opts.loc)
+aa = aipy.loc.get_aa(opts.loc, .1, .1, 1)
+sun = ephem.Sun()
 aa.set_jultime(opts.juldate)
+sun.compute(aa)
 print 'LST:', aa.sidereal_time(),
 print '     Julian Date:', opts.juldate,
 print '     Day:', aa.date
+print 'Sun is at (RA, DEC):', str((str(sun.ra), str(sun.dec)))
 

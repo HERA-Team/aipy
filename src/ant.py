@@ -162,12 +162,11 @@ class Beam:
 class Antenna:
     """A representation of the physical location an individual antenna in 
     an array, and possibly a systematic delay associated with it."""
-    def __init__(self, x, y, z, beam, delay=0., offset=0., **kwargs):
+    def __init__(self, x, y, z, beam, delay=0., **kwargs):
         """x, y, z:    Antenna coordinates in equatorial (ns) coordinates"""
         self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
         self.beam = beam
         self.delay = delay
-        self.offset = offset
     def select_chans(self, active_chans=None):
         self.beam.select_chans(active_chans)
     def __tuple__(self): return (self.pos[0], self.pos[1], self.pos[2])
@@ -237,7 +236,6 @@ class AntennaArray(ArrayLocation):
                 bl = self.ij2bl(i, j+i)
                 bls.append(aj - ai)
                 dlys.append(aj.delay - ai.delay)
-                offs.append(aj.offset - ai.offset)
                 self.bl_order[bl] = len(bls) - 1
         self.bls,self.dlys,self.offs = n.array(bls),n.array(dlys),n.array(offs)
         # Compute (static) zenith baselines
@@ -275,9 +273,6 @@ class AntennaArray(ArrayLocation):
     def get_delay(self, i, j):
         """Return the delay corresponding to i,j."""
         return self.dlys[self.bl_order[self.ij2bl(i,j)]]
-    def get_offset(self, i, j):
-        """Return the delay corresponding to i,j."""
-        return self.offs[self.bl_order[self.ij2bl(i,j)]]
     def gen_uvw(self, i, j, src='z'):
         """Compute uvw coordinates for a provided RadioBody, or 'z' for
         zenith uvw coordinates."""
@@ -291,10 +286,10 @@ class AntennaArray(ArrayLocation):
         except(AttributeError): pass
         bl_dot_s = n.dot(src, self.get_baseline(i,j,src='e'))
         if len(bl_dot_s.shape) >= 1: bl_dot_s.shape = (bl_dot_s.size, 1)
-        t,o = self.get_delay(i,j), self.get_offset(i,j)
+        t = self.get_delay(i,j)
         afreqs = self.ants[0].beam.afreqs
         afreqs = n.reshape(afreqs, (1,afreqs.size))
-        phs = n.exp(-1j*(2*n.pi*n.dot(bl_dot_s + t, afreqs) + o))
+        phs = n.exp(-1j*(2*n.pi*n.dot(bl_dot_s + t, afreqs)))
         return phs.squeeze()
     def phs2src(self, data, src, i, j):
         """Apply phasing to zenith data to point to src."""

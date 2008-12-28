@@ -28,16 +28,13 @@ p.add_option('--iepoch', dest='iepoch', default=ephem.J2000,
     help='The epoch of coordinates in the map. Default J2000.')
 p.add_option('--freq', dest='freq', default=.150, type='float',
     help='Frequency of flux data in map.')
-p.add_option('--omit_bp', dest='omit_bp', action='store_true',
-    help='Omit bandpass information (assumes files are bp calibrated.')
 p.add_option('-n', '--noiselev', dest='noiselev', default=0., type='float',
     help='RMS amplitude of noise added to each UV sample of simulation.')
 opts, args = p.parse_args(sys.argv[1:])
 
 # Initialize AntennaArray
 uv = a.miriad.UV(args[0])
-aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'],
-    use_bp=not opts.omit_bp)
+aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
 p,d,f = uv.read(raw=True)
 no_flags = n.zeros_like(f)
 del(uv)

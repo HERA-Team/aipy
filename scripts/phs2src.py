@@ -21,8 +21,7 @@ p.add_option('-l', '--loc', dest='loc',
 opts, args = p.parse_args(sys.argv[1:])
 
 uv = aipy.miriad.UV(args[0])
-aa = aipy.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'],
-    use_bp=False)
+aa = aipy.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
 del(uv)
 
 cat = aipy.src.get_catalog([opts.source])
