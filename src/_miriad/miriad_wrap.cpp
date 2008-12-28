@@ -129,7 +129,13 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
     }
     CHK_ARRAY_TYPE(uvw, NPY_DOUBLE);
     CHK_ARRAY_TYPE(data, NPY_CFLOAT);
-    CHK_ARRAY_TYPE(flags, NPY_INT);
+    // Check for both int,long, b/c label of 32b number is platform dependent
+    if (TYPE(flags) != NPY_INT && \
+            (sizeof(int) == sizeof(long) && TYPE(flags) != NPY_LONG)) {
+        PyErr_Format(PyExc_ValueError, "type(%s) != %s", \
+        QUOTE(a), QUOTE(type));
+        return NULL;
+    }
     // Fill up the preamble
     preamble[0] = IND1(uvw,0,double);
     preamble[1] = IND1(uvw,1,double);

@@ -1,11 +1,17 @@
 #! /usr/bin/env python
-import pylab as p
-import numpy, aipy, sys, os, ephem
+import pylab as p, numpy, aipy, sys, os, ephem, optparse
 from matplotlib.toolkits.basemap import Basemap
+
+o = optparse.OptionParser()
+o.set_usage('plot_hmapmoll.py [options] mapfile')
+o.set_description(__doc__)
+o.add_option('-j', '--juldate', dest='juldate', type='float', default=2454489,
+    help='Julian date used for locating moving sources (default 2454489).')
+opts,args = o.parse_args(sys.argv[1:])
 
 RES = .005
 SZ = (int(numpy.pi/RES), int(2*numpy.pi/RES))
-skymap = aipy.img.SkyHMap(128, fromfits=sys.argv[-1])
+skymap = aipy.img.SkyHMap(128, fromfits=args[0])
 lats, lons = numpy.indices(SZ)
 lats = lats.astype(numpy.float) * RES
 lons = lons.astype(numpy.float) * RES
@@ -16,8 +22,7 @@ lons = crd[:,1] * aipy.img.rad2deg - 180
 
 cat = aipy.src.get_catalog(type='ant')
 o = ephem.Observer()
-#o.date = aipy.ant.juldate2ephem(2454303)
-o.date = aipy.ant.juldate2ephem(2454483)
+o.date = aipy.ant.juldate2ephem(opts.juldate)
 cat.compute(o)
 # lat/lon coordinates of sources
 slats = numpy.array(map(lambda s: float(s.dec), cat.values()))

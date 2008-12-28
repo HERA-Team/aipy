@@ -16,7 +16,7 @@ p.set_usage('phs2src.py [options] *.uv')
 p.set_description(__doc__)
 p.add_option('-s', '--source', dest='source',
     help='The source to phase to.')
-p.add_option('-l', '--loc', dest='loc', default='pwa303',
+p.add_option('-l', '--loc', dest='loc',
     help='Use location-specific info for this location (default pwa303).')
 opts, args = p.parse_args(sys.argv[1:])
 

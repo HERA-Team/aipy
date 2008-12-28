@@ -5,10 +5,18 @@ o = optparse.OptionParser()
 o.set_usage('phs2src.py [options] *.uv')
 o.set_description(__doc__)
 o.add_option('-s', '--src', dest='src',
-    help='The source to phase to.')
+    help='The name of a source to phase to, or ra,dec position.')
 o.add_option('-l', '--loc', dest='loc', 
     help='Use location-specific info for this location.')
-o.add_option('-a', '--ants', dest='ants', default='all',
+o.add_option('-d', '--deconv', dest='deconv', action='store_true',
+    help='Attempt to deconvolve the dirty image by the dirty beam.')
+o.add_option('--var', dest='var', type='float', default=0.,
+    help='Starting guess for variance in maximum entropy fit (defaults to variance of dirty image.')
+o.add_option('--tol', dest='tol', type='float', default=1e-6,
+    help='Tolerance for successful deconvolution.')
+o.add_option('--maxiter', dest='maxiter', type='int', default=200,
+    help='Number of allowable iterations per deconvolve attempt.')
+o.add_option('-a', '--ants', dest='ants', default='cross',
     help='Select which antennas/baselines to include in plot.  Options are: "all", "auto", "cross", "<ant1 #>_<ant2 #>" (a specific baseline), or "<ant1 #>,..." (a list of active antennas).')
 o.add_option('-p', '--pol', dest='pol', default=None,
     help='Choose which polarization (xx, yy, xy, yx) to plot.')
@@ -20,6 +28,12 @@ o.add_option('--size', dest='size', type='int', default=200,
     help='Size of maximum UV baseline.')
 o.add_option('--res', dest='res', type='float', default=0.5,
     help='Resolution of UV matrix.')
+o.add_option('--no_w', dest='no_w', action='store_true',
+    help="Don't use W projection.")
+o.add_option('--dyn_rng', dest='dyn_rng', type='float', default=3.,
+    help="Dynamic range in color of image (log).")
+o.add_option('--smooth', dest='smooth', type='float', default=0.,
+    help="Before deconvolving, smooth img and beam by a gaussian with width specified in pixels.")
 o.add_option('--buf_thresh', dest='buf_thresh', default=1e6, type='float',
     help='Maximum amount of data to buffer before gridding.  Excessive gridding takes performance hit, but if buffer exceeds memory available... ouch.')
 
@@ -52,11 +66,10 @@ def gen_chans(chanopt, uv):
         chans = n.concatenate(chanopt)
     return chans.astype(n.int)
 
-
 opts, args = o.parse_args(sys.argv[1:])
 
-uv = aipy.miriad.UV(args[0])
-aa = aipy.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'],
+uv = a.miriad.UV(args[0])
+aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'],
     use_bp=False)
 if opts.pol is None: active_pol = uv['pol']
 else: active_pol = a.miriad.str2pol[opts.pol]
@@ -64,16 +77,20 @@ chans = gen_chans(opts.chan, uv)
 del(uv)
 
 aa.select_chans(chans)
-src = aipy.src.get_src(opts.src)
-im = aipy.img.ImgW(opts.size, opts.res)
+if opts.src.find(',') == -1: src = a.src.get_src(opts.src)
+else:
+    ra, dec = opts.src.split(',')
+    src = a.ant.RadioFixedBody(ra, dec)
+if opts.no_w: im = a.img.Img(opts.size, opts.res)
+else: im = a.img.ImgW(opts.size, opts.res)
 DIM = int(opts.size/opts.res)
 
 cnt, curtime = 0, None
 # Gather data
 uvw, dat, wgt = [], [], []
-for filename in sys.argv[1:]:
+for filename in args:
     sys.stdout.write('.'); sys.stdout.flush()
-    uv = aipy.miriad.UV(filename)
+    uv = a.miriad.UV(filename)
     data_selector(opts.ants, active_pol, uv)
     for (crd,t,(i,j)),d in uv.all():
         if curtime != t:
@@ -85,90 +102,105 @@ for filename in sys.argv[1:]:
         d = d.take(chans)
         try:
             d, xyz = aa.phs2src(d, src, i, j, with_coord=True)
-            w = aa.ants[0].response((src.az, src.alt), pol=2)**2
-        except(aipy.ant.PointingError): break
+            #w = aa.ants[0].response((src.az, src.alt), pol=2)**2
+            w = n.ones(d.shape, dtype=n.float)
+        except(a.ant.PointingError): continue
         valid = n.logical_not(d.mask)
-        d = d.compress(clean).data
+        d = d.compress(valid).data
         if len(d) == 0: continue
         dat.append(d)
         uvw.append(xyz.compress(valid, axis=0))
         wgt.append(w.compress(valid))
-        if len(data) * len(active_chans) > opts.buf_thresh:
+        if len(dat) * len(chans) > opts.buf_thresh:
             sys.stdout.write('|'); sys.stdout.flush()
-            data = n.concatenate(data)
+            dat = n.concatenate(dat)
             uvw = n.concatenate(uvw); uvw.shape = (uvw.size / 3, 3)
             wgt = n.concatenate(wgt).flatten()
-            data /= wgt; wgt = wgt * 0 + 1
-            uvw,data,wgt = im.append_hermitian(uvw,data,wgt)
-            im.put(uvw, data, wgt)
-            uvw, data, wgt = [], [], []
+            dat /= wgt; wgt = wgt * 0 + 1
+            uvw,dat,wgt = im.append_hermitian(uvw,dat,wgt)
+            im.put(uvw, dat, wgt)
+            uvw, dat, wgt = [], [], []
 
 if len(uvw) == 0: raise ValueError('No data to plot')
 # Grid data into UV matrix
 sys.stdout.write('|\n'); sys.stdout.flush()
-data = n.concatenate(data)
+dat = n.concatenate(dat)
 uvw = n.concatenate(uvw); uvw.shape = (uvw.size / 3, 3)
 wgt = n.concatenate(wgt).flatten()
 # For optimal SNR, down-weight data which is already attenuated by beam 
 # by another factor of the beam response (modifying weight accordingly).
 #data *= wgt; wgt *= wgt
-data /= wgt; wgt = wgt * 0 + 1
-uvw,data,wgt = im.append_hermitian(uvw,data,wgt)
-im.put(uvw, data, wgt)
+dat /= wgt; wgt = wgt * 0 + 1
+uvw,dat,wgt = im.append_hermitian(uvw,dat,wgt)
+im.put(uvw, dat, wgt)
 
 im_img = im.image((DIM/2, DIM/2))
 bm_img = im.bm_image()
-# Try various noise levels until one works
-cl_img, info = None, None
-loop_num = 0
-im_var = n.var(im_img)
-if im_var == 0: raise ValueError('No flux in image')
-while cl_img is None:
-    print loop_num, im_var
-    var0 = im_var / 10 / (2**loop_num)
-    while var0 < im_var * 10 * (2**loop_num):
-        print 'Trying var0=%f' % var0
-        c, i = a.deconv.maxent(im_img, bm_img,
-            var0=var0, maxiter=200, verbose=False, tol=1e-6)
-        print 'Success =', i['success'],
-        print 'Term:', i['term'], 'Score:', i['score']
-        # Check if fit converged
-        if i['success'] and i['term'] == 'tol':
-            cl_img, info = c, i
-            break
-        else:
-            if not cl_img is None: break
-            var0 *= 2. ** (1./(loop_num+1))
-    loop_num += 1
-print 'Done with MEM.'
-rs_img = info['res'] / n.abs(bm_img).sum()
 
-pylab.subplot(221)
-im_img = numpy.log10(im_img + 1e-15)
+if opts.smooth != 0:
+    sm = a.img.gaussian_beam(opts.smooth, shape=im_img.shape)
+    im_img = n.abs(a.img.convolve2d(im_img, sm))
+    bm_img = n.abs(a.img.convolve2d(bm_img, sm))
+
+if opts.deconv:
+    # Try various noise levels until one works
+    cl_img, info = None, None
+    loop_num = -1
+    if opts.var != 0: im_var = opts.var
+    else: im_var = n.var(im_img)
+    while cl_img is None:
+        print '________________________________________________________'
+        if loop_num == -1: var0 = im_var
+        else: var0 = im_var / (1.5**loop_num)
+        while loop_num < 0 or var0 < im_var * (1.5**loop_num):
+            print 'Trying var0=%f' % var0
+            c, i = a.deconv.maxent(im_img, bm_img,
+                var0=var0, maxiter=opts.maxiter, verbose=False, tol=opts.tol)
+            print 'Success =', i['success'],
+            print 'Term:', i['term'], 'Score:', i['score']
+            # Check if fit converged
+            if i['success'] and i['term'] == 'tol':
+                cl_img, info = c, i
+                break
+            else:
+                if not cl_img is None: break
+                if loop_num == -1: break
+                var0 *= 1.2 ** (1./(2*(loop_num+1)))
+        loop_num += 1
+    print 'Done with MEM.'
+    rs_img = info['res']
+
+p.subplot(221)
+im_img = n.log10(im_img + 1e-15)
 mx = im_img.max()
-pylab.imshow(im_img, vmin=mx-3, vmax=mx)
-pylab.colorbar(shrink=.5, fraction=.05)
-pylab.title('Dirty Image')
+p.imshow(im_img, vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')
+p.colorbar(shrink=.5, fraction=.05)
+p.title('Dirty Image')
 
-pylab.subplot(222)
-bm_img = numpy.log10(bm_img + 1e-15)
+p.subplot(222)
+bm_img = im.bm_image((DIM/2,DIM/2))
+bm_img = n.log10(bm_img + 1e-15)
 mx = bm_img.max()
-pylab.imshow(bm_img, vmin=mx-3, vmax=mx)
-pylab.colorbar(shrink=.5, fraction=.05)
-pylab.title('Dirty Beam')
+p.imshow(bm_img, vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')
+p.colorbar(shrink=.5, fraction=.05)
+p.title('Dirty Beam')
 
-pylab.subplot(223)
-cl_img = numpy.log10(cl_img + 1e-15)
+p.subplot(223)
+if opts.deconv: cl_img = n.log10(cl_img + 1e-15)
+else: cl_img = n.abs(im.uv)
 mx = cl_img.max()
-pylab.imshow(cl_img, vmin=mx-3, vmax=mx)
-pylab.colorbar(shrink=.5, fraction=.05)
-pylab.title('Clean Image')
+p.imshow(cl_img, vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')
+p.colorbar(shrink=.5, fraction=.05)
+if opts.deconv: p.title('Clean Image')
+else: p.title('UV Sampling')
 
-pylab.subplot(224)
-rs_img = numpy.log10(rs_img + 1e-15)
+p.subplot(224)
+if opts.deconv: rs_img = n.log10(n.abs(rs_img) + 1e-15)
+else: rs_img = n.abs(im.bm)
 mx = rs_img.max()
-pylab.imshow(rs_img, vmin=mx-3, vmax=mx)
-pylab.colorbar(shrink=.5, fraction=.05)
-pylab.title('Residual Image')
+p.imshow(rs_img, vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')
+p.colorbar(shrink=.5, fraction=.05)
+if opts.deconv: p.title('Residual Image')
+else: p.title('Beam Sampling')
 
-pylab.show()
+p.show()
