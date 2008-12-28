@@ -343,6 +343,8 @@ class UV:
         fl_data[:,0] = data.data.real; fl_data[:,1] = data.data.imag
         fl_data.shape = (2*data.size,)
         flags = numpy.logical_not(data.mask).astype(numpy.int32)
+        if len(flags.shape) == 0:
+            flags = numpy.ones(data.shape, dtype=numpy.int32)
         miruv.uvwrite_c_wrap(self.handle, preamble, fl_data, flags)
     def update_vars(self):
         """Refresh the list of variables available in this dataset."""
@@ -370,9 +372,10 @@ def ij2bl(i, j):
 #  \__,_|\__|_|_|_|\__|\__, |
 #                      |___/ 
 
-def init_from_uv(uvi, uvo, append2hist='', override={}):
+def init_from_uv(uvi, uvo, append2hist='', override={}, exclude=[]):
     """Initialize 'uvo' from 'uvi'.  Append 'append2hist' to uvo's history.""" 
     for k in uvi.items:
+        if k in exclude: continue
         if k in override: uvo.items[k] = override[k]
         else: uvo.items[k] = uvi.items[k]
     uvo.items['history'] += append2hist

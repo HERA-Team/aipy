@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/python
 """
 A script for detecting and flagging RFI related effects in UV files.
 
@@ -29,8 +29,8 @@ def gen_rfi_thresh(data, nsig=2, per_bin=1000):
     else: histdata = numpy.log10(abs(data)+1e-6)
     h, bvals = numpy.histogram(histdata, bins=histdata.size/per_bin)
     amp, sig, off = fit_gaussian(numpy.arange(h.size), h)
-    hi_thresh = min(numpy.round(off + nsig*sig), len(bvals)-1)
-    lo_thresh = max(numpy.round(off - nsig*sig), 0)
+    hi_thresh = numpy.clip(numpy.round(off + nsig*sig), 0, len(bvals)-1)
+    lo_thresh = numpy.clip(numpy.round(off - nsig*sig), 0, len(bvals)-1)
     hi_thresh = bvals[hi_thresh]
     lo_thresh = bvals[lo_thresh]
     return 10**hi_thresh, 10**lo_thresh
@@ -54,7 +54,8 @@ def remove_spikes(data, order=6, iter=3, return_poly=False):
     im = numpy.logical_not(mask)
     nxs = numpy.compress(im, xs)
     ndata = numpy.compress(im, data)
-    p = numpy.polyfit(nxs, ndata, deg=order)
+    if len(nxs) != 0: p = numpy.polyfit(nxs, ndata, deg=order)
+    else: p = numpy.polyfit(xs, data, deg=order)
     if iter != 0:
         residual = abs(data - numpy.polyval(p, xs))
         sig = numpy.sqrt(numpy.ma.average(residual**2))

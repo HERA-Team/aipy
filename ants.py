@@ -78,6 +78,7 @@ class RadioBody:
         if t != self.prev_sidereal_time:
             self.prev_sidereal_time = t
             H = float(t - self.ra)
+            self.ha = H
             d = self.dec
             self.map = gen_uvw_map(H, d)
         return self.map

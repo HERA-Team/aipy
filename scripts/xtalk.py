@@ -19,13 +19,13 @@ if __name__ == '__main__':
 
     opts, args = p.parse_args(sys.argv[1:])
 
-    phs_off = {}
-    cnt = {}
     for uvfile in args:
+        phs_off = {}
+        cnt = {}
         print 'Reading', uvfile
         uvi = aipy.miriad.UV(uvfile)
 
-        # Gather all data with sources removed
+        # Gather all data
         while True:
             p, d = uvi.read_data()
             if d.size == 0: break
@@ -43,25 +43,15 @@ if __name__ == '__main__':
         for bl in phs_off: phs_off[bl] /= numpy.where(cnt[bl] == 0, 1, cnt[bl])
         del(uvi)
 
-    import scipy.optimize
-    # Generate a pipe for removing average phase bias from data
-    def phs_corr_mfunc(uv, preamble, data):
-        i, j = aipy.miriad.bl2ij(preamble[-1])
-        if i == j: return preamble, data
-        if numpy.all(data.mask): return preamble, data
-        def fit_func(amp):
-            rv = data - amp[0] * phs_off[preamble[-1]]
-            rv = numpy.abs(rv)**2
-            rv = rv.sum()
-            return rv
-        amp = scipy.optimize.fmin(fit_func, (1,), disp=0)
-        print amp[0]
-        return preamble, data - amp[0] * phs_off[preamble[-1]]
+        # Generate a pipe for removing average phase bias from data
+        def phs_corr_mfunc(uv, preamble, data):
+            i, j = aipy.miriad.bl2ij(preamble[-1])
+            if i == j: return preamble, data
+            return preamble, data - phs_off[preamble[-1]]
 
-    # Apply the pipe to the data
-    for uvfile in args:
+        # Apply the pipe to the data
         print 'Working on', uvfile
-        uvofile = uvfile+'p'
+        uvofile = uvfile+'x'
         if os.path.exists(uvofile):
             print uvofile, 'exists, skipping.'
             continue
