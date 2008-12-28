@@ -39,21 +39,24 @@ for uvfile in args:
             print uvofile, 'exists, skipping.'
             continue
         uvo = aipy.miriad.UV(uvofile, status='new')
+        if nchan != opts.nchan:
+            uvo.init_from_uv(uvi, override={'nchan':opts.nchan, 
+                'sfreq':newsfreq, 'sdf':newsdf, 'nschan':opts.nchan, 
+                'freq':newsfreq, 'nchan0':opts.nchan, },)
+        else: uvo.init_from_uv(uvi)
 
-    def f(uv, p, d):
-        d.shape = (opts.nchan, nchan/opts.nchan)
-        m = d.mask.sum(axis=1)
-        if opts.careful_flag: m = numpy.where(m > 0, 1, 0)
-        else: m = numpy.where(m >= nchan/opts.nchan/2, 1, 0)
-        d = numpy.ma.average(d, axis=1)
-        d = numpy.ma.array(d.data, mask=m, dtype=numpy.complex64)
-        return p, d
-    # Pipe data, but don't track variables that we overrode, so they don't
-    # get clobbered
-    uvo.init_from_uv(uvi,
-        override={'nchan':opts.nchan, 'sfreq':newsfreq, 'sdf':newsdf,
-            'nschan':opts.nchan, 'freq':newsfreq, 'nchan0':opts.nchan, },)
-    uvo.pipe(uvi, mfunc=f, append2hist='Miniaturized...\n')
+    if nchan != opts.nchan:
+        def f(uv, p, d):
+            d.shape = (opts.nchan, nchan/opts.nchan)
+            m = d.mask.sum(axis=1)
+            if opts.careful_flag: m = numpy.where(m > 0, 1, 0)
+            else: m = numpy.where(m >= nchan/opts.nchan/2, 1, 0)
+            d = numpy.ma.average(d, axis=1)
+            d = numpy.ma.array(d.data, mask=m, dtype=numpy.complex64)
+            return p, d
+        uvo.pipe(uvi, mfunc=f, append2hist='Miniaturized...\n')
+    else:
+        uvo.pipe(uvi, append2hist='Miniaturized...\n')
     if not opts.unify:
         del(uvo)
         uvo = None

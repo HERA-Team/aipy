@@ -23,7 +23,7 @@ def convert(crd, isys, osys, iepoch=e.J2000, oepoch=e.J2000):
     """Convert 'crd' from coordinate system 'isys' to 'osys', including
     epoch precession.  Valid coordinate systems are 'ec' (Ecliptic), 'eq' 
     (Equatorial), and 'ga' (Galactic)."""
-    if len(crd) == 3: crd = xyz2thphi(crd)
+    if len(crd) == 3: crd = eq2radec(crd)
     c1 = sys_dict[isys[:2].lower()](crd[0], crd[1], epoch=iepoch)
     return sys_dict[osys[:2].lower()](c1, epoch=oepoch).get()
 
@@ -33,7 +33,7 @@ def convert_m(isys, osys, iepoch=2000., oepoch=2000.):
     m = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
     for i in range(3):
         c = convert(m[:,i], isys, osys, iepoch=iepoch, oepoch=oepoch)
-        m[:,i] = thphi2xyz(c)
+        m[:,i] = radec2eq(c)
     return m
 
 def rot_m(ang, vec):
@@ -58,6 +58,9 @@ def xyz2thphi(xyz):
     x,y,z = xyz
     phi = n.arctan2(y, x)
     th = n.arctan2(n.sqrt(x**2+y**2),z)
+    if n.ma.isMA(x):
+        return n.ma.array([th.filled(0),phi.filled(0)], 
+            mask=[x.mask,x.mask], dtype=n.double)
     return n.array([th,phi], dtype=n.double)
 
 def thphi2xyz(th_phi):
@@ -67,6 +70,9 @@ def thphi2xyz(th_phi):
     z = n.cos(th)
     r = n.sin(th)
     x,y = r*n.cos(phi), r*n.sin(phi)
+    if n.ma.isMA(th):
+        return n.ma.array([x.filled(),y.filled(),z.filled()], 
+            mask=[th.mask, th.mask, th.mask], dtype=n.double)
     return n.array([x,y,z], dtype=n.double)
 
 def eq2radec(xyz):
@@ -75,7 +81,7 @@ def eq2radec(xyz):
     th_phi = xyz2thphi(xyz)
     th,phi = th_phi
     dec = n.pi/2 - th
-    ra = n.where(phi < 0, phi + 2*n.pi, phi)
+    ra = n.ma.where(phi < 0, phi + 2*n.pi, phi)
     th_phi[0],th_phi[1] = ra,dec
     return th_phi
 
@@ -92,7 +98,7 @@ def top2azalt(xyz):
     th,phi = th_phi
     alt = n.pi/2 - th
     az = n.pi/2 - phi
-    az = n.where(az < 0, az + 2*n.pi, az)
+    az = n.ma.where(az < 0, az + 2*n.pi, az)
     th_phi[0],th_phi[1] = az,alt
     return th_phi
 

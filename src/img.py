@@ -15,6 +15,8 @@ Revisions:
     12/19/07    arp     Removed dependence on Basemap for ra/dec coordinates
                         in image.  Fixed W proj kernel to use correct l,m
                         coordinates.
+    02/25/08    arp     Flipped returned image/beam to correspond to returned
+                        coordinates.
 """
 
 import numpy as n, utils, healpix, pyfits, coord
@@ -68,9 +70,9 @@ class Img:
         """Get the (l,m) image coordinates for an inverted UV matrix."""
         dim = self.uv.shape[0]
         M,L = n.indices(self.uv.shape)
-        L,M = n.where(L > dim/2, L-dim, L), n.where(M > dim/2, M-dim, M)
+        #L,M = n.where(L > dim/2, L-dim, L), n.where(M > dim/2, M-dim, M)
+        L,M = n.where(L > dim/2, dim-L, -L), n.where(M > dim/2, dim-M, -M)
         L,M = L.astype(n.float)/dim/self.res, M.astype(n.float)/dim/self.res
-        #L,M = n.fliplr(L), n.fliplr(M)
         mask = n.where(L**2 + M**2 >= 1, 1, 0)
         L,M = n.ma.array(L, mask=mask), n.ma.array(M, mask=mask)
         return recenter(L, center), recenter(M, center)
@@ -107,37 +109,26 @@ class Img:
         return uvw, data, wgts
     def image(self, center=(0,0)):
         """Return the inverse FFT of the UV matrix, with the 0,0 point moved
-        to 'center'."""
-        return recenter(n.abs(n.fft.ifft2(self.uv)), center)
+        to 'center'.  Tranposes to put up=North, right=East."""
+        data = self.uv.transpose()
+        return recenter(n.abs(n.fft.ifft2(data)), center)
     def bm_image(self, center=(0,0)):
         """Return the inverse FFT of the sample weightings, with the 0,0 point
-        moved to 'center'."""
-        return recenter(n.abs(n.fft.ifft2(self.bm)), center)
-    def get_coords(self, ra=0, dec=0, center=(0,0)):
-        """Return the ra, dec coordinates of each pixel in the image, assuming
-        the image is centered on the provided ra, dec (in radians)."""
-        y,z = self.get_LM(center)
-        shape, mask = y.shape, y.mask
-        x = n.sqrt(1 - y**2 - z**2)
-        x,y,z = x.flatten(), y.flatten(), -z.flatten()
-        vec = n.array([x.filled(0),y.filled(0),z.filled(0)])
-        rot_ra = coord.rot_m(ra, n.array([0,0,1]))
-        rot_dec = coord.rot_m(dec, n.array([0,1,0]))
-        rot = n.dot(rot_ra, rot_dec) # weird notation: rotate ra, then dec
-        vec = n.dot(rot, vec)
-        th,ra = coord.xyz2thphi(vec)
-        dec = n.pi/2 - th
-        ra.shape, dec.shape = shape, shape
-        return n.ma.array(-ra, mask=mask), n.ma.array(dec, mask=mask)
+        moved to 'center'.  Tranposes to put up=North, right=East."""
+        data = self.bm.transpose()
+        return recenter(n.abs(n.fft.ifft2(data)), center)
     def get_top(self, center=(0,0)):
+        """Return the topocentric coordinates of each pixel in the image."""
         x,y = self.get_LM(center)
         z = n.sqrt(1 - x**2 - y**2)
         return x,y,z
-    def get_eq(self, ha=0, dec=0, center=(0,0)):
+    def get_eq(self, ra=0, dec=0, center=(0,0)):
+        """Return the equatorial coordinates of each pixel in the image, 
+        assuming the image is centered on the provided ra, dec (in radians)."""
         x,y,z = self.get_top(center)
         shape,mask = x.shape, x.mask
         vec = n.array([a.filled().flatten() for a in (x,y,z)])
-        m = coord.top2eq_m(ha, dec)
+        m = coord.top2eq_m(-ra, dec)
         vec = n.dot(m, vec)
         vec.shape = (3,) + shape
         return n.ma.array(vec, mask=[mask,mask,mask])
@@ -190,8 +181,8 @@ class ImgW(Img):
         return G_hat
 
 class SkyMap:
-    """A class for combining data from multiple pointings into a map of the
-    sky in cylindrical coordinates."""
+    """DEPRECIATED.  A class for combining data from multiple pointings into a 
+    map of the sky in cylindrical coordinates."""
     def __init__(self, res=.01, fromfile=None):
         """res: The map resolution, in radians
         fromfile: Initialize from an existing SkyMap file."""

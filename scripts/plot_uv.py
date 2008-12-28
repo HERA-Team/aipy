@@ -94,7 +94,7 @@ def gen_chans(chanopt, uv, coords, is_delay):
             chanopt = [n.arange(x,y, dtype=n.int) for x,y in chanopt]
         else: is_chan_range = False
         chans = n.concatenate(chanopt)
-    return chans, is_chan_range
+    return chans.astype(n.int), is_chan_range
 
 def gen_times(timeopt, uv, coords, decimate, is_fringe):
     is_time_range = True

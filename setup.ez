@@ -3,7 +3,7 @@ ez_setup.use_setuptools()
 from setuptools import setup, Extension
 import os, glob, numpy
 
-__version__ = '0.4.3'
+__version__ = open('VERSION').read().strip()
 
 def indir(path, files):
     return [os.path.join(path, f) for f in files]

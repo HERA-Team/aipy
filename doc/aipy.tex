@@ -3,6 +3,47 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 
+\let\jnlstyle=\rm
+\def\refjnl#1{{\jnlstyle#1}}
+\def\aj{\refjnl{AJ}}
+\def\araa{\refjnl{ARA\&A}}
+\def\apj{\refjnl{ApJ}}
+\def\apjl{\refjnl{ApJ}}
+\def\apjs{\refjnl{ApJS}}
+\def\ao{\refjnl{Appl.~Opt.}}
+\def\apss{\refjnl{Ap\&SS}}
+\def\aap{\refjnl{A\&A}}
+\def\aapr{\refjnl{A\&A~Rev.}}
+\def\aaps{\refjnl{A\&AS}}
+\def\azh{\refjnl{AZh}}
+\def\baas{\refjnl{BAAS}}
+\def\jrasc{\refjnl{JRASC}}
+\def\memras{\refjnl{MmRAS}}
+\def\mnras{\refjnl{MNRAS}}
+\def\pra{\refjnl{Phys.~Rev.~A}}
+\def\prb{\refjnl{Phys.~Rev.~B}}
+\def\prc{\refjnl{Phys.~Rev.~C}}
+\def\prd{\refjnl{Phys.~Rev.~D}}
+\def\pre{\refjnl{Phys.~Rev.~E}}
+\def\prl{\refjnl{Phys.~Rev.~Lett.}}
+\def\pasp{\refjnl{PASP}}
+\def\pasj{\refjnl{PASJ}}
+\def\qjras{\refjnl{QJRAS}}
+\def\skytel{\refjnl{S\&T}}
+\def\solphys{\refjnl{Sol.~Phys.}}
+\def\sovast{\refjnl{Soviet~Ast.}}
+\def\ssr{\refjnl{Space~Sci.~Rev.}}
+\def\zap{\refjnl{ZAp}}
+\def\nat{\refjnl{Nature}}
+\def\iaucirc{\refjnl{IAU~Circ.}}
+\def\aplett{\refjnl{Astrophys.~Lett.}}
+\def\apspr{\refjnl{Astrophys.~Space~Phys.~Res.}}
+\def\bain{\refjnl{Bull.~Astron.~Inst.~Netherlands}}
+\def\fcp{\refjnl{Fund.~Cosmic~Phys.}}
+\def\gca{\refjnl{Geochim.~Cosmochim.~Acta}}
+\def\grl{\refjnl{Geophys.~Res.~Lett.}}
+\def\jcp{\refjnl{J.~Chem.~Phys.}}
+
 \title{Tutorial on Astronomical Interferometry in PYthon (AIPY)}
 
 \author{Aaron Parsons}
@@ -32,17 +73,10 @@ the terms of the GNU General Public License as published by the Free Software
 Foundation; either version 2 of the License, or (at your option) any later
 version.
 
-\subsection{Acknowledgement of Intellectual Debt}
+\subsection{Acknowledgement}
 
 The subpackage "optimize" is released under GPL by SCIPY developers, and
 has been modified to include only pure-python implementations.
-
-The package "pyephem" is released under GPL by Brandon Craig Rhodes, and
-is included in AIPY with minor modification to setup.py.
-
-The package "pyfits" is released for redistribution and modification by
-the Association of Universities for Research in Astronomy (AURA), and
-is included in AIPY with minor modification to setup.py and \_\_init\_\_.py.
 
 The C source code for "healpix" (in healpix/cxx) is released under GPL
 by the HEALPix collaboration, and is included in AIPY verbatim.
@@ -87,11 +121,18 @@ export PYTHONPATH=PYTHONPATH:<module_dir>
 
 \input miriad.tex
 \input ant.tex
-% \input sect4.tex
-% \input sect5.tex
+\input sim.tex
+\input fit.tex
+\input loc.tex
+\input src.tex
+\input img.tex
+\input coord.tex
+\input deconv.tex
+\input healpix.tex
 
-%\bibliographystyle{plain}   % or "unsrt", "alpha", "abbrv", etc.
-%\bibliography{biblio}       % use data in file "biblio.bib"
+\bibliographystyle{plain}   % or "unsrt", "alpha", "abbrv", etc.
+\bibliography{biblio}       % use data in file "biblio.bib"
+
 \end{document}
 
 

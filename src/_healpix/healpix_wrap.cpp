@@ -266,7 +266,7 @@ static PyObject * HealpixBaseObject_px2crd(HealpixBaseObject *self,
     pointing p;
     vec3 v;
     PyArrayObject *px, *rv;
-    static char *options[] = {"vec", "pnt", NULL};
+    static char *options[] = {"pnt", "vec", NULL};
     static char *kwlist[] = {"px", "crd_type", NULL};
     PyObject *crd_type = NULL;
     // Parse and check input arguments
@@ -274,6 +274,7 @@ static PyObject * HealpixBaseObject_px2crd(HealpixBaseObject *self,
             &PyArray_Type, &px, &crd_type))
         return NULL;
     int return_type = get_option(options, crd_type);
+    printf("Return type: %d = %s\n", return_type, options[return_type]);
     if (return_type == -1) return NULL;
     CHK_ARRAY_RANK(px,1);
     CHK_ARRAY_TYPE(px,NPY_LONG);

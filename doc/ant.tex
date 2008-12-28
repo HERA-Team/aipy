@@ -7,7 +7,7 @@ and an entire antenna array.  Other modules will subclass these objects
 to add functionality, but these five classes are sufficient to allow
 data to be phased to sources.  We will work toward this goal in this chapter.
 
-\subsection{The RadioBody (RadioFixedBody, RadioSpecial)}
+\subsection{Class: RadioBody (RadioFixedBody, RadioSpecial)}
 
 The goal of the RadioBody is to create an object which can be used for
 tracking the position of a source on the sky and projecting baselines in
@@ -62,7 +62,7 @@ each source has a matrix for projecting baseline coordinates toward
 the source.  We won't need to delve into this though--it will be taken care
 of for us under the hood.
 
-\subsection{The SrcCatalog}
+\subsection{Class: SrcCatalog}
 
 When there start to be a lot of RadioBodys, it is nice to have a unified
 interface for dealing with them.  This will be especially convenient once
@@ -84,7 +84,7 @@ Observe how calling compute from the SrcCatalog called compute for all
 the sources, and that a SrcCatalog behaves as a dictionary indexed by
 the names of the sources.
 
-\subsection{The Beam}
+\subsection{Class: Beam}
 
 The Beam class serves two functions.  The first is to model the primary
 beam of an antenna element, and the second is to store information about the
@@ -100,7 +100,7 @@ beam is always a function of frequency), and everything else (Antennas,
 AntennaArrays, etc.) will contain a Beam somewhere.  We'll defer the
 tutorial on Beams until the section on AntennaArrays.
 
-\subsection{The Antenna}
+\subsection{Class: Antenna}
 
 The Antenna contains all information which is systematic to an element in
 an antenna array (i.e. variables which can be solved for by self-calibration).
@@ -115,7 +115,7 @@ AntennaArray which subclasses it) has a converter top2eq().  The delay
 parameter is in nanoseconds, and offset is in radians.  Again, we'll
 defer the tutorial on Antennas until the section on AntennaArrays.
 
-\subsection{The AntennaArray (subclassing ArrayLocation)}
+\subsection{Class: AntennaArray (subclassing ArrayLocation)}
 
 Everything comes together in the AntennaArray.  Firstly, it inherits from
 ArrayLocation, so you can pass it to the compute() of a RadioBody or
