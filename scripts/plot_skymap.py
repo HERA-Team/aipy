@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import pylab, numpy, sys, aipy.img
+#pylab.gray()
 
 skymap = aipy.img.SkyMap(fromfile=sys.argv[-1])
 m = skymap.get_map().transpose()
@@ -14,7 +15,10 @@ ra1 = pylab.datestr2num('00:00:00')
 ra2 = pylab.datestr2num('23:59:59')
 dec1 = -90
 dec2 = 90
+#b = numpy.fliplr(b)
+#b = numpy.concatenate([b[:,314:], b[:,:314]], axis=1)
 im = pylab.imshow(b, extent=(ra1,ra2,dec1,dec2), vmin=mx-7, vmax=mx,
+#im = pylab.imshow(b, extent=(ra1,ra2,dec1,dec2), vmin=mx-6, vmax=mx,
     aspect=.5*(ra2-ra1)/(dec2-dec1), origin='lower')
 
 fmt = pylab.DateFormatter('%H:%M')

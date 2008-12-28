@@ -42,20 +42,22 @@ p.add_option('', '--dt', dest='dt', action='store_true',
     help='Remove a linear extrapolation from adjacent times.')
 p.add_option('', '--df', dest='df', action='store_true',
     help='Remove a linear extrapolation from adjacent frequency channels.')
+p.add_option('', '--plot_min', dest='plot_min', default=-5, type='int', 
+    help='Lower clip value on log plots.')
 
 def data_selector(antopt, uv):
     """Convert the command-line argument for ants into a function which, when
     passed i, j as arguments, will return whether this baseline is to be
     plotted."""
     if antopt == 'all': pass
-    elif antopt == 'auto': uv.select_data('auto', 0, 0)
-    elif antopt == 'cross': uv.select_data('auto', 0, 0, include_it=0)
+    elif antopt == 'auto': uv.select('auto', 0, 0)
+    elif antopt == 'cross': uv.select('auto', 0, 0, include_it=0)
     elif antopt.startswith('+'):
         antopt = eval('['+antopt[1:]+']')
-        for a in antopt: uv.select_data('antennae', a, -1)
+        for a in antopt: uv.select('antennae', a, -1)
     else:
         x, y = eval('('+antopt+')')
-        uv.select_data('antennae', x, y)
+        uv.select('antennae', x, y)
 
 def gen_chan_extractor(chanopt, get_y=None):
     """Convert the command-line argument for chan into a function which takes
@@ -87,7 +89,7 @@ opts, args = p.parse_args(sys.argv[1:])
 active_pol = aipy.miriad.pol_code[opts.pol]
 chan_extractor = gen_chan_extractor(opts.chan)
 uv = aipy.miriad.UV(args[0])
-p, d = uv.read_data()
+p, d = uv.read()
 chans = gen_chan_extractor(opts.chan, get_y=d)
 if opts.chan.startswith('+'): plots = 'plot'
 else: plots = 'imshow'
@@ -103,12 +105,11 @@ for uvfile in args:
     uv = aipy.miriad.UV(uvfile)
     # Only select data that is needed to plot
     data_selector(opts.ants, uv)
-    uv.select_data('polarization', active_pol, 0)
+    uv.select('polarization', active_pol, 0)
     # Read data from a single UV file
-    while True:
-        p, d = uv.read_data()
-        if d.size == 0: break
-        t, bl = p[-2:]
+    for p, d in uv.all():
+        uvw,t,(i,j) = p
+        bl = '%d,%d' % (i,j)
         # Implement Decimation
         if len(times) == 0 or times[-1] != t:
             times.append(t)
@@ -122,6 +123,8 @@ for uvfile in args:
             if opts.unmask: d = d.data
             else: d = d.filled(0)
             d = numpy.ma.array(numpy.fft.ifft(d))
+            d = numpy.ma.concatenate([d[d.shape[0]/2:], d[:d.shape[0]/2]], 
+                axis=0)
         # Get data structure ready to accept this data
         if not plot_x.has_key(bl): plot_x[bl] = []
         # Extract specific channels for plotting
@@ -154,17 +157,21 @@ for n, bl in enumerate(bls):
     elif opts.mode.startswith('lin'): d = numpy.ma.absolute(d)
     elif opts.mode.startswith('real'): d = d.real
     elif opts.mode.startswith('imag'): d = d.imag
-    else: d = numpy.ma.log10(numpy.ma.absolute(d)+1e-10)
+    else: d = numpy.ma.log10(numpy.ma.absolute(d)+1e-50)
     pylab.subplot(m1, m2, n+1)
     if plots == 'imshow' and opts.sum_chan is None:
-        pylab.imshow(d, aspect='auto')
+        if opts.mode.startswith('log'):
+            pylab.imshow(d, aspect='auto', vmin=opts.plot_min)
+        else:
+            pylab.imshow(d, aspect='auto')
+        pylab.colorbar()
     else:
         if not opts.sum_chan is None:
             pylab.plot(plot_times, d, '.', label='chan(+)')
         else:
             for c, chan in enumerate(chans):
                 pylab.plot(plot_times, d[:,c], '.', label='chan%d' % chan)
-    pylab.title(str(aipy.miriad.bl2ij(bl)))
+    pylab.title(bl)
 if plots == 'plot': pylab.legend(loc='best')
 # Save to a file or pop up a window
 if opts.out_file != '': pylab.savefig(opts.out_file)

@@ -25,11 +25,9 @@ uvw, dat, wgt = [], [], []
 for filename in sys.argv[1:]:
     print filename
     uv = aipy.miriad.UV(filename)
-    uv.select_data('auto', 0, 0, include_it=False)
-    while True:
-        p, d = uv.read_data()
-        if d.size == 0: break
-        t, bl = p[-2:]
+    uv.select('auto', 0, 0, include=False)
+    for p,d in uv.all():
+        uvw, t, (i,j) = p
         if curtime != t:
             curtime = t
             cnt = (cnt + 1) % 100
@@ -39,13 +37,12 @@ for filename in sys.argv[1:]:
         aa.set_jultime(t)
         src.compute(aa)
         try:
-            d, xyz = aa.phs2src(d, src, bl, with_coord=True)
+            d, xyz = aa.phs2src(d, src, i, j, with_coord=True)
             w = aa.ants[0].response((src.az, src.alt), pol=2)**2
         except(aipy.ant.PointingError): break
         dat.append(d)
         uvw.append(xyz)
         wgt.append(w)
-    del(uv)
 uvw, dat, wgt = numpy.array(uvw), numpy.array(dat), numpy.array(wgt)
 uvw.shape = (uvw.size / 3, 3)
 dat = dat.flatten()

@@ -69,12 +69,10 @@ for g in range(0, len(args), 4):
     for uvfile in files:
         print 'Reading', uvfile
         uvi = aipy.miriad.UV(uvfile)
-        uvi.select_data('auto', 0, 0, include_it=0)
+        uvi.select('auto', 0, 0, include=0)
         # Gather all data
-        while True:
-            p, d = uvi.read_data()
-            if d.size == 0: break
-            bl = p[-1]
+        for (uvw,t,(i,j)),d in uvi.all():
+            bl = aipy.miriad.ij2bl(i,j)
             c = nchan - numpy.sum(d.mask)
             d = numpy.fft.ifft(d.filled(0))
             try:
@@ -116,8 +114,8 @@ for g in range(0, len(args), 4):
 
     # Generate a pipe for removing average phase bias from data
     def phs_corr_mfunc(uv, preamble, data):
-        bl = preamble[-1]
-        i, j = aipy.miriad.bl2ij(bl)
+        uvw,t,(i,j) = preamble
+        bl = aipy.miriad.ij2bl(i,j)
         if i == j: return preamble, data
         data = numpy.ma.array(phs_off[bl][cnt[bl],:], mask=data.mask)
         cnt[bl] += 1
@@ -129,7 +127,6 @@ for g in range(0, len(args), 4):
         uvofile = uvfile+'x'
         uvi = aipy.miriad.UV(uvfile)
         uvo = aipy.miriad.UV(uvofile, status='new')
-        aipy.miriad.pipe_uv(uvi, uvo, mfunc=phs_corr_mfunc,
+        uvo.init_from_uv(uvi)
+        uvo.pipe(uvi, mfunc=phs_corr_mfunc,
             append2hist='XTALK: version=%s\n' % __version__)
-        del(uvo)
-        del(uvi)

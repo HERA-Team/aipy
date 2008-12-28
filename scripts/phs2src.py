@@ -4,7 +4,8 @@ A script for rotating UV data to a particular source.
 
 Author: Aaron Parsons
 Date: 6/03/07
-Revisions: None
+Revisions:
+    12/11/07 arp    Ported to use new miriad file interface
 """
 
 import aipy, numpy, sys, os
@@ -28,13 +29,12 @@ cat = aipy.src.get_catalog([opts.source])
 
 # A pipe to use for phasing to a source
 def phs(uv, p, d):
-    bl = p[-1]
-    i, j = aipy.miriad.bl2ij(bl)
+    uvw, t, (i,j) = p
     if i == j: return p, d
-    aa.set_jultime(p[-2])
+    aa.set_jultime(t)
     cat.compute(aa)
     try:
-        d = aa.phs2src(d, cat.values()[0], bl)
+        d = aa.phs2src(d, cat.values()[0], i, j)
     except:
         print 'Warning: source below horizon'
         d *= 0
@@ -49,6 +49,6 @@ for filename in args:
         continue
     uvi = aipy.miriad.UV(filename)
     uvo = aipy.miriad.UV(uvofile, status='new')
-    aipy.miriad.pipe_uv(uvi, uvo, mfunc=phs)
-    del(uvi); del(uvo)
+    uvo.init_from_uv(uvi)
+    uvo.pipe(uvi, mfunc=phs)
 

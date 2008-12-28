@@ -4,7 +4,8 @@ A script for filtering data in delay and fringe-rate domain.
 
 Author: Aaron Parsons
 Date: 10/10/07
-Revisions: None
+Revisions:
+    12/11/07 arp    Ported to use new miriad file interface
 """
 import os, sys, aipy, numpy
 
@@ -27,7 +28,7 @@ def gen_skypass_delay(aa, sdf, nchan, max_bl_frac=1.):
 def gen_skypass_fringe(aa, inttime, N_int, nchan, margin=1.2):
     freqs = aa.ants[0].beam.freqs
     bin_dly = 1. / (inttime * N_int)
-    dth_dt = 2*numpy.pi / aipy.constants.sidereal_day
+    dth_dt = 2*numpy.pi / aipy.const.sidereal_day
     filters = {}
     for bl in aa.baseline_order:
         max_bl = aa.get_baseline(bl)[:2]
@@ -69,11 +70,8 @@ for uvfile in args:
     # Gather all data from file
     data = {}
     times = []
-    while True:
-        p, d = uvi.read_data()
-        if d.size == 0: break
-        t, bl = p[-2:]
-        i, j = aipy.miriad.bl2ij(bl)
+    for (uvw,t,(i,j)),d in uvi.all():
+        bl = aipy.miriad.ij2bl(i,j)
         if len(times) == 0 or times[-1] != t: times.append(t)
         if i != j:
             # Filter out delays that don't correspond to the sky
@@ -93,16 +91,16 @@ for uvfile in args:
         data[bl] = d
 
     # Generate a pipe for swapping in new data
-    uvi.rewind()
-    uvo = aipy.miriad.UV(uvofile, status='new')
     def rfi_mfunc(uv, p, d):
-        bl = p[-1]
-        t = times.index(p[-2])
+        uvw, t, (i,j) = p
+        bl = aipy.miriad.ij2bl(i,j)
+        t = times.index(t)
         d = numpy.ma.array(data[bl][t], mask=d.mask)
         return p, d
 
+    uvi.rewind()
+    uvo = aipy.miriad.UV(uvofile, status='new')
     # Apply the pipe to the data
-    aipy.miriad.pipe_uv(uvi, uvo, mfunc=rfi_mfunc,
+    uvo.init_from_uv(uvi)
+    uvo.pipe(uvi, mfunc=rfi_mfunc,
         append2hist='XTALK2: version %s\n' % __version__)
-    del(uvi)
-    del(uvo)

@@ -1,12 +1,14 @@
 AIPY (Astronomical Interferometry in PYthon)
 
 This package collects together tools for radio astronomical interferometry.  In
-addition to pure-python implementations of phasing, calibration, imaging, and
-deconvolution code, this package provides interfaces to MIRIAD (a Fortran
-interferometry package) and routines from SciPy for fitting and interpolation.
+addition to pure-python phasing, calibration, imaging, and
+deconvolution code, this package includes interfaces to MIRIAD (a Fortran
+interferometry package), HEALPix (a package for representing spherical data
+sets), routines from SciPy for fitting, and the PyFITS and PyEphem packages 
+verbatim.
 
 BEFORE YOU INSTALL
-    This is a *nix package.  It is unknown whether it installs on MacOS, and
+    This is a *nix package.  With some trouble it can install on MacOS, and
     it pretty certainly doesn't install on Windows.  You also need to have
     python >= 2.4.
 
@@ -61,11 +63,12 @@ Aaron Parsons
 -----------------------------------------------------------------------------
 
 PACKAGE INFO FOR DEVELOPERS
-    The subpackages "interpolate", "optimize", "special" were copied in from 
-    scipy-0.6.0.  If these ever need to be updated, just download scipy
-    source and copy scipy/scipy/interpolate,optimize,special into aipy.
-    Unfortunately, then you need to crawl through the code and replace all
-    "scipy" references with "aipy".
+    The subpackage "optimize" was copied in from scipy-0.6.0, and then all
+    code that depended on non-pure-python modules was removed.  If these ever 
+    need to be updated, download scipy source and copy scipy/scipy/optimize 
+    into aipy, and then remove any code deemed unnecessary.  Unfortunately, 
+    then you may need to crawl through the code and replace all "scipy" 
+    references with "aipy".
 
     The miriad source code (aipy/miriad/mirsrc) was included from 
     MIRIAD-4.0.5.  To update, download miriad source and copy $MIR/src/subs/* 
@@ -76,3 +79,12 @@ PACKAGE INFO FOR DEVELOPERS
     pyephem-3.7.2a1.  However, setup.py is manually edited to enable it to
     be built as a subpackage.  If updating code, don't clobber setup.py.  
     Just copy rest in.  Also added a __init__.py to pyephem.
+
+    Healpix source code (aipy/healpix/cxx) was included from Healpix-2.01.
+    To update, download healpix source and copy src/cxx into aipy/healpix.
+
+    PyFITS is also included in the directory aipy/pyfits.  Current version is
+    pyfits-1.1.  As with PyEphem, setup.py has been manually edited to enable
+    it to be built as a subpackage.  If updating code, don't clobber setup.py.
+    Just copy in NP_pyfits.py and rec.py.  Edited __init__.py, so don't clobber
+    that either.

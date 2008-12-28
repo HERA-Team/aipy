@@ -5,7 +5,8 @@ adding adjacent channels together.
 
 Author: Aaron Parsons
 Date: 6/03/07
-Revisions: None
+Revisions:
+    12/11/07    arp Ported to new miriad file interface
 """
 
 import aipy, sys, os, numpy
@@ -38,9 +39,6 @@ for uvfile in args:
             print uvofile, 'exists, skipping.'
             continue
         uvo = aipy.miriad.UV(uvofile, status='new')
-        aipy.miriad.init_from_uv(uvi, uvo, append2hist='Miniaturized...\n',
-            override={'nchan':opts.nchan, 'sfreq':newsfreq, 'sdf':newsdf,
-                'nschan':opts.nchan, 'freq':newsfreq, 'nchan0':opts.nchan, })
 
     def f(uv, p, d):
         d.shape = (opts.nchan, nchan/opts.nchan)
@@ -48,13 +46,14 @@ for uvfile in args:
         if opts.careful_flag: m = numpy.where(m > 0, 1, 0)
         else: m = numpy.where(m >= nchan/opts.nchan/2, 1, 0)
         d = numpy.ma.average(d, axis=1)
-        d = numpy.ma.array(d.data, mask=m)
+        d = numpy.ma.array(d.data, mask=m, dtype=numpy.complex64)
         return p, d
     # Pipe data, but don't track variables that we overrode, so they don't
     # get clobbered
-    aipy.miriad.pipe_uv(uvi, uvo, mfunc=f, init=False, 
-        notrack=['nchan', 'sfreq', 'sdf', 'nschan', 'freq', 'nchan0'])
-    del(uvi)
+    uvo.init_from_uv(uvi,
+        override={'nchan':opts.nchan, 'sfreq':newsfreq, 'sdf':newsdf,
+            'nschan':opts.nchan, 'freq':newsfreq, 'nchan0':opts.nchan, },)
+    uvo.pipe(uvi, mfunc=f, append2hist='Miniaturized...\n')
     if not opts.unify:
         del(uvo)
         uvo = None

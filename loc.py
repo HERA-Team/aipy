@@ -58,21 +58,21 @@ amplitudes = {
 #                -9.12789456e+13,   2.42212141e+13,  -4.39353531e+12,
 #                 5.51696241e+11,  -4.73521292e+10,   2.65851097e+09,
 #                -8.81582278e+07,   1.31113443e+06]
-pwa303_spline = (
-     numpy.array([ 0.1125,  0.1125    ,  0.1125    ,  0.1125    ,  0.1171875 ,
-        0.121875  ,  0.13125   ,  0.1359375 ,  0.140625  ,  0.15      ,
-        0.1546875 ,  0.159375  ,  0.1640625 ,  0.16875   ,  0.1734375 ,
-        0.178125  ,  0.18742676,  0.18742676,  0.18742676,  0.18742676]),
-    numpy.array([ 0.20047258, 0.13553328,  0.47578084,  1.54538574,  1.36744419,
-        1.28911202,  1.18573184,  1.13628592,  1.01282591,  1.04695018,
-        0.95181596,  1.06482914,  1.08785934,  0.86663611,  0.99864105,
-        0.69673599]),
-    3
-)
+#pwa303_spline = (
+#     numpy.array([ 0.1125,  0.1125    ,  0.1125    ,  0.1125    ,  0.1171875 ,
+#        0.121875  ,  0.13125   ,  0.1359375 ,  0.140625  ,  0.15      ,
+#        0.1546875 ,  0.159375  ,  0.1640625 ,  0.16875   ,  0.1734375 ,
+#        0.178125  ,  0.18742676,  0.18742676,  0.18742676,  0.18742676]),
+#    numpy.array([ 0.20047258, 0.13553328,  0.47578084,  1.54538574,  1.36744419,
+#        1.28911202,  1.18573184,  1.13628592,  1.01282591,  1.04695018,
+#        0.95181596,  1.06482914,  1.08785934,  0.86663611,  0.99864105,
+#        0.69673599]),
+#    3
+#)
 
 passbands = {
     'pgb220': [None, None, None, None,],
-    'pwa303': [pwa303_spline, pwa303_spline, pwa303_spline, pwa303_spline,],
+    'pwa303': [None, None, None, None,],
     'pgb371': [None, None, None, None, None, None, None, None,]
 }
 
@@ -92,14 +92,14 @@ def get_aa(loc_key, sdf, sfreq, nchan, use_bp=True, use_ants=None):
     freqs = get_freqs(sdf, sfreq, nchan)
     beam = eor.Beam(freqs)
     antennas = []
-    for pos, dly, off, amp, spline in zip(antpos[loc_key], delays[loc_key], 
+    for pos, dly, off, amp, dec_bp in zip(antpos[loc_key], delays[loc_key], 
             offsets[loc_key], amplitudes[loc_key], passbands[loc_key]):
         if not use_bp:
             amp = 1
-            gspline = [1., 1.]
+            dec_bp = None
         antennas.append(
             fit.Antenna(pos[0],pos[1],pos[2], beam, delay=dly, offset=off,
-                amp=amp, spline=spline)
+                amp=amp, dec_bp=dec_bp)
         )
     if not use_ants is None: antennas = [antennas[i] for i in use_ants]
     return fit.AntennaArray(antennas, location)

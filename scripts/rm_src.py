@@ -4,7 +4,8 @@ A script for removing a source using a fringe-rate/delay transform.
 
 Author: Aaron Parsons
 Date: 6/03/07
-Revisions: None
+Revisions:
+    12/11/07 arp    Ported to use new miriad file interface
 """
 
 import aipy, numpy, os, sys
@@ -35,12 +36,11 @@ src = aipy.src.get_src(opts.src, type='ant')
 groups = {}
 for uvfile in args:
     uv = aipy.miriad.UV(uvfile)
-    p, d = uv.read_data()
-    t = p[-2]
+    p, d = uv.read()
+    uvw, t, (i,j) = p[-2]
     t = int(t*10) / 2
     if not groups.has_key(t): groups[t] = [uvfile]
     else: groups[t].append(uvfile)
-    del(uv)
 
 for g in groups:
     phs_dat = {}
@@ -59,16 +59,15 @@ for g in groups:
     for uvfile in files:
         print 'Reading', uvfile
         uvi = aipy.miriad.UV(uvfile)
-        uvi.select_data('auto', 0, 0, include_it=0)
+        uvi.select('auto', 0, 0, include_it=0)
         # Gather all data
-        while True:
-            p, d = uvi.read_data()
-            if d.size == 0: break
-            bl = p[-1]
-            aa.set_jultime(p[-2])
+        for p,d in uvi.all():
+            uvw, t, (i,j) = p
+            aa.set_jultime(t)
             src.compute(aa)
+            bl = "%d,%d" % (i,j)
             try:
-                d = aa.phs2src(d, src, bl)
+                d = aa.phs2src(d, src, i, j)
                 cnt[bl] = cnt.get(bl, 0) + d.mask.sum()
                 d = numpy.fft.ifft(d.filled(0))
             except(aipy.ant.PointingError): d = numpy.zeros_like(d.data)
@@ -96,13 +95,13 @@ for g in groups:
 
     # Generate a pipe for removing average phase bias from data
     def rm_mfunc(uv, p, d):
-        bl = p[-1]
-        i, j = aipy.miriad.bl2ij(bl)
+        uvw, t, (i,j) = p
+        bl = "%d,%d" % (i,j)
         if i == j: return p, d
-        aa.set_jultime(p[-2])
+        aa.set_jultime(t)
         src.compute(aa)
         data = phs_dat[bl][cnt[bl],:]
-        try: data = aa.unphs2src(data, src, bl)
+        try: data = aa.unphs2src(data, src, i, j)
         except(aipy.ant.PointingError): data = 0
         cnt[bl] += 1
         return p, d - data
@@ -113,6 +112,5 @@ for g in groups:
         uvofile = uvfile+'.'+opts.src
         uvi = aipy.miriad.UV(uvfile)
         uvo = aipy.miriad.UV(uvofile, status='new')
-        aipy.miriad.pipe_uv(uvi, uvo, mfunc=rm_mfunc)
-        del(uvo)
-        del(uvi)
+        uvo.init_from_uv(uvi)
+        uvo.pipe(uvi, mfunc=rm_mfunc)

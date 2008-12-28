@@ -11,6 +11,7 @@ Revisions:
     9/25/07 arp Uninverted bandpass and untransposed to sync with what
                 Miriad expects from the bandpass variable.  Removes variables
                 associated with bandpass (correctly).
+    12/11/07 arp    Updated to new miriad file interface
 """
 
 __version__ = '0.0.1'
@@ -137,7 +138,6 @@ if opts.plot_chan >= 0:
     uvi = aipy.miriad.UV(args[0])
     for i in range(int(uvi['nants'])):
         plot_data[i] = {'null':[],'digi':[],'full':[],'comb':[]}
-    del(uvi)
 else:
     print 'Using %s quantization correction' % opts.linearization
 
@@ -154,10 +154,7 @@ for filename in args:
     uvi = aipy.miriad.UV(filename)
     if opts.plot_chan == -1:
         uvo = aipy.miriad.UV(filename+'b', status='new')
-        aipy.miriad.init_from_uv(uvi, uvo,
-            append2hist='APPLY_BP: version=%s, corr type = %s\n' % \
-                (__version__, opts.linearization),
-            exclude=ignore_vars)
+        uvo.init_from_uv(uvi, exclude=ignore_vars)
     nchan = uvi['nchan']
     nants = uvi['nants']
     try:
@@ -166,30 +163,29 @@ for filename in args:
         bp.shape = (nants, nchan)   # Sync'd to c2m.py in corr pkg.
         print
     except:
+        print 'No bandpass found'
         bp = numpy.ones((nants, nchan))
         print '.'
     def f(uv, preamble, data):
-        i, j = aipy.miriad.bl2ij(preamble[-1])
+        uvw, t, (i,j) = preamble
         d = data.data
-        if opts.plot_chan == -1:
-            if i == j: d = numpy.polyval(cpoly, d)
-            d *= bp[i,:] * bp[j,:]
-            data = numpy.ma.array(d, mask=data.mask)
-            return preamble, data
-        elif i == j:
-            d = d[opts.plot_chan]
-            for k in plot_data[i].keys():
-                dk = numpy.polyval(cpolys[k], d) * bp[opts.plot_chan,i]**2
-                plot_data[i][k].append(dk.real)
-                if len(times) == 0 or times[-1] != preamble[-2]:
-                    times.append(preamble[-2])
-        return preamble, None
+        if i == j: d = numpy.polyval(cpoly, d)
+        d *= bp[i,:] * bp[j,:]
+        data = numpy.ma.array(d, mask=data.mask)
+        return preamble, data
     if opts.plot_chan == -1:
-        aipy.miriad.pipe_uv(uvi, uvo, mfunc=f, init=False, exclude=ignore_vars)
-        del(uvi); del(uvo)
+        uvo.pipe(uvi, mfunc=f, 
+            append2hist='APPLY_BP: version=%s, corr type = %s\n' % \
+                (__version__, opts.linearization))
     else:
-        aipy.miriad.pipe_uv(uvi, None, mfunc=f, init=False)
-        del(uvi)
+        for preamble, data in uvi.all():
+            if i == j:
+                d = d[opts.plot_chan]
+                for k in plot_data[i].keys():
+                    dk = numpy.polyval(cpolys[k], d) * bp[opts.plot_chan,i]**2
+                    plot_data[i][k].append(dk.real)
+                    if len(times) == 0 or times[-1] != preamble[-2]:
+                        times.append(preamble[-2])
 
 if opts.plot_chan >= 0:
     import pylab

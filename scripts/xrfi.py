@@ -7,6 +7,7 @@ Date: 5/31/07
 Revisions:
     10/10/07    arp Lowered thresh for flagging an integration to coincidence
                     on 2 antennas.
+    12/11/07 arp    Ported to use new miriad file interface
 """
 
 __version__ = '0.0.2'
@@ -106,12 +107,9 @@ if __name__ == '__main__':
         window = None
         data = {}
         times = []
-        while True:
-            p, d = uvi.read_data()
-            if d.size == 0: break
-            t, bl = p[-2:]
+        for (uvw,t,(i,j)), d in uvi.all():
             if len(times) == 0 or times[-1] != t: times.append(t)
-            i, j = aipy.miriad.bl2ij(bl)
+            bl = aipy.miriad.ij2bl(i,j)
             if i != j:
                 if window is None: 
                     window = d.size/2 - abs(numpy.arange(d.size) - d.size/2)
@@ -149,17 +147,14 @@ if __name__ == '__main__':
 
         # Generate a pipe for applying both the total_mask and the int_mask
         # to the data as it comes it.
-        uvi.rewind()
-        uvo = aipy.miriad.UV(uvofile, status='new')
         def rfi_mfunc(uv, preamble, data):
-            bl = preamble[-1]
-            i, j = aipy.miriad.bl2ij(bl)
-            t = times.index(preamble[-2])
+            uvw, t, (i,j) = preamble
+            t = times.index(t)
             data = numpy.ma.array(data.data, mask=total_mask[t])
             return preamble, data
 
-        # Apply the pipe to the data
-        aipy.miriad.pipe_uv(uvi, uvo, mfunc=rfi_mfunc,
+        uvi.rewind()
+        uvo = aipy.miriad.UV(uvofile, status='new')
+        uvo.init_from_uv(uvi)
+        uvo.pipe(uvi, mfunc=rfi_mfunc,
             append2hist='XRFI: version %s\n' % __version__)
-        del(uvi)
-        del(uvo)

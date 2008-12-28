@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 """Taking a skymap file, makes a movie of the Boolardy sky in 1hr steps."""
 import pylab as p
-import numpy, aipy, ephem, sys, os
+import numpy, aipy, sys, os
 from matplotlib.toolkits.basemap import Basemap
 
 skymap = aipy.img.SkyMap(fromfile=sys.argv[-1])
@@ -12,7 +12,7 @@ lats = aipy.img.degrees(lats *.01) - 90
 lons = aipy.img.degrees(lons *.01) - 180
 
 cat = aipy.src.get_catalog(type='ant')
-o = ephem.Observer()
+o = aipy.pyephem.Observer()
 o.date = aipy.ant.juldate2ephem(2454303)
 cat.compute(o)
 # lat/lon coordinates of sources

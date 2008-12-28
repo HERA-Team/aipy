@@ -14,25 +14,12 @@ Revisions:
                     streamlined support for phasing antenna data.
     10/10/07    arp Switched bandpass parameterization from polynomial to
                     splines.
+    12/12/07    arp Switched bp again, this time to interpolation from a
+                    decimated bandpass.
 """
 
-import ant, numpy, ephem
-from interpolate import splrep, splev
-
-#  _   _ _   _ _ _ _           _____                 _   _                 
-# | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
-# | | | | __| | | | __| | | | | |_ | | | | '_ \ / __| __| |/ _ \| '_ \/ __|
-# | |_| | |_| | | | |_| |_| | |  _|| |_| | | | | (__| |_| | (_) | | | \__ \
-#  \___/ \__|_|_|_|\__|\__, | |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
-#                      |___/        
-
-def splinefit(x, y, smooth=1e-4, order=3):
-    """Return a spline interpolation of y as a function of x."""
-    return splrep(x, y, s=smooth, k=order)
-
-def splineval(spline, x):
-    """Return the values of spline evaluated at x."""
-    return splev(x, spline)
+import ant, numpy, pyephem as ephem
+from interpolate import interpolate
 
 #  ____           _ _       ____            _       
 # |  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _ 
@@ -128,27 +115,26 @@ class Antenna(ant.Antenna):
     """A representation of the physical location and beam pattern of an
     individual antenna in an array."""
     def __init__(self, x, y, z, beam, delay=0., offset=0.,
-            spline=None, amp=1, pointing=(0.,numpy.pi/2), **kwargs):
+            bp=None, amp=1, pointing=(0.,numpy.pi/2), **kwargs):
         """x, y, z:    Antenna coordinates in equatorial (ns) coordinates
         beam:       Object with function 'response(zang, az)'
         delay:      Cable/systematic delay in ns
         offset:     Frequency-independent phase offset
-        spline:     Spline fit of passband.  Default is flat.
+        bp:         Decimated sampling of passband. Default is flat.
         pointing:   Antenna pointing=(az, alt).  Default is zenith"""
         ant.Antenna.__init__(self, x,y,z, beam=beam, delay=delay, offset=offset)
-        # Implement a flat = 1 passband if no spline is provided.
-        if spline is None:
-            spline = (numpy.array([ 0.,  0.,  0.,  0., 1., 1.,  1.,  1.]),
-                numpy.array([ 1.,  1.,  1.,  1.]), 3)
-        self.update_gain(spline, amp)
+        # Implement a flat = 1 passband if no bp is provided
+        if bp is None: bp = numpy.ones(16, dtype=numpy.float)
+        self.update_gain(bp, amp)
         self.update_pointing(pointing)
     def select_chans(self, active_chans=None):
         ant.Antenna.select_chans(self, active_chans)
-        self.update_gain(spline=self.spline)
-    def update_gain(self, spline=None, amp=None):
-        if not spline is None: self.spline = spline
+        self.update_gain()
+    def update_gain(self, decimated_bp=None, amp=None):
+        if not decimated_bp is None: self.dec_bp = decimated_bp
         if not amp is None: self.amp = amp
-        self.gain = self.amp * splineval(self.spline, self.beam.afreqs)
+        dec_factor = self.beam.freqs.size / self.dec_bp.size
+        self.gain = self.amp * interpolate(self.dec_bp, dec_factor)
     def update_pointing(self, azalt):
         """Set the antenna beam to point at azalt=(az, alt)."""
         self.pointing = azalt

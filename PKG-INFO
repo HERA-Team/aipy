@@ -1,10 +1,13 @@
 Metadata-Version: 1.0
 Name: aipy
-Version: 0.3.0
+Version: 0.4.0
 Summary: Astronomical Interferometry in PYthon
 Home-page: http://setiathome.berkeley.edu/~aparsons
 Author: Aaron Parsons
 Author-email: aparsons at astron.berkeley.edu
 License: GPL
-Description: UNKNOWN
+Description: Tools for radio astronomical interferometry, including
+        pure-python phasing, calibration, imaging, and deconvolution code,
+        interfaces to MIRIAD, HEALPix, fitting routines from SciPy, and
+        the PyFITS and PyEphem packages verbatim.
 Platform: UNKNOWN

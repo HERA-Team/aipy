@@ -5,7 +5,8 @@ starting parameters in "aipy.loc" and a list of sources (from "aipy.src").
 
 Author: Aaron Parsons
 Date: 6/03/07
-Revisions: None
+Revisions:
+    12/11/07 arp    Ported to use new miriad file interface
 """
 
 import aipy, numpy, sys, os
@@ -67,11 +68,9 @@ def fit_func(prms):
     for uvfile in args:
         print uvfile
         uvi = aipy.miriad.UV(uvfile)
-        uvi.select_data('auto', 0, 0, include_it=False)
-        while True:
-            p, d = uvi.read_data()
-            if d.size == 0: break
-            t, bl = p[-2:]
+        uvi.select('auto', 0, 0, include=False)
+        for p,d in uvi.all():
+            uvw, t, (i,j) = p
             # Use only every Nth integration, if decimation is specified.
             if curtime != t:
                 curtime = t
@@ -85,13 +84,12 @@ def fit_func(prms):
                 ds = d.filled(0)
                 # Remove all other interfering sources from data
                 for rs in cat:
-                    if rs != s: ds = aa.rmsrc(ds, cat[rs], bl)
+                    if rs != s: ds = aa.rmsrc(ds, cat[rs], i, j)
                 ds = numpy.ma.array(ds, mask=d.mask)
                 try:
-                    ds = aa.phs2src(ds, cat[s], bl)
+                    ds = aa.phs2src(ds, cat[s], i, j)
                     src_phs[s] = src_phs.get(s,0) + calc_gain(ds)
                 except(aipy.ant.PointingError): pass
-        del(uvi)
     score = 1 / score
     if first_fit is None:
         print 'Base score:', score

@@ -4,7 +4,8 @@ A script for applying the flux calibration modeled in "aipy.loc" to the data.
 
 Author: Aaron Parsons
 Date: 6/03/07
-Revisions: None
+Revisions:
+    12/11/07 arp    Ported to use new miriad file interface
 """
 
 import sys, aipy, numpy, os
@@ -26,7 +27,7 @@ pylab.plot(aa.ants[0].gain)
 pylab.show()
 
 def cal_func(uv, p, d):
-    i, j = aa.bl2ij(p[-1])
+    uvw, t, (i,j) = p
     bp = aa.ants[j].gain * numpy.conj(aa.ants[i].gain)
     bp = numpy.where(bp < numpy.average(bp) / 2, 1, bp)
     return p, d / bp
@@ -39,5 +40,5 @@ for filename in args:
         continue
     uvi = aipy.miriad.UV(filename)
     uvo = aipy.miriad.UV(filename+'f', status='new')
-    aipy.miriad.pipe_uv(uvi, uvo, mfunc=cal_func)
-    del(uvi); del(uvo)
+    uvo.init_from_uv(uvi)
+    uvo.pipe(uvi, mfunc=cal_func)

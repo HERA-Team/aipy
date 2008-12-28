@@ -9,14 +9,18 @@ Revisions:
     10/18/07    arp     Changed calling syntax inside Img.put for an impressive
                         10x speedup.  Also changed Basemap call to not include
                         earth map, for another hefty speed-up.
+    11/01/07    arp     Corrected bug for Img.put whereby data in same put call
+                        clobbered other data (instead of adding together).
+                        Moved put loop into C++ in utils module for speed +
+                        correction.
 """
 
-import numpy
+import numpy, utils
 from matplotlib.toolkits.basemap import Basemap
 
 #def ang_size(uv_res): return numpy.arcsin(1/uv_res)
-def radians(deg): return deg * numpy.pi / 180.
-def degrees(rad): return rad * 180. / numpy.pi
+deg2rad = numpy.pi / 180.
+rad2deg = 180. / numpy.pi
 
 #def get_img_coords(uv_size, uv_res, c=(0,0)):
 #    uv_res, uv_size = float(uv_res), float(uv_size)
@@ -74,23 +78,18 @@ class Img:
             bm = self.bm
         else:
             uv = numpy.zeros_like(self.uv)
-            bm = numpy.zeros_like(self.uv)
+            bm = numpy.zeros_like(self.bm)
         if wgts is None: wgts = numpy.ones_like(data)
         inds = numpy.round(uvw[:,:2] / self.res).astype(numpy.int)
-        valid = numpy.where(numpy.logical_or(
-            inds[:,0] >= self.size, inds[:,1] >= self.size), 0, 1)
-        data = data.compress(valid)
-        wgts = wgts.compress(valid)
-        inds = [inds[:,0].compress(valid), inds[:,1].compress(valid)]
-        uv[inds] += data
-        bm[inds] += wgts
+        utils.add2array(uv, inds, data.astype(uv.dtype))
+        utils.add2array(bm, inds, wgts.astype(bm.dtype))
         if not apply: return uv, bm
     def append_hermitian(self, uvw, data, wgts=None):
         """Append to (uvw, data, [wgts]) the points (-uvw, conj(data), [wgts]).
         This is standard practice to get a real-valued image."""
         uvw = numpy.concatenate([uvw, -uvw], axis=0)
         data = numpy.concatenate([data, numpy.conj(data)], axis=0)
-        if wgts is None: return uv, data
+        if wgts is None: return uvw, data
         wgts = numpy.concatenate([wgts, wgts], axis=0)
         return uvw, data, wgts
     def image(self, center=(0,0)):
@@ -111,7 +110,7 @@ class Img:
         # Create a map to convert the orthographic sky projection
         # into lat, long coordinates
         m = Basemap(projection='ortho',
-            lon_0=degrees(ra-numpy.pi), lat_0=degrees(dec), 
+            lon_0=rad2deg*(ra-numpy.pi), lat_0=rad2deg*dec, 
             rsphere=1, resolution=None)
         # Convert img coordinates to points on the map (0 to 2)
         x, y = numpy.indices(self.uv.shape)
@@ -122,7 +121,7 @@ class Img:
         # Convert long, lat into ra, dec
         x = x + 180.
         if fmt == 'deg': return x, y
-        else: return radians(x), radians(y)
+        else: return deg2rad*x, deg2rad*y
 
 class ImgW(Img):
     """A subclass of Img adding W projection functionality (see Cornwell
@@ -225,4 +224,4 @@ class SkyMap:
         return a single image in cylindrical coordinates.  Axis 0 is
         right ascension [0,2pi); axis 1 will be declination [-pi,pi)."""
         w = numpy.where(self.wgt > 0, self.wgt, 1)
-        return self.map / w
+        return numpy.abs(self.map / w)

@@ -25,27 +25,21 @@ cat = aipy.src.get_catalog(srcs, type='sim')
 
 # A pipe for just outputting the model
 def mdl(uv, p, d):
-    bl = p[-1]
-    i, j = aipy.miriad.bl2ij(bl)
+    uvw, t, (i,j) = p
     if i == j: return p, d
-    aa.set_jultime(p[-2])
+    aa.set_jultime(t)
     cat.compute(aa)
-    d = aa.sim_data(cat.values(), bl, stokes=-6)
+    d = aa.sim_data(cat.values(), i, j, stokes=uv['pol'])
     d = numpy.ma.array(d, mask=numpy.zeros_like(d))
     return p, d
 
-#data = {}
-#times = {}
 # A pipe to use for removing the model
 def rm(uv, p, d):
-    #global data
-    #global times
-    bl = p[-1]
-    i, j = aipy.miriad.bl2ij(bl)
+    uvw, t, (i,j) = p
     if i == j: return p, d
-    aa.set_jultime(p[-2])
+    aa.set_jultime(t)
     cat.compute(aa)
-    sd = aa.sim_data(cat.values(), bl, stokes=-6)
+    sd = aa.sim_data(cat.values(), i, j, stokes=uv['pol'])
     if numpy.all(sd == 0): return p, d
     #csd = numpy.conj(sd)
     #c = numpy.ma.average(d * csd) / numpy.average(sd*csd)
@@ -74,12 +68,6 @@ for filename in args:
         continue
     uvi = aipy.miriad.UV(filename)
     uvo = aipy.miriad.UV(uvofile, status='new')
-    aipy.miriad.pipe_uv(uvi, uvo, mfunc=f)
-    del(uvi); del(uvo)
+    uvo.init_from_uv(uvi)
+    uvo.pipe(uvi, mfunc=f)
 
-#import pylab
-#for bl in data:
-#    data[bl] = numpy.array(data[bl])
-#    data[bl] = numpy.ma.array(data[bl], mask=numpy.where(data[bl] == 0, 1, 0))
-#    pylab.plot(times[bl], data[bl], '.')
-#pylab.show()

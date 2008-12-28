@@ -194,7 +194,7 @@ class Antenna(sim.Antenna):
         x,y,z = self.pos
         aprms = {'x':x, 'y':y, 'z':z, 'delay':self.delay, 'offset':self.offset}
         #aprms['gain_poly'] = list(self.gain_poly)
-        aprms['spline'] = list(self.spline)
+        aprms['dec_bp'] = list(self.dec_bp)
         aprms['amp'] = self.amp
         prms = {}
         for p in prm_list:
@@ -215,7 +215,7 @@ class Antenna(sim.Antenna):
         try: self.offset = prms['offset']
         except(KeyError): pass
         #try: self.update_gain(gain_poly=prms['gain_poly'])
-        try: self.update_gain(spline=prms['spline'])
+        try: self.update_gain(decimated_bp=prms['dec_bp'])
         except(KeyError): pass
         try: self.update_gain(amp=prms['amp'])
         except(KeyError): pass

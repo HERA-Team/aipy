@@ -22,7 +22,7 @@ Revisions:
                     the current date.  
 """
 import pyephem as ephem, math, numpy
-import constants
+import const
 
 class PointingError(Exception):
       def __init__(self, value): self.parameter = value
@@ -140,8 +140,8 @@ class RadioBody:
 class RadioFixedBody(ephem.FixedBody, RadioBody):
     """A class combining ephem's FixedBody with a RadioBody."""
     def __init__(self, ra, dec, f_c=.012, name='', **kwargs):
-        """ra:           source's right ascension
-        dec:          source's declination
+        """ra:           source's right ascension (epoch=2000)
+        dec:          source's declination (epoch=2000)
         f_c:          the plasma frequency (a measure of the electron density)
                       in the direction of the source, which can cause the 
                       source to appear displaced from its quiescent position 
@@ -195,8 +195,10 @@ class SrcCatalog(dict):
     """A class for holding celestial sources."""
     def __init__(self, srcs, **kwargs):
         dict.__init__(self)
-        for s in srcs: self[s.src_name] = s
+        for s in srcs: self.add_src(s)
         self._obs_cache = None
+    def add_src(self, src):
+        self[src.src_name] = src
     def in_cache(self, observer, refract):
         try: ocache = observer.cache
         except(AttributeError): return False
@@ -306,13 +308,31 @@ class ArrayLocation(ephem.Observer):
         self.date = t
         self.epoch = t
         self.cache += 1
-    #def src_eq_vec(self, body):
-    #    """Return an equatorial vector pointing at body."""
-    #    return self.top2eq(azalt2top(body.az, body.alt), no_norm=True)
+    def src_eq_vec(self, body):
+        """Return an equatorial vector pointing at body."""
+        return self.top2eq(azalt2top(body.az, body.alt), no_norm=True)
     def from_uv(self, uv):
         """Update location from 'latitud' and 'longitu' in Miriad UV file."""
         location = (uv['latitud'], uv['longitu'])
         self.update_location(location)
+    def top2eq(self, *args, **kwargs):
+        """Convert topocentric antenna coordinates to equatorial coordinates,
+        given the current latitude."""
+        if len(args) == 3: top_vec = numpy.array(args)
+        elif len(args) == 1: top_vec = args[0]
+        else: raise ValueError('Wrong number of arguments.')
+        rv = numpy.dot(self._top2eq_map, top_vec)
+        if kwargs.has_key('no_norm'): return rv
+        else: return rv / const.len_ns
+    def eq2top(self, *args, **kwargs):
+        """Convert equatorial antenna coordinates to topocentric,
+        given the current latitude."""
+        if len(args) == 3: eq_vec = numpy.array(args)
+        elif len(args) == 1: eq_vec = args[0]
+        else: raise ValueError('Wrong number of arguments.')
+        rv = numpy.dot(numpy.transpose(self._top2eq_map), eq_vec)
+        if kwargs.has_key('no_norm'): return rv
+        else: return rv * const.len_ns
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -390,39 +410,17 @@ class AntennaArray(ArrayLocation):
         i,j (counting from 0) baseline notation."""
         bl = int(bl)
         return ((bl >> 8) & 255) - 1, (bl & 255) - 1
-    def get_baseline(self, i, j=None):
-        """Return the baseline corresponding to i,j (see ij2bl for details)."""
-        bl = self.ij2bl(i, j)
-        return self.baselines[self.baseline_order[bl]]
-    def get_delay(self, i, j=None):
-        """Return the delay corresponding to i,j (see ij2bl)."""
-        bl = self.ij2bl(i, j)
-        return self.delays[self.baseline_order[bl]]
-    def get_offset(self, i, j=None):
-        """Return the delay corresponding to i,j (see ij2bl)."""
-        bl = self.ij2bl(i, j)
-        return self.offsets[self.baseline_order[bl]]
-    #def top2eq(self, *args, **kwargs):
-    #    """Convert topocentric antenna coordinates to equatorial coordinates,
-    #    given the current latitude."""
-    #    if len(args) == 3: top_vec = numpy.array(args)
-    #    elif len(args) == 1: top_vec = args[0]
-    #    else: raise ValueError('Wrong number of arguments.')
-    #    rv = numpy.dot(self._top2eq_map, top_vec)
-    #    if kwargs.has_key('no_norm'): return rv
-    #    else: return rv / constants.len_ns
-    #def eq2top(self, *args, **kwargs):
-    #    """Convert equatorial antenna coordinates to topocentric,
-    #    given the current latitude."""
-    #    if len(args) == 3: eq_vec = numpy.array(args)
-    #    elif len(args) == 1: eq_vec = args[0]
-    #    else: raise ValueError('Wrong number of arguments.')
-    #    rv = numpy.dot(numpy.transpose(self._top2eq_map), eq_vec)
-    #    if kwargs.has_key('no_norm'): return rv
-    #    else: return rv * constants.len_ns
-    def get_projected_baseline(self, i, j=None, src=None):
-        """Rotate zenith (the default pointing) to the actual
-        pointing, return the projected baseline i,j."""
+    def get_baseline(self, i, j):
+        """Return the baseline corresponding to i,j."""
+        return self.baselines[self.baseline_order[self.ij2bl(i,j)]]
+    def get_delay(self, i, j):
+        """Return the delay corresponding to i,j."""
+        return self.delays[self.baseline_order[self.ij2bl(i,j)]]
+    def get_offset(self, i, j):
+        """Return the delay corresponding to i,j."""
+        return self.offsets[self.baseline_order[self.ij2bl(i,j)]]
+    def get_projected_baseline(self, i, j, src=None):
+        """Project equatorial baselines toward a source position."""
         # If no body is provided to point to, return zenith baselines
         if src is None: uvw_map = gen_uvw_map(0., self.lat)
         else:
@@ -433,13 +431,12 @@ class AntennaArray(ArrayLocation):
         # will raise an error in the following dot product).
         proj_bl = numpy.dot(uvw_map, self.get_baseline(i, j))
         return proj_bl
-    def gen_phs(self, src, i, j=None, with_coord=False):
+    def gen_phs(self, src, i, j, with_coord=False):
         """Return the phasing to be multiplied to data to point to src."""
-        bl = self.ij2bl(i, j)
-        xyz = self.get_projected_baseline(bl, src=src)
+        xyz = self.get_projected_baseline(i, j, src=src)
         z = xyz[...,2]
-        t = self.get_delay(bl)
-        o = self.get_offset(bl)
+        t = self.get_delay(i, j)
+        o = self.get_offset(i, j)
         afreqs = self.ants[0].beam.afreqs
         phs = numpy.exp(-1j*(2*numpy.pi * (z+t) * afreqs + o))
         if with_coord:
@@ -447,22 +444,22 @@ class AntennaArray(ArrayLocation):
                 xyz = numpy.resize(xyz, (len(afreqs), xyz.size))
             return phs, xyz * numpy.reshape(afreqs, (afreqs.size, 1))
         else: return phs
-    def phs2src(self, data, src, i, j=None, with_coord=False):
+    def phs2src(self, data, src, i, j, with_coord=False):
         """Apply phasing to zenith data to point to src."""
         rv = self.gen_phs(src, i, j, with_coord=with_coord)
         if with_coord: return data * rv[0], rv[1]
         else: return data * rv
-    def unphs2src(self, data, src, i, j=None):
+    def unphs2src(self, data, src, i, j):
         """Remove phasing from src data to point to zenith."""
         return data * numpy.conjugate(self.gen_phs(src, i, j))
-    def rmsrc(self, data, srcs, i, j=None, swath=0, norm_bandpass=None):
+    def rmsrc(self, data, srcs, i, j, swath=0, norm_bandpass=None):
         """Remove src flux from data.  Can aggressively remove srcs (allowing
         for inexact calibration) by removing 'swath' adjacent bins in 
         lag space."""
         if type(srcs) != list: srcs = [srcs]
         for src in srcs:
             try: phs = self.gen_phs(src, i, j)
-            except(PointingError): return data
+            except(PointingError): continue
             data *= phs
             if swath == 0:
                 if norm_bandpass is None: data -= numpy.ma.average(data)

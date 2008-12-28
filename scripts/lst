@@ -3,13 +3,13 @@
 Output LST and Julian date at the provided location.
 """
 
-import aipy, ephem, sys
+import aipy, sys
 from optparse import OptionParser
 p = OptionParser()
 p.set_usage('lst [options]')
 p.set_description(__doc__)
 p.add_option('-j', '--juldate', dest='juldate', type='float', 
-    default=ephem.julian_date(), help='Use provided julian date.')
+    default=aipy.pyephem.julian_date(), help='Use provided julian date.')
 p.add_option('-l', '--loc', dest='loc', default='pwa303',
     help='Use location-specific info for this location (default pwa303).')
 opts, args = p.parse_args(sys.argv[1:])
