@@ -88,6 +88,7 @@ item_types = {'obstype' : 'a',
          #'flags'   : 'i',
          #'wflags'  : 'i',
          #'gains'   : '?',
+         'ngains'  : 'i',
          'nfeeds'  : 'i',
          'ntau'    : 'i',
          'nsols'   : 'i',
@@ -358,6 +359,8 @@ class UV:
     def update_vars(self):
         """Refresh the list of variables available in this dataset."""
         self.vars.from_vartable(self.items['vartable'].read())
+    def keys(self):
+        return self.vars.keys() + self.items.keys()
     def __getitem__(self, k):
         if self.vars.has_key(k): return self.vars[k]
         elif self.items.has_key(k): return self.items[k]

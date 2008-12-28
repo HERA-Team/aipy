@@ -2,7 +2,7 @@ def configuration(parent_package='', top_path=None):
     import glob
     from numpy.distutils.misc_util import Configuration
     config = Configuration('aipy', parent_package, top_path,
-        version='0.1.3')
+        version='0.1.4')
     config.add_subpackage('lbfgsb')
     config.add_subpackage('miriad')
     config.add_data_dir('data')
