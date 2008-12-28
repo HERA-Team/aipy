@@ -14,10 +14,11 @@ __version__ = '0.0.1'
 def gen_skypass_delay(aa, sdf, nchan, max_bl_frac=1.):
     bin_dly = 1. / (sdf * nchan)
     filters = {}
-    for bl in aa.baseline_order:
-        max_bl = aa.get_baseline(bl)
+    for i,j in [aa.bl2ij(bl) for bl in aa.baseline_order]:
+        bl = aa.ij2bl(i,j)
+        max_bl = aa.get_baseline(i,j)
         max_bl = max_bl_frac * numpy.sqrt(numpy.dot(max_bl, max_bl))
-        dly = aa.get_delay(bl)
+        dly = aa.get_delay(i,j)
         uthresh, lthresh = (dly + max_bl)/bin_dly + 1, (dly - max_bl)/bin_dly
         uthresh, lthresh = int(numpy.round(uthresh)), int(numpy.round(lthresh))
         f = numpy.ones((nchan,), dtype=numpy.float)
@@ -30,8 +31,9 @@ def gen_skypass_fringe(aa, inttime, N_int, nchan, margin=1.2):
     bin_dly = 1. / (inttime * N_int)
     dth_dt = 2*numpy.pi / aipy.const.sidereal_day
     filters = {}
-    for bl in aa.baseline_order:
-        max_bl = aa.get_baseline(bl)[:2]
+    for i,j in [aa.bl2ij(bl) for bl in aa.baseline_order]:
+        bl = aa.ij2bl(i,j)
+        max_bl = aa.get_baseline(i,j)[:2]
         max_bl = numpy.sqrt(numpy.dot(max_bl, max_bl)) * freqs
         max_fr = margin * dth_dt * max_bl
         uthresh, lthresh = max_fr / bin_dly + 1, -max_fr / bin_dly
@@ -71,7 +73,7 @@ for uvfile in args:
     data = {}
     times = []
     for (uvw,t,(i,j)),d in uvi.all():
-        bl = aipy.miriad.ij2bl(i,j)
+        bl = aa.ij2bl(i,j)
         if len(times) == 0 or times[-1] != t: times.append(t)
         if i != j:
             # Filter out delays that don't correspond to the sky
@@ -81,7 +83,7 @@ for uvfile in args:
     # Filter out fringes that don't correspond to the sky
     skypass_fringe = gen_skypass_fringe(aa, inttime, len(times), nchan)
     for bl in data:
-        i, j = aipy.miriad.bl2ij(bl)
+        i, j = aa.bl2ij(bl)
         if i == j: continue
         d = numpy.array(data[bl])
         d = numpy.fft.fft(d, axis=0) * skypass_fringe[bl]

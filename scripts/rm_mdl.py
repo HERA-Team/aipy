@@ -29,7 +29,7 @@ def mdl(uv, p, d):
     if i == j: return p, d
     aa.set_jultime(t)
     cat.compute(aa)
-    d = aa.sim_data(cat.values(), i, j, stokes=uv['pol'])
+    d = aa.sim_data(cat.values(), i, j, pol=aipy.miriad.pol2str[uv['pol']])
     d = numpy.ma.array(d, mask=numpy.zeros_like(d))
     return p, d
 
@@ -57,9 +57,6 @@ def rm(uv, p, d):
     #print d[200]
     return p, d
 
-if opts.sim: f = mdl
-else: f = rm
-
 for filename in args:
     print filename
     uvofile = filename + 's'
@@ -69,5 +66,6 @@ for filename in args:
     uvi = aipy.miriad.UV(filename)
     uvo = aipy.miriad.UV(uvofile, status='new')
     uvo.init_from_uv(uvi)
-    uvo.pipe(uvi, mfunc=f)
+    if opts.sim: uvo.pipe(uvi, mfunc=mdl)
+    else: uvo.pipe(uvi, mfunc=rm)
 

@@ -33,11 +33,8 @@ def phs(uv, p, d):
     if i == j: return p, d
     aa.set_jultime(t)
     cat.compute(aa)
-    try:
-        d = aa.phs2src(d, cat.values()[0], i, j)
-    except:
-        print 'Warning: source below horizon'
-        d *= 0
+    try: d = aa.phs2src(d, cat.values()[0], i, j)
+    except(aipy.ant.PointingError): d *= 0
     return p, d
 
 # Process data

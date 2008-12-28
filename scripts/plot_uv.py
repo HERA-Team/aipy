@@ -22,7 +22,7 @@ p.add_option('-a', '--ants', dest='ants', default='all',
     help='Select which antennas/baselines to include in plot.  Options are: "all", "auto", "cross", "<ant1 #>,<ant2 #>" (a specific baseline), or "+<ant1 #>,..." (a list of active antennas).')
 p.add_option('-c', '--chan', dest='chan', default='all',
     help='Select which channels (taken after any delay/fringe transforms) to plot.  Options are: "all", "+<chan1 #>,..." (a list of active channels), or "<chan1 #>,<chan2 #>" (a range of channels).  If "all" or a range are selected, a 2-d image will be plotted.  If a list of channels is selected, an xy plot will be generated.')
-p.add_option('-p', '--pol', dest='pol', default='xx',
+p.add_option('-p', '--pol', dest='pol', default=None,
     help='Choose which polarization (xx, yy, xy, yx) to plot.')
 p.add_option('-x', '--decimate', dest='decimate', default=1, type='int',
     help='Take every Nth time data point.')
@@ -42,7 +42,7 @@ p.add_option('', '--dt', dest='dt', action='store_true',
     help='Remove a linear extrapolation from adjacent times.')
 p.add_option('', '--df', dest='df', action='store_true',
     help='Remove a linear extrapolation from adjacent frequency channels.')
-p.add_option('', '--plot_min', dest='plot_min', default=-5, type='int', 
+p.add_option('', '--plot_min', dest='plot_min', default=None, type='int', 
     help='Lower clip value on log plots.')
 
 def data_selector(antopt, uv):
@@ -51,7 +51,7 @@ def data_selector(antopt, uv):
     plotted."""
     if antopt == 'all': pass
     elif antopt == 'auto': uv.select('auto', 0, 0)
-    elif antopt == 'cross': uv.select('auto', 0, 0, include_it=0)
+    elif antopt == 'cross': uv.select('auto', 0, 0, include=0)
     elif antopt.startswith('+'):
         antopt = eval('['+antopt[1:]+']')
         for a in antopt: uv.select('antennae', a, -1)
@@ -86,9 +86,10 @@ def gen_chan_extractor(chanopt, get_y=None):
             return lambda chan: chan[x:y]
 
 opts, args = p.parse_args(sys.argv[1:])
-active_pol = aipy.miriad.pol_code[opts.pol]
-chan_extractor = gen_chan_extractor(opts.chan)
 uv = aipy.miriad.UV(args[0])
+if opts.pol is None: active_pol = uv['pol']
+else: active_pol = aipy.miriad.str2pol[opts.pol]
+chan_extractor = gen_chan_extractor(opts.chan)
 p, d = uv.read()
 chans = gen_chan_extractor(opts.chan, get_y=d)
 if opts.chan.startswith('+'): plots = 'plot'
@@ -161,7 +162,9 @@ for n, bl in enumerate(bls):
     pylab.subplot(m1, m2, n+1)
     if plots == 'imshow' and opts.sum_chan is None:
         if opts.mode.startswith('log'):
-            pylab.imshow(d, aspect='auto', vmin=opts.plot_min)
+            if not opts.plot_min is None:
+                pylab.imshow(d, aspect='auto', vmin=opts.plot_min)
+            else: pylab.imshow(d, aspect='auto')
         else:
             pylab.imshow(d, aspect='auto')
         pylab.colorbar()

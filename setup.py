@@ -1,32 +1,47 @@
-def configuration(parent_package='', top_path=None):
-    import glob
-    from numpy.distutils.misc_util import Configuration
-    config = Configuration('aipy', parent_package, top_path,
-        version='0.4.0',
-        author='Aaron Parsons',
-        author_email='aparsons at astron.berkeley.edu',
-        url='http://setiathome.berkeley.edu/~aparsons',
-        license='GPL',
-        description='Astronomical Interferometry in PYthon',
-        long_description=
-"""Tools for radio astronomical interferometry, including 
-pure-python phasing, calibration, imaging, and deconvolution code, 
-interfaces to MIRIAD, HEALPix, fitting routines from SciPy, and 
-the PyFITS and PyEphem packages verbatim.""",
-    )
-    config.add_subpackage('optimize')
-    config.add_subpackage('interpolate')
-    config.add_subpackage('pyephem')
-    config.add_subpackage('pyfits')
-    config.add_subpackage('miriad')
-    config.add_subpackage('healpix')
-    config.add_subpackage('utils')
-    config.add_data_dir('data')
-    #config.add_data_dir('doc')
-    config.add_scripts(glob.glob('scripts/*'))
-    config.add_data_files(('.', 'LICENSE.txt'))
-    return config
+from distutils.core import setup, Extension
+import numpy, os, glob
 
-if __name__ == '__main__':
-    from numpy.distutils.core import setup
-    setup(configuration=configuration)
+__version__ = '0.4.1'
+
+def indir(path, files):
+    return [os.path.join(path, f) for f in files]
+
+setup(name = 'aipy',
+    version = __version__,
+    description = 'Astronomical Interferometry in PYthon',
+    long_description = \
+"""
+This package collects together tools for radio astronomical interferometry.  In
+addition to pure-python phasing, calibration, imaging, and
+deconvolution code, this package includes interfaces to MIRIAD (a Fortran
+interferometry package), HEALPix (a package for representing spherical data
+sets), and fitting routines from SciPy.
+""",
+    license = 'GPL',
+    author = 'Aaron Parsons',
+    author_email = 'aparsons@astron.berkeley.edu',
+    url = 'http://setiathome.berkeley.edu/~aparsons/aipy',
+    classifiers = [
+        'Development Status :: 2 - Immature',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: General Public License (GPL)',
+        'Topic :: Scientific/Engineering :: Astronomy',
+    ],
+    packages = ['aipy', 'aipy.optimize'],
+    ext_modules = [
+        Extension('aipy._healpix',
+            ['aipy/_healpix/healpix_wrap.cpp',
+            'aipy/_healpix/cxx/Healpix_cxx/healpix_base.cc'],
+            include_dirs = [numpy.get_include(), 'aipy/_healpix/cxx/cxxsupport',
+                'aipy/_healpix/cxx/Healpix_cxx']),
+        Extension('aipy._miriad', ['aipy/_miriad/miriad_wrap.cpp'] + \
+            indir('aipy/_miriad/mir', ['uvio.c','hio.c','pack.c','bug.c',
+                'dio.c','headio.c','maskio.c']),
+            include_dirs = [numpy.get_include(),
+                'aipy/_miriad', 'aipy/_miriad/mir']),
+        Extension('aipy.utils', ['aipy/utils/utils.cpp'],
+            include_dirs = [numpy.get_include()])
+    ],
+    scripts=glob.glob('scripts/*'),
+    package_data = {'aipy': ['doc/*.tex', 'doc/*.png']},
+)

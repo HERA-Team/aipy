@@ -30,12 +30,10 @@ def fit_gaussian(xs, ys):
 def gen_rfi_thresh(data, nsig=2, per_bin=1000):
     """Generate a threshold at nsig times the standard deviation above the mean
     above which data is considered rfi."""
-    # Mask any 0's (assume that data must exist to be valid)
-    if numpy.ma.isMA(data): data.mask.put(numpy.where(data == 0), 1)
-    else: data = numpy.array(data, mask=numpy.where(data == 0, 1, 0))
-    # Generate a log-histogram
-    histdata = numpy.log10(numpy.abs(data.compressed()))
-    h, bvals = numpy.histogram(histdata, bins=histdata.size/per_bin)
+    try:
+        histdata = numpy.log10(numpy.abs(data.compressed()))
+        h, bvals = numpy.histogram(histdata, bins=histdata.size/per_bin)
+    except(ValueError): return 0, 0
     if h.size == 0: return 0, 0
     # Fit a gaussian to histogram (better than just std-dev of data)
     amp, sig, off = fit_gaussian(numpy.arange(h.size), h)
@@ -106,9 +104,11 @@ if __name__ == '__main__':
         # Gather all data and each time step
         window = None
         data = {}
+        mask = {}
         times = []
-        for (uvw,t,(i,j)), d in uvi.all():
+        for (uvw,t,(i,j)), d, f in uvi.all(raw=True):
             if len(times) == 0 or times[-1] != t: times.append(t)
+            mask[t] = mask.get(t, 0) | f
             bl = aipy.miriad.ij2bl(i,j)
             if i != j:
                 if window is None: 
@@ -116,45 +116,54 @@ if __name__ == '__main__':
                 d = numpy.fft.fft(numpy.fft.ifft(d) * window)
             pol = uvi['pol']
             if not pol in data: data[pol] = {}
-            if not bl in data[pol]: data[pol][bl] = []
-            data[pol][bl].append(d)
+            if not bl in data[pol]: data[pol][bl] = {}
+            data[pol][bl][t] = d
 
         # Generate a single mask for all baselines which masks if any
         # baseline has an outlier at that freq/time.  Data flagged
         # strictly on basis of nsigma above mean.
-        total_mask = numpy.zeros((len(times), uvi['nchan']), dtype=numpy.int)
-        total_mask[:,flag_chans] = 1
+        #total_mask = numpy.zeros((len(times), uvi['nchan']), dtype=numpy.int)
+        new_mask = {}
+        for k in mask:
+            mask[k][flag_chans] = 1
+            new_mask[k] = mask[k].copy()
         for p in data:
           for k in data[p]:
-            s0 = len(data[p][k])
-            data[p][k] = numpy.ma.array(data[p][k], mask=total_mask[:s0,:])
             i, j = aipy.miriad.bl2ij(k)
             if i == j: continue
-            hi_thr, lo_thr = gen_rfi_thresh(data[p][k], nsig=opts.nsig)
-            total_mask[:s0,:] |= numpy.where(numpy.abs(data[p][k]) > hi_thr,1,0)
+            data_times = data[p][k].keys()
+            d = numpy.ma.array([data[p][k][t] for t in data_times],
+                mask=[mask[t] for t in data_times])
+            hi_thr, lo_thr = gen_rfi_thresh(d, nsig=opts.nsig)
+            m = numpy.where(numpy.abs(d) > hi_thr,1,0)
+            for i, t in enumerate(data_times): new_mask[t] |= m[i]
+        mask = new_mask
 
         # Use autocorrelations to flag entire integrations which have
         # anomalous powers.  All antennas must agree for a integration
         # to get flagged.
-        int_mask = numpy.zeros((len(times),))
+        new_mask = {}
         for p in data:
           for k in data[p]:
-            s0 = data[p][k].shape[0]
-            data[p][k] = numpy.ma.array(data[p][k], mask=total_mask[:s0,:])
             i, j = aipy.miriad.bl2ij(k)
-            if i == j: int_mask[:s0] += flag_by_int(data[p][k])
-        for n in numpy.where(int_mask > 1): total_mask[n] = 1
+            if i != j: continue
+            data_times = data[p][k].keys()
+            d = numpy.ma.array([data[p][k][t] for t in data_times],
+                mask=[mask[t] for t in data_times])
+            for i in numpy.where(flag_by_int(d))[0]:
+                t = data_times[i]
+                new_mask[t] = new_mask.get(t, 0) + 1
+        for t in new_mask:
+            if new_mask[t] > 1: mask[t] |= 1
 
         # Generate a pipe for applying both the total_mask and the int_mask
         # to the data as it comes it.
-        def rfi_mfunc(uv, preamble, data):
+        def rfi_mfunc(uv, preamble, data, flags):
             uvw, t, (i,j) = preamble
-            t = times.index(t)
-            data = numpy.ma.array(data.data, mask=total_mask[t])
-            return preamble, data
+            return preamble, data, mask[t]
 
         uvi.rewind()
         uvo = aipy.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
-        uvo.pipe(uvi, mfunc=rfi_mfunc,
+        uvo.pipe(uvi, mfunc=rfi_mfunc, raw=True,
             append2hist='XRFI: version %s\n' % __version__)
