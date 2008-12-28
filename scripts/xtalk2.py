@@ -14,7 +14,7 @@ __version__ = '0.0.1'
 def gen_skypass_delay(aa, sdf, nchan, max_bl_frac=1.):
     bin_dly = 1. / (sdf * nchan)
     filters = {}
-    for i,j in [aa.bl2ij(bl) for bl in aa.baseline_order]:
+    for i,j in [aa.bl2ij(bl) for bl in aa.bl_order]:
         bl = aa.ij2bl(i,j)
         max_bl = aa.get_baseline(i,j)
         max_bl = max_bl_frac * numpy.sqrt(numpy.dot(max_bl, max_bl))
@@ -31,7 +31,7 @@ def gen_skypass_fringe(aa, inttime, N_int, nchan, margin=1.2):
     bin_dly = 1. / (inttime * N_int)
     dth_dt = 2*numpy.pi / aipy.const.sidereal_day
     filters = {}
-    for i,j in [aa.bl2ij(bl) for bl in aa.baseline_order]:
+    for i,j in [aa.bl2ij(bl) for bl in aa.bl_order]:
         bl = aa.ij2bl(i,j)
         max_bl = aa.get_baseline(i,j)[:2]
         max_bl = numpy.sqrt(numpy.dot(max_bl, max_bl)) * freqs

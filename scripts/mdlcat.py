@@ -40,13 +40,14 @@ del(uv)
 # A pipe for just outputting the model
 curtime = None
 def mdl(uv, p, d):
-    global curtime
+    global curtime, s_eqs, fluxes, indices, mfreqs
     uvw, t, (i,j) = p
     if i == j: return p, d
     if curtime != t:
         curtime = t
         aa.set_jultime(t)
         cat.compute(aa)
+        s_eqs,fluxes,indices,mfreqs = cat.get_vecs()
     d = aa.sim(i, j, s_eqs, fluxes, indices=indices, mfreqs=mfreqs, 
         pol=aipy.miriad.pol2str[uv['pol']])
     d = numpy.ma.array(d, mask=numpy.zeros_like(d))
@@ -58,13 +59,14 @@ def mdl(uv, p, d):
 
 # A pipe to use for removing the model
 def rm(uv, p, d):
-    global curtime
+    global curtime, s_eqs, fluxes, indices, mfreqs
     uvw, t, (i,j) = p
     if i == j: return p, d
     if curtime != t:
         curtime = t
         aa.set_jultime(t)
         cat.compute(aa)
+        s_eqs,fluxes,indices,mfreqs = cat.get_vecs()
     sd = aa.sim(i, j, s_eqs, fluxes, indices=indices, mfreqs=mfreqs, 
         pol=aipy.miriad.pol2str[uv['pol']])
     return p, d - sd

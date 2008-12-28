@@ -270,7 +270,10 @@ class AntennaArray(ArrayLocation):
         a projection toward that source."""
         b = self.bl_order[self.ij2bl(i,j)]
         if type(src) == str:
-            return {'e':self.ebls[b],'z':self.zbls[b],'r':self.bls[b]}[src[0]]
+            if src == 'e': return self.ebls[b]
+            elif src == 'z': return self.zbls[b]
+            elif src == 'r': return self.bls[b]
+            else: raise ValueError('Unrecognized source:' + src)
         if src.alt < 0: raise PointingError('%s below horizon' % src.src_name)
         return n.dot(src.map, self.bls[b])
     def get_delay(self, i, j):

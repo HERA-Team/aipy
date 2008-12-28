@@ -269,7 +269,6 @@ static PyObject * HPBObject_px2crd(HPBObject *self,
             &PyArray_Type, &px, &crd_type))
         return NULL;
     int return_type = get_option(options, crd_type);
-    printf("Return type: %d = %s\n", return_type, options[return_type]);
     if (return_type == -1) return NULL;
     CHK_ARRAY_RANK(px,1);
     CHK_ARRAY_TYPE(px,NPY_LONG);

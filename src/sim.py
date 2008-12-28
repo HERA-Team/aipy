@@ -183,7 +183,7 @@ class BeamCosSeries(ant.Beam):
         return rv.clip(0, n.Inf)
 
 class BeamAlm(ant.Beam):
-    def __init__(self, freqs, lmax=10, mmax=10, coeffs=None, nside=32):
+    def __init__(self, freqs, lmax=3, mmax=3, coeffs=None, nside=32):
         self.alm = healpix.Alm(lmax,mmax)
         self.hmap = healpix.HealpixMap(nside, ordering='RING')
         ant.Beam.__init__(self, freqs)
@@ -196,9 +196,11 @@ class BeamAlm(ant.Beam):
         self.alm.set_data(coeffs)
         self.hmap.from_alm(self.alm)
     def response(self, top):
-        #x,y,z = top
-        #top = (-n.abs(x), -n.abs(y), z)
-        rv = self.hmap[n.array(top).transpose()]
+        x,y,z = top
+        top1 = (x, y, z)
+        top2 = (-x, -y, z)
+        rv = .5*self.hmap[n.array(top1).transpose()]
+        rv += .5*self.hmap[n.array(top2).transpose()]
         rv.shape = (1,) + rv.shape
         return rv.clip(0, n.Inf)
     
@@ -296,6 +298,7 @@ class AntennaArray(ant.AntennaArray):
         # Get the phase of each src vs. freq
         E_sf = n.conjugate(self.gen_phs(s_eqs.transpose(), i, j))
         # Combine and sum over sources
-        GBIE_sf = GAi_sf * GAj_sf * I_sf**2 * E_sf
+        #GBIE_sf = GAi_sf * GAj_sf * I_sf**2 * E_sf
+        GBIE_sf = GAi_sf * GAj_sf * I_sf * E_sf
         Vij_f = GBIE_sf.sum(axis=0)
         return Vij_f

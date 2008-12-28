@@ -160,8 +160,9 @@ for filename in args:
     try:
         # If there is a bandpass item, we're going apply it to data
         bp = uvi['bandpass'].real   # Sync'd with pocket_corr.py in corr pkg.
-        bp.shape = (nchan, nants)   # Sync'd to c2m.py in corr pkg.
-        bp = bp.transpose()
+        #bp.shape = (nchan, nants)   # Sync'd to c2m.py in corr pkg.
+        #bp = bp.transpose()
+        bp.shape = (nants, nchan)
         print
     except:
         print 'No bandpass found'
