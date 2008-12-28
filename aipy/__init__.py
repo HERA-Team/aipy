@@ -14,4 +14,4 @@ Revisions: lots
 
 __version__ = '0.4.1'
 import ant, const, coord, deconv, eor, fit, img, loc, sim, src
-import miriad, interp, optimize, pyephem, pyfits, utils, healpix
+import miriad, interp, optimize, ephem, pyfits, utils, healpix

@@ -4,27 +4,39 @@ This package collects together tools for radio astronomical interferometry.  In
 addition to pure-python phasing, calibration, imaging, and
 deconvolution code, this package includes interfaces to MIRIAD (a Fortran
 interferometry package), HEALPix (a package for representing spherical data
-sets), routines from SciPy for fitting, and the PyFITS and PyEphem packages 
-verbatim.
+sets), and routines from SciPy for fitting. 
 
 BEFORE YOU INSTALL
     This is a *nix package.  With some trouble it can install on MacOS, and
-    it pretty certainly doesn't install on Windows.  You also need to have
+    it pretty certainly doesn't install on Windows.  You need to have
     python >= 2.4.
 
-    For python, you'll need to have the following packages:
-    numpy-1.0.4 (bleeding edge)
-        > svn co http://svn.scipy.org/svn/numpy/trunk numpy
-        and then proceed as normal with its installation.
-    matplotlib (aka pylab, most recent >= 90.0)
-    matplotlib-basemap-0.9.X
+    You'll need to have the following python packages:
+        numpy >= 1.0.4
+        pyephem >= 3.7.2.3
+        pyfits >= 1.1
+        *matplotlib >= 0.91
+        *matplotlib-basemap >= 0.9
+        (* installation can occur without these, but some scripts will choke)
+    Luckily, much of this is now automated through setuptools dependencies,
+    but you have to have network access to take advantage of it.
+
+    OPTION 1:
+        You install the dependencies yourself.
+    OPTION 2:
+        You have network connectivity and root access:
+            $ install_dependencies.sh 
+    OPTION 3:
+        You have network connectivity but not root access.  Follow the
+        instructions at:
+            http://peak.telecommunity.com/DevCenter/setuptools
+        and apply them to each line in install_dependencies.sh
 
 TO INSTALL AS ROOT
     > sudo python setup.py install
 
 TO INSTALL AS USER
-    This is more complicated.  You'll first install to a directory of your
-    choice:
+    You'll first install to a directory of your choice:
     > python setup.py install --install-lib <module_dir> \
         --install-scripts <scripts_dir>
     This puts the python module in <module_dir>, and the command-line scripts
@@ -75,16 +87,5 @@ PACKAGE INFO FOR DEVELOPERS
     and $MIR/src/inc/* into aipy/miriad/mirsrc.  Not all files are used, but 
     include them all anyway.
 
-    PyEphem is included in the directory aipy/pyephem.  Current version is
-    pyephem-3.7.2a1.  However, setup.py is manually edited to enable it to
-    be built as a subpackage.  If updating code, don't clobber setup.py.  
-    Just copy rest in.  Also added a __init__.py to pyephem.
-
     Healpix source code (aipy/healpix/cxx) was included from Healpix-2.01.
     To update, download healpix source and copy src/cxx into aipy/healpix.
-
-    PyFITS is also included in the directory aipy/pyfits.  Current version is
-    pyfits-1.1.  As with PyEphem, setup.py has been manually edited to enable
-    it to be built as a subpackage.  If updating code, don't clobber setup.py.
-    Just copy in NP_pyfits.py and rec.py.  Edited __init__.py, so don't clobber
-    that either.

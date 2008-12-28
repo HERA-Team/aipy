@@ -18,7 +18,7 @@ Revisions:
                     decimated bandpass.
 """
 
-import ant, numpy as n, pyephem as ephem, coord
+import ant, numpy as n, ephem, coord
 from interp import interpolate
 
 #  ____           _ _       ____            _       

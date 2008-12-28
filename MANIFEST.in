@@ -1,0 +1,14 @@
+imclude install_dependencies.sh
+include aipy/_healpix/cxx/cxxsupport/*.h
+include aipy/_healpix/cxx/cxxsupport/*.cc
+include aipy/_healpix/cxx/Healpix_cxx/*.h
+include aipy/_healpix/cxx/Healpix_cxx/*.cc
+include aipy/_miriad/*.h
+include aipy/_miriad/mir/*.h
+include README
+include LICENSE
+include LICENSE-GPL
+include doc/*.tex
+include doc/*.png
+include doc/*.jpg
+exclude old

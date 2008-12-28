@@ -1,0 +1,1 @@
+http://www.stsci.edu/resources/software_hardware/pyfits/pyfits-1.1.tar.gz

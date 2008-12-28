@@ -1,0 +1,3 @@
+aipy/_healpix.so
+aipy/utils.so
+aipy/_miriad.so
