@@ -21,7 +21,6 @@ Revisions:
 """
 
 import ant, numpy as n, ephem, coord, healpix
-from interp import interpolate
 
 #  ____           _ _       ____            _       
 # |  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _ 
@@ -32,7 +31,7 @@ from interp import interpolate
 
 class RadioBody:
     """A class redefining ephem's sense of brightness for radio astronomy."""
-    def __init__(self, janskies, mfreq=.150, index=-1):
+    def __init__(self, janskies, mfreq, index, angsize):
         """janskies:     source strength
         mfreq:    frequency (in GHz) where strength was measured
         index:   index of power-law spectral model of source emission"""
@@ -43,6 +42,7 @@ class RadioBody:
         self._janskies = janskies
         self.mfreq = mfreq
         self._index = index
+        self.angsize = angsize
     def compute(self, observer):
         self.janskies = n.clip(n.polyval(self._janskies, 
                 (observer.sidereal_time()-self.ra+n.pi) % (2*n.pi)), 0, n.Inf)
@@ -58,9 +58,9 @@ class RadioBody:
 class RadioFixedBody(ant.RadioFixedBody, RadioBody):
     """A class adding simulation capability to ant.RadioFixedBody"""
     def __init__(self, ra, dec, janskies, mfreq=.150, 
-            index=-1., name='', **kwargs):
+            index=-1., angsize=0., name='', **kwargs):
         ant.RadioFixedBody.__init__(self, ra, dec, name=name)
-        RadioBody.__init__(self, janskies, mfreq=mfreq, index=index)
+        RadioBody.__init__(self, janskies, mfreq, index, angsize)
     def compute(self, observer):
         ant.RadioFixedBody.compute(self, observer)
         RadioBody.compute(self, observer)
@@ -74,9 +74,9 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
 
 class RadioSpecial(ant.RadioSpecial, RadioBody):
     """A class adding simulation capability to ant.RadioSun"""
-    def __init__(self, name, janskies, mfreq=.150, index=-1., **kwargs):
+    def __init__(self,name,janskies,mfreq=.150,index=-1.,angsize=0.,**kwargs):
         ant.RadioSpecial.__init__(self, name)
-        RadioBody.__init__(self, janskies, mfreq=mfreq, index=index)
+        RadioBody.__init__(self, janskies, mfreq, index, angsize)
     def compute(self, observer):
         ant.RadioSpecial.compute(self, observer)
         RadioBody.compute(self, observer)
@@ -96,6 +96,8 @@ class SrcCatalog(ant.SrcCatalog):
         return n.array([s.index for s in self.values()])
     def get_mfreqs(self):
         return n.array([s.mfreq for s in self.values()])
+    def get_angsizes(self):
+        return n.array([s.angsize for s in self.values()])
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -196,30 +198,23 @@ class BeamCosSeries(ant.Beam):
         return rv.clip(0, n.Inf)
 
 class BeamAlm(ant.Beam):
-    def __init__(self, freqs, lmax=3, mmax=3, coeffs=None, nside=32):
-        self.alm = healpix.Alm(lmax,mmax)
-        self.hmap = healpix.HealpixMap(nside, scheme='RING')
+    def __init__(self, freqs, lmax=8, mmax=8, deg=7, nside=64, coeffs={}):
+        self.alm = [healpix.Alm(lmax,mmax) for i in range(deg+1)]
+        self.hmap = [healpix.HealpixMap(nside,scheme='RING',interp=True)
+            for a in self.alm]
         ant.Beam.__init__(self, freqs)
         self.update(coeffs)
-    def select_chans(self, active_chans):
-        ant.Beam.select_chans(self, active_chans)
-        self.update()
-    def update(self, coeffs=None):
-        if coeffs is None: coeffs = self.alm.get_data()
-        self.alm.set_data(coeffs)
-        self.hmap.from_alm(self.alm)
+    def update(self, coeffs={}):
+        for c in coeffs:
+            if c >= len(self.alm): continue
+            self.alm[-1-c].set_data(coeffs[c])
+            self.hmap[-1-c].from_alm(self.alm[-1-c])
     def response(self, top):
-        rv = self.hmap[n.array(top).transpose()]
-        rv.shape = (1,) + rv.shape
-        return rv.clip(0, n.Inf)
-
-class BeamAlmSymm(BeamAlm):
-    def response(self, top):
-        x,y,z = top
-        rv = .5*self.hmap[x,y,z] + .5*self.hmap[-x,-y,z]
-        rv.shape = (1,) + rv.shape
-        return rv.clip(0, n.Inf)
-    
+        top = [healpix.mk_arr(c, dtype=n.double) for c in top]
+        px,wgts = self.hmap[0].crd2px(*top, **{'interpolate':1})
+        poly = n.array([n.sum(h.map[px] * wgts, axis=-1) for h in self.hmap])
+        rv = n.polyval(poly, n.reshape(self.afreqs, (self.afreqs.size, 1)))
+        return rv
 
 #     _          _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _ 
@@ -273,8 +268,10 @@ class Antenna(ant.Antenna):
         coordinates (with z = up, x = east).  This includes beam response and
         per-frequency gain.  1st axis should be xyz, 2nd axis should be 
         multiple coordinates."""
+        top = n.array(top)
         top = {'x':top, 'y':n.dot(self.rot_pol_y, top)}[pol]
-        beam_resp = self.beam.response(top)
+        x,y,z = top
+        beam_resp = self.beam.response((x,y,z))
         gain = self.gain
         if len(beam_resp.shape) == 2: gain = n.reshape(gain, (gain.size, 1))
         return beam_resp * gain
@@ -293,16 +290,19 @@ class AntennaArray(ant.AntennaArray):
         self.eq2top_m = coord.eq2top_m(-self.sidereal_time(), self.lat)
         self._cache = None
     def sim_cache(self, s_eqs, fluxes, indices=0., mfreqs=n.array([.150]), 
-            pols=['x','y']):
+            angsizes=None):
         # Get topocentric coordinates of all srcs
         src_top = n.dot(self.eq2top_m, s_eqs)
         # Throw out everything that is below the horizon
         valid = n.logical_and(src_top[2,:] > 0, fluxes > 0)
-        if n.all(valid == 0): self._cache = {'I_sf': 0, 's_eqs': s_eqs}
+        if n.all(valid == 0):
+            self._cache = {'I_sf': 0, 's_eqs': s_eqs, 
+                    's_top': s_eqs, 's_sz':angsizes}
         else:
             fluxes = fluxes.compress(valid)
             indices = indices.compress(valid)
             mfreqs = mfreqs.compress(valid)
+            if not angsizes is None: angsizes = angsizes.compress(valid)
             src_top = src_top.compress(valid, axis=1)
             s_eqs = s_eqs.compress(valid, axis=1)
             # Get src fluxes vs. freq
@@ -314,12 +314,9 @@ class AntennaArray(ant.AntennaArray):
             self._cache = {
                 'I_sf':fluxes * (freqs / mfreqs)**indices,
                 's_eqs': s_eqs,
+                's_top': src_top,
+                's_sz': angsizes
             }
-        # Get antenna responses to provided coordinates
-        for i,ant in enumerate(self.ants):
-            self._cache[i] = {}
-            for p in pols:
-                self._cache[i][p] = ant.response(src_top, pol=p).transpose()
     def sim(self, i, j, pol='xx'):
         """Simulate visibilites for the (i,j) baseline based on source
         locations (in equatorial coordinates), fluxes, spectral indices,
@@ -327,12 +324,20 @@ class AntennaArray(ant.AntennaArray):
         assert(pol in ('xx','yy','xy','yx'))
         if self._cache is None:
             raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')
+        # Check that we have cached results needed.  If not, cache them.
+        for c,p in zip([i,j], pol):
+            if not self._cache.has_key(c): self._cache[c] = {}
+            if not self._cache[c].has_key(p):
+                x,y,z = self._cache['s_top']
+                resp = self.ants[c].response((x,y,z), pol=p).transpose()
+                self._cache[c][p] = resp
         I_sf = self._cache['I_sf']
         s_eqs = self._cache['s_eqs']
         GAi_sf = self._cache[i][pol[0]]
         GAj_sf = self._cache[j][pol[1]]
-        # Get the phase of each src vs. freq
-        E_sf = n.conjugate(self.gen_phs(s_eqs.transpose(), i, j))
+        s_sz = self._cache['s_sz']
+        # Get the phase of each src vs. freq, also does resolution effects
+        E_sf = n.conjugate(self.gen_phs(s_eqs.transpose(), i, j, angsize=s_sz))
         # Combine and sum over sources
         GBIE_sf = GAi_sf * GAj_sf * I_sf * E_sf
         Vij_f = GBIE_sf.sum(axis=0)

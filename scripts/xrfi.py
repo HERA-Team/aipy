@@ -75,22 +75,27 @@ def remove_spikes(data, order=6, iter=3, return_poly=False):
     else: return numpy.polyval(p, xs)
 
 if __name__ == '__main__':
-    import os, sys
+    import os, sys, pickle
     from optparse import OptionParser
 
-    p = OptionParser()
-    p.set_usage('xrfi.py [options] *.uv')
-    p.set_description(__doc__)
-    p.add_option('-n', '--nsig', dest='nsig', default=2., type='float',
+    o = OptionParser()
+    o.set_usage('xrfi.py [options] *.uv')
+    o.set_description(__doc__)
+    o.add_option('-n', '--nsig', dest='nsig', default=2., type='float',
         help='Number of standard deviations above mean to flag.  Default 2.')
-    p.add_option('-m', '--flagmode', dest='flagmode', default='both',
-        help='Can be val,int,both for flagging my value only, integration only, or both.  Default both.')
-    p.add_option('-c', '--chans', dest='chans', default='',
+    o.add_option('-m', '--flagmode', dest='flagmode', default='both',
+        help='Can be val,int,both for flagging by value only, integration only, or both.  Default both.')
+    o.add_option('-c', '--chans', dest='chans', default='',
         help='Comma-delimited ranges (e.g. 1-3,5-10) of channels to manually flag before any other statistical flagging.')
-    p.add_option('-t', '--ch_thresh', dest='ch_thresh',type='float',default=.33,
+    o.add_option('-t', '--ch_thresh', dest='ch_thresh',type='float',default=.33,
         help='Fraction of the data in a channel which, if flagged, will result in the entire channel begin flagged.  Default .33')
+    o.add_option('-i', '--infile', dest='infile', action='store_true',
+        help='Apply xrfi flags generated with the -o option.')
+    o.add_option('-o', '--outfile', dest='outfile', action='store_true',
+        help='Rather than apply the flagging to the data, store them in a file (named by JD) to apply to a different file with the same JD.')
 
-    opts, args = p.parse_args(sys.argv[1:])
+
+    opts, args = o.parse_args(sys.argv[1:])
     chans = opts.chans.split(',')
     flag_chans = []
     for c in chans:
@@ -105,77 +110,91 @@ if __name__ == '__main__':
             print uvofile, 'exists, skipping.'
             continue
         uvi = aipy.miriad.UV(uvfile)
-
-        # Gather all data and each time step
-        window = None
-        data = {}
-        mask = {}
-        times = []
-        for (uvw,t,(i,j)), d, f in uvi.all(raw=True):
-            if len(times) == 0 or times[-1] != t: times.append(t)
-            mask[t] = mask.get(t, 0) | f
-            bl = aipy.miriad.ij2bl(i,j)
-            if i != j:
-                if window is None: 
-                    window = d.size/2 - abs(numpy.arange(d.size) - d.size/2)
-                d = numpy.fft.fft(numpy.fft.ifft(d) * window)
-            pol = uvi['pol']
-            if not pol in data: data[pol] = {}
-            if not bl in data[pol]: data[pol][bl] = {}
-            data[pol][bl][t] = d
-
-        # Generate a single mask for all baselines which masks if any
-        # baseline has an outlier at that freq/time.  Data flagged
-        # strictly on basis of nsigma above mean.
-        if not opts.flagmode.startswith('int'):
-            new_mask = {}
-            for k in mask:
-                mask[k][flag_chans] = 1
-                new_mask[k] = mask[k].copy()
-            for p in data:
-              for k in data[p]:
-                i, j = aipy.miriad.bl2ij(k)
-                if i == j: continue
-                data_times = data[p][k].keys()
-                d = numpy.ma.array([data[p][k][t] for t in data_times],
-                    mask=[mask[t] for t in data_times])
-                hi_thr, lo_thr = gen_rfi_thresh(d, nsig=opts.nsig)
-                m = numpy.where(numpy.abs(d) > hi_thr,1,0)
-                for i, t in enumerate(data_times): new_mask[t] |= m[i]
-            mask = new_mask
-            # If more than half the data in a channel is flagged, flag the
-            # whole thing
-            msk_cnt = numpy.array([mask[t] for t in data_times]).sum(axis=0)
-            ch_msk = numpy.where(msk_cnt > msk_cnt.max() * opts.ch_thresh, 1, 0)
-            for k in mask: mask[k] |= ch_msk
-
-        # Use autocorrelations to flag entire integrations which have
-        # anomalous powers.  All antennas must agree for a integration
-        # to get flagged.
-        if not opts.flagmode.startswith('val'):
-            new_mask = {}
-            for p in data:
-              for k in data[p]:
-                i, j = aipy.miriad.bl2ij(k)
-                if i != j: continue
-                data_times = data[p][k].keys()
-                d = numpy.ma.array([data[p][k][t] for t in data_times],
-                    mask=[mask[t] for t in data_times])
-                for i in numpy.where(flag_by_int(d))[0]:
-                    t = data_times[i]
-                    new_mask[t] = new_mask.get(t, 0) + 1
-            for t in new_mask:
-                if new_mask[t] > 1: mask[t] |= 1
-
-        # Generate a pipe for applying both the total_mask and the int_mask
-        # to the data as it comes it.
-        def rfi_mfunc(uv, preamble, data, flags):
-            uvw, t, (i,j) = preamble
-            return preamble, data, mask[t]
-
+        (uvw,jd,(i,j)),d,f = uvi.read(raw=True)
         uvi.rewind()
-        uvo = aipy.miriad.UV(uvofile, status='new')
-        uvo.init_from_uv(uvi)
-        uvo.pipe(uvi, mfunc=rfi_mfunc, raw=True,
-    append2hist='XRFI: ver %s, nsig %f, chans %s, mode %s, ch_thresh %f\n' %  \
-            (__version__, opts.nsig, opts.chans, opts.flagmode, opts.ch_thresh))
+        if opts.infile:
+            if not os.path.exists('%f.xrfi' % jd):
+                print '%f.xrfi' % jd, 'does not exist.  Skipping...'
+                continue
+            f = open('%f.xrfi' % jd)
+            mask = pickle.load(f)
+            f.close()
+            for m in mask: mask[m] = numpy.array(mask[m])
+        else:
+            # Gather all data and each time step
+            window = None
+            data = {}
+            mask = {}
+            times = []
+            for (uvw,t,(i,j)), d, f in uvi.all(raw=True):
+                if len(times) == 0 or times[-1] != t: times.append(t)
+                mask[t] = mask.get(t, 0) | f
+                bl = aipy.miriad.ij2bl(i,j)
+                if i != j:
+                    if window is None: 
+                        window = d.size/2 - abs(numpy.arange(d.size) - d.size/2)
+                    d = numpy.fft.fft(numpy.fft.ifft(d) * window)
+                pol = uvi['pol']
+                if not pol in data: data[pol] = {}
+                if not bl in data[pol]: data[pol][bl] = {}
+                data[pol][bl][t] = d
+
+            # Generate a single mask for all baselines which masks if any
+            # baseline has an outlier at that freq/time.  Data flagged
+            # strictly on basis of nsigma above mean.
+            if not opts.flagmode.startswith('int'):
+                new_mask = {}
+                for k in mask:
+                    mask[k][flag_chans] = 1
+                    new_mask[k] = mask[k].copy()
+                for p in data:
+                  for k in data[p]:
+                    i, j = aipy.miriad.bl2ij(k)
+                    if i == j: continue
+                    data_times = data[p][k].keys()
+                    d = numpy.ma.array([data[p][k][t] for t in data_times],
+                        mask=[mask[t] for t in data_times])
+                    hi_thr, lo_thr = gen_rfi_thresh(d, nsig=opts.nsig)
+                    m = numpy.where(numpy.abs(d) > hi_thr,1,0)
+                    for i, t in enumerate(data_times): new_mask[t] |= m[i]
+                mask = new_mask
+                # If more than half the data in a channel is flagged, flag the
+                # whole thing
+                msk_cnt = numpy.array([mask[t] for t in data_times]).sum(axis=0)
+                ch_msk = numpy.where(msk_cnt > msk_cnt.max()*opts.ch_thresh,1,0)
+                for k in mask: mask[k] |= ch_msk
+
+            # Use autocorrelations to flag entire integrations which have
+            # anomalous powers.  All antennas must agree for a integration
+            # to get flagged.
+            if not opts.flagmode.startswith('val'):
+                new_mask = {}
+                for p in data:
+                  for k in data[p]:
+                    i, j = aipy.miriad.bl2ij(k)
+                    if i != j: continue
+                    data_times = data[p][k].keys()
+                    d = numpy.ma.array([data[p][k][t] for t in data_times],
+                        mask=[mask[t] for t in data_times])
+                    for i in numpy.where(flag_by_int(d))[0]:
+                        t = data_times[i]
+                        new_mask[t] = new_mask.get(t, 0) + 1
+                for t in new_mask:
+                    if new_mask[t] > 1: mask[t] |= 1
+        if opts.outfile:
+            for t in mask: mask[t] = list(mask[t])
+            print 'Writing %f.xrfi' % jd
+            f = open('%f.xrfi' % jd, 'w')
+            pickle.dump(mask, f)
+            f.close()
+        else:
+            # Generate a pipe for applying both the total_mask and the int_mask
+            # to the data as it comes it.
+            def rfi_mfunc(uv, preamble, data, flags):
+                uvw, t, (i,j) = preamble
+                return preamble, data, mask[t]
+
+            uvi.rewind()
+            uvo = aipy.miriad.UV(uvofile, status='new')
+            uvo.init_from_uv(uvi)
+            uvo.pipe(uvi, mfunc=rfi_mfunc, raw=True, append2hist='XRFI: ver %s, nsig %f, chans %s, mode %s, ch_thresh %f\n' %  (__version__, opts.nsig, opts.chans, opts.flagmode, opts.ch_thresh))

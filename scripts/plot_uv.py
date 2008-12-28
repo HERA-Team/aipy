@@ -215,7 +215,8 @@ for cnt, bl in enumerate(bls):
         d = n.ma.masked_less_equal(d, 0)
         d = n.ma.log10(d)
     else: raise ValueError('Unrecognized plot mode.')
-    p.subplot(m1, m2, cnt+1)
+    #p.subplot(m1, m2, cnt+1)
+    p.subplot(m2, m1, cnt+1)
     if is_chan_range and is_time_range:
         if opts.fringe:
             if opts.time_axis == 'index':

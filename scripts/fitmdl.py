@@ -60,6 +60,7 @@ opts, args = o.parse_args(sys.argv[1:])
 srcs = opts.cat.split(',')
 cat = a.src.get_catalog(srcs, type='fit')
 cat.set_params(a.loc.get_src_prms(opts.loc))
+mfq = cat.get_mfreqs()
 
 # Initialize AntennaArray
 uv = a.miriad.UV(args[0])
@@ -110,7 +111,8 @@ def fit_func(prms):
             prms[ant][prm] = prms[ants[0]][prm]
     aa.set_params(prms)
     cat.set_params(prms)
-    mfq = cat.get_mfreqs()
+    asz = cat.get_angsizes()
+    if n.all(asz == 0): asz = None  # Making None bypasses a computation step
     score,cnt,curtime = 0,0,None
     for uvfile in args:
         sys.stdout.write('.'), ; sys.stdout.flush()
@@ -129,7 +131,7 @@ def fit_func(prms):
                     eqs = cat.get_crds('eq', ncrd=3)
                     flx = cat.get_fluxes()
                     ind = cat.get_indices()
-                    aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq)
+                    aa.sim_cache(eqs,flx,indices=ind,mfreqs=mfq,angsizes=asz)
             if cnt != 0: continue
             d = d.take(chans)
             f = f.take(chans)

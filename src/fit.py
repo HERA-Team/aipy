@@ -101,6 +101,7 @@ class RadioFixedBody(sim.RadioFixedBody):
             'index':    list(self._index),
             'ra':       float(self._ra),
             'dec':      float(self._dec),
+            'angsize':  float(self.angsize),
         }
         prms = {}
         for p in prm_list:
@@ -118,11 +119,13 @@ class RadioFixedBody(sim.RadioFixedBody):
         if prms.has_key('index'):
             try:
                 len(prms['index'])
-                self._janskies = prms['index']
-            except: self._janskies = [prms['index']]
+                self._index = prms['index']
+            except: self._index = [prms['index']]
         try: self._ra = prms['ra']
         except(KeyError): pass
         try: self._dec = prms['dec']
+        except(KeyError): pass
+        try: self.angsize = prms['angsize']
         except(KeyError): pass
 
 #  ____           _ _      ____                  _       _ 
@@ -139,6 +142,7 @@ class RadioSpecial(sim.RadioSpecial):
         aprms = {
             'str':      list(self._janskies),
             'index':    list(self._index),
+            'angsize':  float(self.angsize),
         }
         prms = {}
         for p in prm_list:
@@ -148,9 +152,17 @@ class RadioSpecial(sim.RadioSpecial):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        try: self._janskies = prms['str']
-        except(KeyError): pass
-        try: self._index = prms['index']
+        if prms.has_key('str'):
+            try:
+                len(prms['str'])
+                self._janskies = prms['str']
+            except: self._janskies = [prms['str']]
+        if prms.has_key('index'):
+            try:
+                len(prms['index'])
+                self._index = prms['index']
+            except: self._index = [prms['index']]
+        try: self.angsize = prms['angsize']
         except(KeyError): pass
 
 #  ____            ____      _        _             
@@ -249,57 +261,28 @@ class BeamCosSeries(sim.BeamCosSeries):
 
 class BeamAlm(sim.BeamAlm):
     """A class adding parameter fitting to sim.BeamAlm"""
-    def get_params(self, prm_list=None):
+    def get_params(self, prm_list=[]):
         """Return all fitable parameters in a dictionary."""
-        data = self.alm.get_data()
-        aprms = {'bm_alm':n.array([data.real, data.imag]).transpose().flatten(),
-        'bm_alm_r':data.real, 'bm_alm_i':data.imag}
+        aprms = {}
+        for i, a in enumerate(self.alm):
+            k = 'alm%d' % i
+            data = a.get_data()
+            aprms[k] = n.array([data.real, data.imag]).transpose().flatten()
         prms = {}
         for p in prm_list:
-            if p.startswith('*'): prms['bm_alm'] = aprms['bm_alm']
+            if p.startswith('*'): prms = aprms
             try: prms[p] = aprms[p]
             except(KeyError): pass
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        if prms.has_key('bm_alm'):
-            coeffs = prms['bm_alm']; coeffs.shape = (coeffs.size/2, 2)
-            coeffs = coeffs[:,0] + coeffs[:,1] * 1j
-            self.update(coeffs=coeffs)
-        elif prms.has_key('bm_alm_r') or prms.has_key('bm_alm_i'):
-            coeffs = self.alm.get_data()
-            try: coeffs.real = prms['bm_alm_r']
-            except(KeyError): pass
-            try: coeffs.imag = prms['bm_alm_i']
-            except(KeyError): pass
-            self.update(coeffs=coeffs)
-
-class BeamAlmSymm(sim.BeamAlmSymm):
-    """A class adding parameter fitting to sim.BeamAlm"""
-    def get_params(self, prm_list=None):
-        """Return all fitable parameters in a dictionary."""
-        data = self.alm.get_data()
-        aprms = {'bm_alm':n.array([data.real, data.imag]).transpose().flatten(),
-        'bm_alm_r':data.real, 'bm_alm_i':data.imag}
-        prms = {}
-        for p in prm_list:
-            if p.startswith('*'): prms['bm_alm'] = aprms['bm_alm']
-            try: prms[p] = aprms[p]
-            except(KeyError): pass
-        return prms
-    def set_params(self, prms):
-        """Set all parameters from a dictionary."""
-        if prms.has_key('bm_alm'):
-            coeffs = prms['bm_alm']; coeffs.shape = (coeffs.size/2, 2)
-            coeffs = coeffs[:,0] + coeffs[:,1] * 1j
-            self.update(coeffs=coeffs)
-        elif prms.has_key('bm_alm_r') or prms.has_key('bm_alm_i'):
-            coeffs = self.alm.get_data()
-            try: coeffs.real = prms['bm_alm_r']
-            except(KeyError): pass
-            try: coeffs.imag = prms['bm_alm_i']
-            except(KeyError): pass
-            self.update(coeffs=coeffs)
+        for p in prms:
+            if not p.startswith('alm'): continue
+            data = n.array(prms[p])
+            p = int(p[3:])
+            data.shape = (data.size/2, 2)
+            data = data[:,0] + data[:,1] * 1j
+            self.update(coeffs={p:data})
 
 #     _          _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _ 

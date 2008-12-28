@@ -72,7 +72,9 @@ class HealpixMap(HealpixBase):
         if type(crd) is tuple:
             crd = [mk_arr(c, dtype=n.double) for c in crd]
             px = self.crd2px(*crd)
-        else: px = mk_arr(crd, dtype=n.int)
+        else:
+            if type(crd) is n.ndarray: assert(len(crd.shape) == 1)
+            px = mk_arr(crd, dtype=n.int)
         if px.size == 1: self.map[px] = val
         else:
             m = n.zeros_like(self.map)
@@ -110,7 +112,7 @@ class HealpixMap(HealpixBase):
         """Return an Alm object containing the spherical harmonic components
         of a map (in RING mode) up to the specified lmax,mmax.  Greater
         accuracy can be achieved by increasing iter."""
-        assert(self.Scheme() == 'RING')
+        assert(self.scheme() == 'RING')
         alm = Alm(lmax,mmax)
         alm.from_map(self.map, iter)
         return alm

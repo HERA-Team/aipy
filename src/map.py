@@ -43,11 +43,11 @@ class Map(object):
         ind = [i[crds] / w for i in self.ind]
         if len(ind) == 0: return fluxes
         return (fluxes, ind)
-    def add(self, crds, wgts, fluxes, inds):
+    def add(self, crds, wgts, fluxes, inds=[]):
         self.wgt[crds] += wgts
         self.map[crds] += fluxes * wgts
         for n,i in enumerate(inds): self.ind[n][crds] += i * wgts
-    def put(self, crds, wgts, fluxes, inds):
+    def put(self, crds, wgts, fluxes, inds=[]):
         self.wgt[crds] = wgts
         self.map[crds] = fluxes * wgts
         for n,i in enumerate(inds): self.ind[n][crds] = i * wgts

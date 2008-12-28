@@ -25,10 +25,8 @@ src_data = {
     #'her'  : ('16:48:39.3', '+05:04:17',   378, .160, -1.15, 0.),
     #'3c353': ('17:17:54.1', '-00:55:40',   276, .160, -0.49, 0.),
     # Fluxes from Baars 1972:
-    #'cas'  : ('23:23:25.4', '+58:48:38', 12800, .152, -0.787, 0.),
-    'cas'  : ('23:23:25.4', '+58:48:38', [0,0,0,0], .152, -0.787, 0.),
-    #'cyg'  : ('19:59:28.3', '+40:44:02', 10500, .152, -0.8, 0.), # Index est
-    'cyg'  : ('19:59:28.3', '+40:44:02',  [0,0,0,0], .152, -0.8, 0.), # Index est
+    'cas'  : ('23:23:25.4', '+58:48:38', 12800, .152, -0.787, 0.),
+    'cyg'  : ('19:59:28.3', '+40:44:02', 10500, .152, -0.8, 0.), # Index est
     #'crab' : ('05:34:32.0', '+22:00:52',  1430, .152, -0.263, 0.),
     #'vir'  : ('12:30:49.4', '+12:23:28',  605, .408, -.853, 0.), # Flux est
     # Fit values:
@@ -56,13 +54,13 @@ def get_src(s, type='fit'):
     """Return a source created out of the parameters in the dictionary srcs.
     'type' can be 'fit', 'sim', 'ant' depending on which aipy module you
     want to use (and what functionality you need)."""
-    ra, dec, st, mfreq, index, ang_size = src_data[s]
+    ra, dec, st, mfreq, index, angsize = src_data[s]
     mdl = eval(type)
     if s in specials:
-        src = mdl.RadioSpecial(s, st, mfreq=mfreq, index=index)
+        src = mdl.RadioSpecial(s, st, mfreq=mfreq, index=index, angsize=angsize)
     else:
         src = mdl.RadioFixedBody(ra, dec, janskies=st, mfreq=mfreq, 
-            index=index, name=s)
+            index=index, name=s, angsize=angsize)
     return src
 
 def get_catalog(srcs=None, type='fit'):

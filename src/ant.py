@@ -280,16 +280,24 @@ class AntennaArray(ArrayLocation):
         afreqs = self.ants[0].beam.afreqs
         if len(xyz.shape) == 1: xyz = n.resize(xyz, (afreqs.size, xyz.size))
         return xyz * n.reshape(afreqs, (afreqs.size, 1))
-    def gen_phs(self, src, i, j):
-        """Return the phasing to be multiplied to data to point to src."""
+    def gen_phs(self, src, i, j, angsize=None):
+        """Return the phasing to be multiplied to data to point to src.  If
+        angsize is provided, will adjust amplitude to reflect resolution
+        effects for a disc of the provided angular radius."""
         try: src = src.e_vec
         except(AttributeError): pass
-        bl_dot_s = n.dot(src, self.get_baseline(i,j,src='e'))
+        bl = self.get_baseline(i,j,src='e')
+        bl_dot_s = n.dot(src, bl)
         if len(bl_dot_s.shape) >= 1: bl_dot_s.shape = (bl_dot_s.size, 1)
         t = self.get_delay(i,j)
         afreqs = self.ants[0].beam.afreqs
         afreqs = n.reshape(afreqs, (1,afreqs.size))
-        phs = n.exp(-1j*(2*n.pi*n.dot(bl_dot_s + t, afreqs)))
+        if not angsize is None:
+            angsize.shape = bl_dot_s.shape
+            amp = angsize * n.sqrt(n.dot(bl,bl) - bl_dot_s**2)
+            amp = n.sinc(n.dot(amp, afreqs))
+        else: amp = 1.
+        phs = amp * n.exp(-1j*(2*n.pi*n.dot(bl_dot_s + t, afreqs)))
         return phs.squeeze()
     def phs2src(self, data, src, i, j):
         """Apply phasing to zenith data to point to src."""

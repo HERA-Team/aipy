@@ -40,15 +40,16 @@ no_flags = n.zeros_like(f)
 del(uv)
 
 # Generate a model of the sky with point sources and a pixel map
-flx,ind,mfq = [],[],[]
 
+mfq = []
+asz = []
 # Initialize point sources
 if not opts.cat is None:
     srcs = opts.cat.split(',')
-    cat = a.src.get_catalog(srcs, type='sim')
-    flx.append(cat.get_fluxes())
-    ind.append(cat.get_indices())
+    cat = a.src.get_catalog(srcs)
+    cat.set_params(a.loc.get_src_prms(opts.loc))
     mfq.append(cat.get_mfreqs())
+    asz.append(cat.get_angsizes())
 
 # Initialize pixel map
 if not opts.map is None:
@@ -63,17 +64,17 @@ if not opts.map is None:
         i_poly = [n.zeros_like(mflx)]
     mind = i_poly[0]    # Only implementing first index term for now
     mmfq = opts.freq * n.ones_like(mind)
-    flx.append(mflx); ind.append(mind); mfq.append(mmfq)
+    mfq.append(mmfq)
     x,y,z = h.px2crd(px, ncrd=3)
     m_eq = n.array((x,y,z))
-
-flx = n.concatenate(flx)
-ind = n.concatenate(ind)
+    # Should pixels include information for resolving them?
+    asz.append(n.zeros_like(mmfq))
 mfq = n.concatenate(mfq)
+asz = n.concatenate(asz)
+if n.all(asz == 0): asz = None
 
 # A pipe for just outputting the model
 curtime = None
-eqs = []
 def mdl(uv, p, d, f):
     global curtime, eqs
     uvw, t, (i,j) = p
@@ -81,16 +82,21 @@ def mdl(uv, p, d, f):
     if curtime != t:
         curtime = t
         aa.set_jultime(t)
-        eqs = []
+        eqs,flx,ind = [],[],[]
         if not opts.cat is None:
             cat.compute(aa)
             eqs.append(cat.get_crds('eq', ncrd=3))
+            flx.append(cat.get_fluxes())
+            ind.append(cat.get_indices())
         if not opts.map is None:
             m_precess = a.coord.convert_m('eq','eq',
                 iepoch=opts.iepoch, oepoch=aa.epoch)
             eqs.append(n.dot(m_precess, m_eq))
+            flx.append(mflx); ind.append(mind)
         eqs = n.concatenate(eqs, axis=-1)
-        aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq)
+        flx = n.concatenate(flx)
+        ind = n.concatenate(ind)
+        aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq, angsizes=asz)
     sd = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
     #sd = n.ma.array(sd, mask=n.zeros_like(sd))
     if opts.sim:

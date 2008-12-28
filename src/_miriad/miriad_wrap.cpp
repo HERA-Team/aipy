@@ -132,8 +132,7 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
     // Check for both int,long, b/c label of 32b number is platform dependent
     if (TYPE(flags) != NPY_INT && \
             (sizeof(int) == sizeof(long) && TYPE(flags) != NPY_LONG)) {
-        PyErr_Format(PyExc_ValueError, "type(%s) != %s", \
-        QUOTE(a), QUOTE(type));
+        PyErr_Format(PyExc_ValueError, "type(flags) != NPY_LONG or NPY_INT");
         return NULL;
     }
     // Fill up the preamble
