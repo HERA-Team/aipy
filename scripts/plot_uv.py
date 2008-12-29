@@ -46,6 +46,10 @@ o.add_option('--clean', dest='clean', type='float',
     help='Deconvolve delay-domain data by the "beam response" that results from flagged data.  Specify a tolerance for termination (usually 1e-2 or 1e-3).')
 o.add_option('--nolegend', dest='nolegend', action='store_true',
     help='Omit legend in last plot.')
+o.add_option('--cmap', dest='cmap', default='jet',
+    help='Colormap for plotting.  Can be gist_earth, gist_heat, gist_stern, gist_yarg, hot, cool, gray, bone, spectral, copper, jet to name a few.  For a more complete list, see pylab.cm.datad.keys().  Default is jet.')
+
+
 
 def convert_arg_range(arg):
     """Split apart command-line lists/ranges into a list of numbers."""
@@ -105,6 +109,7 @@ def gen_times(timeopt, uv, coords, decimate, is_fringe):
 opts, args = o.parse_args(sys.argv[1:])
 
 # Parse command-line options
+cmap = p.get_cmap(opts.cmap)
 uv = a.miriad.UV(args[0])
 a.scripting.uv_selector(uv, opts.ant, opts.pol)
 chans, is_chan_range = gen_chans(opts.chan, uv, opts.chan_axis, opts.delay)
@@ -248,7 +253,8 @@ for cnt, bl in enumerate(bls):
         else: max = d.max()
         if not opts.dyn_rng is None: min = max - opts.dyn_rng
         else: min = d.min()
-        p.imshow(d, extent=(c1,c2,t2,t1), aspect='auto', vmax=max, vmin=min)
+        p.imshow(d, extent=(c1,c2,t2,t1), aspect='auto', 
+            vmax=max, vmin=min, cmap=cmap)
         p.colorbar()
         p.xlabel(xlabel); p.ylabel(ylabel)
     elif is_chan_range and not is_time_range:
@@ -286,14 +292,14 @@ for cnt, bl in enumerate(bls):
         elif opts.time_axis == 'physical': plot_times = plot_t['jd']
         elif opts.time_axis == 'lst': plot_times = plot_t['lst']
         else: raise ValueError('Unrecognized time axis type.')
-        if opts.sum_chan: p.plot(plot_times, d, '.', label='(+)')
+        if opts.sum_chan: p.plot(plot_times, d, '-', label='(+)')
         else:
             if opts.chan_axis == 'index': label = '#%d'
             else:
                 chans = freqs
                 label = '%f GHz'
             for c, chan in enumerate(chans):
-                p.plot(plot_times, d[:,c], '.', label=label % chan)
+                p.plot(plot_times, d[:,c], '-', label=label % chan)
         if not opts.max is None: max = opts.max
         else: max = d.max()
         if not opts.dyn_rng is None: min = max - opts.dyn_rng

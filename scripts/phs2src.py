@@ -23,9 +23,9 @@ src = a.loc.get_catalog(opts.loc, srclist, cutoff).values()[0]
 del(uv)
 
 # A pipe to use for phasing to a source
-curtime,cache,top = None, {}, None
+curtime = None
 def phs(uv, p, d, f):
-    global curtime, cache, top
+    global curtime
     uvw, t, (i,j) = p
     if curtime != t:
         curtime = t

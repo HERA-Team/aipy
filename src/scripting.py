@@ -83,8 +83,8 @@ def parse_srcs(src_str):
         src_opt = src_opt[0].split('_')
         if len(src_opt) == 1: return src_opt, None
         ra,dec = src_opt
-        s = fit.RadioFixedBody(ra, dec, 0, name=src_str)
-        return s, None
+        s = fit.RadioFixedBody(ra, dec, name=src_str)
+        return [s], None
     else:
         return src_opt, None
 

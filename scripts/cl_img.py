@@ -19,8 +19,8 @@ o.add_option('--var', dest='var', type='float', default=.6,
     help='Starting guess for variance in maximum entropy fit (defaults to variance of dirty image.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
     help='Tolerance for successful deconvolution.  For annealing, interpreted as cooling speed.')
-o.add_option('--taper', dest='taper', type='float', default=n.Inf,
-    help='Width of tapering window (in pixels) to apply to both dirty beam and dirty image before deconvolving.')
+#o.add_option('--taper', dest='taper', type='float', default=n.Inf,
+#    help='Width of tapering window (in pixels) to apply to both dirty beam and dirty image before deconvolving.')
 o.add_option('--maxiter', dest='maxiter', type='int', default=200,
     help='Number of allowable iterations per deconvolve attempt.')
 opts, args = o.parse_args(sys.argv[1:])
@@ -59,13 +59,12 @@ for cnt, k in enumerate(keys):
     print kwds
     dim,dbm = dim.squeeze(), dbm.squeeze()
     DIM = dim.shape[0]
-    if opts.taper < n.Inf:
-        taper = a.img.gaussian_beam(opts.taper,
-            shape=dim.shape,center=(DIM/2,DIM/2))
-        taper = 2*taper.clip(0,.5)
-        dbm *= taper
-        #dim *= taper
-    #dbm = a.img.recenter(dbm, (DIM/2+1,DIM/2))
+    #if opts.taper < n.Inf:
+    #    taper = a.img.gaussian_beam(opts.taper,
+    #        shape=dim.shape,center=(DIM/2,DIM/2))
+    #    taper = 2*taper.clip(0,.5)
+    #    dbm *= taper
+    #    #dim *= taper
     dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
     bm_gain = a.img.beam_gain(dbm)
     print 'Gain of dirty beam:', bm_gain

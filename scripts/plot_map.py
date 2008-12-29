@@ -79,6 +79,8 @@ o.add_option('--srcs', dest='srcs', type='float', default=1,
     help="Cutoff flux (Jy) for labeling known radio sources in plot.  Default 1 Jy.")
 o.add_option('--src_mark', dest='src_mark', default='',
     help='Marker to put on src locations.  Can be: ".,o,+,x,^,v".  Default no maker.')
+o.add_option('--src_color', dest='src_color', default='k',
+    help='Color of source label.  Can be: "k,w,r,b".  Default "k".')
 o.add_option('--isys', dest='isys', default='eq',
     help='Input coordinate system (in map).  Can be eq (equatorial, default), ga (galactic), or ec (ecliptic).')
 o.add_option('--osys', dest='osys', default='eq',
@@ -117,6 +119,7 @@ print 'NSIDE:', h.nside()
 if not opts.nside is None:
     nh = a.healpix.HealpixMap(nside=opts.nside)
     nh.from_hpm(h)
+    h = nh
 h.set_interpol(True)
 
 crd = a.coord.radec2eq(n.array([lons.flatten(), lats.flatten()]))
@@ -131,11 +134,16 @@ data.shape = lats.shape
 if not opts.srcs is None:
     cat = a.src.get_catalog(cutoff=opts.srcs)
     o = ephem.Observer()
-    if opts.juldate is None: del(cat['Sun'])
-    else: o.date = a.ant.juldate2ephem(opts.juldate)
+    if opts.juldate is None:
+        o.date = ephem.J2000
+        o.epoch = o.date
+        del(cat['Sun'])
+    else:
+        o.date = a.ant.juldate2ephem(opts.juldate)
+        o.epoch = o.date
     cat.compute(o)
     # lat/lon coordinates of sources
-    scrds = [ephem.Equatorial(s.ra,s.dec) for s in cat.values()]
+    scrds = [ephem.Equatorial(s.ra,s.dec,epoch=o.epoch) for s in cat.values()]
     sflxs = cat.get_fluxes()
     snams = cat.keys()
     if opts.osys == 'ga':
@@ -170,8 +178,10 @@ if not opts.srcs is None:
     for name, xpt, ypt, flx in zip(snams, sx, sy, sflxs):
         if xpt >= 1e30 or ypt >= 1e30: continue
         if opts.src_mark != '':
-            map.plot(sx, sy, 'k'+opts.src_mark, markerfacecolor=None)
-        p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))))
+            map.plot(sx, sy, opts.src_color+opts.src_mark,markerfacecolor=None)
+        #p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))))
+        p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))),
+            color=opts.src_color)
 if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
 else: p.subplots_adjust(.05,.05,.95,.95)
 

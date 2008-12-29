@@ -21,8 +21,8 @@ o.add_option('-m', '--flagmode', dest='flagmode', default='both',
     help='Can be val,int,both for flagging by value only, integration only, or both.  Default both.')
 o.add_option('--ch_thresh', dest='ch_thresh',type='float',default=.33,
     help='Fraction of the data in a channel which, if flagged, will result in the entire channel being flagged.  Default .33')
-o.add_option('--int_thresh', dest='int_thresh',type='float',default=.66,
-    help='Fraction of the data in an integration which, if flagged, will result in the entire integration being flagged.  Default .33')
+o.add_option('--int_thresh', dest='int_thresh',type='float',default=.99,
+    help='Fraction of the data in an integration which, if flagged, will result in the entire integration being flagged.  Default .99')
 o.add_option('-i', '--infile', dest='infile', action='store_true',
     help='Apply xrfi flags generated with the -o option.')
 o.add_option('-o', '--outfile', dest='outfile', action='store_true',
@@ -51,6 +51,8 @@ for uvfile in args:
         if not os.path.exists('%f.xrfi' % jd):
             print '%f.xrfi' % jd, 'does not exist.  Skipping...'
             continue
+        else:
+            print '    Using %f.xrfi' % jd
         f = open('%f.xrfi' % jd)
         mask = pickle.load(f)
         f.close()

@@ -96,6 +96,8 @@ class RadioFixedBody(sim.RadioFixedBody):
             'a1':  float(self.srcshape[0]),
             'a2':  float(self.srcshape[1]),
             'th':  float(self.srcshape[2]),
+            'dra':  float(self.ionref[0]),
+            'ddec':  float(self.ionref[1]),
         }
         prms = {}
         for p in prm_list:
@@ -125,6 +127,10 @@ class RadioFixedBody(sim.RadioFixedBody):
         except(KeyError): pass
         try: self.srcshape[2] = prms['th']
         except(KeyError): pass
+        try: self.ionref[0] = prms['dra']
+        except(KeyError): pass
+        try: self.ionref[1] = prms['ddec']
+        except(KeyError): pass
 
 #  ____           _ _      ____                  _       _ 
 # |  _ \ __ _  __| (_) ___/ ___| _ __   ___  ___(_) __ _| |
@@ -144,6 +150,8 @@ class RadioSpecial(sim.RadioSpecial):
             'a1':       float(self.srcshape[0]),
             'a2':       float(self.srcshape[1]),
             'th':       float(self.srcshape[2]),
+            'dra':  float(self.ionref[0]),
+            'ddec':  float(self.ionref[1]),
         }
         prms = {}
         for p in prm_list:
@@ -168,6 +176,10 @@ class RadioSpecial(sim.RadioSpecial):
         try: self.srcshape[1] = prms['a2']
         except(KeyError): pass
         try: self.srcshape[2] = prms['th']
+        except(KeyError): pass
+        try: self.ionref[0] = prms['dra']
+        except(KeyError): pass
+        try: self.ionref[1] = prms['ddec']
         except(KeyError): pass
 
 #  ____            ____      _        _             

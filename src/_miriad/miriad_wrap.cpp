@@ -72,6 +72,7 @@ static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
 PyObject * UVObject_rewind(UVObject *self) {
     uvrewind_c(self->tno);
     self->intcnt = -1;
+    self->curtime = -1;
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -326,9 +327,9 @@ PyObject * UVObject_wrvr(UVObject *self, PyObject *args) {
 // A thin wrapper over uvselect_c
 PyObject * UVObject_select(UVObject *self, PyObject *args) {
     char *name;
-    float n1, n2;
+    double n1, n2;
     int include;
-    if (!PyArg_ParseTuple(args, "sffi", &name, &n1, &n2, &include)) return NULL;
+    if (!PyArg_ParseTuple(args, "sddi", &name, &n1, &n2, &include)) return NULL;
     if (strncmp(name,"decimation",5) == 0) {
         self->decimate = (long) n1;
         self->decphase = (long) n2;

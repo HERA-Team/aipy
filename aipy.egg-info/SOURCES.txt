@@ -57,7 +57,8 @@ doc/module_doc/src.pt
 locs/med732.py
 locs/pgb564.py
 locs/pwa303.py
-scripts/.plot_map.py.swp
+scripts/.fitmdl.py.swp
+scripts/.phs2src.py.swp
 scripts/apply_bp.py
 scripts/cl_img.py
 scripts/combine_freqs.py
@@ -80,7 +81,6 @@ scripts/xrfi.py
 scripts/xtalk1.py
 scripts/xtalk2.py
 scripts/xtalk3.py
-src/.rfi.py.swp
 src/__init__.py
 src/ant.py
 src/const.py

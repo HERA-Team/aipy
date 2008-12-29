@@ -27,30 +27,32 @@ if os.path.exists(opts.map): skymap = a.map.Map(fromfits=opts.map)
 else: skymap = a.map.Map(nside=opts.nside)
 skymap.set_interpol(opts.interpolate)
 
+prev_dra = None
 for i, filename in enumerate(args):
     img, kwds = a.img.from_fits(filename)
     img = img.squeeze()
     s = a.ant.RadioFixedBody(kwds['ra']*a.img.deg2rad,
                              kwds['dec']*a.img.deg2rad)
-    DIM = img.shape[0]
-    RES = 1. / (kwds['d_ra'] * a.img.deg2rad * DIM)
-    im = a.img.Img(DIM*RES, RES, mf_order=0)
     print '-----------------------------------------------------------'
     print 'Reading file %s (%d / %d)' % (filename, i + 1, len(args))
     print kwds
     print 'Pointing (ra, dec):', s._ra, s._dec
     print 'Image Power:', n.abs(img).sum()
+    if prev_dra != kwds['d_ra']:
+        prev_dra = kwds['d_ra']
+        DIM = img.shape[0]
+        RES = 1. / (kwds['d_ra'] * a.img.deg2rad * DIM)
+        im = a.img.Img(DIM*RES, RES, mf_order=0)
+        tx,ty,tz = im.get_top(center=(DIM/2,DIM/2))
+        # Define a weighting for gridding data into the skymap
+        map_wgts = n.exp(-(tx**2+ty**2) / n.sin(opts.fwidth*a.img.deg2rad)**2)
+        map_wgts.shape = (map_wgts.size,)
+        valid = n.logical_not(map_wgts.mask)
+        map_wgts = map_wgts.compress(valid)
     # Get coordinates of image pixels in original (J2000) epoch
     ex,ey,ez = im.get_eq(s._ra, s._dec, center=(DIM/2,DIM/2))
-    tx,ty,tz = im.get_top(center=(DIM/2,DIM/2))
-    # Define a weighting for gridding data into the skymap
-    map_wgts = n.exp(-(tx**2 + ty**2) / n.sin(opts.fwidth * a.img.deg2rad)**2)
-    map_wgts.shape = (map_wgts.size,)
-    valid = n.logical_not(map_wgts.mask)
     ex = ex.compress(valid); ey = ey.compress(valid); ez = ez.compress(valid)
-    map_wgts = map_wgts.compress(valid)
-    img = img.flatten()
-    img = img.compress(valid)
+    img = img.flatten(); img = img.compress(valid)
     # Put the data into the skymap
     skymap.add((ex,ey,ez), map_wgts, img)
 skymap.to_fits(opts.map, clobber=True)

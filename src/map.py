@@ -137,7 +137,7 @@ class Map(object):
             self.ind.append(h)
     def to_fits(self, filename, format=None, clobber=False):
         if format is None:
-            format = healpix.default_fits_format_codes[self.map.map.dtype.type]
+            format = healpix.default_fits_format_codes[self.get_dtype().type]
         hdu0 = pyfits.PrimaryHDU()
         col0 = pyfits.Column(name='signal', format=format, array=self.map.map)
         col1 = pyfits.Column(name='weights', format=format, array=self.wgt.map)

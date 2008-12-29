@@ -18,6 +18,8 @@ a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, loc2=True,
     src=True, dec=True)
 o.add_option('-o', '--output', dest='output', default='dim,dbm',
     help='Comma delimited list of data to generate FITS files for.  Can be: dim (dirty image), dbm (dirty beam), uvs (uv sampling), or bms (beam sampling).  Default is dim,dbm.')
+o.add_option('--list_facets', dest='list_facets', action='store_true',
+    help='List the coordinates of all the pointings that will be used.')
 o.add_option('--facets', dest='facets', type='int', default=200,
     help='If no src is provided, facet the sphere into this many pointings for making a map.  Default 200.')
 o.add_option('--snap', dest='snap', type='int', default=-1,
@@ -32,12 +34,16 @@ o.add_option('--skip_amp', dest='skip_amp', action='store_true',
     help='Do not use amplitude information to normalize visibilities.')
 o.add_option('--skip_bm', dest='skip_bm', action='store_true',
     help='Do not weight visibilities by the strength of the primary beam.')
+o.add_option('--skip', dest='skip', type='int', default=0,
+    help='Skip this many pointings before starting.  Useful in conjungtion with --cnt for resuming.')
 o.add_option('--size', dest='size', type='int', default=300,
     help='Size of maximum UV baseline.')
 o.add_option('--res', dest='res', type='float', default=0.5,
     help='Resolution of UV matrix.')
 o.add_option('--no_w', dest='no_w', action='store_true',
     help="Don't use W projection.")
+o.add_option('--altmin', dest='altmin', type='float', default=0,
+    help="Minimum allowed altitude for pointing, in degrees.  When phase center is lower than this altitude, data is omitted.  Default is 0.")
 o.add_option('--buf_thresh', dest='buf_thresh', default=2e6, type='float',
     help='Maximum amount of data to buffer before gridding.  Excessive gridding takes performance hit, but if buffer exceeds memory available... ouch.')
 opts, args = o.parse_args(sys.argv[1:])
@@ -74,6 +80,16 @@ else:
     srcs = [a.ant.RadioFixedBody(ra,dec,name=str(i)) 
         for i,(ra,dec) in enumerate(zip(ras,decs))]
     cat = a.ant.SrcCatalog(srcs)
+
+if opts.list_facets:
+    cat.compute(aa)
+    srcs = cat.keys(); srcs.sort()
+    for cnt, src in enumerate(cat.values()):
+        cen = ephem.Equatorial(src.ra, src.dec, epoch=aa.epoch)
+        cen = ephem.Equatorial(cen, epoch=ephem.J2000)
+        print '# %3d >  RA=%s  DEC=%s  (%f, %f in deg)' % \
+            (cnt, cen.ra, cen.dec, 
+            a.img.rad2deg*cen.ra, a.img.rad2deg*cen.dec)
 
 # Generate the image object that will be used.
 us,vs,ws,ds,wgts = [],[],[],[],[]
@@ -116,12 +132,10 @@ def img_it(im):
 # Loop through all specified sources, generating images
 imgcnt = opts.cnt
 for srccnt, s in enumerate(cat.values()):
+    if srccnt < opts.skip: continue
     s.compute(aa)
     print '%d / %d' % (srccnt + 1, len(cat.values()))
-    print 'Pointing (ra, dec):', s._ra, s._dec
-    if abs(aa.lat - s._dec) > n.pi/2:
-        print '    Source never rises: skipping'
-        continue
+    print 'Pointing (ra, dec):', s.ra, s.dec
     src = a.fit.SrcCatalog([s])
     # Gather data
     snapcnt,curtime = 0, None
@@ -159,22 +173,22 @@ for srccnt, s in enumerate(cat.values()):
                 curtime = t
                 aa.set_jultime(t)
                 src.compute(aa)
+                if s.alt < opts.altmin * a.img.deg2rad: continue
                 s_eq = src.get_crds('eq', ncrd=3)
                 aa.sim_cache(s_eq)
+            if s.alt < opts.altmin * a.img.deg2rad: continue
             d,f = d.take(chans), f.take(chans)
             if not opts.skip_amp: d /= aa.passband(i,j)
-            try:
-                # Throws PointingError if not up:
-                d = aa.phs2src(d, s, i, j)
-                u,v,w = aa.gen_uvw(i,j,src=s)
-                if not opts.skip_bm:
-                    # Calculate beam strength for weighting purposes
-                    wgt = aa.bm_response(i,j,pol=opts.pol).squeeze()
-                    # Optimal SNR: down-weight beam-attenuated data 
-                    # by another factor of the beam response.
-                    d *= wgt; wgt *= wgt
-                else: wgt = n.ones(d.shape, dtype=n.float)
-            except(a.ant.PointingError): continue
+            # Throws PointingError if not up:
+            d = aa.phs2src(d, s, i, j)
+            u,v,w = aa.gen_uvw(i,j,src=s)
+            if not opts.skip_bm:
+                # Calculate beam strength for weighting purposes
+                wgt = aa.bm_response(i,j,pol=opts.pol).squeeze()
+                # Optimal SNR: down-weight beam-attenuated data 
+                # by another factor of the beam response.
+                d *= wgt; wgt *= wgt
+            else: wgt = n.ones(d.shape, dtype=n.float)
             valid = n.logical_not(f)
             d = d.compress(valid)
             if len(d) == 0: continue
@@ -189,8 +203,12 @@ for srccnt, s in enumerate(cat.values()):
                 us,vs,ws,ds,wgts = [],[],[],[],[]
 
     # Grid remaining data into UV matrix
-    grid_it(im,us,vs,ws,ds,wgts)
-    uvs,bms,dim,dbm = img_it(im)
+    try:
+        grid_it(im,us,vs,ws,ds,wgts)
+        uvs,bms,dim,dbm = img_it(im)
+    except(ValueError):
+        print 'No data: skipping output file.'
+        continue
     for k in ['uvs','bms','dim','dbm']:
         if k in outputs: to_fits(k, eval(k), s, imgcnt)
     imgcnt += 1

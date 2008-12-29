@@ -48,6 +48,7 @@ del(uv)
 # Generate a model of the sky with point sources and a pixel map
 
 mfq,a1s,a2s,ths = [], [], [], []
+dras,ddecs = [], []
 # Initialize point sources
 if not opts.src is None:
     srclist,cutoff = a.scripting.parse_srcs(opts.src)
@@ -55,6 +56,8 @@ if not opts.src is None:
     mfq.append(cat.get_mfreqs())
     a1,a2,th = cat.get_srcshapes()
     a1s.append(a1); a2s.append(a2); ths.append(th)
+    dra, ddec = cat.get_ionrefs()
+    dras.append(dra); ddecs.append(ddec)
 
 # Initialize pixel map
 if not opts.map is None:
@@ -76,10 +79,14 @@ if not opts.map is None:
     a1s.append(n.zeros_like(mmfq))
     a2s.append(n.zeros_like(mmfq))
     ths.append(n.zeros_like(mmfq))
+    dras.append(n.zeros_like(mmfq))
+    ddecs.append(n.zeros_like(mmfq))
 mfq = n.concatenate(mfq)
 a1s = n.concatenate(a1s)
 a2s = n.concatenate(a2s)
 ths = n.concatenate(ths)
+dras = n.concatenate(dras)
+ddecs = n.concatenate(ddecs)
 #if n.all(asz == 0): asz = None
 
 # A pipe for just outputting the model
@@ -105,7 +112,8 @@ def mdl(uv, p, d, f):
         eqs = n.concatenate(eqs, axis=-1)
         flx = n.concatenate(flx)
         ind = n.concatenate(ind)
-        aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq, srcshapes=(a1,a2,th))
+        aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq, 
+            ionrefs=(dras,ddecs), srcshapes=(a1,a2,th))
     sd = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
     if opts.sim:
         d = sd

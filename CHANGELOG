@@ -1,3 +1,26 @@
+0.8.4
+* Changed modmap.py to work with sources of nonzero angular size.  Also added
+  support for changing the data type (double,float) of a map.
+* Added parameter to mk_img.py to control minimum altitude to allow for
+  phase center.  Also added parameter for resuming interrupted faceting.
+* Fixed xrfi.py default parameter "intthresh" to avoid excessive flagging
+  of integrations.
+* Made fitmdl.py skip fitting when there are no data.  Added "snap" mode to
+  fit parameters every integration.
+* Added text color option to plot_map.py
+* Added ionospheric refraction code using 1/freq**2 scaling.  This involved
+  some significant refactoring of code, and some changes in fitmdl.py and
+  mdlvis.py.
+* Changed fitmdl.py to cache UV data, resulting in less time reading files.
+  This significantly sped up code, although may become problematic with
+  fits involving lots of data.
+* Removed some per-baseline computations in ant.py that occured every
+  compute, even if unnecessary.  Baseline projections are now computed as
+  needed.  Sped up simulations involving few baselines.
+* Bugfix to miriad "select" command involving "time" selection: double
+  arguments were incorrectly cast as floats.
+* Made mk_map.py a little more efficient in calculating map weights.
+
 0.8.3
 * Changed how loc-specific source parameters are implemented (now with
   get_catalog() instead of src_prms).  Changed scripts to use this format,

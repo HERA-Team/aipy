@@ -14,7 +14,7 @@ import ant, numpy as n, ephem, coord, healpix
 
 class RadioBody:
     """Class defining flux and spectral index of a celestial source."""
-    def __init__(self, janskies, mfreq, index, srcshape):
+    def __init__(self, janskies, index):
         """janskies = source strength. Can be polynomial in hour angle (-pi,pi)
         mfreq = frequency (in GHz) where strength was measured
         index = index of power-law spectral model of source emission.  Can be
@@ -24,12 +24,7 @@ class RadioBody:
         try: len(index)
         except: index = [index]
         self._janskies = janskies
-        self.mfreq = mfreq
         self._index = index
-        try: len(srcshape)
-        except(TypeError): srcshape = [srcshape, srcshape, 0.]
-        assert(len(srcshape) == 3)
-        self.srcshape = list(srcshape)
     def compute(self, observer):
         """Update fluxes relative to the provided observer.  Must be
         called at each time step before accessing information."""
@@ -48,16 +43,18 @@ class RadioBody:
 class RadioFixedBody(ant.RadioFixedBody, RadioBody):
     """Class representing a source at fixed RA,DEC.  Adds flux information to
     ant.RadioFixedBody."""
-    def __init__(self, ra, dec, janskies, mfreq=.150, 
-            index=-1., srcshape=(0.,0.,0.), name='', **kwargs):
+    def __init__(self, ra, dec, name='', epoch=ephem.J2000,
+            janskies=0., index=-1, mfreq=.150,
+            ionref=(0.,0.), srcshape=(0.,0.,0.), **kwargs):
         """ra = source's right ascension (epoch=J2000)
         dec = source's declination (epoch=J2000)
         janskies = source strength. Can be polynomial in hour angle (-pi,pi)
         mfreq = frequency (in GHz) where strength was measured
         index = index of power-law spectral model of source emission.  Can be
         polynomial in hour angle."""
-        ant.RadioFixedBody.__init__(self, ra, dec, name=name)
-        RadioBody.__init__(self, janskies, mfreq, index, srcshape)
+        ant.RadioFixedBody.__init__(self, ra, dec, mfreq=mfreq, name=name,
+            epoch=epoch, ionref=ionref, srcshape=srcshape)
+        RadioBody.__init__(self, janskies, index)
     def compute(self, observer):
         ant.RadioFixedBody.compute(self, observer)
         RadioBody.compute(self, observer)
@@ -72,14 +69,15 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
 class RadioSpecial(ant.RadioSpecial, RadioBody):
     """Class representing moving sources (Sun,Moon,planets).  Adds flux
     information to ant.RadioSpecial."""
-    def __init__(self, name, janskies, mfreq=.150, index=-1.,
-            srcshape=(0.,0.,0.), **kwargs):
+    def __init__(self, name, janskies=0., index=-1., mfreq=.150,
+            ionref=(0.,0.), srcshape=(0.,0.,0.), **kwargs):
         """janskies = source strength. Can be polynomial in hour angle (-pi,pi)
         mfreq = frequency (in GHz) where strength was measured
         index = index of power-law spectral model of source emission.  Can be
         polynomial in hour angle."""
-        ant.RadioSpecial.__init__(self, name)
-        RadioBody.__init__(self, janskies, mfreq, index, srcshape)
+        ant.RadioSpecial.__init__(self, name, mfreq=mfreq,
+            ionref=ionref, srcshape=srcshape)
+        RadioBody.__init__(self, janskies, index)
     def compute(self, observer):
         ant.RadioSpecial.compute(self, observer)
         RadioBody.compute(self, observer)
@@ -89,7 +87,7 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
 # \___ \| '__/ __| |   / _` | __/ _` | |/ _ \ / _` |
 #  ___) | | | (__| |__| (_| | || (_| | | (_) | (_| |
 # |____/|_|  \___|\____\__,_|\__\__,_|_|\___/ \__, |
-#                                             |___/ 
+#                                             |___/
 
 class SrcCatalog(ant.SrcCatalog):
     """Class for holding a catalog of celestial sources."""
@@ -101,18 +99,6 @@ class SrcCatalog(ant.SrcCatalog):
         """Return list of spectral indices of all src objects in catalog."""
         if srcs is None: srcs = self.keys()
         return n.array([self[s].index for s in srcs])
-    def get_mfreqs(self, srcs=None):
-        """Return list of frequencies where strength is measured for all src 
-        objects in catalog."""
-        if srcs is None: srcs = self.keys()
-        return n.array([self[s].mfreq for s in srcs])
-    def get_srcshapes(self, srcs=None):
-        """Return list of angular sizes of all src objects in catalog."""
-        if srcs is None: srcs = self.keys()
-        a1 = n.array([self[s].srcshape[0] for s in srcs])
-        a2 = n.array([self[s].srcshape[1] for s in srcs])
-        th = n.array([self[s].srcshape[2] for s in srcs])
-        return (a1,a2,th)
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -314,7 +300,7 @@ class AntennaArray(ant.AntennaArray):
                 self._cache[c][p] = resp
         return self._cache[i][p1] * n.conjugate(self._cache[j][p2])
     def sim_cache(self, s_eqs, fluxes=n.array([1.]), indices=n.array([0.]), 
-            mfreqs=n.array([.150]), srcshapes=(0,0,0)):
+            mfreqs=n.array([.150]), ionrefs=(0.,0.), srcshapes=(0,0,0)):
         """Cache intermediate computations given catalog information to speed
         simulation for multiple baselines.  For efficiency, should only be 
         called once per time setting.  MUST be called before sim().
@@ -340,6 +326,11 @@ class AntennaArray(ant.AntennaArray):
                 a2 = a2.compress(valid)
                 th = th.compress(valid)
             except(AttributeError): pass
+            dra,ddec = ionrefs
+            try:
+                dra = dra.compress(valid)
+                ddec = ddec.compress(valid)
+            except(AttributeError): pass
             src_top = src_top.compress(valid, axis=1)
             s_eqs = s_eqs.compress(valid, axis=1)
             # Get src fluxes vs. freq
@@ -350,9 +341,11 @@ class AntennaArray(ant.AntennaArray):
                 (fluxes.size, self.ants[0].beam.afreqs.size))
             self._cache = {
                 'I_sf':fluxes * (freqs / mfreqs)**indices,
+                'mfreq':mfreqs,
                 's_eqs': s_eqs,
                 's_top': src_top,
                 's_shp': (a1,a2,th),
+                'i_ref': (dra,ddec),
             }
     def sim(self, i, j, pol='xx'):
         """Simulate visibilites for the specified (i,j) baseline and 
@@ -364,13 +357,16 @@ class AntennaArray(ant.AntennaArray):
         elif self._cache == {}:
             return n.zeros_like(self.passband(i,j))
         s_eqs = self._cache['s_eqs']
-        I_sf = self._cache['I_sf'] * \
-            self.resolve_src(s_eqs, i, j, self._cache['s_shp'])
+        u,v,w = self.gen_uvw(i, j, src=s_eqs)
+        I_sf = self._cache['I_sf']
         Gij_sf = self.passband(i,j)
         Bij_sf = self.bm_response(i,j,pol=pol)
         if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
         # Get the phase of each src vs. freq, also does resolution effects
-        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j))
+        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, 
+            mfreq=self._cache['mfreq'],
+            dores=True, srcshape=self._cache['s_shp'],
+            doref=True, ionref=self._cache['i_ref']))
         try: E_sf.shape = I_sf.shape
         except(AttributeError): pass
         # Combine and sum over sources

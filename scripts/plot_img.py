@@ -27,6 +27,8 @@ o.add_option('--dyn_rng', dest='dyn_rng', default=None, type='float',
     help='Dynamic range in scale of 2D plots.')
 o.add_option('--nogrid', dest='nogrid', action='store_true',
     help='Do not display RA/DEC grid.')
+o.add_option('-f', '--fft', dest='fft', action='store_true',
+    help='Perform 2D FFT of image.')
 opts, args = o.parse_args(sys.argv[1:])
 
 if opts.batch: m1,m2 = 1,1
@@ -71,6 +73,9 @@ for cnt, filename in enumerate(args):
     d = d.transpose((ra_ax,dec_ax))
 
     # Generate plots
+    if opts.fft:
+        d = n.fft.fft2(d)
+        d = a.img.recenter(d, (d.shape[0]/2, d.shape[1]/2))
     if opts.mode.startswith('phs'): d = n.angle(d.filled(0))
     elif opts.mode.startswith('lin'): d = n.ma.absolute(d)
     elif opts.mode.startswith('real'): d = d.real

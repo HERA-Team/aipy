@@ -271,6 +271,8 @@ def get_src(s, fixedbody=fit.RadioFixedBody, special=fit.RadioSpecial):
     Can pass your own RadioFixedBody or RadioSpecial subclasses to use."""
     if not type(s) == str: return s
     ra, dec, st, mfreq, index, srcshape = src_data[s]
+    try: len(srcshape)
+    except(TypeError): srcshape = (srcshape, srcshape, 0.)
     if s in specials:
         return special(s, st, mfreq=mfreq, 
             index=index, srcshape=srcshape)
