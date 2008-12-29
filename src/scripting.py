@@ -75,7 +75,7 @@ def parse_srcs(src_str, force_cat=False):
         if len(src_opt) == 1: s = src.get_src(src_opt[0])
         else:
             ra,dec = src_opt
-            s = fit.RadioFixedBody(ra, dec, 0, name='src')
+            s = fit.RadioFixedBody(ra, dec, 0, name=src_str)
         if force_cat: return src.get_catalog([s])
         else: return s
     else:

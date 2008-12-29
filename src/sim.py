@@ -14,7 +14,7 @@ import ant, numpy as n, ephem, coord, healpix
 
 class RadioBody:
     """Class defining flux and spectral index of a celestial source."""
-    def __init__(self, janskies, mfreq, index, angsize):
+    def __init__(self, janskies, mfreq, index, srcshape):
         """janskies = source strength. Can be polynomial in hour angle (-pi,pi)
         mfreq = frequency (in GHz) where strength was measured
         index = index of power-law spectral model of source emission.  Can be
@@ -26,7 +26,10 @@ class RadioBody:
         self._janskies = janskies
         self.mfreq = mfreq
         self._index = index
-        self.angsize = angsize
+        try: len(srcshape)
+        except(TypeError): srcshape = [srcshape, srcshape, 0.]
+        assert(len(srcshape) == 3)
+        self.srcshape = list(srcshape)
     def compute(self, observer):
         """Update fluxes relative to the provided observer.  Must be
         called at each time step before accessing information."""
@@ -46,7 +49,7 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
     """Class representing a source at fixed RA,DEC.  Adds flux information to
     ant.RadioFixedBody."""
     def __init__(self, ra, dec, janskies, mfreq=.150, 
-            index=-1., angsize=0., name='', **kwargs):
+            index=-1., srcshape=(0.,0.,0.), name='', **kwargs):
         """ra = source's right ascension (epoch=J2000)
         dec = source's declination (epoch=J2000)
         janskies = source strength. Can be polynomial in hour angle (-pi,pi)
@@ -54,7 +57,7 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
         index = index of power-law spectral model of source emission.  Can be
         polynomial in hour angle."""
         ant.RadioFixedBody.__init__(self, ra, dec, name=name)
-        RadioBody.__init__(self, janskies, mfreq, index, angsize)
+        RadioBody.__init__(self, janskies, mfreq, index, srcshape)
     def compute(self, observer):
         ant.RadioFixedBody.compute(self, observer)
         RadioBody.compute(self, observer)
@@ -69,13 +72,14 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
 class RadioSpecial(ant.RadioSpecial, RadioBody):
     """Class representing moving sources (Sun,Moon,planets).  Adds flux
     information to ant.RadioSpecial."""
-    def __init__(self,name,janskies,mfreq=.150,index=-1.,angsize=0.,**kwargs):
+    def __init__(self, name, janskies, mfreq=.150, index=-1.,
+            srcshape=(0.,0.,0.), **kwargs):
         """janskies = source strength. Can be polynomial in hour angle (-pi,pi)
         mfreq = frequency (in GHz) where strength was measured
         index = index of power-law spectral model of source emission.  Can be
         polynomial in hour angle."""
         ant.RadioSpecial.__init__(self, name)
-        RadioBody.__init__(self, janskies, mfreq, index, angsize)
+        RadioBody.__init__(self, janskies, mfreq, index, srcshape)
     def compute(self, observer):
         ant.RadioSpecial.compute(self, observer)
         RadioBody.compute(self, observer)
@@ -102,10 +106,13 @@ class SrcCatalog(ant.SrcCatalog):
         objects in catalog."""
         if srcs is None: srcs = self.keys()
         return n.array([self[s].mfreq for s in srcs])
-    def get_angsizes(self, srcs=None):
+    def get_srcshapes(self, srcs=None):
         """Return list of angular sizes of all src objects in catalog."""
         if srcs is None: srcs = self.keys()
-        return n.array([self[s].angsize for s in srcs])
+        a1 = n.array([self[s].srcshape[0] for s in srcs])
+        a2 = n.array([self[s].srcshape[1] for s in srcs])
+        th = n.array([self[s].srcshape[2] for s in srcs])
+        return (a1,a2,th)
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -307,7 +314,7 @@ class AntennaArray(ant.AntennaArray):
                 self._cache[c][p] = resp
         return self._cache[i][p1] * n.conjugate(self._cache[j][p2])
     def sim_cache(self, s_eqs, fluxes=n.array([1.]), indices=n.array([0.]), 
-            mfreqs=n.array([.150]), angsizes=None):
+            mfreqs=n.array([.150]), srcshapes=(0,0,0)):
         """Cache intermediate computations given catalog information to speed
         simulation for multiple baselines.  For efficiency, should only be 
         called once per time setting.  MUST be called before sim().
@@ -315,7 +322,9 @@ class AntennaArray(ant.AntennaArray):
         fluxes = array of fluxes for all celestial sources
         indices = array of spectral indices of all celestial sources
         mfreqs = array of frequencies where fluxes were measured
-        angsizes = array of angular sizes of all celestial sources."""
+        srcshapes = (a1,a2,th) where a1,a2 are angular sizes along the 
+            semimajor, semiminor axes, and th is the angle (in radians) of
+            the semimajor axis from E."""
         # Get topocentric coordinates of all srcs
         src_top = n.dot(self.eq2top_m, s_eqs)
         # Throw out everything that is below the horizon
@@ -325,7 +334,12 @@ class AntennaArray(ant.AntennaArray):
             fluxes = fluxes.compress(valid)
             indices = indices.compress(valid)
             mfreqs = mfreqs.compress(valid)
-            if not angsizes is None: angsizes = angsizes.compress(valid)
+            a1,a2,th = srcshapes
+            try:
+                a1 = a1.compress(valid)
+                a2 = a2.compress(valid)
+                th = th.compress(valid)
+            except(AttributeError): pass
             src_top = src_top.compress(valid, axis=1)
             s_eqs = s_eqs.compress(valid, axis=1)
             # Get src fluxes vs. freq
@@ -336,9 +350,9 @@ class AntennaArray(ant.AntennaArray):
                 (fluxes.size, self.ants[0].beam.afreqs.size))
             self._cache = {
                 'I_sf':fluxes * (freqs / mfreqs)**indices,
-                's_eqs': s_eqs.transpose(),
+                's_eqs': s_eqs,
                 's_top': src_top,
-                's_sz': angsizes
+                's_shp': (a1,a2,th),
             }
     def sim(self, i, j, pol='xx'):
         """Simulate visibilites for the specified (i,j) baseline and 
@@ -351,7 +365,7 @@ class AntennaArray(ant.AntennaArray):
             return n.zeros_like(self.passband(i,j))
         s_eqs = self._cache['s_eqs']
         I_sf = self._cache['I_sf'] * \
-            self.resolve_src(s_eqs, i, j, self._cache['s_sz'])
+            self.resolve_src(s_eqs, i, j, self._cache['s_shp'])
         Gij_sf = self.passband(i,j)
         Bij_sf = self.bm_response(i,j,pol=pol)
         if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))

@@ -47,13 +47,14 @@ del(uv)
 
 # Generate a model of the sky with point sources and a pixel map
 
-mfq,asz = [], []
+mfq,a1s,a2s,ths = [], [], [], []
 # Initialize point sources
 if not opts.src is None:
     cat = a.scripting.parse_srcs(opts.src, force_cat=True)
     cat.set_params(a.loc.get_src_prms(opts.loc))
     mfq.append(cat.get_mfreqs())
-    asz.append(cat.get_angsizes())
+    a1,a2,th = cat.get_srcshapes()
+    a1s.append(a1); a2s.append(a2); ths.append(th)
 
 # Initialize pixel map
 if not opts.map is None:
@@ -72,10 +73,14 @@ if not opts.map is None:
     x,y,z = h.px2crd(px, ncrd=3)
     m_eq = n.array((x,y,z))
     # Should pixels include information for resolving them?
-    asz.append(n.zeros_like(mmfq))
+    a1s.append(n.zeros_like(mmfq))
+    a2s.append(n.zeros_like(mmfq))
+    ths.append(n.zeros_like(mmfq))
 mfq = n.concatenate(mfq)
-asz = n.concatenate(asz)
-if n.all(asz == 0): asz = None
+a1s = n.concatenate(a1s)
+a2s = n.concatenate(a2s)
+ths = n.concatenate(ths)
+#if n.all(asz == 0): asz = None
 
 # A pipe for just outputting the model
 curtime = None
@@ -100,7 +105,7 @@ def mdl(uv, p, d, f):
         eqs = n.concatenate(eqs, axis=-1)
         flx = n.concatenate(flx)
         ind = n.concatenate(ind)
-        aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq, angsizes=asz)
+        aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq, srcshapes=(a1,a2,th))
     sd = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
     if opts.sim:
         d = sd

@@ -79,8 +79,8 @@ def fit_func(prms):
             prms[ant][prm] = prms[fitants[0]][prm]
     aa.set_params(prms)
     cat.set_params(prms)
-    asz = cat.get_angsizes()
-    if n.all(asz == 0): asz = None  # Making None bypasses a computation step
+    a1,a2,th = cat.get_srcshapes()
+    #if n.all(asz == 0): asz = None  # Making None bypasses a computation step
     score,nsamples = 0.,0.
     cnt,curtime = 0,None
     for uvfile in args:
@@ -98,7 +98,8 @@ def fit_func(prms):
                     eqs = cat.get_crds('eq', ncrd=3)
                     flx = cat.get_fluxes()
                     ind = cat.get_indices()
-                    aa.sim_cache(eqs,flx,indices=ind,mfreqs=mfq,angsizes=asz)
+                    aa.sim_cache(eqs, flx, indices=ind,
+                        mfreqs=mfq, srcshapes=(a1,a2,th))
             if cnt != 0: continue
             if not opts.sim_autos and i == j: continue
             d = d.take(chans)

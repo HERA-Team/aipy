@@ -93,7 +93,9 @@ class RadioFixedBody(sim.RadioFixedBody):
             'index':    list(self._index),
             'ra':       float(self._ra),
             'dec':      float(self._dec),
-            'angsize':  float(self.angsize),
+            'a1':  float(self.srcshape[0]),
+            'a2':  float(self.srcshape[1]),
+            'th':  float(self.srcshape[2]),
         }
         prms = {}
         for p in prm_list:
@@ -117,7 +119,11 @@ class RadioFixedBody(sim.RadioFixedBody):
         except(KeyError): pass
         try: self._dec = prms['dec']
         except(KeyError): pass
-        try: self.angsize = prms['angsize']
+        try: self.srcshape[0] = prms['a1']
+        except(KeyError): pass
+        try: self.srcshape[1] = prms['a2']
+        except(KeyError): pass
+        try: self.srcshape[2] = prms['th']
         except(KeyError): pass
 
 #  ____           _ _      ____                  _       _ 
@@ -135,7 +141,9 @@ class RadioSpecial(sim.RadioSpecial):
         aprms = {
             'str':      list(self._janskies),
             'index':    list(self._index),
-            'angsize':  float(self.angsize),
+            'a1':       float(self.srcshape[0]),
+            'a2':       float(self.srcshape[1]),
+            'th':       float(self.srcshape[2]),
         }
         prms = {}
         for p in prm_list:
@@ -155,7 +163,11 @@ class RadioSpecial(sim.RadioSpecial):
                 len(prms['index'])
                 self._index = prms['index']
             except: self._index = [prms['index']]
-        try: self.angsize = prms['angsize']
+        try: self.srcshape[0] = prms['a1']
+        except(KeyError): pass
+        try: self.srcshape[1] = prms['a2']
+        except(KeyError): pass
+        try: self.srcshape[2] = prms['th']
         except(KeyError): pass
 
 #  ____            ____      _        _             

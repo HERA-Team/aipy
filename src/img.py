@@ -60,12 +60,12 @@ class Img:
         """Get the (l,m) image coordinates for an inverted UV matrix."""
         dim = self.shape[0]
         M,L = n.indices(self.shape)
-        L,M = n.where(L > dim/2, dim-L, -L), n.where(M > dim/2, dim-M, -M)
+        L,M = n.where(L > dim/2, dim-L, -L), n.where(M > dim/2, M-dim, M)
         L,M = L.astype(n.float)/dim/self.res, M.astype(n.float)/dim/self.res
         mask = n.where(L**2 + M**2 >= 1, 1, 0)
         L,M = n.ma.array(L, mask=mask), n.ma.array(M, mask=mask)
         return recenter(L, center), recenter(M, center)
-    def put(self, uvw, data, wgts=None, apply=True):
+    def put(self, (u,v,w), data, wgts=None, apply=True):
         """Grid uv data (w is ignored) onto a UV plane.  Data should already
         have the phase due to w removed.  Assumes the Hermitian conjugate
         data is in uvw already (i.e. the conjugate points are not placed for
@@ -83,30 +83,34 @@ class Img:
         else:
             uv = n.zeros_like(self.uv)
             bm = [n.zeros_like(i) for i in self.bm]
-        inds = n.round(uvw[:,:2] / self.res).astype(n.int)
+        u = n.round(u / self.res).astype(n.int)
+        v = n.round(v / self.res).astype(n.int)
+        inds = n.array([-v,u],).transpose()
         ok = n.logical_and(n.abs(inds[:,0]) < self.shape[0],
             n.abs(inds[:,1]) < self.shape[1])
         data = data.compress(ok)
         inds = inds.compress(ok, axis=0)
         utils.add2array(uv, inds, data.astype(uv.dtype))
-        for i,w in enumerate(wgts):
-            w = w.compress(ok)
-            utils.add2array(bm[i], inds, w.astype(bm[0].dtype))
+        for i,wgt in enumerate(wgts):
+            wgt = wgt.compress(ok)
+            utils.add2array(bm[i], inds, wgt.astype(bm[0].dtype))
         if not apply: return uv, bm
-    def append_hermitian(self, uvw, data, wgts=None):
+    def append_hermitian(self, (u,v,w), data, wgts=None):
         """Append to (uvw, data, [wgts]) the points (-uvw, conj(data), [wgts]).
         This is standard practice to get a real-valued image."""
-        uvw = n.concatenate([uvw, -uvw], axis=0)
+        u = n.concatenate([u, -u], axis=0)
+        v = n.concatenate([v, -v], axis=0)
+        w = n.concatenate([w, -w], axis=0)
         data = n.concatenate([data, n.conj(data)], axis=0)
-        if wgts is None: return uvw, data
+        if wgts is None: return n.array((u,v,w)), data
         if len(self.bm) == 1 and len(wgts) != 1: wgts = [wgts]
         assert(len(wgts) == len(self.bm))
-        for i,w in enumerate(wgts): wgts[i] = n.concatenate([w, w], axis=0)
-        return uvw, data, wgts
+        for i,wgt in enumerate(wgts): wgts[i] = n.concatenate([wgt,wgt],axis=0)
+        return (u,v,w), data, wgts
     def _gen_img(self, data, center=(0,0)):
         """Return the inverse FFT of the provided data, with the 0,0 point 
-        moved to 'center'.  Tranposes to put up=North, right=East."""
-        return recenter(n.abs(n.fft.ifft2(data.transpose())), center)
+        moved to 'center'.  Up=North, Right=East."""
+        return recenter(n.abs(n.fft.ifft2(data)), center)
     def image(self, center=(0,0)):
         """Return the inverse FFT of the UV matrix, with the 0,0 point moved
         to 'center'.  Tranposes to put up=North, right=East."""
@@ -151,10 +155,10 @@ class ImgW(Img):
         """wres: the gridding resolution of sqrt(w) when projecting to w=0."""
         Img.__init__(self, size=size, res=res, mf_order=mf_order)
         self.wres = wres
-    def put(self, uvw, data, wgts=None, invker2=None):
+    def put(self, (u,v,w), data, wgts=None, invker2=None):
         """Same as Img.put, only now the w component is projected to the w=0
         plane before applying the data to the UV matrix."""
-        if len(uvw) == 0: return
+        if len(u) == 0: return
         if wgts is None:
             wgts = []
             for i in range(len(self.bm)):
@@ -163,11 +167,12 @@ class ImgW(Img):
         if len(self.bm) == 1 and len(wgts) != 1: wgts = [wgts]
         assert(len(wgts) == len(self.bm))
         # Sort uvw in order of w
-        order = n.argsort(uvw[:,-1])
-        uvw = uvw.take(order, axis=0)
+        order = n.argsort(w)
+        u = u.take(order)
+        v = v.take(order)
+        w = w.take(order)
         data = data.take(order)
         wgts = [wgt.take(order) for wgt in wgts]
-        w = uvw[:,-1]
         sqrt_w = n.sqrt(n.abs(w)) * n.sign(w)
         i = 0
         while True:
@@ -176,7 +181,8 @@ class ImgW(Img):
             avg_w = n.average(w[i:j])
             # Put all uv's down on plane for this gridded w point
             wgtsij = [wgt[i:j] for wgt in wgts]
-            uv, bm = Img.put(self, uvw[i:j,:],data[i:j],wgtsij,apply=False)
+            uv,bm = Img.put(self, (u[i:j],v[i:j],w[i:j]),
+                data[i:j], wgtsij, apply=False)
             # Convolve with the W projection kernel
             invker = n.fromfunction(lambda u,v: self.conv_invker(u,v,avg_w),
                 uv.shape)

@@ -93,9 +93,9 @@ def click(event):
     lon = (180 + kwds['ra'] - lon) % 360
     lon *= a.img.deg2rad; lat *= a.img.deg2rad
     ra,dec = ephem.hours(lon), ephem.degrees(lat)
-    ypx = n.around(event.xdata / (kwds['d_ra'] * a.img.deg2rad))
-    xpx = n.around(event.ydata / (kwds['d_dec'] * a.img.deg2rad))
-    flx = d[xpx,ypx]
+    xpx = n.around(event.xdata / (kwds['d_ra'] * a.img.deg2rad))
+    ypx = n.around(event.ydata / (kwds['d_dec'] * a.img.deg2rad))
+    flx = d[ypx,xpx]
     if opts.mode.startswith('log'): flx = 10**flx
     print '#%d (RA,DEC): (%s, %s), PX: (%d,%d) Jy: %f' % \
         (cnt, ra, dec, xpx, ypx, flx)

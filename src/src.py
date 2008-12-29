@@ -22,7 +22,7 @@ src_data = {
     # Fluxes from Miriad:
     'crab' : ('05:34:32.0', '+22:00:52',  1838, .150, -0.30, 0.),
     'vir'  : ('12:30:49.4', '+12:23:28',   1446, .150, -0.86, 0.),
-    'cyg'  : ('19:59:28.3', '+40:44:02', 10900, .150, -0.69, 0.),
+    'cyg'  : ('19:59:28.3', '+40:44:02', 10900, .150, -0.69, (0.,0.,0.)),
     'cas'  : ('23:23:27.94', '+58:48:42.4',  9160.0, 0.150, -0.73, 0.000000),
     # 3C + 3CR Catalogs (position corrected with NED)
     '3c002' : ('00:06:22.59', '-00:04:24.7', 16.5, 0.159, -0.84, 0.000727),
@@ -269,13 +269,13 @@ src_data = {
 def get_src(s):
     """Return a source created out of the parameters in the dictionary srcs."""
     if not type(s) == str: return s
-    ra, dec, st, mfreq, index, angsize = src_data[s]
+    ra, dec, st, mfreq, index, srcshape = src_data[s]
     if s in specials:
         return fit.RadioSpecial(s, st, mfreq=mfreq, 
-            index=index, angsize=angsize)
+            index=index, srcshape=srcshape)
     else:
         return fit.RadioFixedBody(ra, dec, janskies=st, mfreq=mfreq, 
-            index=index, name=s, angsize=angsize)
+            index=index, name=s, srcshape=srcshape)
 
 def get_catalog(srcs=None, cutoff=None):
     if srcs is None:

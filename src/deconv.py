@@ -64,7 +64,7 @@ def clean(im, ker, mdl=None, gain=.2, maxiter=10000, chkiter=100, tol=1e-3,
     # Get the starting residual
     inv_ker = n.fft.fft2(ker)
     dif = im - n.fft.ifft2(n.fft.fft2(mdl) * inv_ker).real
-    score = n.average(dif**2)
+    score = n.sqrt(n.average(dif**2))
     a0 = None
     n_mdl, n_dif = mdl.copy(), dif.copy()
     info = {'success':True, 'term':'maxiter', 'tol':tol}
@@ -83,10 +83,13 @@ def clean(im, ker, mdl=None, gain=.2, maxiter=10000, chkiter=100, tol=1e-3,
         n_dif -= v * rec_ker
         # Check in on how clean is progressing.  Potenially terminate.
         if i % chkiter == 0:
+            import pylab
+            pylab.imshow(n_dif)
+            pylab.show()
             # Mystery: why does clean to worse when exact dif is computed?
             #n_mdl = n_mdl.clip(lower, upper)
             #n_dif = im - n.fft.ifft2(n.fft.fft2(mdl) * inv_ker).real
-            n_score = n.average(n_dif**2)
+            n_score = n.sqrt(n.average(n_dif**2))
             if verbose:
                 print 'Step %d:' % i, 'score %f,' % n_score, 'best %f' % score
             if n_score - score > score * tol:

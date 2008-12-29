@@ -66,10 +66,11 @@ class RadioBody:
 
 class RadioFixedBody(ephem.FixedBody, RadioBody):
     """A source at fixed RA,DEC.  Combines ephem.FixedBody with RadioBody."""
-    def __init__(self, ra, dec, name='', **kwargs):
+    def __init__(self, ra, dec, name='', epoch=ephem.J2000, **kwargs):
         RadioBody.__init__(self, name=name)
         ephem.FixedBody.__init__(self)
         self._ra, self._dec = ra, dec
+        self._epoch = epoch
     def compute(self, observer):
         ephem.FixedBody.compute(self, observer)
         RadioBody.compute(self, observer)
@@ -281,8 +282,14 @@ class AntennaArray(ArrayLocation):
             elif src == 'z': return self.zbls[b]
             elif src == 'r': return self.bls[b]
             else: raise ValueError('Unrecognized source:' + src)
-        if src.alt < 0: raise PointingError('%s below horizon' % src.src_name)
-        return n.dot(src.map, self.bls[b])
+        try:
+            if src.alt < 0:
+                raise PointingError('%s below horizon' % src.src_name)
+            map = src.map
+        except(AttributeError):
+            ra,dec = coord.eq2radec(src)
+            map = coord.eq2top_m(self.sidereal_time() - ra, dec)
+        return n.dot(map, self.bls[b]).transpose()
     def get_delay(self, i, j):
         """Return the delay corresponding to baseline i,j."""
         return self.dlys[self.bl_order[self.ij2bl(i,j)]]
@@ -292,16 +299,18 @@ class AntennaArray(ArrayLocation):
     def gen_uvw(self, i, j, src='z'):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates."""
-        xyz = self.get_baseline(i,j, src=src)
+        x,y,z = self.get_baseline(i,j, src=src)
         afreqs = self.ants[0].beam.afreqs
-        if len(xyz.shape) == 1: xyz = n.resize(xyz, (afreqs.size, xyz.size))
-        return xyz * n.reshape(afreqs, (afreqs.size, 1))
-    def gen_phs(self, src, i, j, angsize=None):
+        if len(x.shape) == 0: return n.array([x*afreqs, y*afreqs, z*afreqs])
+        afreqs = n.reshape(afreqs, (1,afreqs.size))
+        x.shape += (1,); y.shape += (1,); z.shape += (1,)
+        return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
+    def gen_phs(self, src, i, j):
         """Return phasing that is multiplied to data to point to src."""
         try: src = src.e_vec
         except(AttributeError): pass
         bl = self.get_baseline(i,j,src='e')
-        bl_dot_s = n.dot(src, bl)
+        bl_dot_s = n.dot(src.transpose(), bl)
         if len(bl_dot_s.shape) >= 1: bl_dot_s.shape = (bl_dot_s.size, 1)
         t = self.get_delay(i,j)
         o = self.get_offset(i,j)
@@ -309,25 +318,21 @@ class AntennaArray(ArrayLocation):
         afreqs = n.reshape(afreqs, (1,afreqs.size))
         phs = n.exp(-1j*2*n.pi*(n.dot(bl_dot_s + t, afreqs) + o))
         return phs.squeeze()
-    def resolve_src(self, src, i, j, angsize=None):
-        """If angsize is provided, amplitudes will be adjusted to reflect 
-        resolution effects for a uniform disc of the provided angular 
-        radius (radians)."""
-        if angsize is None: return 1.
-        try: src = src.e_vec
-        except(AttributeError): pass
-        bl = self.get_baseline(i,j,src='e')
-        bl_dot_s = n.dot(src, bl)
-        # Rudimentarily account for resolution effects by assuming uniform disc
-        angsize.shape = bl_dot_s.shape
-        f = angsize * n.sqrt(n.dot(bl,bl) - bl_dot_s**2)
-        f.shape = (f.size, 1)
-        afreqs = self.ants[0].beam.afreqs
-        afreqs = n.reshape(afreqs, (1,afreqs.size))
-        x = 2 * n.pi * n.dot(f, afreqs)
+    def resolve_src(self, src, i, j, srcshape=(0,0,0)):
+        """Adjust amplitudes to reflect resolution effects for a uniform 
+        elliptical disk characterized by srcshape:
+        srcshape = (a1,a2,th) where a1,a2 are angular sizes along the 
+            semimajor, semiminor axes, and th is the angle (in radians) of
+            the semimajor axis from E."""
+        u,v,w = self.gen_uvw(i, j, src=src)
+        a1,a2,th = srcshape
+        if len(u.shape) > len(a1.shape): 
+            a1.shape += (1,); a2.shape += (1,); th.shape += (1,)
+        ru = a1 * (u*n.cos(th) - v*n.sin(th))
+        rv = a2 * (u*n.sin(th) + v*n.cos(th))
+        x = 2 * n.pi * n.sqrt(ru**2 + rv**2)
         # Use first Bessel function of the first kind (J_1)
-        y = n.where(x == 0, 1, 2 * _cephes.j1(x))
-        return (y / n.where(x == 0, 1, x)).squeeze()
+        return n.where(x == 0, 1, 2 * _cephes.j1(x)/x).squeeze()
     def phs2src(self, data, src, i, j):
         """Apply phasing to zenith-phased data to point to src."""
         return data * self.gen_phs(src, i, j)
