@@ -1,22 +1,6 @@
 """
 Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
-
-Author: Aaron Parsons
-Date: 11/29/06
-Revisions:
-    10/18/07    arp     Changed calling syntax inside Img.put for an impressive
-                        10x speedup.  Also changed Basemap call to not include
-                        earth map, for another hefty speed-up.
-    11/01/07    arp     Corrected bug for Img.put whereby data in same put call
-                        clobbered other data (instead of adding together).
-                        Moved put loop into C++ in utils module for speed +
-                        correction.
-    12/19/07    arp     Removed dependence on Basemap for ra/dec coordinates
-                        in image.  Fixed W proj kernel to use correct l,m
-                        coordinates.
-    02/25/08    arp     Flipped returned image/beam to correspond to returned
-                        coordinates.
 """
 
 import numpy as n, utils, healpix, coord
@@ -54,6 +38,9 @@ def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
     g /= g.sum() / amp
     return recenter(g, center)
 
+def beam_gain(bm):
+    return n.sqrt((n.abs(bm)**2).sum())
+
 class Img:
     """Class for gridding uv data, recording the synthesized beam profile,
     and performing transforms into image domain."""
@@ -85,17 +72,17 @@ class Img:
         you).  If wgts are not supplied, default is 1 (normal weighting).
         If apply is false, returns uv and bm data without applying it do
         the internally stored matrices."""
+        if wgts is None:
+            wgts = []
+            for i in range(len(self.bm)):
+                if i == 0: wgts.append(n.ones_like(data))
+                else: wgts.append(n.zeros_like(data))
         if len(self.bm) == 1 and len(wgts) != 1: wgts = [wgts]
         assert(len(wgts) == len(self.bm))
         if apply: uv,bm = self.uv,self.bm
         else:
             uv = n.zeros_like(self.uv)
             bm = [n.zeros_like(i) for i in self.bm]
-        if wgts is None:
-            wgts = []
-            for i in range(len(self.bm)):
-                if i == 0: wgts.append(n.ones_like(data))
-                else: wgts.append(n.zeros_like(data))
         inds = n.round(uvw[:,:2] / self.res).astype(n.int)
         ok = n.logical_and(n.abs(inds[:,0]) < self.shape[0],
             n.abs(inds[:,1]) < self.shape[1])
@@ -128,8 +115,20 @@ class Img:
         """Return the inverse FFT of the sample weightings (for all mf_order
         terms, or the specified term if supplied), with the 0,0 point
         moved to 'center'.  Tranposes to put up=North, right=East."""
-        if not term is None: return self._gen_img(self.bm[term], center=center)
-        else: return [self._gen_img(b, center=center) for b in self.bm]
+        if not term is None:
+            return self._gen_img(self.bm[term], center=center)
+        else:
+            return [self._gen_img(b, center=center) for b in self.bm]
+    def uniform_wgt(self, thresh=.1):
+        """Reweight data in the UV/BM to reflect uniform weighting above
+        the specified threshold (expressed as a fraction of the maximum
+        weight in the beam."""
+        wgts = n.abs(self.bm[0])
+        thresh = wgts.max() * thresh
+        #divisor = n.where(wgts >= wgts.max() * thresh, wgts, thresh)
+        divisor = wgts.clip(thresh, n.Inf)
+        self.uv /= divisor
+        for i in range(len(self.bm)): self.bm[i] /= divisor
     def get_top(self, center=(0,0)):
         """Return the topocentric coordinates of each pixel in the image."""
         x,y = self.get_LM(center)
@@ -149,21 +148,21 @@ class Img:
 class ImgW(Img):
     """A subclass of Img adding W projection functionality (see Cornwell
     et al. 2005 "Widefield Imaging Problems in Radio Astronomy")."""
-    def __init__(self, size=100, res=1, wres=.5):
+    def __init__(self, size=100, res=1, wres=.5, mf_order=0):
         """wres: the gridding resolution of sqrt(w) when projecting to w=0."""
-        Img.__init__(self, size=size, res=res)
+        Img.__init__(self, size=size, res=res, mf_order=mf_order)
         self.wres = wres
     def put(self, uvw, data, wgts=None, invker2=None):
         """Same as Img.put, only now the w component is projected to the w=0
         plane before applying the data to the UV matrix."""
         if len(uvw) == 0: return
-        if len(self.bm) == 1 and len(wgts) != 1: wgts = [wgts]
-        assert(len(wgts) == len(self.bm))
         if wgts is None:
             wgts = []
             for i in range(len(self.bm)):
                 if i == 0: wgts.append(n.ones_like(data))
                 else: wgts.append(n.zeros_like(data))
+        if len(self.bm) == 1 and len(wgts) != 1: wgts = [wgts]
+        assert(len(wgts) == len(self.bm))
         # Sort uvw in order of w
         order = n.argsort(uvw[:,-1])
         uvw = uvw.take(order, axis=0)
@@ -184,8 +183,8 @@ class ImgW(Img):
                 uv.shape)
             if not invker2 is None: invker *= invker2
             self.uv += n.fft.ifft2(n.fft.fft2(uv) * invker)
-            for i in range(len(self.bm)):
-                self.bm[i] += n.fft.ifft2(n.fft.fft2(bm[i]) * invker)
+            for b in range(len(self.bm)):
+                self.bm[b] += n.fft.ifft2(n.fft.fft2(bm[b]) * invker)
             if j >= len(w): break
             i = j
     def conv_invker(self, u, v, w):

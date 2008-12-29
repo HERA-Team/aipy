@@ -1,14 +1,12 @@
 """
 Module containing utilities (like parsing of certain command-line arguments) 
 for writing scripts.
-
-Author: Aaron Parsons
 """
 
 import miriad, ant, sim, fit, src, numpy as n
 
 def add_standard_options(optparser, ant=False, pol=False, chan=False, 
-        loc=False, src=False, dec=False):
+        loc=False, loc2=False, src=False, dec=False):
     """Add standard command-line options to an optparse.OptionParser() on an 
     opt in basis (i.e. specify =True for each option to be added)."""
     if ant: optparser.add_option ('-a', '--ant', dest='ant', default='cross',
@@ -17,8 +15,10 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
         help='Choose polarization (xx, yy, xy, yx) to include.')
     if chan: optparser.add_option('-c', '--chan', dest='chan', default='all',
         help='Select channels (taken after any delay/fringe transforms) to include.  Options are "all", "<chan1 #>,..." (a list of channels), or "<chan1 #>_<chan2 #>" (a range of channels).  Default is "all".')
-    if loc: optparser.add_option('-l', '--loc', dest='loc',
+    if loc: optparser.add_option('-l', '--loc', dest='loc', 
         help='Use specified <loc>.py for location-specific calibration.')
+    elif loc2: optparser.add_option('-l', '--loc', dest='loc', action='append',
+        help='Use specified <loc>.py for location-specific calibration.  Can intersperse locations with UV files to use different calibrations for different files.')
     if src: optparser.add_option('-s', '--src', dest='src',
         help='Phase centers/source catalog entries to use.  Options are "all", "<src_name1>,...", or "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>".')
     if dec: optparser.add_option('-x', '--decimate', dest='decimate', 
@@ -74,4 +74,21 @@ def parse_srcs(src_str, force_cat=False):
         else: return s
     else:
         return src.get_catalog(src_opt)
+
+def files_to_locs(locations, uvfiles, sysargv):
+    import optparse
+    o = optparse.OptionParser(); add_standard_options(o, loc2=True)
+    locs = {}
+    pos = [sysargv.index(uv) for uv in uvfiles]
+    curloc = locations[0]
+    for i in range(len(pos)):
+        locs[curloc] = locs.get(curloc, []) + [sysargv[pos[i]]]
+        if i < len(pos)-1 and pos[i+1] - pos[i] > 1:
+            opts,args = o.parse_args(sysargv[pos[i]+1:pos[i+1]])
+            if not opts.loc is None:
+                if curloc is None:
+                    locs[opts.loc[-1]] = locs[None]
+                    del(locs[None])
+                curloc = opts.loc[-1]
+    return locs
 

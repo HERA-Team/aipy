@@ -1,0 +1,151 @@
+\File{(stdin)}{Sat Sep  6 01:10:31 2008}
+
+\PythonNoMath
+
+\PythonDocBlock
+\verb""\\ 
+\verb"Module for mapping and modeling the entire sky."\\ 
+
+\PythonDocBlockEnd
+
+
+
+
+\I{13}{0}$\K{def}\ \F{pack\_sphere}\,(N)\Y{:}$
+\DS{14}{1}{%
+\verb"Clever formula for putting N points nearly equally spaced on "\\ 
+\verb"the sphere.  Return xyz coordinates of each point in order from S to N."}\vskip 5pt 
+
+
+
+
+
+
+\I{23}{0}$\K{def}\ \F{\_bit\_reverse}\,(N,\V{nbits}\Y{=}\V{None})\Y{:}$
+\DS{24}{1}{%
+\verb"Numerically bit-reverse the number N assuming the specified number"\\ 
+\verb"of bits.  In not specified, will infer the least number of bits that"\\ 
+\verb"can represent N."}\vskip 5pt 
+
+
+
+
+
+\I{33}{0}$\K{def}\ \F{\_bit\_reverse\_order}\,(N)\Y{:}$
+\DS{34}{1}{%
+\verb"Generate a list of indices from 0 to N-1 in bit reversed order (or"\\ 
+\verb"the nearest approximation if N is not a power of 2)."}\vskip 5pt 
+
+
+
+\I{40}{0}$\K{def}\ \F{\_local\_shuffle}\,(L,\V{width}\Y{=}\NUM{2}{})\Y{:}$
+\DS{41}{1}{%
+\verb"Shuffle elements of L without moving them too much by choosing chunks"\\ 
+\verb"of the specified width and only scrambling elements within those chunks."}\vskip 5pt 
+
+
+
+
+\I{48}{0}$\K{def}\ \F{facet\_centers}\,(N,\V{ncrd}\Y{=}\NUM{2}{})\Y{:}$
+\DS{49}{1}{%
+\verb"Return the coordinates of N points equally spaced around the sphere."\\ 
+\verb"Will return xyz or ra,dec depending on ncrd.  Shuffles the order of the"\\ 
+\verb"pointing centers wrt pack_sphere so that widely spaced points are done "\\ 
+\verb"first, and then the gaps between them, and then the gaps between those.."}\vskip 5pt 
+
+
+
+
+
+
+
+
+\I{62}{0}$\K{class}\ \F{Map}\,(\V{object})\Y{:}$
+\I{63}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\Y{*}\V{args},\O{**}\V{kwargs})\Y{:}$
+
+
+
+
+
+
+
+
+\I{72}{1}$\K{def}\ \F{set\_interpol}\,(\V{self},\V{onoff})\Y{:}$
+
+
+
+\I{76}{1}$\K{def}\ \F{set\_nindices}\,(\V{self},\V{nindices})\Y{:}$
+
+
+
+
+\I{81}{1}$\K{def}\ \F{get}\,(\V{self},\V{crds})\Y{:}$
+
+
+
+
+\I{86}{1}$\K{def}\ \F{\_\_getitem\_\_}\,(\V{self},\V{crds})\Y{:}$
+\DS{87}{2}{%
+\verb"Return the average map/index values at the specified coordinates."}\vskip 5pt 
+
+
+
+
+
+
+\I{94}{1}$\K{def}\ \F{add}\,(\V{self},\V{crds},\V{wgts},\V{fluxes},\V{inds}\Y{=}\Y{[]})\Y{:}$
+
+
+
+\I{98}{1}$\K{def}\ \F{put}\,(\V{self},\V{crds},\V{wgts},\V{fluxes},\V{inds}\Y{=}\Y{[]})\Y{:}$
+
+
+
+\I{102}{1}$\K{def}\ \F{reset\_wgt}\,(\V{self},\V{wgt}\Y{=}\NUM{1}{})\Y{:}$
+
+
+
+
+\I{107}{1}$\K{def}\ \F{from\_map}\,(\V{self},\V{map})\Y{:}$
+\DS{108}{2}{%
+\verb"Initialize this Map with data from another."}\vskip 5pt 
+
+
+
+
+\I{113}{1}$\K{def}\ \F{\_\_getattr\_\_}\,(\V{self},\V{attr})\Y{:}$
+
+
+\I{116}{1}$\K{def}\ \F{from\_fits}\,(\V{self},\V{filename},\V{hdunum}\Y{=}\NUM{1}{})\Y{:}$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{138}{1}$\K{def}\ \F{to\_fits}\,(\V{self},\V{filename},\V{format}\Y{=}\V{None},\V{clobber}\Y{=}\V{False})\Y{:}$
+
+
+
+
+
+
+
+
+
+
+
+

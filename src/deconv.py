@@ -10,12 +10,6 @@ tol = termination criterion, lower being more optimized.
 verbose =  print info on how things are progressing.
 lower = lower bound of pixel values in deconvolved image
 upper = upper bound of pixel values in deconvolved image
-
-Author: Aaron Parsons
-Date: 11/29/07
-Revisions:
-    03/02/08    arp     Minor bugfixes, standardization of "information"
-                        returned, and addition of annealing.
 """
 
 import numpy as n, sys, _deconv
@@ -120,13 +114,13 @@ def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=200,
         long.  If it is too high, the fit process can oscillate."""
     if mdl is None: mdl = n.zeros_like(im)
     x = mdl.copy()
-    # Estimate diagonal response of the "delta-function" kernel
+    # Estimate gain of the kernel
     q = n.sqrt((ker**2).sum())
-    inv_ker = n.fft.fft2(ker)
+    ker_i = n.fft.fft2(ker)
     info = {'success':True, 'term':'maxiter', 'tol':tol}
     # Function to calculate chi-square and gradient
     def f(x):
-        x_conv_ker = n.fft.ifft2(n.fft.fft2(x) * inv_ker).real
+        x_conv_ker = n.fft.ifft2(n.fft.fft2(x) * ker_i).real
         diff = im - x_conv_ker
         g_chi2 = -2*q*(diff)
         chi2 = diff**2
@@ -149,7 +143,7 @@ def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=200,
         # This check makes lsq a little slower for most images, though...
         d_x = n.where(abs(g_chi2) > 0, -(1/g_chi2) * chi2, 0)
         x = n.clip(x + gain * d_x, lower, upper)
-    info.update({'res':im - n.fft.ifft2(n.fft.fft2(x) * inv_ker).real,
+    info.update({'res':im - n.fft.ifft2(n.fft.fft2(x) * ker_i).real,
         'score': score, 'iter':i+1})
     return x, info
 

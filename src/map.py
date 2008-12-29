@@ -1,9 +1,5 @@
 """
 Module for mapping and modeling the entire sky.
-
-Author: Aaron Parsons
-Date: 11/29/06
-Revisions:
 """
 
 import numpy as n, healpix, pyfits, coord, random
@@ -55,11 +51,11 @@ def facet_centers(N, ncrd=2):
     pointing centers wrt pack_sphere so that widely spaced points are done 
     first, and then the gaps between them, and then the gaps between those.."""
     assert(ncrd == 2 or ncrd == 3)
-    ind1 = n.arange(N); local_shuffle(ind1)
-    ind2 = bit_reverse_order(N)
+    ind1 = n.arange(N); _local_shuffle(ind1)
+    ind2 = _bit_reverse_order(N)
     ind = ind1.take(ind2)
     pnts = pack_sphere(N)
-    pnts = pnts.take(ind, axis=0)
+    pnts = pnts.take(ind, axis=1)
     if ncrd == 3: return pnts
     else: return coord.eq2radec(pnts)
 

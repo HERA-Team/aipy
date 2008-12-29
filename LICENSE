@@ -20,6 +20,10 @@ Acknowledgements:
 The subpackage "optimize" is released under GPL by SCIPY developers, and 
 has been modified to include only pure-python implementations.
 
+The C source code for "cephes" (in cephes/cephes) is part of the CEPHES Math
+Library and is released under GPL.  The python wrapper code is released under
+GPL by SCIPY developers, and has been modified to remove Fortran dependencies.
+
 The C source code for "healpix" (in healpix/cxx) is released under GPL 
 by the HEALPix collaboration, and is included in AIPY verbatim.
 

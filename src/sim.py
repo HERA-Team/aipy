@@ -1,23 +1,6 @@
 """
 Module adding data simulation support to AntennaArrays.  For most classes,
 this means adding gain/amplitude information (as a function of frequency).
-
-Author: Aaron Parsons
-Date: 11/07/06
-Revisions:
-    12/05/06    arp Conjugated sim_data (-2pi1j, instead of 2pi1j).
-    01/01/07    arp Added gain information for antennas.  Expanded sim_data to 
-                    have optional compute of gradient.
-    03/02/07    arp Changed sim_data to do 1 baseline at a time.  Substantial
-                    restructuring of parameter passing.  More documentation.
-    05/15/07    arp Split part of Antennas into PhsAntennas to have more
-                    streamlined support for phasing antenna data.
-    10/10/07    arp Switched bandpass parameterization from polynomial to
-                    splines.
-    12/12/07    arp Switched bp again, this time to interpolation from a
-                    decimated bandpass.
-    03/06/08    arp Vectorized simulation w/ 4x increase in speed and
-                    support for pixel-based simulation.
 """
 
 import ant, numpy as n, ephem, coord, healpix
@@ -272,7 +255,7 @@ class Antenna(ant.Antenna):
         if not amp is None: self.amp = amp
         bp = n.polyval(self.bp_r, self.beam.afreqs) + \
              1j*n.polyval(self.bp_i, self.beam.afreqs)
-        self.gain = self.amp * bp
+        self._gain = self.amp * bp
     def update_pointing(self, az=0, alt=n.pi/2, twist=0):
         """Set the antenna beam to point at (az, alt) with specified
         right-hand twist to polarizations.  Polarization y is assumed
@@ -289,16 +272,9 @@ class Antenna(ant.Antenna):
         top = {'x':top, 'y':n.dot(self.rot_pol_y, top)}[pol]
         x,y,z = top
         return self.beam.response((x,y,z))
-    def response(self, top, pol='x'):
-        """Return total antenna response toward specified topocentric 
-        coordinates (x=E,y=N,z=UP), including beam response and
-        bandpass gain.
-        top = topocentric (x,y,z) coordinates.  x,y,z may be arrays for
-        multiple coordinates."""
-        beam_resp = self.bm_response(top, pol=pol)
-        gain = self.gain
-        if len(beam_resp.shape) == 2: gain = n.reshape(gain, (gain.size, 1))
-        return beam_resp * gain
+    def passband(self, conj=False):
+        if conj: return n.conjugate(self._gain)
+        else: return self._gain
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -315,8 +291,21 @@ class AntennaArray(ant.AntennaArray):
         ant.AntennaArray.set_jultime(self, t=t)
         self.eq2top_m = coord.eq2top_m(-self.sidereal_time(), self.lat)
         self._cache = None
-    def sim_cache(self, s_eqs, fluxes, indices=0., mfreqs=n.array([.150]), 
-            angsizes=None):
+    def passband(self, i, j):
+        return self.ants[i].passband() * self.ants[j].passband(conj=True)
+    def bm_response(self, i, j, pol='xx'):
+        assert(pol in ('xx','yy','xy','yx'))
+        p1, p2 = pol
+        # Check that we have cached results needed.  If not, cache them.
+        for c,p in zip([i,j], [p1,p2]):
+            if not self._cache.has_key(c): self._cache[c] = {}
+            if not self._cache[c].has_key(p):
+                x,y,z = self._cache['s_top']
+                resp = self.ants[c].bm_response((x,y,z), pol=p).transpose()
+                self._cache[c][p] = resp
+        return self._cache[i][p1] * n.conjugate(self._cache[j][p2])
+    def sim_cache(self, s_eqs, fluxes=n.array([1.]), indices=n.array([0.]), 
+            mfreqs=n.array([.150]), angsizes=None):
         """Cache intermediate computations given catalog information to speed
         simulation for multiple baselines.  For efficiency, should only be 
         called once per time setting.  MUST be called before sim().
@@ -329,9 +318,7 @@ class AntennaArray(ant.AntennaArray):
         src_top = n.dot(self.eq2top_m, s_eqs)
         # Throw out everything that is below the horizon
         valid = n.logical_and(src_top[2,:] > 0, fluxes > 0)
-        if n.all(valid == 0):
-            self._cache = {'I_sf': 0, 's_eqs': s_eqs, 
-                    's_top': s_eqs, 's_sz':angsizes}
+        if n.all(valid == 0): self._cache = {}
         else:
             fluxes = fluxes.compress(valid)
             indices = indices.compress(valid)
@@ -347,7 +334,7 @@ class AntennaArray(ant.AntennaArray):
                 (fluxes.size, self.ants[0].beam.afreqs.size))
             self._cache = {
                 'I_sf':fluxes * (freqs / mfreqs)**indices,
-                's_eqs': s_eqs,
+                's_eqs': s_eqs.transpose(),
                 's_top': src_top,
                 's_sz': angsizes
             }
@@ -358,23 +345,19 @@ class AntennaArray(ant.AntennaArray):
         assert(pol in ('xx','yy','xy','yx'))
         if self._cache is None:
             raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')
-        # Check that we have cached results needed.  If not, cache them.
-        for c,p in zip([i,j], pol):
-            if not self._cache.has_key(c): self._cache[c] = {}
-            if not self._cache[c].has_key(p):
-                x,y,z = self._cache['s_top']
-                resp = self.ants[c].response((x,y,z), pol=p).transpose()
-                self._cache[c][p] = resp
-        I_sf = self._cache['I_sf']
+        elif self._cache == {}:
+            return n.zeros_like(self.passband(i,j))
         s_eqs = self._cache['s_eqs']
-        GAi_sf = self._cache[i][pol[0]]
-        GAj_sf = self._cache[j][pol[1]]
-        s_sz = self._cache['s_sz']
+        I_sf = self._cache['I_sf'] * \
+            self.resolve_src(s_eqs, i, j, self._cache['s_sz'])
+        Gij_sf = self.passband(i,j)
+        Bij_sf = self.bm_response(i,j,pol=pol)
+        if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
         # Get the phase of each src vs. freq, also does resolution effects
-        E_sf = n.conjugate(self.gen_phs(s_eqs.transpose(), i, j, angsize=s_sz))
+        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j))
         try: E_sf.shape = I_sf.shape
         except(AttributeError): pass
         # Combine and sum over sources
-        GBIE_sf = GAi_sf * n.conjugate(GAj_sf) * I_sf * E_sf
+        GBIE_sf = Gij_sf * Bij_sf * I_sf * E_sf
         Vij_f = GBIE_sf.sum(axis=0)
         return Vij_f

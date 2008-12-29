@@ -1,10 +1,11 @@
 AIPY (Astronomical Interferometry in PYthon)
 
-This package collects together tools for radio astronomical interferometry.  In
-addition to pure-python phasing, calibration, imaging, and
-deconvolution code, this package includes interfaces to MIRIAD (a Fortran
-interferometry package) and HEALPix (a package for representing spherical data
-sets), and routines from SciPy for fitting. 
+DESCRIPTION
+    This package collects together tools for radio astronomical interferometry.
+    In addition to pure-python phasing, calibration, imaging, and
+    deconvolution code, this package includes interfaces to MIRIAD (a Fortran
+    interferometry package) and HEALPix (a package for representing spherical 
+    data sets), and some math/fitting routines from SciPy. 
 
 BEFORE YOU INSTALL
     This is a *nix package.  With some trouble it can install on MacOS, and
@@ -18,19 +19,17 @@ BEFORE YOU INSTALL
         *matplotlib >= 0.91
         *matplotlib-basemap >= 0.9
         (* installation can proceed without these, but some scripts won't work)
-    Luckily, much of this is now automated through setuptools dependencies,
-    but you have to have network access to take advantage of it.
 
     OPTION 1:
-        You install the dependencies yourself.
+        Install the dependencies yourself.
     OPTION 2:
-        You have network connectivity and root access:
-            $ install_dependencies.sh 
-    OPTION 3:
-        You have network connectivity but not root access.  Follow the
-        instructions at:
+        Someday, the setuptools/egg system for Python might work
+        smoothly, allowing for automatic dependency resolution.  But for now,
+        this seems to be more trouble than it is worth.  The files
+        install_dependencies.sh, ez_setup.py, and setup.ez outline how this
+        will be implemented, but should not be relied upon for now.
+        You can read more at: 
             http://peak.telecommunity.com/DevCenter/setuptools
-        and apply them to each line in install_dependencies.sh
 
 TO INSTALL AS ROOT
     > sudo python setup.py install
@@ -63,6 +62,11 @@ PACKAGE INFO FOR DEVELOPERS
     into aipy, and then remove any code deemed unnecessary.  Unfortunately, 
     then you may need to crawl through the code and replace all "scipy" 
     references with "aipy".
+
+    The subpackage "_cephes" was copied in from scipy-0.6.0/special, and then
+    all but the cephes and c_misc code was removed to avoid needing a Fortran
+    compiler.  _cephesmodule.c needed substantial editing to remove external
+    dependencies.
 
     The miriad source code (aipy/miriad/mirsrc) was included from 
     MIRIAD-4.0.5.  To update, download miriad source and copy $MIR/src/subs/* 

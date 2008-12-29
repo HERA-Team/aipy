@@ -29,6 +29,8 @@ o.add_option('--tol', dest='tol', type='float', default=1e-6,
     help='Tolerance for successful deconvolution.')
 o.add_option('--maxiter', dest='maxiter', type='int', default=200,
     help='Number of allowable iterations per deconvolve attempt.')
+o.add_option('-u', '--uniform', dest='uniform', type='float', default=0,
+    help="Use uniform (rather than natural) weighting for uv bins that have a weight above the specified fraction of the maximum weighting.")
 o.add_option('--skip_amp', dest='skip_amp', action='store_true',
     help='Do not use amplitude information to normalize visibilities.')
 o.add_option('--skip_bm', dest='skip_bm', action='store_true',
@@ -45,6 +47,10 @@ o.add_option('--buf_thresh', dest='buf_thresh', default=1.8e6, type='float',
     help='Maximum amount of data to buffer before gridding.  Excessive gridding takes performance hit, but if buffer exceeds memory available... ouch.')
 o.add_option('-m', '--map', dest='map',
     help='The skymap file to use.  If it exists, new data will be added to the map.  Othewise, the file will be created.')
+o.add_option('--nside', dest='nside', type='int', default=256,
+    help='NSIDE parameter for map, if creating a new file.')
+o.add_option('--resume', dest='resume', type='int', default=0,
+    help='Pointing to resume from, if map making was interrupted.')
 opts, args = o.parse_args(sys.argv[1:])
 
 # Parse command-line options
@@ -59,7 +65,7 @@ del(uv)
 
 # Open skymap
 if os.path.exists(opts.map): skymap = a.map.Map(fromfits=opts.map)
-else: skymap = a.map.Map(nside=256)
+else: skymap = a.map.Map(nside=opts.nside)
 skymap.set_interpol(opts.interpolate)
 
 # Define pointing centers of facets
@@ -67,15 +73,16 @@ NPTS = 100
 ras,decs = a.map.facet_centers(NPTS, ncrd=2)
 
 for i, (ra,dec) in enumerate(zip(ras,decs)):
-    src = a.ant.RadioFixedBody(ra, dec)
+    if i + 1 < opts.resume: continue
+    s = a.ant.RadioFixedBody(ra, dec)
     print '%d / %d' % (i + 1, NPTS)
-    print 'Pointing (ra, dec):', src._ra, src._dec
-    if abs(aa.lat - src._dec) > n.pi/2:
+    print 'Pointing (ra, dec):', s._ra, s._dec
+    if abs(aa.lat - s._dec) > n.pi/2:
         print '    Source never rises: skipping'
         continue
+    src = a.fit.SrcCatalog([s])
     cnt, curtime = 0, None
     uvw, dat, wgt = [], [], []
-    cache = {}
     if not opts.no_w: im = a.img.ImgW(opts.size, opts.res)
     else: im = a.img.Img(opts.size, opts.res)
     for filename in args:
@@ -89,28 +96,18 @@ for i, (ra,dec) in enumerate(zip(ras,decs)):
                 if cnt == 0:
                     aa.set_jultime(t)
                     src.compute(aa)
-                    top = a.coord.azalt2top((src.az,src.alt))
-                    cache = {}
+                    s_eq = src.get_crds('eq', ncrd=3)
+                    aa.sim_cache(s_eq)
             if cnt != 0: continue
             d = d.take(chans)
             f = f.take(chans)
-            if not opts.skip_amp:
-                d /= aa.ants[i].gain * n.conjugate(aa.ants[j].gain)
+            if not opts.skip_amp: d /= aa.passband(i,j)
             try:
-                d = aa.phs2src(d, src, i, j)
-                xyz = aa.gen_uvw(i,j,src=src)
+                d = aa.phs2src(d, s, i, j)
+                xyz = aa.gen_uvw(i,j,src=s)
                 if not opts.skip_bm:
-                    # Cache beam response, since it is an expensive operation
-                    if not cache.has_key(i): cache[i] = {}
-                    if not cache[i].has_key(p1):
-                        r = aa.ants[i].bm_response(top, pol=p1)
-                        cache[i][p1] = r.flatten()
-                    if not cache.has_key(j): cache[j] = {}
-                    if not cache[j].has_key(p2):
-                        r = aa.ants[j].bm_response(top, pol=p2)
-                        cache[j][p2] = r.flatten()
                     # Calculate beam strength for weighting purposes
-                    w = cache[i][p1] * cache[j][p2]
+                    w = aa.bm_response(i,j,pol=opts.pol).squeeze()
                     # For optimal SNR, down-weight data that is already
                     # attenuated  by beam  by another factor of the beam 
                     # response (modifying  weight accordingly).
@@ -142,10 +139,11 @@ for i, (ra,dec) in enumerate(zip(ras,decs)):
     wgt = n.concatenate(wgt).flatten()
     uvw,dat,wgt = im.append_hermitian(uvw,dat,wgt)
     im.put(uvw, dat, wgt)
+    if opts.uniform > 0: im.uniform_wgt(thresh=opts.uniform)
 
     im_img = im.image((DIM/2, DIM/2))
-    bm_img = im.bm_image()
-    bm_gain = n.sqrt((bm_img**2).sum())
+    bm_img = im.bm_image(term=0)
+    bm_gain = a.img.beam_gain(bm_img)
     print 'Gain of dirty beam:', bm_gain
 
     if opts.deconv == 'none': img = im_img / bm_gain
@@ -166,7 +164,7 @@ for i, (ra,dec) in enumerate(zip(ras,decs)):
         if not opts.no_res: img = cl_img + rs_img
         else: img = cl_img
     # Get coordinates of image pixels in original (J2000) epoch
-    ex,ey,ez = im.get_eq(src._ra, src._dec, center=(DIM/2,DIM/2))
+    ex,ey,ez = im.get_eq(s._ra, s._dec, center=(DIM/2,DIM/2))
     tx,ty,tz = im.get_top(center=(DIM/2,DIM/2))
     # Define a weighting for gridding data into the skymap
     map_wgts = n.exp(-(tx**2 + ty**2) / .1**2)

@@ -1,16 +1,6 @@
 """
 Module for reading and setting parameters in components of an AntennaArray
 simulation for purpose of fitting.
-
-Author: Aaron Parsons
-Date: 01/14/2007
-Revisions:
-    03/13/2007  arp Modified to support other fitting programs in scipy,
-                    including ability to fit w/o using a gradient.  Also
-                    added functionality for only fitting some parameters
-                    but having a standard fit file which still keeps track
-                    of all info.  Only computes data relevant to selected
-                    parameters.  Added docs.
 """
 import ant, sim, numpy as n
 from interp import interpolate

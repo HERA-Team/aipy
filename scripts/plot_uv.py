@@ -200,8 +200,12 @@ for cnt, bl in enumerate(bls):
     if is_chan_range and is_time_range:
         if opts.fringe:
             if opts.time_axis == 'index':
-                t1 = len(plot_t['jd'])/2 - len(plot_t['jd'])
-                t2 = len(plot_t['jd'])/2
+                if opts.time != 'all':
+                    t1, t2 = map(float, opts.time.split('_'))
+                    d = d[t1+d.shape[0]/2:t2+d.shape[0]/2]
+                else:
+                    t1 = len(plot_t['jd'])/2 - len(plot_t['jd'])
+                    t2 = len(plot_t['jd'])/2
                 ylabel = 'Fringe Rate (bins)'
             else:
                 t1 = -500/inttime
@@ -250,12 +254,13 @@ for cnt, bl in enumerate(bls):
             else:
                 plot_chans = freqs
                 xlabel = 'Frequency (GHz)'
-        if opts.time_axis == 'index':
-            plot_t = plot_t['cnt']
-            label = '#%d'
-        else:
-            plot_t = plot_t['jd']
-            label = 'jd%f'
+        if cnt == 0:
+            if opts.time_axis == 'index':
+                plot_t = plot_t['cnt']
+                label = '#%d'
+            else:
+                plot_t = plot_t['jd']
+                label = 'jd%f'
         for i,t in enumerate(plot_t):
             p.plot(plot_chans, d[i,:], '-', label=label % t)
         p.xlabel(xlabel)

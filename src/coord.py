@@ -4,11 +4,6 @@ between topocentric (z = up, x = east), ecliptic (heliocentric), equatorial
 (celestial), and galactic coordinate systems.  Vectors are 3 dimensional 
 with magnitude 1, representing a point on the unit sphere.  Includes generic 
 3 vector rotation code.
-
-Author: Aaron Parsons
-Date: 11/14/2007
-Revisions:
-    02/06/2008  arp     Changed definition of topocentric from x = N to x = E
 """
 
 import numpy as n, ephem as e

@@ -1,4 +1,5 @@
-pyephem>=3.7.2.3
-pyfits>=1.1
-matplotlib>=0.91
-basemap>=0.9.1
+pyephem
+pyfits
+matplotlib
+basemap
+numpy

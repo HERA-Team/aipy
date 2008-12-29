@@ -2,10 +2,6 @@
 A package for interfacing to Miriad: the Multichannel Image Reconstruction
 Image Analysis and Display package for reducing interferometric data for
 radio telescopes.
-
-Author: Aaron Parsons
-Date: 10/08/06
-Modified: 01/17/08
 """
 
 __version__ = '0.1.1'

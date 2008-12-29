@@ -82,7 +82,7 @@ def fit_func(prms):
     score,nsamples = 0.,0.
     cnt,curtime = 0,None
     for uvfile in args:
-        sys.stdout.write('.'), ; sys.stdout.flush()
+        sys.stdout.write('.') ; sys.stdout.flush()
         uv = a.miriad.UV(uvfile)
         a.scripting.uv_selector(uv, opts.ant, opts.pol)
         for (uvw,t,(i,j)),d,f in uv.all(raw=True):

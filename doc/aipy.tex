@@ -2,6 +2,7 @@
 \usepackage{fullpage}
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage{py2tex}
 
 \let\jnlstyle=\rm
 \def\refjnl#1{{\jnlstyle#1}}
@@ -44,10 +45,11 @@
 \def\grl{\refjnl{Geophys.~Res.~Lett.}}
 \def\jcp{\refjnl{J.~Chem.~Phys.}}
 
-\title{Tutorial on Astronomical Interferometry in PYthon (AIPY)}
+\title{Astronomical Interferometry in PYthon (AIPY)\\
+Version 0.6.2}
 
 \author{Aaron Parsons}
-\date{13 December 2007}
+\date{05 September 2008}
 
 \begin{document}
 \maketitle
@@ -64,7 +66,7 @@ verbatim.  It can be found on the web at
 {\it http://setiathome.berkeley.edu/\~{}aparsons/aipy}
 
 AIPY is under active development as a part of the NSF-funded project
-PAPER: the Precision Array for Probing the Epoch of Reionization, and 
+PAPER: the Precision Array for Probing the Epoch of Reionization--a 
 low-frequency interferometry experiment for detecting ionization resulting
 from the formation of the first starts and galaxies.
 
@@ -78,6 +80,10 @@ version.
 The subpackage "optimize" is released under GPL by SCIPY developers, and
 has been modified to include only pure-python implementations.
 
+The C source code for "cephes" (in cephes/cephes) is part of the CEPHES Math
+Library and is released under GPL.  The python wrapper code is released under
+GPL by SCIPY developers, and has been modified to remove Fortran dependencies.
+
 The C source code for "healpix" (in healpix/cxx) is released under GPL
 by the HEALPix collaboration, and is included in AIPY verbatim.
 
@@ -89,12 +95,13 @@ GPL. It is the work of many authors, and is included in AIPY verbatim.
 \subsection{Requirements}
 
 \begin{itemize}
-\item[] *nix or MacOs.  I'm pretty certain this doesn't install on Windows.
+\item[] *nix or MacOs.  I don't think AIPY installs on Windows.
 \item[] Python 2.4 or better.  {\it http://www.python.org}
 \item[] Numpy 1.0.4 or better. {\it http://numpy.scipy.org}
-\item[] Matplotlib 90.0 or better. {\it http:://matplotlib.sourceforge.net}
-\item[] Matplotlib-Basemap 0.9.0 or better
-        {\it http:://matplotlib.sourceforge.net}
+\item[] PyEphem 3.7.2.3 or better. {\it http://rhodesmill.org/pyephem}
+\item[] PyFITS 1.1 or better. {\it http://www.stsci.edu/resources/software\_hardware/pyfits}
+\item[] Matplotlib 0.91 or better. {\it http:://matplotlib.sourceforge.net}
+\item[] Matplotlib-Basemap 0.9 or better {\it http:://matplotlib.sourceforge.net}
 \end{itemize}
 
 \subsection{Install As Root}
@@ -118,17 +125,31 @@ to you .bashrc file:
 export PYTHONPATH=PYTHONPATH:<module_dir>
 \end{verbatim}
 
-
+\clearpage
 \input miriad.tex
+\clearpage
 \input ant.tex
+\clearpage
 \input sim.tex
+\clearpage
 \input fit.tex
+\clearpage
 \input loc.tex
+\clearpage
 \input src.tex
+\clearpage
 \input img.tex
+\clearpage
+\input map.tex
+\clearpage
 \input coord.tex
+\clearpage
 \input deconv.tex
+\clearpage
 \input healpix.tex
+\clearpage
+\input scripting.tex
+\clearpage
 
 \bibliographystyle{plain}   % or "unsrt", "alpha", "abbrv", etc.
 \bibliography{biblio}       % use data in file "biblio.bib"

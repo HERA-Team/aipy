@@ -9,16 +9,16 @@ data to be phased to sources.  We will work toward this goal in this chapter.
 
 \subsection{Class: RadioBody (RadioFixedBody, RadioSpecial)}
 
-The goal of the RadioBody is to create an object which can be used for
+The goal of the RadioBody is to create an object that can be used for
 tracking the position of a source on the sky and projecting baselines in
 the direction of that source.  In later modules, this object will be
 subclassed to add information about a source's flux and spectral index.
 The general functionality of the RadioBody is inherited from the PyEphem
-package (which has its own documentation online at 
-{\it http://rhodesmill.org/pyephem} if you care to read it).  
+package, which has its own documentation online at 
+{\it http://rhodesmill.org/pyephem}.  
 RadioBodys come
-in 2 flavors: RadioFixedBodys (with fixed celestial coordinates), and
-RadioSpecials (which move relative to the celestial sphere).  Generally,
+in 2 flavors: RadioFixedBodys, with fixed celestial coordinates, and
+RadioSpecials, which move relative to the celestial sphere.  Generally,
 RadioBodys have undefined coordinates until their compute(observer)
 method is called on an observer that contains information about latitude, 
 longitude, and sidereal time.  Before we can explore RadioBodys
@@ -28,12 +28,12 @@ observer in aipy.ant is the ArrayLocation, which subclasses PyEphem's Observer:
 \begin{verbatim}
 >>> import aipy
 >>> o = aipy.ant.ArrayLocation(location=('40:00:00','123:00:00'))
->>> print (a.lat, a.long), (float(a.lat), float(a.long))
+>>> print (o.lat, o.long), (float(o.lat), float(o.long))
 (40:00:00.00, 123:00:00.00) (0.69813170079773179, 2.1467549799530254)
->>> o.set_ephemtime('8/28/80 12:00') # Set a time in UTC (number or string)
+>>> o.set_ephemtime('1980/8/28 12:00') # Set a time in UTC (number or string)
 >>> print aipy.ant.ephem2juldate(o.date)
-2445072.0
->>> o.set_jultime(2445072.0) # Same thing using Julian dates
+2444480.0
+>>> o.set_jultime(2444480.0) # Same thing using Julian dates
 >>> s1 = aipy.ant.RadioFixedBody('20:00','40:00',name="CygnusA")
 >>> # ra,dec of source can be strings or radians.  Coords in Epoch 2000.
 >>> s2 = aipy.ant.RadioSpecial("Sun")
@@ -77,7 +77,7 @@ is a relatively simple construct.  Continuing from above:
 >>> o.set_ephemtime("2007/11/20 15:15")
 >>> cat.compute(o)
 >>> print (cat['Moon'].ra, cat['Moon'].dec), cat['CygnusA'].alt
-(0:02:08.79, 2:33:25.03) 11:49:35.08
+(0:02:09.15, 2:33:27.7) 11:45:10.4
 \end{verbatim}
 
 Observe how calling compute from the SrcCatalog called compute for all
@@ -97,22 +97,22 @@ are to be used in a computation.  It may seem a little ad-hoc for the Beam to
 be the object which carries around this array.  It was chosen for two
 reasons: the Beam itself will need to know this information (the primary
 beam is always a function of frequency), and everything else (Antennas,
-AntennaArrays, etc.) will contain a Beam somewhere.  We'll defer the
-tutorial on Beams until the section on AntennaArrays.
+AntennaArrays, etc.) will contain a Beam somewhere.  We'll defer 
+Beam examples until the section on AntennaArrays.
 
 \subsection{Class: Antenna}
 
-The Antenna contains all information which is systematic to an element in
-an antenna array (i.e. variables which can be solved for by self-calibration).
+The Antenna contains all information that is systematic to an element in
+an antenna array (i.e. variables that can be solved for by self-calibration).
 For the purposes of aipy.ant, this includes physical location (x,y,z),
 delay (a phase linearly dependent with frequency), and a phase offset 
 (a frequency-independent phase).  Antenna positions are in
 nanoseconds (the length of a nanosecond in cgs is defined in aipy.const)
 and in equatorial coordinates (x = radial in plane of equator,
 y = east, z = north celestial pole).  If you want to convert topocentric
-coordinates (in cm) to equatorial coordinates, ArrayLocation (and
-AntennaArray which subclasses it) has a converter top2eq().  The delay
-parameter is in nanoseconds, and offset is in radians.  Again, we'll
+coordinates (in cm) to equatorial coordinates, take a look at aipy.coord.
+The delay parameter is in nanoseconds, and offset is in 
+$({\rm radians}/2\pi)$.  Again, we'll
 defer the tutorial on Antennas until the section on AntennaArrays.
 
 \subsection{Class: AntennaArray (subclassing ArrayLocation)}
@@ -132,7 +132,7 @@ needed to figure out phasing.  Let's learn by example, starting from scratch:
 >>> ants.append(aipy.ant.Antenna(0,100,0,beam,delay=1))
 >>> ants.append(aipy.ant.Antenna(100,0,0,beam,offset=.5))
 >>> aa = aipy.ant.AntennaArray(ants=ants,location=("18:20:39","-66:45:10"))
->>> print aa.get_baseline(0,2), aa.get_delay(1,2), aa.get_offset(0,2)
+>>> print aa.get_baseline(0,2,'r'), aa.get_delay(1,2), aa.get_offset(0,2)
 [ 100.    0.    0.] -1.0 0.5
 >>> aa.set_jultime(2454447.37472)
 >>> srcs = []
@@ -140,41 +140,43 @@ needed to figure out phasing.  Let's learn by example, starting from scratch:
 >>> srcs.append(aipy.ant.RadioSpecial("Venus"))
 >>> cat = aipy.ant.SrcCatalog(srcs)
 >>> cat.compute(aa) # REMEMBER to call this before projecting!
->>> print aa.get_projected_baseline(0,1,src=cat['Sun'])
-[ 34.67300555 -36.79393082 -86.27855667]
->>> print aa.get_projected_baseline(0,1,src=cat['Venus'])
+>>> print aa.get_baseline(0,1,src=cat['Sun'])
+[ 34.66645092 -36.79755511 -86.27964487]
+>>> print aa.get_baseline(0,1,src=cat['Venus'])
 <class 'aipy.ant.PointingError'>: 'Venus is below horizon'
 \end{verbatim}
 
 We made a Beam with frequency information, created 3 Antennas using the
 same Beam, and then made an AntennaArray at Arecibo with those Antennas.
-We showed how we can access baselines and relative delays and offsets, which
-obey sign conventions depending whether you specify (0,1) or (1,0).  We
+We showed how we can access baselines and relative delays and offsets, 
+obeying sign conventions depending whether you specify (0,1) or (1,0).  We
 made a SrcCatalog containing the Sun and Venus, and then we computed their
-locations relative to the AntennaArray. Important: always call compute()
+locations relative to the AntennaArray. It is important to always call 
+compute()
 before proceeding to other processing.  At best you will get an error.  At
-worst, you could process using old positions.  Finally, we retrieve baseline
+worst, you could end up with old positions.  Finally, we retrieve baseline
 (0,1) projected towards the Sun, and then try to do the same towards Venus.
-But Venus is below the horizon, and rather than let you use a projection
-which will give incorrect results, AIPY throws a PointingError.  If you want,
+However, Venus is below the horizon, and rather than let you use a projection
+that will give incorrect results, AIPY throws a PointingError.  If you want,
 you can catch this exception (aipy.ant.PointingError) and recover.  Note
 that the coordinate returned here are still in nanoseconds and are not
 yet proper uvw coordinates.  Let's continue:
 
 \begin{verbatim}
->>> print aa.gen_phs(cat['Sun'], 0, 1, with_coord=False)
-[ 0.25952805-0.96573557j -0.61504425-0.78849259j -0.99986187+0.01662056j]
->>> data,uvw = aa.phs2src(numpy.array([.5,1,0j]),cat['Sun'],1,2,with_coord=True)
+>>> print aa.gen_phs(cat['Sun'], 0, 1)
+[ 0.26051837-0.96546889j -0.61418129-0.78916496j -0.99988051+0.01545836j]
+>>> data = aa.phs2src(numpy.array([.5,1,0j]),cat['Sun'],1,2)
 >>> print data
-[-0.27987844+0.41432844j  0.46610701+0.88472835j  0.00000000+0.j        ]
+[ 0.44540993-0.22717833j  0.02050412-0.99978977j  0.        -0.j        ]
+>>> uvw = aa.gen_uvw(1,2,cat['Sun'])
 >>> print uvw
-[[  8.86852359   7.55928764  17.72586979]
- [  9.45975849   8.06324014  18.90759444]
- [ 10.0509934    8.56719265  20.0893191 ]]
+[[  8.86987019   7.55959383  17.72506541]
+ [  9.46119487   8.06356676  18.90673644]
+ [ 10.05251955   8.56753968  20.08840747]]
 >>> print aa.unphs2src(data,cat['Sun'],1,2)
 [ 0.5+0.j  1.0+0.j  0.0+0.j]
 >>> print aa.rmsrc(numpy.array([.5,1,0j]),cat.values(),1,2)
-[ 0.17592345+0.29382519j  0.58796173-0.14691259j -0.06507683-0.43257815j]
+[ 0.36514582+0.25266785j  0.39471115-0.13255143j  0.12804513-0.41987284j]
 \end{verbatim}
 
 Using the AntennaArray and SrcCatalog we created earlier, we can now
@@ -183,39 +185,38 @@ specified baseline, will flatten the fringes of that source.  Note that
 3 values are returned here for the 3 active frequencies (we set them
 in the Beam).  We could apply these phases to the data ourselves (or
 take the complex conjugate and call it simulated data), but 
-phs2src() does that for us.  Optionally, we can specify with\_coord=True
-to return the projected uvw coordinates as well as the data.  Note again
+phs2src() does that for us.  We can also get 
+the corresponding uvw coordinates projected toward this source using 
+gen\_uvw().  Note again
 the 3 entries in uvw for the 3 active frequencies.  To undo what
 phs2src() just did, there is unphs2src().  With rmsrc(), we can take a stab
 at removing the flux from a list of sources, even though we don't have
-an flux information!.  It works by phasing to each source,
+any flux information!.  It works by phasing to each source,
 taking the FFT to get to lag space, filtering out data around lag 0,
 and then unphasing from the source.  For wide bandwidths, this can work
 quite well, though in our 3 frequency case it surely does a bad job.
 
-As a final example, we'll interface to a Miriad file.  Though aipy.ant makes no
-assumptions about file formats, there are a couple of shortcuts for
-initializing from a UV file.  For more information about Miriad files, read the
-aipy.miriad tutorial.  So that we're working on the same file, run the
+As a final example, we'll process some data in a Miriad file.
+For more information about Miriad files, read the
+aipy.miriad tutorial.  So that we're working with the same files, run the
 following from bash (1 MB download):
 
 \begin{verbatim}
 $ wget http://setiathome.berkeley.edu/~aparsons/aipy/test.uv.tar.bz2
+$ wget http://setiathome.berkeley.edu/~aparsons/aipy/pwa303.py
 $ compress_uv.py -x test.uv.tar.bz2
 \end{verbatim}
 
 We're going to make a new file out of test.uv that removes flux from the
-Sun and phases to Centaurus A (`cen'): 
+Sun and phases to Centaurus A (`cen'), using calibration information from
+pwa303.py: 
 
 \begin{verbatim}
 >>> import aipy
 >>> uvi = aipy.miriad.UV('test.uv')
->>> aa = aipy.ant.AntennaArray(uv=uvi)
->>> print len(aa.ants), aa.get_baseline(0,1)
-4 [ 213.95 -135.75 -261.53]
 >>> aa = aipy.loc.get_aa('pwa303',uvi['sdf'],uvi['sfreq'],uvi['nchan'])
 >>> print len(aa.ants), aa.get_baseline(0,1)
-4 [-100.7  139.1 -197.8]
+4 [ 138.14       -222.37112004   -0.70162169]
 >>> cat = aipy.src.get_catalog(srcs=['Sun','cen'])
 >>> uvo = aipy.miriad.UV('test.uv.mod','new')
 >>> uvo.init_from_uv(uvi)
@@ -226,21 +227,30 @@ Sun and phases to Centaurus A (`cen'):
 ...     data = aa.rmsrc(data, cat['Sun'], i, j)
 ...     data = aa.phs2src(data, cat['cen'], i, j)
 ...     return preamble, data
-...
+... 
 >>> uvo.pipe(uvi, mfunc=f)
 >>> del(uvo)
 \end{verbatim}
 
-First, we create a Miriad UV file and initialize an AntennaArray from it.
-However, after printing the (0,1) baseline, we realize that these coordinates
-are not correct.  Fortunately, aipy.loc is a repository for the latest
-location-specific parameter fits (which you are encouraged to edit).  This data
-was calibrated as `pwa303', so we can get a calibrated AntennaArray using
-aipy.loc.get\_aa(), and passing some information on what frequencies are in
-test.uv.  Now baseline (0,1) looks much better.  Rather than build up a
+AIPY provides a mechanism (described in greater detail in the tutorial on
+aipy.loc)
+for defining your own AntennaArray using calibration parameters of your choice
+in a self-contained python module.  This module can then be imported into
+any script you write, allowing your array calibration to be defined once in
+a convenient location, and allowing scripts to be written
+that are agnostic about your specific array configuration--they can just
+import the appropriate calibration module from the location you specify.
+In the above, we opened the Miriad UV file ``test.uv'', and then imported
+an AntennaArray containing calibration for this data using get\_aa().
+The string ``pwa303'' instructs Python to import the file ``pwa303.py'' using
+the default Python module path, which should find the file you just downloaded
+in your current directory.
+Some additional information is passed to get\_aa() from the UV file regarding
+what the channel frequencies are in test.uv. Rather than build up a
 SrcCatalog manually, we can ask for a premade one containing specific sources
-(or all at once if srcs is not provided) using aipy.src.get\_catalog().  You
-are also encouraged to edit src.py.
+(or all at once if srcs is not provided) using aipy.src.get\_catalog().
+Further information on generating source catalogs is is available in the
+tutorial on aipy.src.
 
 Next, we open an output Miriad file (test.uv.mod) for writing and initialize it
 with the header information from test.uv.  We define a mapping function that
@@ -269,3 +279,6 @@ Note that the color blue wraps to red.}
 \end{center}
 \end{figure}
 
+\subsection{Reference}
+
+\PythonSource*{module_doc/ant.pt}

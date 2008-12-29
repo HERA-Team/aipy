@@ -1,7 +1,18 @@
-from distutils.core import setup, Extension
+#from distutils.core import setup, Extension
+from ez_setup import use_setuptools; use_setuptools()
+from setuptools import setup, Extension
 import os, glob, numpy
 
 __version__ = open('VERSION').read().strip()
+
+def get_description():
+    lines = [L.strip() for L in open('README').readlines()]
+    d_start = None
+    for cnt, L in enumerate(lines):
+        if L.startswith('DESCRIPTION'): d_start = cnt + 1
+        elif not d_start is None:
+            if len(L) == 0: return ' '.join(lines[d_start:cnt])
+    raise RuntimeError('Bad README')
 
 def indir(path, files):
     return [os.path.join(path, f) for f in files]
@@ -9,23 +20,20 @@ def indir(path, files):
 setup(name = 'aipy',
     version = __version__,
     description = 'Astronomical Interferometry in PYthon',
-    long_description = \
-"""
-This package collects together tools for radio astronomical interferometry.  In
-addition to pure-python phasing, calibration, imaging, and
-deconvolution code, this package includes interfaces to MIRIAD (a Fortran
-interferometry package), HEALPix (a package for representing spherical data
-sets), and fitting routines from SciPy.
-""",
+    long_description = get_description(),
     license = 'GPL',
     author = 'Aaron Parsons',
     author_email = 'aparsons@astron.berkeley.edu',
     url = 'http://setiathome.berkeley.edu/~aparsons/aipy',
     classifiers = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Topic :: Scientific/Engineering :: Astronomy',
+    ],
+    install_requires = ['pyephem', 'pyfits', 'matplotlib', 'basemap', 'numpy'],
+    dependency_links = [
+        'http://www.stsci.edu/resources/software_hardware/pyfits'
     ],
     package_dir = {'aipy':'src', 'aipy.optimize':'src/optimize'},
     packages = ['aipy', 'aipy.optimize'],
@@ -53,7 +61,12 @@ sets), and fitting routines from SciPy.
         Extension('aipy._deconv', ['src/_deconv/deconv.cpp'],
             include_dirs = [numpy.get_include()]),
         Extension('aipy.utils', ['src/utils/utils.cpp'],
-            include_dirs = [numpy.get_include()])
+            include_dirs = [numpy.get_include()]),
+        Extension('aipy._cephes',
+            ['src/_cephes/_cephesmodule.c', 'src/_cephes/ufunc_extras.c'] + \
+            glob.glob('src/_cephes/cephes/*.c') + \
+            glob.glob('src/_cephes/c_misc/*.c'),
+            include_dirs = [numpy.get_include()]),
     ],
     scripts=glob.glob('scripts/*'),
     package_data = {'aipy': ['doc/*.tex', 'doc/*.png']},

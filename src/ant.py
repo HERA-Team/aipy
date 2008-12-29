@@ -1,25 +1,13 @@
 """
-Module for representing the geometry of an array of antennas and generating
+Module for representing antenna array geometry and for generating
 phasing information.
-
-Author: Aaron Parsons
-Date: 11/07/2006
-Revisions: 
-    12/05/2006  arp Redid subclassing of ephem FixedBody, and added RadioSun.
-    01/12/2007  arp Fixed H (hour angle) to be computed in sidereal time, not
-                    solar.
-    01/28/2007  arp Sync'd to latest miriad.py (0.0.4) version.  Hefty (4-5x)
-                    speed up!  Also converted to use n-1.0.1
-    05/14/2007  arp Fixed bug where coordinates were precessed to 2000, not
-                    the current date.  
-    02/06/2008  arp Set ephem pressure to 0 to remove optical distortion
-                    correction.  Moved get_uvw_map to coord.eq2top_m.
 """
-import ephem, math, numpy as n, coord, const
+import ephem, math, numpy as n, coord, const, _cephes
 
 class PointingError(Exception):
-      def __init__(self, value): self.parameter = value
-      def __str__(self): return repr(self.parameter)
+    """An error to throw if a source is below the horizon."""
+    def __init__(self, value): self.parameter = value
+    def __str__(self): return repr(self.parameter)
 
 #  _   _ _   _ _ _ _           _____                 _   _                 
 # | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
@@ -44,7 +32,7 @@ def ephem2juldate(num):
 #                                             |___/ 
 
 class RadioBody:
-    """Class representing coordinates of a celestial source."""
+    """The location of a celestial source."""
     def __init__(self, name='', **kwargs):
         self.src_name = name
     def compute(self, observer):
@@ -58,7 +46,7 @@ class RadioBody:
     def get_crd(self, crdsys, ncrd=3):
         """Return the coordinates of this location in the desired coordinate
         system ('eq','top') in the current epoch.  If ncrd=2, angular
-        coordinates (ra/dec,az/alt) are returned, and if ncrd=3,
+        coordinates (ra/dec or az/alt) are returned, and if ncrd=3,
         xyz coordinates are returned."""
         assert(crdsys in ('eq','top'))
         assert(ncrd in (2,3))
@@ -77,11 +65,8 @@ class RadioBody:
 #                                                                    |___/ 
 
 class RadioFixedBody(ephem.FixedBody, RadioBody):
-    """Class representing a source at fixed RA,DEC.  Combines ephem.FixedBody 
-    with RadioBody."""
+    """A source at fixed RA,DEC.  Combines ephem.FixedBody with RadioBody."""
     def __init__(self, ra, dec, name='', **kwargs):
-        """ra = source's right ascension (epoch=J2000)
-        dec = source's declination (epoch=J2000)"""
         RadioBody.__init__(self, name=name)
         ephem.FixedBody.__init__(self)
         self._ra, self._dec = ra, dec
@@ -97,20 +82,20 @@ class RadioFixedBody(ephem.FixedBody, RadioBody):
 #                               |_|                        
 
 class RadioSpecial(RadioBody, object):
-    """Class representing moving sources (Sun,Moon,planets).  Combines ephem
-    versions of these objects with RadioBody."""
+    """A moving source (Sun,Moon,planets).  Combines ephem versions of these 
+    objects with RadioBody."""
     def __init__(self, name, **kwargs):
-        """name is used to lookup appropriate ephem celestial object."""
+        """`name' is used to lookup appropriate ephem celestial object."""
         RadioBody.__init__(self, name=name)
         self.Body = eval('ephem.%s()' % name)
     def __getattr__(self, nm):
-        """When getting an attribute, first try to get it from this class,
-        and if that fails, try to get it from the underlying ephem object."""
+        """First try to access attribute from this class, but if that fails, 
+        try to get it from the underlying ephem object."""
         try: return object.__getattr__(self, nm)
         except(AttributeError): return self.Body.__getattribute__(nm)
     def __setattr__(self, nm, val):
-        """When setting an attribute, first try to set it for this class,
-        and if that fails, try to set it for the underlying ephem object."""
+        """First try to set attribute for this class, buf if that fails, 
+        try to set it for the underlying ephem object."""
         try: object.__setattr__(self, nm, val)
         except(AttributeError): return setattr(self.Body, nm, val)
     def compute(self, observer):
@@ -125,7 +110,7 @@ class RadioSpecial(RadioBody, object):
 #                                             |___/ 
 
 class SrcCatalog(dict):
-    """Class for holding a catalog of celestial sources."""
+    """A catalog of celestial sources."""
     def __init__(self, srcs, **kwargs):
         dict.__init__(self)
         for s in srcs: self.add_src(s)
@@ -172,7 +157,7 @@ class Beam:
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
 
 class Antenna:
-    """Representation of physical attributes of individual antenna in array."""
+    """Representation of physical attributes of individual antenna."""
     def __init__(self, x, y, z, beam, delay=0., offset=0., **kwargs):
         """x,y,z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object
@@ -187,9 +172,12 @@ class Antenna:
             self.offset = n.polyval(offset, self.beam.afreqs)
         except(AttributeError,TypeError): self.offset = (offset % 1)
     def select_chans(self, active_chans=None):
-        """Select only enumerated channels to use for future calculations."""
+        """Select only the specified channels for use in future calculations."""
         self.beam.select_chans(active_chans)
-        self.offset = n.polyval(self._offset, self.beam.afreqs)
+        try:
+            len(self._offset)
+            self.offset = n.polyval(self._offset, self.beam.afreqs)
+        except(AttributeError,TypeError): self.offset = (self._offset % 1)
     def __tuple__(self): return (self.pos[0], self.pos[1], self.pos[2])
     def __list__(self): return [self.pos[0], self.pos[1], self.pos[2]]
     def __add__(self, a): return self.pos + a.pos
@@ -206,15 +194,15 @@ class Antenna:
 #                         |___/                                        
 
 class ArrayLocation(ephem.Observer):
-    """Representation of location and time of an observation."""
+    """The location and time of an observation."""
     def __init__(self, location):
-        """location = (lat, long, [elev]) of array"""
+        """location = (lat,long,[elev]) of array"""
         ephem.Observer.__init__(self)
         self.pressure = 0
         self.update_location(location)
     def update_location(self, location):
-        """Initialize antenna array wth provided location.  May be (lat, long) 
-        or (lat, long, elev)."""
+        """Initialize antenna array wth provided location.  May be (lat,long) 
+        or (lat,long,elev)."""
         if len(location) == 2: self.lat, self.long = location
         else: self.lat, self.long, self.elev = location
     def set_jultime(self, t=None):
@@ -234,10 +222,10 @@ class ArrayLocation(ephem.Observer):
 #                                                                 |___/ 
 
 class AntennaArray(ArrayLocation):
-    """Representation of collection of antennas, their spacings, and
-       location/time of observations."""
+    """A collection of antennas, their spacings, and location/time of 
+    observations."""
     def __init__(self, location, ants, **kwargs):
-        """ location = (lat, long, [elev]) of array
+        """ location = (lat,long,[elev]) of array
         ants = list of Antenna objects."""
         ArrayLocation.__init__(self, location=location)
         self.update_antennas(ants)
@@ -309,9 +297,7 @@ class AntennaArray(ArrayLocation):
         if len(xyz.shape) == 1: xyz = n.resize(xyz, (afreqs.size, xyz.size))
         return xyz * n.reshape(afreqs, (afreqs.size, 1))
     def gen_phs(self, src, i, j, angsize=None):
-        """Return phasing that is multiplied to data to point to src.  If
-        angsize is provided, amplitudes will be adjusted to reflect resolution
-        effects for a uniform disc of the provided angular radius (radians)."""
+        """Return phasing that is multiplied to data to point to src."""
         try: src = src.e_vec
         except(AttributeError): pass
         bl = self.get_baseline(i,j,src='e')
@@ -321,35 +307,30 @@ class AntennaArray(ArrayLocation):
         o = self.get_offset(i,j)
         afreqs = self.ants[0].beam.afreqs
         afreqs = n.reshape(afreqs, (1,afreqs.size))
-        # Rudimentarily account for resolution effects
-        if not angsize is None:
-            angsize.shape = bl_dot_s.shape
-            amp = angsize * n.sqrt(n.dot(bl,bl) - bl_dot_s**2)
-            amp = n.sinc(n.dot(amp, afreqs))
-        else: amp = 1.
-        phs = amp * n.exp(-1j*2*n.pi*(n.dot(bl_dot_s + t, afreqs) + o))
+        phs = n.exp(-1j*2*n.pi*(n.dot(bl_dot_s + t, afreqs) + o))
         return phs.squeeze()
+    def resolve_src(self, src, i, j, angsize=None):
+        """If angsize is provided, amplitudes will be adjusted to reflect 
+        resolution effects for a uniform disc of the provided angular 
+        radius (radians)."""
+        if angsize is None: return 1.
+        try: src = src.e_vec
+        except(AttributeError): pass
+        bl = self.get_baseline(i,j,src='e')
+        bl_dot_s = n.dot(src, bl)
+        # Rudimentarily account for resolution effects by assuming uniform disc
+        angsize.shape = bl_dot_s.shape
+        f = angsize * n.sqrt(n.dot(bl,bl) - bl_dot_s**2)
+        f.shape = (f.size, 1)
+        afreqs = self.ants[0].beam.afreqs
+        afreqs = n.reshape(afreqs, (1,afreqs.size))
+        x = 2 * n.pi * n.dot(f, afreqs)
+        # Use first Bessel function of the first kind (J_1)
+        y = n.where(x == 0, 1, 2 * _cephes.j1(x))
+        return (y / n.where(x == 0, 1, x)).squeeze()
     def phs2src(self, data, src, i, j):
         """Apply phasing to zenith-phased data to point to src."""
         return data * self.gen_phs(src, i, j)
     def unphs2src(self, data, src, i, j):
         """Remove phasing from src-phased data to point to zenith."""
         return data * n.conjugate(self.gen_phs(src, i, j))
-    def rmsrc(self, data, srcs, i, j, swath=0, norm_bandpass=None):
-        """Remove src flux from data by phasing to each src and removing signal
-        within swath bins of 0 in lag domain (Fourier transform of the 
-        frequency axis)."""
-        if type(srcs) != list: srcs = [srcs]
-        for src in srcs:
-            try: phs = self.gen_phs(src, i, j)
-            except(PointingError): continue
-            data *= phs
-            if swath == 0:
-                if norm_bandpass is None: data -= n.ma.average(data)
-                else: data -= n.ma.sum(data) * norm_bandpass
-            else:
-                img = n.fft.ifft(data.filled(0))
-                img[swath:-swath] = 0
-                data -= n.fft.fft(img)
-            data /= phs
-        return data

@@ -1,0 +1,339 @@
+\File{(stdin)}{Sat Sep  6 01:10:31 2008}
+
+\PythonNoMath
+
+\PythonDocBlock
+\verb""\\ 
+\verb"Module adding data simulation support to AntennaArrays.  For most classes,"\\ 
+\verb"this means adding gain/amplitude information (as a function of frequency)."\\ 
+
+\PythonDocBlockEnd
+
+\I{15}{0}$\K{class}\ \V{RadioBody}\Y{:}$
+\DS{16}{1}{%
+\verb"Class defining flux and spectral index of a celestial source."}\vskip 5pt 
+\I{17}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{janskies},\V{mfreq},\V{index},\V{angsize})\Y{:}$
+\DS{18}{2}{%
+\verb"janskies = source strength. Can be polynomial in hour angle (-pi,pi)"\\ 
+\verb"mfreq = frequency (in GHz) where strength was measured"\\ 
+\verb"index = index of power-law spectral model of source emission.  Can be"\\ 
+\verb"polynomial in hour angle."}\vskip 5pt 
+
+
+
+
+
+
+
+
+\I{30}{1}$\K{def}\ \F{compute}\,(\V{self},\V{observer})\Y{:}$
+\DS{31}{2}{%
+\verb"Update fluxes relative to the provided observer.  Must be"\\ 
+\verb"called at each time step before accessing information."}\vskip 5pt 
+
+
+
+\I{44}{0}$\K{class}\ \F{RadioFixedBody}\,(\V{ant}.\V{RadioFixedBody},\V{RadioBody})\Y{:}$
+\DS{45}{1}{%
+\verb"Class representing a source at fixed RA,DEC.  Adds flux information to"\\ 
+\verb"ant.RadioFixedBody."}\vskip 5pt 
+\I{47}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{ra},\V{dec},\V{janskies},\V{mfreq}\Y{=}.\NUM{150}{},$
+
+\DS{49}{2}{%
+\verb"ra = source's right ascension (epoch=J2000)"\\ 
+\verb"dec = source's declination (epoch=J2000)"\\ 
+\verb"janskies = source strength. Can be polynomial in hour angle (-pi,pi)"\\ 
+\verb"mfreq = frequency (in GHz) where strength was measured"\\ 
+\verb"index = index of power-law spectral model of source emission.  Can be"\\ 
+\verb"polynomial in hour angle."}\vskip 5pt 
+
+
+\I{57}{1}$\K{def}\ \F{compute}\,(\V{self},\V{observer})\Y{:}$
+
+
+\I{68}{0}$\K{class}\ \F{RadioSpecial}\,(\V{ant}.\V{RadioSpecial},\V{RadioBody})\Y{:}$
+\DS{69}{1}{%
+\verb"Class representing moving sources (Sun,Moon,planets).  Adds flux"\\ 
+\verb"information to ant.RadioSpecial."}\vskip 5pt 
+\I{71}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{name},\V{janskies},\V{mfreq}\Y{=}.\NUM{150}{},\V{index}\Y{=}\Y{-}\NUM{1}{}.,\V{angsize}\Y{=}\NUM{0}{}.,\O{**}\V{kwargs})\Y{:}$
+\DS{72}{2}{%
+\verb"janskies = source strength. Can be polynomial in hour angle (-pi,pi)"\\ 
+\verb"mfreq = frequency (in GHz) where strength was measured"\\ 
+\verb"index = index of power-law spectral model of source emission.  Can be"\\ 
+\verb"polynomial in hour angle."}\vskip 5pt 
+
+
+\I{78}{1}$\K{def}\ \F{compute}\,(\V{self},\V{observer})\Y{:}$
+
+
+\I{89}{0}$\K{class}\ \F{SrcCatalog}\,(\V{ant}.\V{SrcCatalog})\Y{:}$
+\DS{90}{1}{%
+\verb"Class for holding a catalog of celestial sources."}\vskip 5pt 
+\I{91}{1}$\K{def}\ \F{get\_fluxes}\,(\V{self},\V{srcs}\Y{=}\V{None})\Y{:}$
+\DS{92}{2}{%
+\verb"Return list of fluxes of all src objects in catalog."}\vskip 5pt 
+
+
+\I{95}{1}$\K{def}\ \F{get\_indices}\,(\V{self},\V{srcs}\Y{=}\V{None})\Y{:}$
+\DS{96}{2}{%
+\verb"Return list of spectral indices of all src objects in catalog."}\vskip 5pt 
+
+
+\I{99}{1}$\K{def}\ \F{get\_mfreqs}\,(\V{self},\V{srcs}\Y{=}\V{None})\Y{:}$
+\DS{100}{2}{%
+\verb"Return list of frequencies where strength is measured for all src "\\ 
+\verb"objects in catalog."}\vskip 5pt 
+
+
+\I{104}{1}$\K{def}\ \F{get\_angsizes}\,(\V{self},\V{srcs}\Y{=}\V{None})\Y{:}$
+\DS{105}{2}{%
+\verb"Return list of angular sizes of all src objects in catalog."}\vskip 5pt 
+
+
+\I{115}{0}$\K{class}\ \F{BeamFlat}\,(\V{ant}.\V{Beam})\Y{:}$
+\DS{116}{1}{%
+\verb"Representation of a flat (gain=1) antenna beam pattern."}\vskip 5pt 
+\I{117}{1}$\K{def}\ \F{response}\,(\V{self},\V{xyz})\Y{:}$
+
+\I{120}{0}$\K{class}\ \F{Beam2DGaussian}\,(\V{ant}.\V{Beam})\Y{:}$
+\DS{121}{1}{%
+\verb"Representation of a 2D Gaussian beam pattern, with default setting for "\\ 
+\verb"a flat beam."}\vskip 5pt 
+\I{123}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{freqs},\V{xwidth}\Y{=}n.\V{Inf},\V{ywidth}\Y{=}n.\V{Inf})\Y{:}$
+\DS{124}{2}{%
+\verb"xwidth = angular width (radians) in EW direction"\\ 
+\verb"ywidth = angular width (radians) in NS direction"}\vskip 5pt 
+
+
+\I{128}{1}$\K{def}\ \F{update}\,(\V{self},\V{xwidth}\Y{=}\V{None},\V{ywidth}\Y{=}\V{None})\Y{:}$
+\DS{129}{2}{%
+\verb"Set the width in the x (EW) and y (NS) directions of the gaussian "\\ 
+\verb"beam."}\vskip 5pt 
+
+
+\I{133}{1}$\K{def}\ \F{response}\,(\V{self},\V{xyz})\Y{:}$
+\DS{134}{2}{%
+\verb"Return beam response across active band for specified topocentric "\\ 
+\verb"coordinates: (x=E,y=N,z=UP). x,y,z may be arrays of multiple "\\ 
+\verb"coordinates.  Returns 'x' linear polarization (rotate pi/2 for 'y')."}\vskip 5pt 
+
+
+
+
+
+\I{143}{0}$\K{class}\ \F{BeamPolynomial}\,(\V{ant}.\V{Beam})\Y{:}$
+\DS{144}{1}{%
+\verb"Representation of a gaussian beam model whose width varies with azimuth"\\ 
+\verb"angle and with frequency."}\vskip 5pt 
+\I{146}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{freqs},\V{poly\_azfreq}\Y{=}n.\F{array}\,([[.\NUM{5}{}]]))\Y{:}$
+\DS{147}{2}{%
+\verb"poly_azfreq = a 2D polynomial in cos(2*n*az) for first axis and "\\ 
+\verb"in freq**n for second axis."}\vskip 5pt 
+
+
+
+\I{152}{1}$\K{def}\ \F{select\_chans}\,(\V{self},\V{active\_chans})\Y{:}$
+\DS{153}{2}{%
+\verb"Select only enumerated channels to use for future calculations."}\vskip 5pt 
+
+
+\I{156}{1}$\K{def}\ \F{update}\,(\V{self},\V{poly\_azfreq}\Y{=}\V{None})\Y{:}$
+\DS{157}{2}{%
+\verb"Update beam with new polynomial coefficients."\\ 
+\verb"poly_azfreq = a 2D polynomial in cos(2*n*az) for first axis and "\\ 
+\verb"in freq**n for second axis."}\vskip 5pt 
+
+
+
+
+
+
+\I{166}{1}$\K{def}\ \F{response}\,(\V{self},\V{top})\Y{:}$
+\DS{167}{2}{%
+\verb"Return beam response across active band for specified topocentric "\\ 
+\verb"coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  "\\ 
+\verb"Returns 'x' pol (rotate pi/2 for 'y')."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+\I{182}{0}$\K{class}\ \F{BeamAlm}\,(\V{ant}.\V{Beam})\Y{:}$
+\DS{183}{1}{%
+\verb"Representation of a beam model where each pointing has a response"\\ 
+\verb"defined as a polynomial in frequency, and the spatial distributions of "\\ 
+\verb"these coefficients decomposed into spherical harmonics."}\vskip 5pt 
+\I{186}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{freqs},\V{lmax}\Y{=}\NUM{8}{},\V{mmax}\Y{=}\NUM{8}{},\V{deg}\Y{=}\NUM{7}{},\V{nside}\Y{=}\NUM{64}{},\V{coeffs}\Y{=}\{\})\Y{:}$
+\DS{187}{2}{%
+\verb"lmax = maximum spherical harmonic term"\\ 
+\verb"mmax = maximum spherical harmonic term in the z direction"\\ 
+\verb"deg = order of polynomial to used for mapping response of each pointing"\\ 
+\verb"nside = resolution of underlying HealpixMap to use"\\ 
+\verb"coeffs = dictionary of polynomial term (integer) and corresponding Alm "\\ 
+\verb"coefficients (see healpix.py doc)."}\vskip 5pt 
+
+
+
+
+
+\I{198}{1}$\K{def}\ \F{update}\,(\V{self},\V{coeffs}\Y{=}\{\})\Y{:}$
+\DS{199}{2}{%
+\verb"Update beam model using new set of coefficients."\\ 
+\verb"coeffs = dictionary of polynomial term (integer) and corresponding Alm "\\ 
+\verb"coefficients (see healpix.py doc)."}\vskip 5pt 
+
+
+
+
+\I{206}{1}$\K{def}\ \F{response}\,(\V{self},\V{top})\Y{:}$
+\DS{207}{2}{%
+\verb"Return beam response across active band for specified topocentric "\\ 
+\verb"coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  "\\ 
+\verb"Returns 'x' pol (rotate pi/2 for 'y')."}\vskip 5pt 
+
+
+
+
+
+\I{222}{0}$\K{class}\ \F{Antenna}\,(\V{ant}.\V{Antenna})\Y{:}$
+\DS{223}{1}{%
+\verb"Representation of physical location and beam pattern of individual "\\ 
+\verb"antenna in array."}\vskip 5pt 
+\I{225}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},x,y,z,\V{beam},\V{delay}\Y{=}\NUM{0}{}.,\V{offset}\Y{=}\NUM{0}{}.,\V{bp\_r}\Y{=}n.\F{array}\,([\NUM{1}{}]),$
+
+\DS{227}{2}{%
+\verb"x,y z = antenna coordinates in equatorial (ns) coordinates"\\ 
+\verb"beam = Beam object (implements response() function)"\\ 
+\verb"delay = signal delay (linear phase vs. frequency)"\\ 
+\verb"offset = signal phase offset (constant phase vs. frequency)"\\ 
+\verb"bp_r = polynomial (in freq) modeling real component of passband"\\ 
+\verb"bp_i = polynomial (in freq) modeling imaginary component of passband"\\ 
+\verb"amp = overall multiplicative scaling of gain"\\ 
+\verb"pointing = antenna pointing (az,alt).  Default is zenith."}\vskip 5pt 
+
+
+
+\I{238}{1}$\K{def}\ \F{select\_chans}\,(\V{self},\V{active\_chans}\Y{=}\V{None})\Y{:}$
+\DS{239}{2}{%
+\verb"Select only enumerated channels to use for future calculations."}\vskip 5pt 
+
+
+\I{242}{1}$\K{def}\ \F{update\_gain}\,(\V{self},\V{bp\_r}\Y{=}\V{None},\V{bp\_i}\Y{=}\V{None},\V{amp}\Y{=}\V{None})\Y{:}$
+\DS{243}{2}{%
+\verb"Update passband information using provided parameters."\\ 
+\verb"bp_r = polynomial (in freq) modeling real component of passband"\\ 
+\verb"bp_i = polynomial (in freq) modeling imaginary component of passband"\\ 
+\verb"amp = overall multiplicative scaling of gain"}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+\I{259}{1}$\K{def}\ \F{update\_pointing}\,(\V{self},\V{az}\Y{=}\NUM{0}{},\V{alt}\Y{=}n.\V{pi}\Y{/}\NUM{2}{},\V{twist}\Y{=}\NUM{0}{})\Y{:}$
+\DS{260}{2}{%
+\verb"Set the antenna beam to point at (az, alt) with specified"\\ 
+\verb"right-hand twist to polarizations.  Polarization y is assumed"\\ 
+\verb"to be +pi/2 azimuth from pol x."}\vskip 5pt 
+
+
+
+
+
+
+\I{269}{1}$\K{def}\ \F{bm\_response}\,(\V{self},\V{top},\V{pol}\Y{=}{}$
+\DS{270}{2}{%
+\verb"Return response of beam for specified polarization."}\vskip 5pt 
+
+
+
+
+\I{275}{1}$\K{def}\ \F{passband}\,(\V{self},\V{conj}\Y{=}\V{False})\Y{:}$
+
+
+\I{296}{0}$\K{class}\ \F{AntennaArray}\,(\V{ant}.\V{AntennaArray})\Y{:}$
+\DS{297}{1}{%
+\verb"Representation of location and time of observation, and response of"\\ 
+\verb"array of antennas as function of pointing and frequency."}\vskip 5pt 
+\I{299}{1}$\K{def}\ \F{set\_jultime}\,(\V{self},t\Y{=}\V{None})\Y{:}$
+\DS{300}{2}{%
+\verb"Set current time as a Julian date."}\vskip 5pt 
+
+
+
+\I{304}{1}$\K{def}\ \F{passband}\,(\V{self},i,j)\Y{:}$
+
+\I{306}{1}$\K{def}\ \F{bm\_response}\,(\V{self},i,j,\V{pol}\Y{=}{}$
+
+
+
+
+
+
+
+
+
+\I{317}{1}$\K{def}\ \F{sim\_cache}\,(\V{self},\V{s\_eqs},\V{fluxes}\Y{=}n.\F{array}\,([\NUM{1}{}.]),\V{indices}\Y{=}n.\F{array}\,([\NUM{0}{}.]),$
+
+\DS{319}{2}{%
+\verb"Cache intermediate computations given catalog information to speed"\\ 
+\verb"simulation for multiple baselines.  For efficiency, should only be "\\ 
+\verb"called once per time setting.  MUST be called before sim()."\\ 
+\verb"s_eqs = array of equatorial vectors for all celestial sources"\\ 
+\verb"fluxes = array of fluxes for all celestial sources"\\ 
+\verb"indices = array of spectral indices of all celestial sources"\\ 
+\verb"mfreqs = array of frequencies where fluxes were measured"\\ 
+\verb"angsizes = array of angular sizes of all celestial sources."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{351}{1}$\K{def}\ \F{sim}\,(\V{self},i,j,\V{pol}\Y{=}{}$
+\DS{352}{2}{%
+\verb"Simulate visibilites for the specified (i,j) baseline and "\\ 
+\verb"polarization.  sim_cache() must be called at each time step before "\\ 
+\verb"this will return valid results."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

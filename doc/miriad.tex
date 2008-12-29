@@ -42,7 +42,7 @@ Miriad correlation data is a {\bf stream}.  Variables are set at the beginning,
 and thereafter only the changes from previous values are stored.  Thus, to
 know the value of ``pol'' for a given spectrum, you will have to know the
 value of the last relevant tag that was inserted in the datastream.
-UV files are not random-access, much like a cassette tape; you can
+UV files are not random-access; much like a cassette tape, you can
 ``fast-forward'', but you cannot ``skip''.
 
 Two variables you will be accessing regularly require a little more
@@ -79,7 +79,7 @@ and is only noted here for those who have experience using Miriad natively.
 
 \subsection{Class: UV}
 
-A high-level interface to a Miriad UV file is available through the 
+A high-level interface to Miriad UV files is available through the 
 UV class in aipy.miriad.  We'll dive right in to reading a file, but first,
 so that we're working on the same UV file, run the following from bash (1 MB
 download):
@@ -159,20 +159,19 @@ I don't know why Miriad makes it available.  Let's continue:
 >>> preamble, data = uv.read()
 >>> print preamble
 (array([-538.6,  298.79613781, -674.73816035]), 2454302.8700115741, (1, 3))
->>> print uv['time']
-2454302.8700115741
+>>> preamble, data, flags = uv.read(raw=True)
 \end{verbatim}
 
 We read a preamble/data pair.  The preamble contained (uvw, time, (i,j)), and
-the data was a masked, complex Numpy array.  Note that one of the entries was
+the data was a masked, complex Numpy array.  One of the entries was
 masked (see the ``--''), and did not print.  If you count, there are 64
-entries, just like ``nchan'' suggested.  Note also that this was an
+entries, just like ``nchan'' suggested.  This was an
 autocorrelation (0,0), so the data has no complex component, and the uvw
 corrdinates are 0.  Next, we showed how to access and convert the polarization
 codes.  Following another read(), we find that we have a new preamble for
-a different baseline, but for the same time.  Finally, we show that there
-is nothing special about the preamble--we can access ``time'' without it if we
-want to.  It's just for convenience.  Now for some more advanced stuff:
+a different baseline, but for the same time.  Finally, we demonstrate the
+option ``raw'' for uv.read, which returns data and flags as separate arrays,
+and executes substantially faster.  Now for some more advanced stuff:
 
 \begin{verbatim}
 >>> uv.rewind()
@@ -192,15 +191,17 @@ want to.  It's just for convenience.  Now for some more advanced stuff:
 0 1 2454302.9116
 \end{verbatim}
 
-First, we rewind the uv file so that we can start from the beginning again.
-Next, we demonstrate a usage of select(), which allows you to choose which data
-you receive via read().  In this case, we've selected to only include data
-which involve antennae 0 and 1 together.  We set up a loop over all the
+First, we rewound the uv file so that we could start from the beginning again.
+Next, we demonstrated one usage of select()--a function that allows you to 
+choose which data you receive via read().  In this case, we've selected 
+to only include data
+that involve antennae 0 and 1 together.  We set up a loop over all the
 data in uv, split up the preamble into its components, and print the antennae
 in the baseline and the time of integration.  Note that $(i,j) == (0,1)$, 
 thanks to select(), and we step through all the integrations in the file.
-Inside the loop, you can access variables as they change.  That's pretty much
-all there is to it!
+Inside the loop, you can access variables as they change.  Just like 
+uv.read(), uv.all() has a ``raw'' operative that returns data and flags
+separately. 
 
 \subsubsection{Initializing and Piping From Another UV}
 
@@ -223,16 +224,22 @@ console, here's how to do it:
 >>> del(uvo)
 \end{verbatim}
 
-We opened up test.uv, and we started a new file new.uv.  Then we initialized
-the new one with the old one (all the header items and initial variables got
-copied across).  Next, we defined a ``mapping function''.  This is a function
-which accepts a (uv, preamble, data), and returns a (preamble, data).  The
+We opened up test.uv, and started a new file new.uv.  Then we initialized
+the new file with the old one (all the header items and initial variables got
+copied across) with init\_from\_uv().  Next, we defined a ``mapping function'' 
+or ``mfunc''.  This is a function
+that accepts a (uv, preamble, data), and returns a (preamble, data).  The
 idea is that this function operates on the preamble and data from the old
 file (along with a reference to the old file so you can access any variables
 and items you need), and returns the preamble and data for the new file.  In
 our case, we have defined a function that conjugates the (0,1) baseline.
-Finally, we pipe the data from uvi through mfunc to uvo, and append a string
-onto the history of the file.  At the end, we delete uvo.  This is normally
+We piped the data from uvi through mfunc to uvo, and append a string
+onto the history of the file.  Just like read() and all(), pipe() accepts
+the keyword ``raw'' to pass data and flags as separate arrays into mfunc.  In
+this case, your mfunc should be defined to accept arguments 
+(uv, preamble, data, flags).
+
+At the end of the above code snippet, we deleted uvo.  This is normally
 not necessary, but some interactive consoles to not properly destruct their
 variables, and thus improperly close a new UV file.  When you are writing
 scripts, there is no need to delete.
@@ -249,9 +256,10 @@ have incorrect values in this file).  Continuing where we left off:
 >>> del(uvo)
 \end{verbatim}
 
-This time, we passed the override and exclude parameters to init\_from\_uv().
-Override is a dictionary of variables (or items) and new values, and
-variables (or items) in exclude are omitted from the output file.  If you wish
+This time, we passed override and exclude parameters to init\_from\_uv().
+``Override'' is a dictionary of variables (or items) and new values, and
+variables (or items) in ``exclude'' are omitted from the output file.  If you 
+wish
 to rewrite a variable on an integration-by-integration basis, place
 that variable with some value in override, and then use uvo to set the variable
 inside a mapping function:
@@ -270,8 +278,8 @@ inside a mapping function:
 >>> del(uvo)
 \end{verbatim}
 
-By placing the variable in override, we've prevented it from being
-automatically updated with every change it encounters in the input file.
+By placing the variable in override, it is prevented from being
+automatically updated every time its value changes in the input file.
 We are then free to set that variable from the mapping function and have the
 changes stick.  Based on the data type of the variable you are writing,
 you are expected to provide an appropriately typed Python variable.  An
@@ -341,16 +349,17 @@ from scratch:
 \end{verbatim}
 
 After creating a new file and demonstrating that we can immediately write to a
-header item like ``history'', we add 2 new variables: ``nchan'' and ``pol''.
+header item like ``history'', we added 2 new variables: ``nchan'' and ``pol''.
 Strictly speaking, a UV file doesn't have to have ``nchan'', but the Python
 wrapper uses this value to efficiently create an array exactly large enough to
 hold the data, so it's a good variable to include.  Both ``nchan'' and ``pol''
-are integers.  Although you can make any variable any type you want, there are
-conventions to follow if you want to use routines which are part of the Miriad
+are integers.  Although you are free to make any variable any type you want, 
+there are
+conventions to follow if you want to use routines that are part of the Miriad
 package.  These conventions are in the back of the Users Guide mentioned in
 \S\ref{sec:intro}.  After writing the first values of these variables, we
 construct a preamble and a datum (paying careful attention to the types needed
-for each).  In between spectra, we flip ``pol''.  After finishing the file,
+for each).  Between spectra, we flipped ``pol''.  After finishing the file,
 we close it and the open it for reading.  Looks like it works!
 
 \subsection{Script: plot\_uv.py}
@@ -358,15 +367,16 @@ we close it and the open it for reading.  Looks like it works!
 
 You are welcome (and encouraged) to plot data from a Miriad file using your
 own scripts and plotting packages--you have direct access to the data.  But
-for a canned solution/example, AIPY provides plot\_uv.py.  It uses Python's
+for a canned solution/example, AIPY provides plot\_uv.py.  It uses 
 Matplotlib to generate plots.  You can always use the -h option to get
 help on the command line interface.
 
 \begin{verbatim}
 [1]$ plot_uv.py -a 0_1 -p yy -c 22,32,42 -t 300_500 -m lin test.uv
-[2]$ plot_uv.py -a cross -m phs --chan_axis=phys --time_axis=phys -t 2454302.9_2454302.91 test.uv
-[3]$ plot_uv.py -a 0 -d --chan_axis=phys -c -200_200 -x 3 test.uv
-[4]$ plot_uv.py -a 2_3 -d -f --chan_axis=phys --time_axis=phys -x 10 test.uv
+[2]$ plot_uv.py -a cross -p yy -m phs --chan_axis=phys \
+        --time_axis=phys -t 2454302.9_2454302.91 test.uv
+[3]$ plot_uv.py -a 0 -p yy -d --chan_axis=phys -c -200_200 -x 3 test.uv
+[4]$ plot_uv.py -a 2_3 -p yy -d -f --chan_axis=phys --time_axis=phys -x 10 test.uv
 \end{verbatim}
 
 \begin{figure}
@@ -425,3 +435,6 @@ makes an attempt to read/write to this header item drop down to the UV method
 modeled after the ``freqs'' header item (or better yet, you can subclass
 UV and add it to your subclass).
 
+\subsection{Reference}
+
+\PythonSource*{module_doc/miriad.pt}

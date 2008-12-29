@@ -1,13 +1,9 @@
 """
 Provides interfaces to Healpix_cxx, which was developed at the 
-Max-Planck-Institut für Astrophysik and financially supported by the 
-Deutsches Zentrum für Luft- und Raumfahrt (DLR).
+Max-Planck-Institut fuer Astrophysik and financially supported by the 
+Deutsches Zentrum fuer Luft- und Raumfahrt (DLR).
 Adds data to the HealpixBase class using numpy arrays, and interfaces to
 FITS files using pyfits.
-
-Author: Aaron Parsons
-Date: 12/01/2007
-Revisions:
 """
 
 import numpy as n, utils, pyfits
