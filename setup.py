@@ -1,6 +1,7 @@
-#from distutils.core import setup, Extension
+from distutils.core import setup, Extension
+
 from ez_setup import use_setuptools; use_setuptools()
-from setuptools import setup, Extension
+#from setuptools import setup, Extension
 import os, glob, numpy
 
 __version__ = open('VERSION').read().strip()
@@ -31,7 +32,8 @@ setup(name = 'aipy',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
-    install_requires = ['pyephem', 'pyfits', 'matplotlib', 'basemap', 'numpy'],
+    setup_requires = ['numpy>=1.1'],
+    install_requires = ['pyephem>=3.7.3.2', 'pyfits>=1.3', 'numpy>=1.1'],
     dependency_links = [
         'http://www.stsci.edu/resources/software_hardware/pyfits'
     ],

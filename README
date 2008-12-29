@@ -7,48 +7,47 @@ DESCRIPTION
     interferometry package) and HEALPix (a package for representing spherical 
     data sets), and some math/fitting routines from SciPy. 
 
-BEFORE YOU INSTALL
-    This is a *nix package.  With some trouble it can install on MacOS, and
-    it pretty certainly doesn't install on Windows.  You need to have
-    python >= 2.4.
+ON THE WEB
+    There are further instructions, documentation, and a FAQ at:
+    http://setiathome.berkeley.edu/~aparsons/aipy
 
-    You'll need to have the following python packages:
-        numpy >= 1.0.4
-        pyephem >= 3.7.2.3
-        pyfits >= 1.1
-        *matplotlib >= 0.91
-        *matplotlib-basemap >= 0.9
+INSTALLATION
+    This is a *nix package.  With some trouble it can install on intel-based
+    Macs. It probably doesn't install on Windows. You need to have
+    python >= 2.4.  AIPY depends on the following python packages:
+        numpy >= 1.1
+        pyephem >= 3.7.3
+        pyfits >= 1.3
+        *matplotlib >= 0.98.3
+        *matplotlib-basemap >= 0.99
         (* installation can proceed without these, but some scripts won't work)
 
-    OPTION 1:
-        Install the dependencies yourself.
-    OPTION 2:
-        Someday, the setuptools/egg system for Python might work
-        smoothly, allowing for automatic dependency resolution.  But for now,
-        this seems to be more trouble than it is worth.  The files
-        install_dependencies.sh, ez_setup.py, and setup.ez outline how this
-        will be implemented, but should not be relied upon for now.
-        You can read more at: 
-            http://peak.telecommunity.com/DevCenter/setuptools
+    INSTALLING DEPENDENCIES
+        OPTION 1 (safest): Manually install the dependencies.
+        OPTION 2 (experimental): Open up the AIPY download, and with network
+            connectivity and root access, type:
+            $ install_required.sh
+            and then (if you want matplotlib/basemap):
+            $ install_recommended.sh
 
-TO INSTALL AS ROOT
-    > sudo python setup.py install
+    INSTALL AS ROOT
+        > sudo python setup.py install
 
-TO INSTALL AS USER
-    You'll first install to a directory of your choice:
-    > python setup.py install --install-lib <module_dir> \
-        --install-scripts <scripts_dir>
-    This puts the python module in <module_dir>, and the command-line scripts
-    in <scripts_dir>.  The next thing is to tell python where to look for
-    the python module.  This is done by setting the PYTHONPATH variable to
-    point to <module_dir>.  In bash, this looks like:
-    > export PYTHONPATH=<module_dir>
-    However, you'll have to type this every time you open a terminal.  To
-    avoid this, add the export line to the .bashrc file in your home dir.
+    INSTALL AS USER
+        You'll first install to a directory of your choice:
+        $ python setup.py install --install-lib <module_dir> \
+            --install-scripts <scripts_dir>
+        This puts the python module in <module_dir>, and the command-line 
+        scripts in <scripts_dir>.  The next thing is to tell python where to 
+        look for the python module.  This is done by setting the PYTHONPATH 
+        variable to point to <module_dir>.  In bash, this looks like:
+        $ export PYTHONPATH=<module_dir>
+        However, you'll have to type this every time you open a terminal.  To
+        avoid this, add the export line to the .bashrc file in your home dir.
 
-COMMAND-LINE SCRIPTS
-    Unless you installed as user, these will be in /usr/bin.  For more info
-    use the "-h" option with any of these commands:
+    COMMAND-LINE SCRIPTS
+        Unless you installed as user, these will be in /usr/bin.  For more info
+        use the "-h" option with any of these commands:
 
 Enjoy,
 Aaron Parsons

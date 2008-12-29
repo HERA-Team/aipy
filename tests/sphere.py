@@ -1,44 +1,13 @@
 #! /usr/bin/env python
 
 import numpy as n, aipy as a, pylab as p, random, sys
-from matplotlib.toolkits.basemap import Basemap
+try: from mpl_toolkits.basemap import Basemap
+except(ImportError): from matplotlib.toolkits.basemap import Basemap
 
+NPTS = 100
 random.seed(1)
 
-def pack_sphere(N):
-    dz = 2. / N
-    z = n.arange(-1+dz/2,1, dz)
-    r = n.sqrt(1-z**2)
-    dL = n.pi * (3 - n.sqrt(5))
-    long = n.arange(0, dL * N, dL)
-    return n.array([r*n.cos(long), r*n.sin(long), z])
-
-def bit_reverse(N, nbits=None):
-    if nbits is None: nbits = int(n.floor(n.log2(N))) + 1
-    ans = 0
-    for bit in range(nbits):
-        ans += n.bitwise_and(N, 2**bit) * 2**(nbits-2*bit-1)
-    return ans
-
-def bit_reverse_order(N):
-    nbits = int(n.floor(n.log2(N))) + 1
-    indices = bit_reverse(n.arange(2**nbits), nbits=nbits)
-    return indices.compress(indices < N)
-
-def local_shuffle(L, width=2):
-    for i in range(int(n.ceil(len(L) / float(width)))):
-        chunk = L[width*i:width*(i+1)]
-        random.shuffle(chunk)
-        L[width*i:width*(i+1)] = chunk
-        
-pnts = pack_sphere(int(sys.argv[-1]))
-ra,dec = a.coord.eq2radec(pnts)
-ind1 = n.arange(len(ra))
-local_shuffle(ind1)
-ind2 = bit_reverse_order(len(ra))
-indices = ind1.take(ind2)
-ra = ra.take(indices)
-dec = dec.take(indices)
+ra,dec = a.map.facet_centers(NPTS, ncrd=2)
 
 slats = dec * a.img.rad2deg
 slons = ra * a.img.rad2deg

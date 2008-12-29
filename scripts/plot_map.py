@@ -7,7 +7,8 @@ Author: Aaron Parsons
 """
 
 import aipy as a, numpy as n, pylab as p, sys, os, ephem, optparse
-from matplotlib.toolkits.basemap import Basemap
+try: from mpl_toolkits.basemap import Basemap
+except(ImportError): from matplotlib.toolkits.basemap import Basemap
 
 o = optparse.OptionParser()
 o.set_usage('plot_map.py [options] mapfile')
@@ -124,13 +125,15 @@ else: p.subplots_adjust(.05,.05,.95,.95)
 cnt = 1
 def click(event):
     global cnt
-    if event.button == 3:
-        lon,lat = map(event.xdata, event.ydata, inverse=True)
-        if opts.osys == 'eq': lon = (360 - lon) % 360
-        lon *= a.img.deg2rad; lat *= a.img.deg2rad
-        print '#%d (RA,DEC): (%s, %s)' \
-            % (cnt, ephem.hours(lon), ephem.degrees(lat))
-        cnt += 1
+    if event.button != 3: return
+    lon,lat = map(event.xdata, event.ydata, inverse=True)
+    if opts.osys == 'eq': lon = (360 - lon) % 360
+    lon *= a.img.deg2rad; lat *= a.img.deg2rad
+    ra,dec = ephem.hours(lon), ephem.degrees(lat)
+    x,y,z = a.coord.radec2eq((ra,dec))
+    flx = h[(x,y,z)]
+    print '#%d (RA,DEC): (%s, %s), Jy: %f' % (cnt, ra, dec, flx)
+    cnt += 1
 
 #register this function with the event handler
 p.connect('button_press_event', click)

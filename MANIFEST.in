@@ -4,10 +4,12 @@ include src/*
 include tests/*.py
 include setup.py
 include VERSION
+include CHANGELOG
 include README
 include LICENSE
 include LICENSE-GPL
-include install_dependencies.sh
+include install_required.sh
+include install_recommended.sh
 include ez_setup.py
 include setup.py
 include doc/*.tex

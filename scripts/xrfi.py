@@ -30,7 +30,7 @@ def gen_rfi_thresh(data, nsig=2, per_bin=1000):
     above which data is considered rfi."""
     try:
         histdata = n.log10(n.abs(data.compressed()))
-        h, bvals = n.histogram(histdata, bins=histdata.size/per_bin)
+        h, bvals = n.histogram(histdata, bins=histdata.size/per_bin, new=True)
     except(ValueError): return 0, 0
     if h.size == 0: return 0, 0
     # Fit a gaussian to histogram (better than just std-dev of data)

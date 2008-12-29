@@ -31,7 +31,8 @@ class RadioBody:
         """Update fluxes relative to the provided observer.  Must be
         called at each time step before accessing information."""
         self.janskies = n.clip(n.polyval(self._janskies, 
-                (observer.sidereal_time()-self.ra+n.pi) % (2*n.pi)), 0, n.Inf)
+            (observer.sidereal_time()-self.ra+n.pi) % (2*n.pi) - n.pi), 
+            0, n.Inf)
         self.index = n.polyval(self._index, observer.sidereal_time())
 
 #  ____           _ _       _____ _              _ ____            _       
