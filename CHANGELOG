@@ -1,3 +1,8 @@
+0.8.2
+* Built in decimation to UV files in miriad_wrap.cpp.
+* Added decimation selection with select() to UV files in miriad.py.
+* Bugfix on various scripts to use new clean command.
+
 0.8.1
 * Split out cleaning functionality from mk_img.py into cl_img.py.
 * Added snapshot capability to mk_img.py

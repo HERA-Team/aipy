@@ -13,6 +13,8 @@ o.set_usage('fitmdl.py [options] *.uv')
 o.set_description(__doc__)
 a.scripting.add_standard_options(o, ant=True, pol=True, chan=True,
     loc=True, src=True, dec=True)
+o.add_option('--dphs', dest='decphase', type='int', default=0,
+    help='Offset to use when decimating (i.e. start counting integrations at this number for the purpose of decimation). Default 0')
 o.add_option('--aprms', dest='aprms',
     help='Comma delimited list of paramters to fit independently for each antenna.')
 o.add_option('--fitants', dest='fitants', default='all',
@@ -82,27 +84,23 @@ def fit_func(prms):
     aa.set_params(prms)
     cat.set_params(prms)
     a1,a2,th = cat.get_srcshapes()
-    #if n.all(asz == 0): asz = None  # Making None bypasses a computation step
     score,nsamples = 0.,0.
-    cnt,curtime = 0,None
+    curtime = None
     for uvfile in args:
         sys.stdout.write('.') ; sys.stdout.flush()
         uv = a.miriad.UV(uvfile)
         a.scripting.uv_selector(uv, opts.ant, opts.pol)
+        uv.select('decimate', opts.decimate, opts.decphase)
         for (uvw,t,(i,j)),d,f in uv.all(raw=True):
-            # Use only every Nth integration, if decimation is specified.
             if curtime != t:
                 curtime = t
-                cnt = (cnt + 1) % opts.decimate
-                if cnt == 0:
-                    aa.set_jultime(t)
-                    cat.compute(aa)
-                    eqs = cat.get_crds('eq', ncrd=3)
-                    flx = cat.get_fluxes()
-                    ind = cat.get_indices()
-                    aa.sim_cache(eqs, flx, indices=ind,
+                aa.set_jultime(t)
+                cat.compute(aa)
+                eqs = cat.get_crds('eq', ncrd=3)
+                flx = cat.get_fluxes()
+                ind = cat.get_indices()
+                aa.sim_cache(eqs, flx, indices=ind,
                         mfreqs=mfq, srcshapes=(a1,a2,th))
-            if cnt != 0: continue
             if not opts.sim_autos and i == j: continue
             d = d.take(chans)
             f = f.take(chans)

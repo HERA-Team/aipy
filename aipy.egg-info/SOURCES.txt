@@ -64,7 +64,6 @@ scripts/combine_freqs.py
 scripts/compress_uv.py
 scripts/difuv.py
 scripts/filter_src.py
-scripts/fit_dly_pos.py
 scripts/fitmdl.py
 scripts/flux_cal.py
 scripts/lst

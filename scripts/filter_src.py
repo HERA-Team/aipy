@@ -64,7 +64,7 @@ for uvfile in args:
             if not src is None: d = aa.phs2src(d, src, i, j)
             d = n.fft.ifft(d)
             if not n.all(d == 0):
-                d, info = a.deconv.clean1d(d, ker, tol=opts.clean)
+                d, info = a.deconv.clean(d, ker, tol=opts.clean)
                 d += info['res'] / gain
         except(a.ant.PointingError): d = n.zeros_like(d)
         try: phs_dat[bl].append(d)
@@ -80,7 +80,7 @@ for uvfile in args:
                 ker = n.fft.ifft(flags)
                 d = n.fft.ifft(d, axis=0)
                 for chan in range(d.shape[1]):
-                    d[:,chan],info = a.deconv.clean1d(d[:,chan],ker,tol=opts.clean)
+                    d[:,chan],info = a.deconv.clean(d[:,chan],ker,tol=opts.clean)
                     d[:,chan] += info['res'] / gain
                 x1, x2 = opts.fng_w, -opts.fng_w+1
                 if x2 == 0: x2 = d.shape[0]
@@ -130,7 +130,7 @@ if opts.together:
             ker = n.fft.ifft(flags)
             d = n.fft.ifft(d, axis=0)
             for chan in range(d.shape[1]):
-                d[:,chan],info = a.deconv.clean1d(d[:,chan],ker,tol=opts.clean)
+                d[:,chan],info = a.deconv.clean(d[:,chan],ker,tol=opts.clean)
                 d[:,chan] += info['res'] / gain
             x1, x2 = opts.fng_w, -opts.fng_w+1
             if x2 == 0: x2 = d.shape[0]

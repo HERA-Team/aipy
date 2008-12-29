@@ -41,14 +41,16 @@ def uv_selector(uv, ant_str, pol_str):
         antopt = _strarg_to_range(ant_str)
         antopt1 = [ao[0] for ao in antopt if len(ao) == 1]
         antopt2 = [ao for ao in antopt if len(ao) == 2]
-        for opt in antopt2:
-            a1,a2 = opt
-            uv.select('antennae', a1, a2)
         if len(antopt1) == 1: uv.select('antennae', antopt1[0], -1)
         else:
             for a1 in antopt1:
                 for a2 in antopt1:
                     if a1 != a2: uv.select('antennae', a1, a2)
+        for opt in antopt2:
+            a1,a2 = opt
+            if a1 < 0: a1,include = -a1,False
+            else: include = True
+            uv.select('antennae', a1, a2, include=include)
     try: polopt = miriad.str2pol[pol_str]
     except(KeyError): raise ValueError('--pol argument invalid or absent')
     uv.select('polarization', polopt, 0)

@@ -39,6 +39,7 @@ for i, filename in enumerate(args):
     print 'Reading file %s (%d / %d)' % (filename, i + 1, len(args))
     print kwds
     print 'Pointing (ra, dec):', s._ra, s._dec
+    print 'Image Power:', n.abs(img).sum()
     # Get coordinates of image pixels in original (J2000) epoch
     ex,ey,ez = im.get_eq(s._ra, s._dec, center=(DIM/2,DIM/2))
     tx,ty,tz = im.get_top(center=(DIM/2,DIM/2))

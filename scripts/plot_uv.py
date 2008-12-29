@@ -152,7 +152,7 @@ for uvfile in args:
                 d = d.filled(0)
             d = n.fft.ifft(d)
             if not opts.clean is None and not n.all(d == 0):
-                d, info = a.deconv.clean1d(d, ker, tol=opts.clean)
+                d, info = a.deconv.clean(d, ker, tol=opts.clean)
                 d += info['res'] / gain
             d = n.ma.array(d)
             d = n.ma.concatenate([d[d.shape[0]/2:], d[:d.shape[0]/2]], 
@@ -191,7 +191,7 @@ for cnt, bl in enumerate(bls):
         d = n.fft.ifft(d, axis=0)
         if not opts.clean is None:
             for chan in range(d.shape[1]):
-                d[:,chan],info = a.deconv.clean1d(d[:,chan],ker,tol=opts.clean)
+                d[:,chan],info = a.deconv.clean(d[:,chan],ker,tol=opts.clean)
                 d[:,chan] += info['res'] / gain
         d = n.ma.concatenate([d[d.shape[0]/2:], d[:d.shape[0]/2]], axis=0)
     if opts.sum_chan:

@@ -11,6 +11,10 @@
 typedef struct {
     PyObject_HEAD
     int tno;
+    long decimate;
+    long decphase;
+    long intcnt;
+    double curtime;
 } UVObject;
 
 // Deallocate memory when Python object is deleted
@@ -36,6 +40,10 @@ void error_handler(void) {
 static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
     char *name=NULL, *status=NULL;
     self->tno = -1;
+    self->decimate = 1;
+    self->decphase = 0;
+    self->intcnt = -1;
+    self->curtime = -1;
     // Parse arguments and typecheck
     if (!PyArg_ParseTuple(args, "ss", &name, &status)) return -1;
     // Setup an error handler so MIRIAD doesn't just exit
@@ -63,6 +71,7 @@ static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
 // Thin wrapper over uvrewind_c
 PyObject * UVObject_rewind(UVObject *self) {
     uvrewind_c(self->tno);
+    self->intcnt = -1;
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -82,13 +91,22 @@ PyObject * UVObject_read(UVObject *self, PyObject *args) {
     CHK_NULL(data);
     flags = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, PyArray_INT);
     CHK_NULL(flags);
-    // Here is the MIRIAD call
-    try {
-        uvread_c(self->tno, preamble,
-            (float *)data->data, (int *)flags->data, n2read, &nread);
-    } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
-        return NULL;
+    while (1) {
+        // Here is the MIRIAD call
+        try {
+            uvread_c(self->tno, preamble,
+                (float *)data->data, (int *)flags->data, n2read, &nread);
+        } catch (MiriadError &e) {
+            PyErr_Format(PyExc_RuntimeError, e.get_message());
+            return NULL;
+        }
+        if (preamble[3] != self->curtime) {
+            self->intcnt += 1;
+            self->curtime = preamble[3];
+        }
+        if ((self->intcnt-self->decphase) % self->decimate == 0 || nread==0) {
+            break;
+        }
     }
     // Now we build a return value of ((uvw,t,(i,j)), data, flags, nread)
     npy_intp uvw_dims[1] = {3};
@@ -311,14 +329,19 @@ PyObject * UVObject_select(UVObject *self, PyObject *args) {
     float n1, n2;
     int include;
     if (!PyArg_ParseTuple(args, "sffi", &name, &n1, &n2, &include)) return NULL;
-    try {
-        uvselect_c(self->tno, name, n1, n2, include);
-        Py_INCREF(Py_None);
-        return Py_None;
-    } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
-        return NULL;
+    if (strncmp(name,"decimation",5) == 0) {
+        self->decimate = (long) n1;
+        self->decphase = (long) n2;
+    } else {
+        try {
+            uvselect_c(self->tno, name, n1, n2, include);
+        } catch (MiriadError &e) {
+            PyErr_Format(PyExc_RuntimeError, e.get_message());
+            return NULL;
+        }
     }
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 // A thin wrapper over haccess_c

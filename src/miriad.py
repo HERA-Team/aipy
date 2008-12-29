@@ -187,13 +187,15 @@ class UV(_miriad.UV):
             self._wrhd(name,val)
     def select(self, name, n1, n2, include=1):
         """Choose which data are returned by read().  
-            name    This can be one of 'time','antennae','visibility',
+            name    This can be: 'decimate','time','antennae','visibility',
                     'uvrange','pointing','amplitude','window','or','dra',
                     'ddec','uvnrange','increment','ra','dec','and', 'clear',
                     'on','polarization','shadow','auto','dazim','delev'
             n1,n2   Generally this is the range of values to select. For
                     'antennae', this is the two antennae pair to select
                     (indexed from 0); a -1 indicates 'all antennae'.
+                    For 'decimate', n1 is every Nth integration to use, and
+                    n2 is which integration within a block of N to use.
                     For 'shadow', a zero indicates use 'antdiam' variable.
                     For 'on','window','polarization','increment','shadow' only
                     p1 is used.
@@ -213,8 +215,9 @@ class UV(_miriad.UV):
         if raw: return preamble, data, flags
         return preamble, n.ma.array(data, mask=flags)
     def all(self, raw=False):
-        """Provide an iterator over preamble, data.  Allows constructs
-        like: for preamble, data in uv.all(): ..."""
+        """Provide an iterator over preamble, data.  Allows constructs like: 
+        for preamble, data in uv.all(): ..."""
+        curtime = None
         while True:
             try: yield self.read(raw=raw)
             except(IOError): return

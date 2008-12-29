@@ -46,6 +46,7 @@ for cnt, filename in enumerate(args):
     d, kwds = a.img.from_fits(filename)
     print d.shape
     print kwds
+    print '-----------------------------------------------------------'
 
     # Parse command-line options
     compress_axes = []

@@ -38,7 +38,7 @@ o.add_option('--res', dest='res', type='float', default=0.5,
     help='Resolution of UV matrix.')
 o.add_option('--no_w', dest='no_w', action='store_true',
     help="Don't use W projection.")
-o.add_option('--buf_thresh', dest='buf_thresh', default=1.8e6, type='float',
+o.add_option('--buf_thresh', dest='buf_thresh', default=2e6, type='float',
     help='Maximum amount of data to buffer before gridding.  Excessive gridding takes performance hit, but if buffer exceeds memory available... ouch.')
 opts, args = o.parse_args(sys.argv[1:])
 
