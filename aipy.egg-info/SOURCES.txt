@@ -81,6 +81,7 @@ scripts/xrfi.py
 scripts/xtalk1.py
 scripts/xtalk2.py
 scripts/xtalk3.py
+src/.sim.py.swp
 src/__init__.py
 src/ant.py
 src/const.py

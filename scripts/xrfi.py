@@ -18,7 +18,7 @@ o.add_option('-c', '--chan', dest='chan',
 o.add_option('-n', '--nsig', dest='nsig', default=2., type='float',
     help='Number of standard deviations above mean to flag.  Default 2.')
 o.add_option('-m', '--flagmode', dest='flagmode', default='both',
-    help='Can be val,int,both for flagging by value only, integration only, or both.  Default both.')
+    help='Can be val,int,both,none for flagging by value only, integration only, both, or only manually flagged channels.  Default both.')
 o.add_option('--ch_thresh', dest='ch_thresh',type='float',default=.33,
     help='Fraction of the data in a channel which, if flagged, will result in the entire channel being flagged.  Default .33')
 o.add_option('--int_thresh', dest='int_thresh',type='float',default=.99,
@@ -74,13 +74,15 @@ for uvfile in args:
             if not bl in data[pol]: data[pol][bl] = {}
             data[pol][bl][t] = d
 
-        # Generate a single mask for all baselines which masks if any
+        # Manually flag data
+        for bl in mask: mask[bl][chans] = 1
+        # Generate a single mask for all baselines which masks data if any
         # baseline has an outlier at that freq/time.  Data flagged
         # strictly on basis of nsigma above mean.
-        if not opts.flagmode.startswith('int'):
+        if opts.flagmode in ['val', 'both']:
             new_mask = {}
             for bl in mask:
-                mask[bl][chans] = 1
+                #mask[bl][chans] = 1
                 new_mask[bl] = mask[bl].copy()
             for pol in data:
               for bl in data[pol]:
@@ -106,7 +108,7 @@ for uvfile in args:
         # Use autocorrelations to flag entire integrations which have
         # anomalous powers.  At least 2 antennas must agree for a 
         # integration to get flagged.
-        if not opts.flagmode.startswith('val'):
+        if opts.flagmode in ['int', 'both']:
             new_mask = {}
             for pol in data:
               for bl in data[pol]:

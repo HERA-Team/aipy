@@ -96,6 +96,20 @@ us,vs,ws,ds,wgts = [],[],[],[],[]
 im = Img(opts.size, opts.res, mf_order=0)
 L,M = im.get_LM()
 DIM = int(opts.size/opts.res)
+n_ints = 0
+
+#print 'Calculating image of primary beam'
+#top = im.get_eq(0, aa.lat)
+#mask = top[0].mask
+#m = a.coord.eq2top_m(0, aa.lat)
+#top = top.transpose([1,0,2])
+#x,y,z = n.dot(m, top)
+#aa.select_chans([120])
+#d = aa.ants[0].bm_response((x.flatten(),y.flatten(),z.flatten()), pol='y')[0]**2
+#aa.select_chans(chans)
+#d.shape = (DIM,DIM)
+#bm_im = n.where(mask, 0, d)
+#print 'done'
 
 # Define a quick function writing an image to a FITS file
 def fname(ftag, cnt): return '%s.%s.fits' % (opts.fmt % cnt, ftag)
@@ -112,6 +126,7 @@ def to_fits(ftag,i,src,cnt):
         freq=n.average(aa.ants[0].beam.afreqs))
 
 def grid_it(im,us,vs,ws,ds,wgts):
+    #print 'Gridding %d integrations' % n_ints
     sys.stdout.write('|'); sys.stdout.flush()
     if len(ds) == 0: raise ValueError('No data to use.')
     ds,wgts = n.concatenate(ds), n.concatenate(wgts).flatten()
@@ -119,8 +134,12 @@ def grid_it(im,us,vs,ws,ds,wgts):
     # Grid data into UV matrix
     (us,vs,ws),ds,wgts = im.append_hermitian((us,vs,ws),ds,wgts)
     im.put((us,vs,ws), ds, wgts)
+    #im.put((us,vs,ws), ds, wgts, invker2=bm_im)
 
 def img_it(im):
+    global n_ints
+    #print 'Imaging with %d integrations' % n_ints
+    n_ints = 0
     if opts.uniform > 0: im.uniform_wgt(thresh=opts.uniform)
     # Form dirty images/beams
     uvs = a.img.recenter(n.abs(im.uv).astype(n.float), (DIM/2,DIM/2))
@@ -192,6 +211,7 @@ for srccnt, s in enumerate(cat.values()):
             valid = n.logical_not(f)
             d = d.compress(valid)
             if len(d) == 0: continue
+            n_ints += 1
             ds.append(d)
             us.append(u.compress(valid))
             vs.append(v.compress(valid))

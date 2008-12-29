@@ -12,6 +12,10 @@
 #include "alm_map_tools.h"
 #include "xcomplex.h"
 
+#if PY_VERSION_HEX < 0x02050000
+#define lenfunc inquiry
+#endif
+
 // Some macros...
 #define QUOTE(a) # a
 

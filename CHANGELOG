@@ -1,3 +1,8 @@
+0.8.5
+* Added support to mdlvis.py for simulating data without an input UV file.
+* Added "none" mode to xrfi.py to flag only those channels specified manually.
+* Added line to alm_wrapper.cpp to support compilation on python < 2.5.
+
 0.8.4
 * Changed modmap.py to work with sources of nonzero angular size.  Also added
   support for changing the data type (double,float) of a map.
