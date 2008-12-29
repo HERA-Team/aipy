@@ -174,7 +174,15 @@ for cnt, bl in enumerate(bls):
     if opts.df: d = d[:,:-2]/2 + d[:,2:]/2 - d[:,1:-1]
     if opts.dt: d = d[:-2]/2 + d[2:]/2 - d[1:-1]
     if opts.fringe:
-        d = n.ma.array(n.fft.ifft(d.filled(0), axis=0))
+        d = d.filled(0)
+        flags = n.where(d[:,0] != 0, 1., 0.)
+        gain = n.sqrt(n.average(flags**2))
+        ker = n.fft.ifft(flags)
+        d = n.fft.ifft(d, axis=0)
+        if not opts.clean is None:
+            for chan in range(d.shape[1]):
+                d[:,chan],info = a.deconv.clean1d(d[:,chan],ker,tol=opts.clean)
+                d[:,chan] += info['res'] / gain
         d = n.ma.concatenate([d[d.shape[0]/2:], d[:d.shape[0]/2]], axis=0)
     if opts.sum_chan:
         d = d.sum(axis=1)
@@ -251,6 +259,11 @@ for cnt, bl in enumerate(bls):
         for i,t in enumerate(plot_t):
             p.plot(plot_chans, d[i,:], '-', label=label % t)
         p.xlabel(xlabel)
+        if not opts.plot_max is None: max = opts.plot_max
+        else: max = d.max()
+        if not opts.dyn_rng is None: min = max - opts.dyn_rng
+        else: min = d.min()
+        p.ylim(min,max)
     elif not is_chan_range and is_time_range:
         if opts.time_axis == 'index': plot_times = range(len(plot_t['jd']))
         elif opts.time_axis == 'physical': plot_times = plot_t['jd']
@@ -264,6 +277,11 @@ for cnt, bl in enumerate(bls):
                 label = '%f GHz'
             for c, chan in enumerate(chans):
                 p.plot(plot_times, d[:,c], '.', label=label % chan)
+        if not opts.plot_max is None: max = opts.plot_max
+        else: max = d.max()
+        if not opts.dyn_rng is None: min = max - opts.dyn_rng
+        else: min = d.min()
+        p.ylim(min,max)
     else: raise ValueError('Either time or chan needs to be a range.')
     p.title(bl)
 if not is_time_range or not is_chan_range: p.legend(loc='best')

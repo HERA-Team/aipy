@@ -105,19 +105,23 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
 
 class SrcCatalog(ant.SrcCatalog):
     """Class for holding a catalog of celestial sources."""
-    def get_fluxes(self):
+    def get_fluxes(self, srcs=None):
         """Return list of fluxes of all src objects in catalog."""
-        return n.array([s.janskies for s in self.values()])
-    def get_indices(self):
+        if srcs is None: srcs = self.keys()
+        return n.array([self[s].janskies for s in srcs])
+    def get_indices(self, srcs=None):
         """Return list of spectral indices of all src objects in catalog."""
-        return n.array([s.index for s in self.values()])
-    def get_mfreqs(self):
+        if srcs is None: srcs = self.keys()
+        return n.array([self[s].index for s in srcs])
+    def get_mfreqs(self, srcs=None):
         """Return list of frequencies where strength is measured for all src 
         objects in catalog."""
-        return n.array([s.mfreq for s in self.values()])
-    def get_angsizes(self):
+        if srcs is None: srcs = self.keys()
+        return n.array([self[s].mfreq for s in srcs])
+    def get_angsizes(self, srcs=None):
         """Return list of angular sizes of all src objects in catalog."""
-        return n.array([s.angsize for s in self.values()])
+        if srcs is None: srcs = self.keys()
+        return n.array([self[s].angsize for s in srcs])
 
 #  ____
 # | __ )  ___  __ _ _ __ ___

@@ -20,7 +20,9 @@ o.add_option('-r', '--residual', dest='residual', action='store_true',
     help='Display only the residual in the 4th panel (otherwise display sum of clean image and residual).')
 o.add_option('-d', '--deconv', dest='deconv', default='mem',
     help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).')
-o.add_option('--var', dest='var', type='float', default=1.,
+o.add_option('-o', '--outfile', dest='outfile',
+    help='FITS file to save deconvolved data to.')
+o.add_option('--var', dest='var', type='float', default=.6,
     help='Starting guess for variance in maximum entropy fit (defaults to variance of dirty image.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
     help='Tolerance for successful deconvolution.  For annealing, interpreted as cooling speed.')
@@ -50,21 +52,24 @@ a.scripting.uv_selector(uv, opts.ant, opts.pol)
 aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
 chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
 aa.select_chans(chans)
+afreqs = aa.ants[0].beam.afreqs
+cfreq = n.average(afreqs)
 src = a.scripting.parse_srcs(opts.src)
-if opts.no_w: im = a.img.Img(opts.size, opts.res)
+if opts.no_w: im = a.img.Img(opts.size, opts.res, mf_order=1)
 else: im = a.img.ImgW(opts.size, opts.res)
 DIM = int(opts.size/opts.res)
 p1,p2 = opts.pol
 del(uv)
 
-cnt, curtime = 0, None
 # Gather data
-uvw, dat, wgt = [], [], []
-cache = {}
+uvw, dat, wgt = [], [], [[],[]]
+cnt, curtime, cache = 0, None, {}
+# Read each file
 for filename in args:
     sys.stdout.write('.'); sys.stdout.flush()
     uv = a.miriad.UV(filename)
     a.scripting.uv_selector(uv, opts.ant, opts.pol)
+    # Read all data from each file
     for (crd,t,(i,j)),d,f in uv.all(raw=True):
         if curtime != t:
             curtime = t
@@ -75,8 +80,7 @@ for filename in args:
                 top = a.coord.azalt2top((src.az,src.alt))
                 cache = {}
         if cnt != 0: continue
-        d = d.take(chans)
-        f = f.take(chans)
+        d,f = d.take(chans), f.take(chans)
         if not opts.skip_amp:
             d /= aa.ants[i].gain * n.conjugate(aa.ants[j].gain)
         try:
@@ -97,7 +101,7 @@ for filename in args:
                 # For optimal SNR, down-weight data that is already attenuated 
                 # by beam  by another factor of the beam response (modifying 
                 # weight accordingly).
-                #d *= w; w *= w
+                d *= w; w *= w
             else: w = n.ones(d.shape, dtype=n.float)
         except(a.ant.PointingError): continue
         valid = n.logical_not(f)
@@ -105,32 +109,39 @@ for filename in args:
         if len(d) == 0: continue
         dat.append(d)
         uvw.append(xyz.compress(valid, axis=0))
-        wgt.append(w.compress(valid))
+        wgt[0].append(w.compress(valid))
+        wgt[1].append((afreqs.compress(valid)-cfreq)/cfreq)
+        # If data buffer is full, grid data
         if len(dat) * len(chans) > opts.buf_thresh:
             sys.stdout.write('|'); sys.stdout.flush()
             dat = n.concatenate(dat)
             uvw = n.concatenate(uvw); uvw.shape = (uvw.size / 3, 3)
-            wgt = n.concatenate(wgt).flatten()
+            wgt[0] = n.concatenate(wgt[0]).flatten()
+            wgt[1] = n.concatenate(wgt[1]).flatten()
+            # Grid data into UV matrix
             uvw,dat,wgt = im.append_hermitian(uvw,dat,wgt)
             im.put(uvw, dat, wgt)
-            uvw, dat, wgt = [], [], []
+            uvw, dat, wgt = [], [], [[],[]]
 
+# Grid remaining data into UV matrix
 if len(uvw) == 0: raise ValueError('No data to plot')
-# Grid data into UV matrix
 sys.stdout.write('|\n'); sys.stdout.flush()
 dat = n.concatenate(dat)
 uvw = n.concatenate(uvw); uvw.shape = (uvw.size / 3, 3)
-wgt = n.concatenate(wgt).flatten()
+wgt[0] = n.concatenate(wgt[0]).flatten()
+wgt[1] = n.concatenate(wgt[1]).flatten()
 uvw,dat,wgt = im.append_hermitian(uvw,dat,wgt)
 im.put(uvw, dat, wgt)
 
+# Form dirty images/beams
 im_img = im.image((DIM/2, DIM/2))
-bm_img = im.bm_image()
+bm_img = im.bm_image(term=0)
 bm_gain = n.sqrt((bm_img**2).sum())
 
+# Deconvolve
 if opts.deconv == 'mem':
     cl_img,info = a.deconv.maxent_findvar(im_img, bm_img, f_var0=opts.var,
-        maxiter=opts.maxiter, verbose=True, tol=opts.tol)
+        maxiter=opts.maxiter, verbose=True, tol=opts.tol, maxiterok=True)
 elif opts.deconv == 'lsq':
     cl_img,info = a.deconv.lsq(im_img, bm_img, 
         maxiter=opts.maxiter, verbose=True, tol=opts.tol)
@@ -142,13 +153,13 @@ elif opts.deconv == 'ann':
         cooling=lambda i,x: opts.tol*(1-n.cos(i/50.))*(x**2), verbose=True)
 
 print 'Gain of dirty beam:', bm_gain
-bm_img = im.bm_image((DIM/2,DIM/2))
+bm_img = im.bm_image((DIM/2,DIM/2), term=0)
 
 if opts.deconv != 'none':
     rs_img = info['res'] / bm_gain
     if not opts.residual: rs_img += cl_img
 
-    # Generate a little info about where the strongest src is
+    # Generate a little info about where the strongest srcs are
     eq = im.get_eq(ra=src.ra, dec=src.dec, center=(DIM/2,DIM/2))
     ra,dec = a.coord.eq2radec(eq)
     x_ind,y_ind = n.indices(cl_img.shape)
@@ -170,6 +181,15 @@ if opts.deconv != 'none':
         print 'px:', (y, x),
         print 'Jy: %5.1f' % top10_img.flat[src_loc]
 
+if opts.outfile:
+    print 'Saving data to', opts.outfile
+    import pyfits
+    pyfits.writeto('img.fits', im_img)
+    pyfits.writeto('bm0.fits', im.bm_image(term=0))
+    pyfits.writeto('bm1.fits', im.bm_image(term=1))
+    pyfits.writeto(opts.outfile, rs_img)
+
+# Generate plots
 p.subplot(221)
 plt1_img = n.log10(im_img.clip(1e-15,n.Inf))
 mx = plt1_img.max()
@@ -201,7 +221,7 @@ if opts.deconv != 'none':
     plt4_img = n.log10(n.abs(rs_img).clip(1e-15,n.Inf))
     p.title('Residual Image')
 else:
-    plt4_img = n.log10(n.abs(im.bm))
+    plt4_img = n.log10(n.abs(im.bm[0]))
     p.title('Beam Sampling')
 mx = plt4_img.max()
 p.imshow(plt4_img, vmin=mx-opts.dyn_rng, vmax=mx, aspect='auto')

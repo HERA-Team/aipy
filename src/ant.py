@@ -138,9 +138,10 @@ class SrcCatalog(dict):
     def compute(self, observer):
         """Call compute method of all objects in catalog."""
         for s in self: self[s].compute(observer)
-    def get_crds(self, crdsys, ncrd=3):
+    def get_crds(self, crdsys, ncrd=3, srcs=None):
         """Return coordinates of all objects in catalog."""
-        crds = n.array([s.get_crd(crdsys, ncrd=ncrd) for s in self.values()])
+        if srcs is None: srcs = self.keys()
+        crds = n.array([self[s].get_crd(crdsys, ncrd=ncrd) for s in srcs])
         return crds.transpose()
 
 #  ____
@@ -180,10 +181,15 @@ class Antenna:
         self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
         self.beam = beam
         self.delay = delay
-        self.offset = (offset % 1)
+        self._offset = offset
+        try:
+            len(offset)
+            self.offset = n.polyval(offset, self.beam.afreqs)
+        except(AttributeError,TypeError): self.offset = (offset % 1)
     def select_chans(self, active_chans=None):
         """Select only enumerated channels to use for future calculations."""
         self.beam.select_chans(active_chans)
+        self.offset = n.polyval(self._offset, self.beam.afreqs)
     def __tuple__(self): return (self.pos[0], self.pos[1], self.pos[2])
     def __list__(self): return [self.pos[0], self.pos[1], self.pos[2]]
     def __add__(self, a): return self.pos + a.pos

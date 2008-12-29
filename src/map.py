@@ -6,10 +6,62 @@ Date: 11/29/06
 Revisions:
 """
 
-import numpy as n, healpix, pyfits
+import numpy as n, healpix, pyfits, coord, random
+
+# Set a fixed random seed to make scrambling deterministic
+random.seed(1)
 
 deg2rad = n.pi / 180.
 rad2deg = 180. / n.pi
+
+def pack_sphere(N):
+    """Clever formula for putting N points nearly equally spaced on 
+    the sphere.  Return xyz coordinates of each point in order from S to N."""
+    dz = 2. / N
+    z = n.arange(-1+dz/2,1, dz)
+    r = n.sqrt(1-z**2)
+    dL = n.pi * (3 - n.sqrt(5))
+    long = n.arange(0, dL * N, dL)
+    return n.array([r*n.cos(long), r*n.sin(long), z])
+
+def _bit_reverse(N, nbits=None):
+    """Numerically bit-reverse the number N assuming the specified number
+    of bits.  In not specified, will infer the least number of bits that
+    can represent N."""
+    if nbits is None: nbits = int(n.floor(n.log2(N))) + 1
+    ans = 0
+    for bit in range(nbits):
+        ans += n.bitwise_and(N, 2**bit) * 2**(nbits-2*bit-1)
+    return ans
+
+def _bit_reverse_order(N):
+    """Generate a list of indices from 0 to N-1 in bit reversed order (or
+    the nearest approximation if N is not a power of 2)."""
+    nbits = int(n.floor(n.log2(N))) + 1
+    indices = _bit_reverse(n.arange(2**nbits), nbits=nbits)
+    return indices.compress(indices < N)
+
+def _local_shuffle(L, width=2):
+    """Shuffle elements of L without moving them too much by choosing chunks
+    of the specified width and only scrambling elements within those chunks."""
+    for i in range(int(n.ceil(len(L) / float(width)))):
+        chunk = L[width*i:width*(i+1)]
+        random.shuffle(chunk)
+        L[width*i:width*(i+1)] = chunk
+
+def facet_centers(N, ncrd=2):
+    """Return the coordinates of N points equally spaced around the sphere.
+    Will return xyz or ra,dec depending on ncrd.  Shuffles the order of the
+    pointing centers wrt pack_sphere so that widely spaced points are done 
+    first, and then the gaps between them, and then the gaps between those.."""
+    assert(ncrd == 2 or ncrd == 3)
+    ind1 = n.arange(N); local_shuffle(ind1)
+    ind2 = bit_reverse_order(N)
+    ind = ind1.take(ind2)
+    pnts = pack_sphere(N)
+    pnts = pnts.take(ind, axis=0)
+    if ncrd == 3: return pnts
+    else: return coord.eq2radec(pnts)
 
 class Map(object):
     def __init__(self, *args, **kwargs):

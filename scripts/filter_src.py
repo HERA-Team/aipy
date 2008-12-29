@@ -29,8 +29,8 @@ del(uv)
 for uvfile in args:
     print 'Working on', uvfile
     phs_dat = {}
-    cnt = {}
-    uvofile = uvfile+'.'+opts.src
+    if opts.extract: uvofile = uvfile+'.e_'+opts.src
+    else: uvofile = uvfile+'.'+opts.src
     if os.path.exists(uvofile):
         print uvofile, 'exists, skipping.'
         continue
@@ -63,20 +63,19 @@ for uvfile in args:
     for bl in phs_dat:
         d = n.array(phs_dat[bl])
         flags = n.where(d[:,0] != 0, 1., 0.)
-        flags /= flags.size
-        d = n.fft.fft(d, axis=0)
-        ker = n.fft.fft(flags)
-        gain = n.sqrt((flags**2).sum())
-        for c in range(d.shape[1]):
-            d_clean, info = a.deconv.clean1d(d[:,c], ker, tol=1e-2)
-            d[:,c] = d_clean + info['res'] / gain
+        gain = n.sqrt(n.average(flags**2))
+        ker = n.fft.ifft(flags)
+        d = n.fft.ifft(d, axis=0)
+        for chan in range(d.shape[1]):
+            d[:,chan], info = a.deconv.clean1d(d[:,chan], ker, tol=opts.clean)
+            d[:,chan] += info['res'] / gain
         x1, x2 = opts.fng_w, -opts.fng_w+1
         if x2 == 0: x2 = d.shape[0]
         y1, y2 = opts.dly_w, -opts.dly_w
         if y2 == 0: y2 = d.shape[1]
         d[x1:x2,:] = 0
         d[:,y1:y2] = 0
-        d = n.fft.ifft(d, axis=0)
+        d = n.fft.fft(d, axis=0)
         d = n.fft.fft(d, axis=1)
         phs_dat[bl] = d
 
@@ -103,7 +102,6 @@ for uvfile in args:
     # Apply the pipe to the data
     uvi.rewind()
     uvo = a.miriad.UV(uvofile, status='new')
-    # Apply the pipe to the data
     uvo.init_from_uv(uvi)
-    uvo.pipe(uvi, mfunc=rm_mfunc)
+    uvo.pipe(uvi, mfunc=rm_mfunc, append2hist='FILTER_SRC: src=%s fng_w=%d dly_w=%d extract=%s clean=%f\n' % (opts.src, opts.fng_w, opts.dly_w, opts.extract, opts.clean))
     del(uvi); del(uvo)

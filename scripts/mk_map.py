@@ -12,7 +12,7 @@ map is saved to the output fits file.
 Author: Aaron Parsons
 """
 
-import sys, numpy as n, os, aipy as a, random, optparse
+import sys, numpy as n, os, aipy as a, optparse
 
 o = optparse.OptionParser()
 o.set_usage('mk_map.py [options] *.uv')
@@ -23,7 +23,7 @@ o.add_option('--no_res', dest='no_res', action='store_true',
     help='Do not include the residual data (after deconvolution) in the map.')
 o.add_option('-d', '--deconv', dest='deconv', default='mem',
     help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).  Default "mem".')
-o.add_option('--var', dest='var', type='float', default=.8,
+o.add_option('--var', dest='var', type='float', default=.6,
     help='Starting variance guess for MEM deconvolution, as a fraction of the total image variance.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
     help='Tolerance for successful deconvolution.')
@@ -62,21 +62,17 @@ if os.path.exists(opts.map): skymap = a.map.Map(fromfits=opts.map)
 else: skymap = a.map.Map(nside=256)
 skymap.set_interpol(opts.interpolate)
 
-# Loop through RA and DEC, imaging on 15 degree grid
-ras_decs = []
-for ra1 in range(0,24):
-  ra2 = 0
-  for dec in range(-75, 90, 15):
-    ras_decs.append((ra1, ra2, dec))
-# Randomize pointings so intermediate skymaps approximate the total map
-random.seed(1)
-random.shuffle(ras_decs)
+# Define pointing centers of facets
+NPTS = 100
+ras,decs = a.map.facet_centers(NPTS, ncrd=2)
 
-for i, (ra1, ra2, dec) in enumerate(ras_decs):
-    src = a.ant.RadioFixedBody('%2d:%02d:00' % (ra1, ra2),
-        '%2d:00:00' % dec, name='%2d:%02d, %3d' % (ra1, ra2, dec))
-    print '%d / %d' % (i + 1, len(ras_decs))
-    print 'Pointing (ra, dec):', src.src_name
+for i, (ra,dec) in enumerate(zip(ras,decs)):
+    src = a.ant.RadioFixedBody(ra, dec)
+    print '%d / %d' % (i + 1, NPTS)
+    print 'Pointing (ra, dec):', src._ra, src._dec
+    if abs(aa.lat - src._dec) > n.pi/2:
+        print '    Source never rises: skipping'
+        continue
     cnt, curtime = 0, None
     uvw, dat, wgt = [], [], []
     cache = {}
@@ -118,7 +114,7 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
                     # For optimal SNR, down-weight data that is already
                     # attenuated  by beam  by another factor of the beam 
                     # response (modifying  weight accordingly).
-                    #d *= w; w *= w
+                    d *= w; w *= w
                 else: w = n.ones(d.shape, dtype=n.float)
             except(a.ant.PointingError): continue
             valid = n.logical_not(f)
@@ -155,7 +151,7 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
     if opts.deconv == 'none': img = im_img / bm_gain
     elif opts.deconv == 'mem':
         cl_img,info = a.deconv.maxent_findvar(im_img, bm_img, f_var0=opts.var,
-            maxiter=opts.maxiter, verbose=True, tol=opts.tol)
+            maxiter=opts.maxiter, verbose=True, tol=opts.tol, maxiterok=True)
     elif opts.deconv == 'lsq':
         cl_img,info = a.deconv.lsq(im_img, bm_img,
             maxiter=opts.maxiter, verbose=True, tol=opts.tol)

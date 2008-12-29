@@ -103,7 +103,7 @@ def clean(im, ker, mdl=None, gain=.2, maxiter=10000, chkiter=100, tol=1e-3,
     info.update({'res':n_dif, 'score': score, 'iter':i+1})
     return n_mdl, info
 
-def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=1000, 
+def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=200, 
         lower=lo_clip_lev, upper=n.Inf, verbose=False):
     """This simple least-square fitting procedure for deconvolving an image 
     saves computing by assuming a diagonal pixel-pixel gradient of the fit.
@@ -139,8 +139,8 @@ def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=1000,
         term = abs(1 - score/n_score)
         if verbose:
             slope = n.sqrt(n.average(g_chi2**2))
-            print 'Step %d:' % i, 'score %f,' % score, 
-            print 'slope %f,' % slope, 'term %f' % term
+            print 'Step %d:' % i, 'score',  score, 
+            print 'slope', slope, 'term', term
         if term < tol:
             info['term'] = 'tol'
             break
@@ -153,7 +153,7 @@ def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=1000,
         'score': score, 'iter':i+1})
     return x, info
 
-def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=1000, 
+def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200, 
         lower=lo_clip_lev, upper=n.Inf, verbose=False):
     """Maximum entropy deconvolution (MEM) (see Cornwell and Evans 1984
     "A Simple Maximum Entropy Deconvolution Algorithm" and Sault 1990
@@ -216,29 +216,38 @@ def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=1000,
         'score': score, 'alpha': alpha, 'iter':i+1})
     return b_i, info
 
-def maxent_findvar(im, ker, f_var0=.8, mdl=None, gain=.1, tol=1e-3, 
-        maxiter=1000, lower=lo_clip_lev, upper=n.Inf, verbose=False):
+def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3, 
+        maxiter=200, lower=lo_clip_lev, upper=n.Inf, verbose=False, 
+        maxiterok=False):
     """This frontend to maxent tries to find a variance for which maxent will
-    converge.  The starting variance (f_var0) is specified as a fraction of the
-    variance of the dirty image, and a search algorithm tests an ever-widening
+    converge.  If the starting variance (var) is not specified, it will be
+    estimated as a fraction (f_var0) of the variance of the residual of a 
+    lsq deconvolution, and then a search algorithm tests an ever-widening
     range around that value.  This function will search until it succeeds."""
-    # Try various noise levels until one works
     cl, info, cnt = None, None, -1
-    im_var = n.var(im) * f_var0
+    if var is None:
+        # Get a starting estimate of variance to use via residual of lsq
+        junk, info = lsq(im, ker, mdl=mdl, gain=gain, tol=tol,
+            maxiter=maxiter/4, lower=lower, upper=upper, verbose=False)
+        var = n.var(info['res'])
+        if verbose: print 'Using', f_var0, 'of LSQ estimate of var=', var
+        var *= f_var0
+    else:
+        if verbose: print 'Using specified var=', var
     while cl is None:
-        if cnt == -1: v = im_var
-        else: v = im_var / (1.5**cnt)
-        while cnt < 0 or v < im_var * (1.5**cnt):
+        if cnt == -1: v = var
+        else: v = var / (1.5**cnt)
+        while cnt < 0 or v < var * (1.5**cnt):
             if verbose:
                 print 'Trying var=', v,
                 sys.stdout.flush()
-            c, i = maxent(im, ker, var0=v, mdl=mdl, gain=gain, tol=tol,
+            c, i = maxent(im, ker, v, mdl=mdl, gain=gain, tol=tol,
                 maxiter=maxiter, lower=lower, upper=upper, verbose=False)
             if verbose:
                 print 'success %d,' % i['success'],
                 print 'term: %s,' % i['term'], 'score:' , i['score']
             # Check if fit converged
-            if i['success'] and i['term'] == 'tol':
+            if i['success'] and (maxiterok or i['term'] == 'tol'):
                 cl, info = c, i
                 break
             else:

@@ -84,6 +84,7 @@ if not opts.srcs is None:
     cat.compute(o)
     # lat/lon coordinates of sources
     scrds = [ephem.Equatorial(s.ra,s.dec) for s in cat.values()]
+    sflxs = cat.get_fluxes()
     snams = cat.keys()
 if opts.osys == 'ga':
     scrds = [ephem.Galactic(s, epoch=opts.oepoch) for s in scrds]
@@ -117,9 +118,9 @@ if opts.osys == 'eq': data = n.fliplr(data)
 CS = map.contourf(x, y, data, levels, linewidths=0)
 sx, sy = map(slons,slats)
 if not opts.srcs is None:
-    for name, xpt, ypt in zip(snams, sx, sy):
+    for name, xpt, ypt, flx in zip(snams, sx, sy, sflxs):
         if xpt >= 1e30 or ypt >= 1e30: continue
         #map.plot(sx, sy, 'ko', markerfacecolor=None)
-        p.text(xpt+50000, ypt+50000, name)
+        p.text(xpt+50000, ypt+50000, name, size=5+2*int(n.round(n.log10(flx))))
 if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
 p.show()
