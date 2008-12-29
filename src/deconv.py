@@ -2,14 +2,14 @@
 A module implementing various techniques for deconvolving an image by a
 kernel.  Currently implemented are Clean, Least-Squares, Maximum Entropy,
 and Annealing.  Standard parameters to these functions are:
-im: The image to be deconvolved.
-ker: The kernel to deconvolve by (must be same size as im).
-mdl: An a priori model of what the deconvolved image should look like.
-maxiter: The maximum number of iterations performed before terminating.
-tol: Termination criterion, with lower being more optimized. .01-.001 is normal.
-verbose: Print some info on how things are progressing.
-lower: Lower bound of pixel values in deconvolved image
-upper: Upper bound of pixel values in deconvolved image
+im = image to be deconvolved.
+ker = kernel to deconvolve by (must be same size as im).
+mdl = a priori model of what the deconvolved image should look like.
+maxiter = maximum number of iterations performed before terminating.
+tol = termination criterion, lower being more optimized.
+verbose =  print info on how things are progressing.
+lower = lower bound of pixel values in deconvolved image
+upper = upper bound of pixel values in deconvolved image
 
 Author: Aaron Parsons
 Date: 11/29/07
@@ -24,6 +24,7 @@ import numpy as n, sys, _deconv
 lo_clip_lev = n.finfo(n.float).tiny 
 
 def clean1d(im, ker, mdl=None, gain=.1, maxiter=10000, tol=1e-3):
+    """Perform 1 dimensional deconvolution using the CLEAN algorithm."""
     if mdl is None:
         mdl = n.zeros_like(im)
         res = im.copy()
@@ -229,7 +230,7 @@ def maxent_findvar(im, ker, f_var0=.8, mdl=None, gain=.1, tol=1e-3,
         else: v = im_var / (1.5**cnt)
         while cnt < 0 or v < im_var * (1.5**cnt):
             if verbose:
-                print 'Trying var=%f' % v,
+                print 'Trying var=', v,
                 sys.stdout.flush()
             c, i = maxent(im, ker, var0=v, mdl=mdl, gain=gain, tol=tol,
                 maxiter=maxiter, lower=lower, upper=upper, verbose=False)

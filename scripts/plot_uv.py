@@ -3,33 +3,19 @@
 Creates waterfall plots from Miriad UV files.  Can tile multiple plots
 on one window, or plot just a single baseline.
 
-Author: Aaron Parsons
-Date: 07/05/07
-Revisions:
-    08/15/07    arp Ported to use select_data, added decimate option, and
-                    unmask option.
-    01/20/08    arp Added physical coordinates to plots
-    02/19/08    gf  (Griffin Foster) Added the -t option to look at time slices
+Author: Aaron Parsons, Griffin Foster
 """
 
-import aipy as a, numpy as n, pylab as p, math, sys
-from optparse import OptionParser
+import aipy as a, numpy as n, pylab as p, math, sys, optparse
 
-o = OptionParser()
+o = optparse.OptionParser()
 o.set_usage('plot_uv.py [options] *.uv')
 o.set_description(__doc__)
+a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, dec=True)
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plot mode can be log (logrithmic), lin (linear), phs (phase), real, or imag.')
-o.add_option('-a', '--ants', dest='ants', default='all',
-    help='Select which antennas/baselines to include in plot.  Options are: "all", "auto", "cross", "<ant1 #>_<ant2 #>" (a specific baseline), or "<ant1 #>,..." (a list of active antennas).')
-o.add_option('-p', '--pol', dest='pol', default=None,
-    help='Choose which polarization (xx, yy, xy, yx) to plot.')
-o.add_option('-c', '--chan', dest='chan', default='all',
-    help='Select which channels (taken after any delay/fringe transforms) to plot.  Options are: "all", "<chan1 #>,..." (a list of active channels), or "<chan1 #>_<chan2 #>" (a range of channels).  If "all" or a range are selected, a 2-d image will be plotted.  If a list of channels is selected, an xy plot will be generated.')
 o.add_option('--sum_chan', dest='sum_chan', action='store_true',
     help='Sum active channels together.')
-o.add_option('-x', '--decimate', dest='decimate', default=1, type='int',
-    help='Take every Nth time data point.')
 o.add_option('-t', '--time', dest='time', default='all', help='Select which time sample to plot. Options are: "all" (default), "<time1 #>_<time2 #>" (a range of times to plot), or "<time1 #>,<time2 #>" (a list of times to plot). If "all" or a range are selected, a 2-d image will be plotted. If a list of times is selected an xy plot will be generated.')
 o.add_option('-u', '--unmask', dest='unmask', action='store_true',
     help='Plot masked data, too.')
@@ -43,33 +29,21 @@ o.add_option('--df', dest='df', action='store_true',
     help='Remove a linear extrapolation from adjacent frequency channels.')
 o.add_option('-o', '--out_file', dest='out_file', default='',
     help='If provided, will save the figure to the specified file instead of popping up a window.')
-o.add_option('--plot_min', dest='plot_min', default=None, type='int', 
-    help='Lower clip value on log plots.')
+o.add_option('--plot_max', dest='plot_max', default=None, type='float', 
+    help='Upper clip value on 2D plots.')
+o.add_option('--dyn_rng', dest='dyn_rng', default=None, type='float', 
+    help='Dynamic range in scale of 2D plots.')
 o.add_option('--time_axis', dest='time_axis', default='index',
     help='Choose time axis to be integration/fringe index (index), or physical coordinates (physical), or if doing xy plot in time-mode, (lst) is also available.  Default is index.')
 o.add_option('--chan_axis', dest='chan_axis', default='index',
     help='Choose channel axis to be channel/delay index (index), or physical coordinates (physical).  Default is index.')
-o.add_option('--clean', dest='clean', action='store_true',
-    help='Deconvolve delay-domain data by the "beam response" that results from flagged data.')
+o.add_option('--clean', dest='clean', type='float',
+    help='Deconvolve delay-domain data by the "beam response" that results from flagged data.  Specify a tolerance for termination (usually 1e-2 or 1e-3).')
 
 def convert_arg_range(arg):
     """Split apart command-line lists/ranges into a list of numbers."""
     arg = arg.split(',')
     return [map(float, option.split('_')) for option in arg]
-
-def data_selector(antopt, active_pol, uv):
-    """Call uv.select with appropriate options based on command-line argument 
-    for ants."""
-    if antopt.startswith('all'): pass
-    elif antopt.startswith('auto'): uv.select('auto', 0, 0)
-    elif antopt.startswith('cross'): uv.select('auto', 0, 0, include=0)
-    else:
-        antopt = convert_arg_range(antopt)
-        for opt in antopt:
-            try: a1,a2 = opt
-            except(ValueError): a1,a2 = opt + [-1]
-            uv.select('antennae', a1, a2)
-    uv.select('polarization', active_pol, 0)
 
 def gen_chans(chanopt, uv, coords, is_delay):
     """Return an array of active channels and whether or not a range of
@@ -121,11 +95,11 @@ def gen_times(timeopt, uv, coords, decimate, is_fringe):
                 return False
     return time_selector, is_time_range
 
-# Initialized based on command line arguments
 opts, args = o.parse_args(sys.argv[1:])
+
+# Parse command-line options
 uv = a.miriad.UV(args[0])
-if opts.pol is None: active_pol = uv['pol']
-else: active_pol = a.miriad.str2pol[opts.pol]
+a.scripting.uv_selector(uv, opts.ant, opts.pol)
 chans, is_chan_range = gen_chans(opts.chan, uv, opts.chan_axis, opts.delay)
 freqs = n.arange(uv['sfreq'], uv['sfreq']+uv['nchan']*uv['sdf'], uv['sdf'])
 freqs = freqs.take(chans)
@@ -145,7 +119,7 @@ for uvfile in args:
     print 'Reading', uvfile
     uv = a.miriad.UV(uvfile)
     # Only select data that is needed to plot
-    data_selector(opts.ants, active_pol, uv)
+    a.scripting.uv_selector(uv, opts.ant, opts.pol)
     # Read data from a single UV file
     for (uvw,t,(i,j)),d in uv.all():
         bl = '%d,%d' % (i,j)
@@ -168,13 +142,12 @@ for uvfile in args:
                 gain = 1.
             else:
                 flags = n.logical_not(d.mask).astype(n.float)
+                gain = n.sqrt(n.average(flags**2))
                 ker = n.fft.ifft(flags)
                 d = d.filled(0)
-                gain = flags.sum()
-            flags = n.where
             d = n.fft.ifft(d)
-            if opts.clean and not n.all(d == 0):
-                d, info = a.deconv.clean1d(d, ker, tol=1e-10)
+            if not opts.clean is None and not n.all(d == 0):
+                d, info = a.deconv.clean1d(d, ker, tol=opts.clean)
                 d += info['res'] / gain
             d = n.ma.array(d)
             d = n.ma.concatenate([d[d.shape[0]/2:], d[:d.shape[0]/2]], 
@@ -215,7 +188,6 @@ for cnt, bl in enumerate(bls):
         d = n.ma.masked_less_equal(d, 0)
         d = n.ma.log10(d)
     else: raise ValueError('Unrecognized plot mode.')
-    #p.subplot(m1, m2, cnt+1)
     p.subplot(m2, m1, cnt+1)
     if is_chan_range and is_time_range:
         if opts.fringe:
@@ -248,15 +220,13 @@ for cnt, bl in enumerate(bls):
             else:
                 c1,c2 = freqs[0], freqs[-1]
                 xlabel = 'Frequency (GHz)'
-        if opts.mode.startswith('log'):
-            if not opts.plot_min is None:
-                p.imshow(d, extent=(c1,c2,t2,t1), aspect='auto', 
-                    vmin=opts.plot_min)
-            else: p.imshow(d, extent=(c1,c2,t2,t1), aspect='auto')
-        else: p.imshow(d, extent=(c1,c2,t2,t1), aspect='auto')
+        if not opts.plot_max is None: max = opts.plot_max
+        else: max = d.max()
+        if not opts.dyn_rng is None: min = max - opts.dyn_rng
+        else: min = d.min()
+        p.imshow(d, extent=(c1,c2,t2,t1), aspect='auto', vmax=max, vmin=min)
         p.colorbar()
-        p.xlabel(xlabel)
-        p.ylabel(ylabel)
+        p.xlabel(xlabel); p.ylabel(ylabel)
     elif is_chan_range and not is_time_range:
         if opts.delay:
             if opts.chan_axis == 'index':

@@ -1,6 +1,6 @@
 """
-A module for gridding UVW data (including W projection), forming images,
-and combining (mosaicing) images into a spherical map.
+Module for gridding UVW data (including W projection), forming images,
+and combining (mosaicing) images into spherical maps.
 
 Author: Aaron Parsons
 Date: 11/29/06
@@ -55,12 +55,12 @@ def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
     return recenter(g, center)
 
 class Img:
-    """A class for gridding uv data, recording the synthesized beam profile,
-    and performing the transforms into image domain."""
+    """Class for gridding uv data, recording the synthesized beam profile,
+    and performing transforms into image domain."""
     def __init__(self, size=100, res=1):
-        """size: The number of wavelengths which the UV matrix spans (this 
-            determines the image resolution).
-        res: The resolution of the UV matrix (determines image FOV)."""
+        """size = number of wavelengths which the UV matrix spans (this 
+        determines the image resolution).
+        res = resolution of the UV matrix (determines image field of view)."""
         self.res = float(res)
         self.size = float(size)
         dim = n.round(self.size / self.res)

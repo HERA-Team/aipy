@@ -1,92 +1,66 @@
 #! /usr/bin/env python
+"""
+This is a general-purpose script for making faceted sky maps from MIRIAD UV 
+files.  Data (optionally selected for baseline, channel) are read from the 
+file, phased to each of 264 phase centers on a 15 degree grid, normalized for 
+passband/primary beam effects, gridded to a UV matrix, imaged, and optionally 
+deconvolved by a corresponding PSF to produce a clean image.  The clean image
+and residual are then combined and gridded onto a Healpix map with a weighting
+dictated by the distance from phase center.  At each iteration, the resulting
+map is saved to the output fits file.
+
+Author: Aaron Parsons
+"""
+
 import sys, numpy as n, os, aipy as a, random, optparse
 
 o = optparse.OptionParser()
 o.set_usage('mk_map.py [options] *.uv')
 o.set_description(__doc__)
-o.add_option('-l', '--loc', dest='loc',
-    help='Use location-specific info for this location.')
+a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, 
+    loc=True, dec=True)
+o.add_option('--no_res', dest='no_res', action='store_true',
+    help='Do not include the residual data (after deconvolution) in the map.')
 o.add_option('-d', '--deconv', dest='deconv', default='mem',
-    help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).')
-o.add_option('-r', '--residual', dest='residual', action='store_true',
-    help='Include the residual data (after deconvolution) in the map.')
+    help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).  Default "mem".')
 o.add_option('--var', dest='var', type='float', default=.8,
-    help='Starting variance guess for deconvolution, as a fraction of the total image variance.')
+    help='Starting variance guess for MEM deconvolution, as a fraction of the total image variance.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
     help='Tolerance for successful deconvolution.')
 o.add_option('--maxiter', dest='maxiter', type='int', default=200,
     help='Number of allowable iterations per deconvolve attempt.')
-o.add_option('-a', '--amp', dest='amp', action='store_true',
-    help='Use amplitude information to normalize visibilities.')
-o.add_option('-w', '--wgt_bm', dest='wgt_bm', action='store_true',
-    help='Weight visibilities by the strength of the primary beam.')
+o.add_option('--skip_amp', dest='skip_amp', action='store_true',
+    help='Do not use amplitude information to normalize visibilities.')
+o.add_option('--skip_bm', dest='skip_bm', action='store_true',
+    help='Do not weight visibilities by the strength of the primary beam.')
 o.add_option('-i', '--interpolate', dest='interpolate', action='store_true',
     help='Use sub-pixel interpolation when gridding data to healpix map.')
-o.add_option('-b', '--baselines', dest='baselines', default='cross',
-    help='Select which antennas/baselines to include in plot.  Options are: "all", "auto", "cross", "<ant1 #>_<ant2 #>" (a specific baseline), or "<ant1 #>,..." (a list of active antennas).')
-o.add_option('-p', '--pol', dest='pol', default=None,
-    help='Choose which polarization (xx, yy, xy, yx) to plot.')
-o.add_option('-c', '--chan', dest='chan', default='all',
-    help='Select which channels (taken after any delay/fringe transforms) to plot.  Options are: "all", "<chan1 #>,..." (a list of active channels), or "<chan1 #>_<chan2 #>" (a range of channels).  If "all" or a range are selected, a 2-d image will be plotted.  If a list of channels is selected, an xy plot will be generated.')
-o.add_option('-x', '--decimate', dest='decimate', default=1, type='int',
-    help='Take every Nth time data point.')
 o.add_option('--size', dest='size', type='int', default=200,
     help='Size of maximum UV baseline.')
 o.add_option('--res', dest='res', type='float', default=0.5,
     help='Resolution of UV matrix.')
-o.add_option('--buf', dest='buf_thresh', default=1.8e6, type='float',
+o.add_option('--no_w', dest='no_w', action='store_true',
+    help="Don't use W projection.")
+o.add_option('--buf_thresh', dest='buf_thresh', default=1.8e6, type='float',
     help='Maximum amount of data to buffer before gridding.  Excessive gridding takes performance hit, but if buffer exceeds memory available... ouch.')
 o.add_option('-m', '--map', dest='map',
     help='The skymap file to use.  If it exists, new data will be added to the map.  Othewise, the file will be created.')
-
-def convert_arg_range(arg):
-    """Split apart command-line lists/ranges into a list of numbers."""
-    arg = arg.split(',')
-    return [map(float, option.split('_')) for option in arg]
-
-def data_selector(antopt, active_pol, uv):
-    """Call uv.select with appropriate options based on command-line argument 
-    for ants."""
-    if antopt.startswith('all'): pass
-    elif antopt.startswith('auto'): uv.select('auto', 0, 0)
-    elif antopt.startswith('cross'): uv.select('auto', 0, 0, include=0)
-    else:
-        antopt = convert_arg_range(antopt)
-        for opt in antopt:
-            try: a1,a2 = opt
-            except(ValueError): a1,a2 = opt + [-1]
-            uv.select('antennae', a1, a2)
-    uv.select('polarization', active_pol, 0)
-
-def gen_chans(chanopt, uv):
-    """Return an array of active channels based on command-line arguments."""
-    if chanopt == 'all': chans = n.arange(uv['nchan'])
-    else:
-        chanopt = convert_arg_range(chanopt)
-        if len(chanopt[0]) != 1:
-            chanopt = [n.arange(x,y, dtype=n.int) for x,y in chanopt]
-        chans = n.concatenate(chanopt)
-    return chans.astype(n.int)
-
 opts, args = o.parse_args(sys.argv[1:])
 
-# Get antenna array information
+# Parse command-line options
 uv = a.miriad.UV(args[0])
+a.scripting.uv_selector(uv, opts.ant, opts.pol)
 aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
-if opts.pol is None: active_pol = uv['pol']
-else: active_pol = a.miriad.str2pol[opts.pol]
-chans = gen_chans(opts.chan, uv)
-del(uv)
-
+chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
 aa.select_chans(chans)
+DIM = int(opts.size/opts.res)
+p1,p2 = opts.pol
+del(uv)
 
 # Open skymap
 if os.path.exists(opts.map): skymap = a.map.Map(fromfits=opts.map)
 else: skymap = a.map.Map(nside=256)
 skymap.set_interpol(opts.interpolate)
-
-# Some imaging constants
-DIM = int(opts.size/opts.res)
 
 # Loop through RA and DEC, imaging on 15 degree grid
 ras_decs = []
@@ -94,6 +68,8 @@ for ra1 in range(0,24):
   ra2 = 0
   for dec in range(-75, 90, 15):
     ras_decs.append((ra1, ra2, dec))
+# Randomize pointings so intermediate skymaps approximate the total map
+random.seed(1)
 random.shuffle(ras_decs)
 
 for i, (ra1, ra2, dec) in enumerate(ras_decs):
@@ -103,36 +79,50 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
     print 'Pointing (ra, dec):', src.src_name
     cnt, curtime = 0, None
     uvw, dat, wgt = [], [], []
-    im = a.img.ImgW(opts.size, opts.res)
+    cache = {}
+    if not opts.no_w: im = a.img.ImgW(opts.size, opts.res)
+    else: im = a.img.Img(opts.size, opts.res)
     for filename in args:
         sys.stdout.write('.'); sys.stdout.flush()
         uv = a.miriad.UV(filename)
-        data_selector(opts.baselines, active_pol, uv)
-        for (crd,t,(i,j)),d in uv.all():
+        a.scripting.uv_selector(uv, opts.ant, opts.pol)
+        for (crd,t,(i,j)),d,f in uv.all(raw=True):
             if curtime != t:
                 curtime = t
                 cnt = (cnt + 1) % opts.decimate
                 if cnt == 0:
                     aa.set_jultime(t)
                     src.compute(aa)
+                    top = a.coord.azalt2top((src.az,src.alt))
+                    cache = {}
             if cnt != 0: continue
             d = d.take(chans)
-            if opts.amp: d /= aa.ants[i].gain * aa.ants[j].gain
+            f = f.take(chans)
+            if not opts.skip_amp:
+                d /= aa.ants[i].gain * n.conjugate(aa.ants[j].gain)
             try:
                 d = aa.phs2src(d, src, i, j)
                 xyz = aa.gen_uvw(i,j,src=src)
-                if opts.wgt_bm:
-                    src_top = a.coord.azalt2top((src.az,src.alt))
-                    w = aa.ants[i].response(src_top, pol=opts.pol[0]) *\
-                        aa.ants[j].response(src_top, pol=opts.pol[1])
-                    w = w.flatten()
-# For optimal SNR, down-weight data that is already attenuated by beam 
-# by another factor of the beam response (modifying weight accordingly).
+                if not opts.skip_bm:
+                    # Cache beam response, since it is an expensive operation
+                    if not cache.has_key(i): cache[i] = {}
+                    if not cache[i].has_key(p1):
+                        r = aa.ants[i].bm_response(top, pol=p1)
+                        cache[i][p1] = r.flatten()
+                    if not cache.has_key(j): cache[j] = {}
+                    if not cache[j].has_key(p2):
+                        r = aa.ants[j].bm_response(top, pol=p2)
+                        cache[j][p2] = r.flatten()
+                    # Calculate beam strength for weighting purposes
+                    w = cache[i][p1] * cache[j][p2]
+                    # For optimal SNR, down-weight data that is already
+                    # attenuated  by beam  by another factor of the beam 
+                    # response (modifying  weight accordingly).
                     #d *= w; w *= w
                 else: w = n.ones(d.shape, dtype=n.float)
             except(a.ant.PointingError): continue
-            valid = n.logical_not(d.mask)
-            d = d.compress(valid).data
+            valid = n.logical_not(f)
+            d = d.compress(valid)
             if len(d) == 0: continue
             dat.append(d)
             uvw.append(xyz.compress(valid, axis=0))
@@ -162,7 +152,7 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
     bm_gain = n.sqrt((bm_img**2).sum())
     print 'Gain of dirty beam:', bm_gain
 
-    if opts.deconv == 'none': img = im_img #/ n.sqrt((bm_img**2).sum())
+    if opts.deconv == 'none': img = im_img / bm_gain
     elif opts.deconv == 'mem':
         cl_img,info = a.deconv.maxent_findvar(im_img, bm_img, f_var0=opts.var,
             maxiter=opts.maxiter, verbose=True, tol=opts.tol)
@@ -176,25 +166,21 @@ for i, (ra1, ra2, dec) in enumerate(ras_decs):
         cl_img,info = a.deconv.anneal(im_img, bm_img, maxiter=opts.maxiter,
             cooling=lambda i,x: opts.tol*(1-n.cos(i/50.))*(x**2), verbose=True)
     if opts.deconv != 'none':
-        rs_img = info['res']
-        if opts.residual: img = n.abs(bm_gain*cl_img + rs_img)
-        else: img = bm_gain * cl_img
-    ex,ey,ez = im.get_eq(src.ra, src.dec, center=(DIM/2,DIM/2))
-    #crds.shape = (3, crds.size/3)
-    #crds = crds.transpose()
+        rs_img = info['res'] / bm_gain
+        if not opts.no_res: img = cl_img + rs_img
+        else: img = cl_img
+    # Get coordinates of image pixels in original (J2000) epoch
+    ex,ey,ez = im.get_eq(src._ra, src._dec, center=(DIM/2,DIM/2))
     tx,ty,tz = im.get_top(center=(DIM/2,DIM/2))
+    # Define a weighting for gridding data into the skymap
     map_wgts = n.exp(-(tx**2 + ty**2) / .1**2)
     map_wgts.shape = (map_wgts.size,)
     valid = n.logical_not(map_wgts.mask)
-    #crds = crds.compress(valid, axis=0)
     ex = ex.compress(valid); ey = ey.compress(valid); ez = ez.compress(valid)
     map_wgts = map_wgts.compress(valid)
     img = img.flatten()
     img = img.compress(valid)
-    #crds = n.asarray(crds)
-    #print crds.shape, map_wgts.shape, img.shape
-    #print skymap.wgt[crds].shape
-    #skymap.add(crds, map_wgts, img)
+    # Put the data into the skymap
     skymap.add((ex,ey,ez), map_wgts, img)
     skymap.to_fits(opts.map, clobber=True)
 

@@ -3,34 +3,28 @@
 A script for removing a source using a fringe-rate/delay transform.
 
 Author: Aaron Parsons
-Date: 6/03/07
-Revisions:
-    12/11/07 arp    Ported to use new miriad file interface
 """
 
-import aipy, numpy, os, sys
-from optparse import OptionParser
+import aipy as a, numpy as n, os, sys, optparse
 
-p = OptionParser()
-p.set_usage('filter_src.py [options] *.uv')
-p.set_description(__doc__)
-p.add_option('-f', '--fng_w', dest='fng_w', type=int, default=1,
+o = optparse.OptionParser()
+o.set_usage('filter_src.py [options] *.uv')
+o.set_description(__doc__)
+a.scripting.add_standard_options(o, src=True, loc=True)
+o.add_option('-f', '--fng_w', dest='fng_w', type=int, default=1,
     help='The number of fringe bins to null.')
-p.add_option('-d', '--dly_w', dest='dly_w', type=float, default=5,
+o.add_option('-d', '--dly_w', dest='dly_w', type=float, default=5,
     help='The number of delay bins to null.')
-p.add_option('-s', '--src', dest='src',
-    help='The source to remove.')
-p.add_option('-e', '--extract', dest='extract', action='store_true',
+o.add_option('-e', '--extract', dest='extract', action='store_true',
     help='Extract the source instead of removing it.')
-p.add_option('-l', '--loc', dest='loc', default='pwa303',
-    help='Use location-specific info for this location (default pwa303).')
-opts, args = p.parse_args(sys.argv[1:])
+o.add_option('--clean', dest='clean', type='float', default=1e-3,
+    help='Deconvolve delay-domain data by the "beam response" that results from flagged data.  Specify a tolerance for termination (usually 1e-2 or 1e-3).')
+opts, args = o.parse_args(sys.argv[1:])
 
-uv = aipy.miriad.UV(args[0])
-aa = aipy.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+uv = a.miriad.UV(args[0])
+aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+src = a.scripting.parse_srcs(opts.src)
 del(uv)
-
-src = aipy.src.get_src(opts.src)
 
 for uvfile in args:
     print 'Working on', uvfile
@@ -40,39 +34,50 @@ for uvfile in args:
     if os.path.exists(uvofile):
         print uvofile, 'exists, skipping.'
         continue
-    uvi = aipy.miriad.UV(uvfile)
+    uvi = a.miriad.UV(uvfile)
 
-    # Gather all data
-    for (uvw,t,(i,j)),d in uvi.all():
+    curtime = None
+    print '    Performing delay transform and cleaning...'
+    for (uvw,t,(i,j)),d,f in uvi.all(raw=True):
         if i == j: continue
-        aa.set_jultime(t)
-        src.compute(aa)
+        if curtime != t:
+            curtime = t
+            aa.set_jultime(t)
+            src.compute(aa)
         bl = aa.ij2bl(i,j)
         try:
+            flags = n.logical_not(f).astype(n.float)
+            gain = n.sqrt(n.average(flags**2))
+            ker = n.fft.ifft(flags)
+            d = n.where(f, 0, d)
             d = aa.phs2src(d, src, i, j)
-            cnt[bl] = cnt.get(bl, 0) + d.mask.sum()
-            d = numpy.fft.ifft(d.filled(0))
-        except(aipy.ant.PointingError): d = numpy.zeros_like(d.data)
+            d = n.fft.ifft(d)
+            if not n.all(d == 0):
+                d, info = a.deconv.clean1d(d, ker, tol=opts.clean)
+                d += info['res'] / gain
+        except(a.ant.PointingError): d = n.zeros_like(d)
         try: phs_dat[bl].append(d)
         except(KeyError): phs_dat[bl] = [d]
 
-    # Perform fringe rate transform
+    print '    Performing fringe rate transform and cleaning...'
     for bl in phs_dat:
-        d = numpy.array(phs_dat[bl])
-        d /= float(d.size - cnt.get(bl,0)) / d.size
-        d = numpy.fft.fft(d, axis=0)
+        d = n.array(phs_dat[bl])
+        flags = n.where(d[:,0] != 0, 1., 0.)
+        flags /= flags.size
+        d = n.fft.fft(d, axis=0)
+        ker = n.fft.fft(flags)
+        gain = n.sqrt((flags**2).sum())
+        for c in range(d.shape[1]):
+            d_clean, info = a.deconv.clean1d(d[:,c], ker, tol=1e-2)
+            d[:,c] = d_clean + info['res'] / gain
         x1, x2 = opts.fng_w, -opts.fng_w+1
         if x2 == 0: x2 = d.shape[0]
         y1, y2 = opts.dly_w, -opts.dly_w
         if y2 == 0: y2 = d.shape[1]
-        #print x1, x2, y1, y2
-        #import pylab
-        #pylab.imshow(numpy.log10(numpy.abs(d)))
-        #pylab.show()
         d[x1:x2,:] = 0
         d[:,y1:y2] = 0
-        d = numpy.fft.ifft(d, axis=0)
-        d = numpy.fft.fft(d, axis=1)
+        d = n.fft.ifft(d, axis=0)
+        d = n.fft.fft(d, axis=1)
         phs_dat[bl] = d
 
     cnt = {}
@@ -87,16 +92,17 @@ for uvfile in args:
         src.compute(aa)
         data = phs_dat[bl][cnt[bl],:]
         try: data = aa.unphs2src(data, src, i, j)
-        except(aipy.ant.PointingError):
+        except(a.ant.PointingError):
             if opts.extract: d *= 0
             data = 0
         cnt[bl] += 1
-        if opts.extract: return p, numpy.ma.array(data, mask=d.mask)
+        if opts.extract: return p, n.ma.array(data, mask=d.mask)
         else: return p, d - data
 
+    print '    Writing out filtered data...'
     # Apply the pipe to the data
     uvi.rewind()
-    uvo = aipy.miriad.UV(uvofile, status='new')
+    uvo = a.miriad.UV(uvofile, status='new')
     # Apply the pipe to the data
     uvo.init_from_uv(uvi)
     uvo.pipe(uvi, mfunc=rm_mfunc)

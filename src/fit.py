@@ -1,5 +1,6 @@
 """
-A module for fitting visibilities in a Miriad UV file.
+Module for reading and setting parameters in components of an AntennaArray
+simulation for purpose of fitting.
 
 Author: Aaron Parsons
 Date: 01/14/2007
@@ -22,8 +23,8 @@ from interp import interpolate
 #                      |___/        
 
 def flatten_prms(prms, prm_list=[]):
-    """Generate a list of parameters suitable for passing to a fitting
-    algorithm from the heirarchical parameter dictionary 'prms', along
+    """Generate list of parameters suitable for passing to fitting
+    algorithm from heirarchical parameter dictionary 'prms', along
     with 'key_list' information for reconstructing such a dictionary from
     a list.  'prm_list' is only for recursion."""
     key_list = {}
@@ -43,7 +44,7 @@ def flatten_prms(prms, prm_list=[]):
     return prm_list, key_list
 
 def reconstruct_prms(prm_list, key_list):
-    """Generate a heirarchical parameter dictionary from a parameter
+    """Generate a heirarchical parameter dictionary from parameter
     list (prm_list) and 'key_list' information from flatten_prms."""
     prms = {}
     for k in key_list:
@@ -56,7 +57,7 @@ def reconstruct_prms(prm_list, key_list):
     return prms
 
 def print_params(prms, indent='', grad=None):
-    """Print a nice looking representation of a parameter dictionary."""
+    """Print nice looking representation of a parameter dictionary."""
     keys = prms.keys()
     keys.sort()
     for k in keys:
@@ -93,7 +94,8 @@ def print_params(prms, indent='', grad=None):
 #                                                                    |___/ 
 
 class RadioFixedBody(sim.RadioFixedBody):
-    """A class adding parameter fitting to sim.RadioFixedBody"""
+    """Class representing a source at fixed RA,DEC.  Adds get_params() and
+    set_params() to sim.RadioFixedBody."""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {
@@ -136,7 +138,8 @@ class RadioFixedBody(sim.RadioFixedBody):
 #                               |_|                        
 
 class RadioSpecial(sim.RadioSpecial):
-    """A class adding parameter fitting to sim.RadioSpecial"""
+    """Class representing moving sources (Sun,Moon,planets). Adds get_params() 
+    and set_params() to sim.RadioSpecial."""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {
@@ -173,7 +176,8 @@ class RadioSpecial(sim.RadioSpecial):
 #                                             |___/ 
 
 class SrcCatalog(sim.SrcCatalog):
-    """A class for fitting several celestial sources simultaneously."""
+    """Class for holding a catalog of celestial sources.  Adds get_params()
+    and set_params() to sim.SrcCatalog."""
     def get_params(self, src_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
         prms = {}
@@ -199,13 +203,15 @@ class SrcCatalog(sim.SrcCatalog):
 # |____/ \___|\__,_|_| |_| |_|
 
 class BeamFlat(sim.BeamFlat):
+    """Representation of a flat (gain=1) antenna beam pattern."""
     def get_params(self, prm_list=None):
         return {}
     def set_params(self, prms):
         pass
 
 class Beam2DGaussian(sim.Beam2DGaussian):
-    """A class adding parameter fitting to sim.Beam2DGaussian"""
+    """Representation of a 2D Gaussian beam pattern, with default setting for 
+    a flat beam."""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {'bm_xwidth':self.xwidth, 'bm_ywidth':self.ywidth}
@@ -225,7 +231,8 @@ class Beam2DGaussian(sim.Beam2DGaussian):
         self.update(xwidth, ywidth)
 
 class BeamPolynomial(sim.BeamPolynomial):
-    """A class adding parameter fitting to sim.BeamPolynomial"""
+    """Representation of a gaussian beam model whose width varies with azimuth
+    angle and with frequency."""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {'bm_poly':self.poly.flatten()}
@@ -240,27 +247,10 @@ class BeamPolynomial(sim.BeamPolynomial):
         try: self.update(prms['bm_poly'])
         except(KeyError): pass
 
-class BeamCosSeries(sim.BeamCosSeries):
-    """A class adding parameter fitting to sim.BeamCosSeries"""
-    def get_params(self, prm_list=None):
-        """Return all fitable parameters in a dictionary."""
-        aprms = {'bm_poly_cos':self.poly_cos.flatten(),
-                 'bm_poly_wid':self.poly_wid.flatten()}
-        prms = {}
-        for p in prm_list:
-            if p.startswith('*'): return aprms
-            try: prms[p] = aprms[p]
-            except(KeyError): pass
-        return prms
-    def set_params(self, prms):
-        """Set all parameters from a dictionary."""
-        try: self.update(poly_cos=prms['bm_poly_cos'])
-        except(KeyError): pass
-        try: self.update(poly_wid=prms['bm_poly_wid'])
-        except(KeyError): pass
-
 class BeamAlm(sim.BeamAlm):
-    """A class adding parameter fitting to sim.BeamAlm"""
+    """Representation of a beam model where each pointing has a response
+    defined as a polynomial in frequency, and the spatial distributions of 
+    these coefficients decomposed into spherical harmonics."""
     def get_params(self, prm_list=[]):
         """Return all fitable parameters in a dictionary."""
         aprms = {}
@@ -291,7 +281,8 @@ class BeamAlm(sim.BeamAlm):
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
 
 class Antenna(sim.Antenna):
-    """A class adding parameter fitting to sim.Antenna"""
+    """Representation of physical location and beam pattern of individual 
+    antenna in array.  Adds get_params() and set_params() to sim.Antenna."""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         x,y,z = self.pos
@@ -330,7 +321,9 @@ class Antenna(sim.Antenna):
 #                                                                 |___/ 
 
 class AntennaArray(sim.AntennaArray):
-    """A class adding parameter fitting to sim.AntennaArray"""
+    """Representation of location and time of observation, and response of
+    array of antennas as function of pointing and frequency.  Adds get_params()
+    and set_params() to sim.AntennaArray."""
     def get_params(self, ant_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
         prms = {}

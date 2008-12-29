@@ -1,4 +1,11 @@
 #! /usr/bin/env python
+"""
+Script for displaying a projection of a spherical (Healpix) data set stored
+in a *.fits file.
+
+Author: Aaron Parsons
+"""
+
 import aipy as a, numpy as n, pylab as p, sys, os, ephem, optparse
 from matplotlib.toolkits.basemap import Basemap
 
@@ -15,8 +22,8 @@ o.add_option('-c', '--cen', dest='cen', type='float', default=180.,
     help="Center longitude (in degrees) of map.")
 o.add_option('-j', '--juldate', dest='juldate', type='float', default=2454489,
     help='Julian date used for locating moving sources (default 2454489).')
-o.add_option('--srcs', dest='srcs', action='store_true',
-    help="Label known radio sources in plot.")
+o.add_option('--srcs', dest='srcs', type='float',
+    help="Cutoff flux for labeling known radio sources in plot.")
 o.add_option('--isys', dest='isys', default='eq',
     help='Input coordinate system (in map).')
 o.add_option('--osys', dest='osys', default='eq',
@@ -31,6 +38,8 @@ o.add_option('--dyn_rng', dest='dyn_rng', type='float', default=None,
     help="Dynamic range in color of image (log10).")
 o.add_option('--levels', dest='levels', type='int', default=15,
     help="Number of color levels to plot.")
+o.add_option('--nobar', dest='nobar', action='store_true',
+    help="Do not show colorbar.")
 o.add_option('--res', dest='res', type='float', default=.005,
     help="Resolution of plot (in radians).")
 o.add_option('--nside', dest='nside', type='int',
@@ -68,12 +77,14 @@ data *= opts.scaling
 lats *= a.img.rad2deg
 lons = lons * a.img.rad2deg - 180
 
-cat = a.src.get_catalog(type='sim')
 o = ephem.Observer()
 o.date = a.ant.juldate2ephem(opts.juldate)
-cat.compute(o)
-# lat/lon coordinates of sources
-scrds = [ephem.Equatorial(s.ra,s.dec) for s in cat.values()]
+if not opts.srcs is None:
+    cat = a.src.get_catalog(cutoff=opts.srcs)
+    cat.compute(o)
+    # lat/lon coordinates of sources
+    scrds = [ephem.Equatorial(s.ra,s.dec) for s in cat.values()]
+    snams = cat.keys()
 if opts.osys == 'ga':
     scrds = [ephem.Galactic(s, epoch=opts.oepoch) for s in scrds]
 elif opts.osys == 'ec':
@@ -83,7 +94,6 @@ slons = n.array([float(s.get()[0] + CEN) for s in scrds]) * a.img.rad2deg
 slons -= 180
 slons = n.where(slons < -180, slons + 360, slons)
 if opts.osys == 'eq': slons = 360 - slons
-snams = cat.keys()
 
 map = Basemap(projection=opts.projection,lat_0=0,lon_0=0)
 map.drawmapboundary()
@@ -106,10 +116,10 @@ y.shape = SZ
 if opts.osys == 'eq': data = n.fliplr(data)
 CS = map.contourf(x, y, data, levels, linewidths=0)
 sx, sy = map(slons,slats)
-if opts.srcs:
+if not opts.srcs is None:
     for name, xpt, ypt in zip(snams, sx, sy):
         if xpt >= 1e30 or ypt >= 1e30: continue
         #map.plot(sx, sy, 'ko', markerfacecolor=None)
         p.text(xpt+50000, ypt+50000, name)
-p.colorbar(shrink=.5, format='%.2f')
+if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
 p.show()

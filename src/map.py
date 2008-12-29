@@ -1,5 +1,5 @@
 """
-A module for mapping and modeling the entire sky.
+Module for mapping and modeling the entire sky.
 
 Author: Aaron Parsons
 Date: 11/29/06

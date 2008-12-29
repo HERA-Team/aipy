@@ -5,34 +5,40 @@ file containing either the simulated data, or the residual when the model
 is removed from measured data.
 
 Author: Aaron Parsons
-Date: 03/06/08
-Revisions:
-    04/30/08    arp Added option of using a Map (stored in a fits file) 
-                    for simulation.
-    05/07/08    arp Changed to sim_cache() and pipe(raw=True) for 2.5x speedup
 """
 import numpy as n, aipy as a, optparse, os, sys, ephem
 
-p = optparse.OptionParser()
-p.set_usage('mdlvis.py [options] *.uv')
-p.set_description(__doc__)
-p.add_option('-s', '--sim', dest='sim', action='store_true',
+o = optparse.OptionParser()
+o.set_usage('mdlvis.py [options] *.uv')
+o.set_description(__doc__)
+a.scripting.add_standard_options(o, loc=True, src=True)
+o.add_option('--sim', dest='sim', action='store_true',
     help='Output a simulated dataset (rather than subtracting).')
-p.add_option('-l', '--loc', dest='loc', default='pwa303',
-    help='Use location-specific info for this location (default pwa303).')
-p.add_option('-c', '--cat', dest='cat', 
-    help='A list of several sources (separated by commas) to remove.')
-p.add_option('-m', '--map', dest='map',
-    help='The Healpix map to use for simulation.')
-p.add_option('--iepoch', dest='iepoch', default=ephem.J2000, 
+o.add_option('-f', '--flag', dest='flag', action='store_true',
+    help='If outputting a simulated data set, mimic the data flagging of the original dataset.')
+o.add_option('-m', '--map', dest='map',
+    help='The Healpix map to use for simulation input.')
+o.add_option('--iepoch', dest='iepoch', default=ephem.J2000, 
     help='The epoch of coordinates in the map. Default J2000.')
-p.add_option('--freq', dest='freq', default=.150, type='float',
+o.add_option('--freq', dest='freq', default=.150, type='float',
     help='Frequency of flux data in map.')
-p.add_option('-n', '--noiselev', dest='noiselev', default=0., type='float',
+o.add_option('-n', '--noiselev', dest='noiselev', default=0., type='float',
     help='RMS amplitude of noise added to each UV sample of simulation.')
-opts, args = p.parse_args(sys.argv[1:])
+o.add_option('--nchan', dest='nchan', default=256, type='float',
+    help='Number of channels in simulated data if no input data to mimic.')
+o.add_option('--sfreq', dest='sfreq', default=.75, type='float',
+    help='Start frequency (GHz) in simulated data if no input data to mimic.')
+o.add_option('--sdf', dest='sdf', default=.150/256, type='float',
+    help='Channel spacing (GHz) in simulated data if no input data to mimic.')
+o.add_option('--inttime', dest='inttime', default=10, type='float',
+    help='Integration time (s) in simulated data if no input data to mimic.')
+o.add_option('--startjd', dest='startjd', default=2454600., type='float',
+    help='Julian Date to start observation if no input data to mimic.')
+o.add_option('--endjd', dest='endjd', default=2454601., type='float',
+    help='Julian Date to end observation if no input data to mimic.')
+opts, args = o.parse_args(sys.argv[1:])
 
-# Initialize AntennaArray
+# Parse command-line options
 uv = a.miriad.UV(args[0])
 aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
 p,d,f = uv.read(raw=True)
@@ -41,12 +47,10 @@ del(uv)
 
 # Generate a model of the sky with point sources and a pixel map
 
-mfq = []
-asz = []
+mfq,asz = [], []
 # Initialize point sources
-if not opts.cat is None:
-    srcs = opts.cat.split(',')
-    cat = a.src.get_catalog(srcs)
+if not opts.src is None:
+    cat = a.scripting.parse_srcs(opts.src, force_cat=True)
     cat.set_params(a.loc.get_src_prms(opts.loc))
     mfq.append(cat.get_mfreqs())
     asz.append(cat.get_angsizes())
@@ -83,7 +87,7 @@ def mdl(uv, p, d, f):
         curtime = t
         aa.set_jultime(t)
         eqs,flx,ind = [],[],[]
-        if not opts.cat is None:
+        if not opts.src is None:
             cat.compute(aa)
             eqs.append(cat.get_crds('eq', ncrd=3))
             flx.append(cat.get_fluxes())
@@ -98,10 +102,9 @@ def mdl(uv, p, d, f):
         ind = n.concatenate(ind)
         aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq, angsizes=asz)
     sd = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
-    #sd = n.ma.array(sd, mask=n.zeros_like(sd))
     if opts.sim:
         d = sd
-        f = no_flags
+        if not opts.flag: f = no_flags
     else: d -= sd
     if opts.noiselev != 0:
         # Add on some noise for a more realistic experience

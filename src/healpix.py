@@ -1,7 +1,7 @@
 """
 Provides interfaces to Healpix_cxx, which was developed at the 
-Max-Planck-Institut fuer Astrophysik and financially supported by the 
-Deutsches Zentrum fuer Luft- und Raumfahrt (DLR).
+Max-Planck-Institut für Astrophysik and financially supported by the 
+Deutsches Zentrum für Luft- und Raumfahrt (DLR).
 Adds data to the HealpixBase class using numpy arrays, and interfaces to
 FITS files using pyfits.
 
@@ -24,7 +24,8 @@ def mk_arr(val, dtype=n.double):
     return n.array(val, dtype=dtype).flatten()
 
 class HealpixMap(HealpixBase):
-    """Adds a data map to the HealpixBase infrastructure."""
+    """Collection of utilities for mapping data on a sphere.  Adds a data map 
+    to the infrastructure in _healpix.HealpixBase."""
     def __init__(self, *args, **kwargs):
         dtype = kwargs.pop('dtype', n.double)
         interp = kwargs.pop('interp', False)
@@ -51,6 +52,7 @@ class HealpixMap(HealpixBase):
         self.set_nside_scheme(nside, scheme)
         self.map = data
     def get_map(self):
+        """Return Healpix data as a 1 dimensional numpy array."""
         return self.map
     def change_scheme(self, scheme):
         """Reorder the pixels in map to be "RING" or "NEST" ordering."""
@@ -60,6 +62,9 @@ class HealpixMap(HealpixBase):
         self[i] = self.map
         self.set_nside_scheme(self.nside(), scheme)
     def __getitem__(self, crd):
+        """Access data on a sphere via hpm[crd].
+        crd = either 1d array of pixel indices, (th,phi), or (x,y,z), where
+        th,phi,x,y,z are numpy arrays of coordinates."""
         if type(crd) is tuple:
             crd = [mk_arr(c, dtype=n.double) for c in crd]
             if self._use_interpol:
@@ -69,6 +74,11 @@ class HealpixMap(HealpixBase):
         else: px = mk_arr(crd, dtype=n.long)
         return self.map[px]
     def __setitem__(self, crd, val):
+        """Assign data to a sphere via hpm[crd] = val.  Functionality slightly
+        complicated to make repeat coordinates assign sum of values (i.e.
+        crd = ([1,1], [2,2]), val = [3,3] will assign 6 to location (1,2).
+        crd = either 1d array of pixel indices, (th,phi), or (x,y,z), where
+        th,phi,x,y,z are numpy arrays of coordinates."""
         if type(crd) is tuple:
             crd = [mk_arr(c, dtype=n.double) for c in crd]
             px = self.crd2px(*crd)
@@ -86,7 +96,7 @@ class HealpixMap(HealpixBase):
             self.map = n.where(cnt, m, self.map)
     def from_hpm(self, hpm):
         """Initialize this HealpixMap with data from another.  Takes care
-        of upgrading or downgrading the resolution, and swaps the ordering
+        of upgrading or downgrading the resolution, and swaps ordering
         scheme if necessary."""
         if hpm.nside() < self.nside():
             interpol = hpm._use_interpol

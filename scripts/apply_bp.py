@@ -24,8 +24,8 @@ o.set_usage('apply_bp.py [options] *.uv')
 o.set_description(__doc__)
 o.add_option('-l', '--linearization', dest='linearization', default='comb',
     help='Apply the specified quantization linearization function to raw correlator values before applying bandpass.  Options are null, digi, full, and comb.  Default is comb')
-o.add_option('-s', '--scale', dest='scale', type='float', default=1.,
-    help='An additional numerical scaling to apply to the data.  Default: 1.')
+o.add_option('-s', '--scale', dest='scale', type='float', default=12250000.,
+    help='An additional numerical scaling to apply to the data.  Default: 12250000.')
 opts, args = o.parse_args(sys.argv[1:])
 
 # Digital Gain, Power Output (Channel 1024+512)

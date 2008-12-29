@@ -409,7 +409,7 @@ PyMODINIT_FUNC init_healpix(void) {
     HPBType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&HPBType) < 0) return;
     m = Py_InitModule3("_healpix", _healpix_methods,
-    "This is a hand-written wrapper (by Aaron Parsons) for Healpix_cxx, which was developed at the Max-Planck-Institut fuer Astrophysik and financially supported by the Deutsches Zentrum fuer Luft- und Raumfahrt (DLR).");
+    "This is a hand-written wrapper (by Aaron Parsons) for Healpix_cxx, which was developed at the Max-Planck-Institut für Astrophysik and financially supported by the Deutsches Zentrum für Luft- und Raumfahrt (DLR).");
     import_array();
     Py_INCREF(&HPBType);
     PyModule_AddObject(m, "HealpixBase", (PyObject *)&HPBType);

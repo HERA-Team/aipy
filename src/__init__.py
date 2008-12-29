@@ -8,9 +8,7 @@ verbatim.  All code provided is released under the GNU General Public License
 (see LICENSE.txt).
 
 Author: Aaron Parsons
-Date: 2/12/07
-Revisions: lots
 """
 
-import ant, const, coord, deconv, fit, img, loc, sim, src
+import ant, const, coord, deconv, fit, img, loc, sim, scripting, src
 import miriad, interp, optimize, utils, healpix, map
