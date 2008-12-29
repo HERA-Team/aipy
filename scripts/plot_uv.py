@@ -166,7 +166,12 @@ for uvfile in args:
     del(uv)
 
 bls = plot_x.keys()
-bls.sort()
+def sort_func(a, b):
+    ai,aj = map(int, a.split(','))
+    bi,bj = map(int, b.split(','))
+    if bi > ai or (bi == ai and bj > aj): return -1
+    return 1
+bls.sort(cmp=sort_func)
 if len(bls) == 0:
     print 'No data to plot.'
     sys.exit(0)

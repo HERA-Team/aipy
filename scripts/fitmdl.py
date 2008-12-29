@@ -23,6 +23,8 @@ o.add_option('--shprms', dest='shprms',
     help='Comma delimited list of parameters to fit whose values will be shared for all antennas.')
 o.add_option('--sprms', dest='sprms', 
     help='Source=param pairs for fitting source parameters.')
+o.add_option('--sim_autos', dest='sim_autos', action='store_true',
+    help='Use auto-correlations in fitting.  Default is to use only cross-correlations.')
 o.add_option('-n', '--norm', dest='norm', action='store_true',
     help='Normalize residual to data strength.  Puts weaker sources on similar footing as strong sources.')
 opts, args = o.parse_args(sys.argv[1:])
@@ -98,6 +100,7 @@ def fit_func(prms):
                     ind = cat.get_indices()
                     aa.sim_cache(eqs,flx,indices=ind,mfreqs=mfq,angsizes=asz)
             if cnt != 0: continue
+            if not opts.sim_autos and i == j: continue
             d = d.take(chans)
             f = f.take(chans)
             sim_d = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])

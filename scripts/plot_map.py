@@ -54,11 +54,11 @@ class Basemap:
         kwargs['extent'] = (-2,2,-1,1)
         return p.imshow(*args, **kwargs)
 
+# Try to import basemap module, but on failure use the above class
 try: from mpl_toolkits.basemap import Basemap
 except(ImportError): 
     try: from matplotlib.toolkits.basemap import Basemap
     except(ImportError): pass
-    
 
 o = optparse.OptionParser()
 o.set_usage('plot_map.py [options] mapfile')
@@ -66,35 +66,33 @@ o.set_description(__doc__)
 o.add_option('-p', '--projection', dest='projection', default='moll',
     help='Map projection to use: moll (default), mill, cyl, robin, sinu.')
 o.add_option('-m', '--mode', dest='mode', default='log',
-    help='Plotting mode (can be log,lin).')
+    help='Plotting mode, can be log (default), lin.')
+o.add_option( '--max', dest='max', type='float', default=None,
+    help='Manually set the maximum color level, in units matching plotting mode.  Default max(map).')
+o.add_option('--dyn_rng', dest='dyn_rng', type='float', default=None,
+    help="Dynamic range in color of image, in units matching plotting mode.  Default max(map)-min(map).")
 o.add_option('-c', '--cen', dest='cen', type='float', 
-    help="Center longitude (in degrees) of map.")
+    help="Center longitude/right ascension (in degrees) of map.  Default is 0 for galactic coordinate output, 180 for equatorial.")
 o.add_option('-j', '--juldate', dest='juldate', type='float', 
     help='Julian date used for locating moving sources.')
-o.add_option('--srcs', dest='srcs', type='float',
-    help="Cutoff flux for labeling known radio sources in plot.")
+o.add_option('--srcs', dest='srcs', type='float', default=1,
+    help="Cutoff flux (Jy) for labeling known radio sources in plot.  Default 1 Jy.")
+o.add_option('--src_mark', dest='src_mark', default='',
+    help='Marker to put on src locations.  Can be: ".,o,+,x,^,v".  Default no maker.')
 o.add_option('--isys', dest='isys', default='eq',
-    help='Input coordinate system (in map).')
+    help='Input coordinate system (in map).  Can be eq (equatorial, default), ga (galactic), or ec (ecliptic).')
 o.add_option('--osys', dest='osys', default='eq',
-    help='Output coordinate system (plotted).')
+    help='Output coordinate system (plotted).  Can be eq (equatorial, default), ga (galactic), or ec (ecliptic)')
 o.add_option('--iepoch', dest='iepoch', type='float', default=ephem.J2000,
-    help='Epoch of input coordinates (in map).')
+    help='Epoch of input coordinates (in map).  Default J2000.')
 o.add_option('--oepoch', dest='oepoch', type='float', default=ephem.J2000,
-    help='Epoch of output coordinates (plotted).')
-o.add_option( '--max', dest='max', type='float', default=None,
-    help='Manually set the maximum color level (log10).')
-o.add_option('--dyn_rng', dest='dyn_rng', type='float', default=None,
-    help="Dynamic range in color of image (log10).")
-o.add_option('--levels', dest='levels', type='int', default=15,
-    help="Number of color levels to plot.")
+    help='Epoch of output coordinates (plotted).  Default J2000.')
 o.add_option('--nobar', dest='nobar', action='store_true',
     help="Do not show colorbar.")
-o.add_option('--res', dest='res', type='float', default=.25,
-    help="Resolution of plot (in degrees).")
+o.add_option('--res', dest='res', type='float', default=0.25,
+    help="Resolution of plot (in degrees).  Default 0.25.")
 o.add_option('--nside', dest='nside', type='int',
     help="Manually set NSIDE (possibly degrading map) to a power of 2.")
-o.add_option('--scaling', dest='scaling', type='float',default=1,
-    help='Scaling of existing input map.')
 opts,args = o.parse_args(sys.argv[1:])
 
 if opts.cen is None:
@@ -127,9 +125,9 @@ m = a.coord.convert_m(opts.osys, opts.isys,
 x,y,z = n.dot(m, crd)
 try: data, indices = h[x,y,z]
 except(ValueError): data = h[x,y,z]
-data *= opts.scaling
 data.shape = lats.shape
 
+# Generate source locations
 if not opts.srcs is None:
     cat = a.src.get_catalog(cutoff=opts.srcs)
     o = ephem.Observer()
@@ -150,9 +148,11 @@ if not opts.srcs is None:
     slons = n.where(slons < -180, slons + 360, slons)
     slons = n.where(slons >= 180, slons - 360, slons)
 
+# Generate map grid/outline
 map.drawmapboundary()
 map.drawmeridians(n.arange(-180, 180, 30))
 map.drawparallels(n.arange(-90,90,30)[1:], labels=[0,1,0,0], labelstyle='+/-')
+# Set up data to plot
 if opts.mode.startswith('log'): data = n.log10(n.abs(data))
 if opts.max is None: max = data.max()
 else: max = opts.max
@@ -164,15 +164,18 @@ data = data.clip(min, max)
 data = n.ma.array(data, mask=mask)
 map.imshow(data, vmax=max, vmin=min)
 
+# Plot src labels and markers on top of map image
 if not opts.srcs is None:
     sx, sy = map(slons,slats)
     for name, xpt, ypt, flx in zip(snams, sx, sy, sflxs):
         if xpt >= 1e30 or ypt >= 1e30: continue
-        #map.plot(sx, sy, 'ko', markerfacecolor=None)
+        if opts.src_mark != '':
+            map.plot(sx, sy, 'k'+opts.src_mark, markerfacecolor=None)
         p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))))
 if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
 else: p.subplots_adjust(.05,.05,.95,.95)
 
+# Add right-click functionality for finding locations/strengths in map.
 cnt = 1
 def click(event):
     global cnt

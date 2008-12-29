@@ -57,6 +57,7 @@ doc/module_doc/src.pt
 locs/med732.py
 locs/pgb564.py
 locs/pwa303.py
+scripts/.plot_map.py.swp
 scripts/apply_bp.py
 scripts/combine_freqs.py
 scripts/compress_uv.py
@@ -67,6 +68,7 @@ scripts/fitmdl.py
 scripts/flux_cal.py
 scripts/lst
 scripts/mdlvis.py
+scripts/mk_img.py
 scripts/mk_map.py
 scripts/modmap.py
 scripts/phs2src.py

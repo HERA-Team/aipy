@@ -1,3 +1,14 @@
+0.7.2
+* Added sorting to plot_uv.py to make plots in sensible baseline order.
+* Edited script documentation for plot_map.py
+* Changed "-a" in scripting.py so that "-a 0,1,2" includes only baselines that
+  involve these antennas without autos (i.e. 0_1,0_2,1_2), rather than all
+  baselines that involve any of the antennas. Listing 1 antenna will 
+  include all baselines involving that antenna.
+* Fixed combine_freqs.py to work with new numpy masked arrays.
+* Made fitmdl.py have a --sim_auto parameter that rejects auto-correlations
+  by default.  This makes fitmdl.py work more nicely with '-a' change above.
+
 0.7.1
 * Changed "flat" to "flatten()" in plot_img.py, as per numpy-1.2.
 * Made plot_map.py able to function (only for cyl projection) without basemap.
@@ -15,9 +26,6 @@
 
 0.6.5
 * Bugfix to source strength polynomials as a function of LST
-* Changed "-a" in scripting.py so that "-a 0,1,2" includes only baselines that
-  involve these antennas without autos (i.e. 0_1,0_2,1_2), rather than all
-  baselines that involve any of the antennas.
 * Corrected all 3C source postions in src.py using NED.
 * Ported to numpy>=1.1, matplotlib>=0.98, basemap>=0.99.  Involved:
     - use of numpy.histogram with new=True in xrfi.py

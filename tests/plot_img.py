@@ -6,6 +6,7 @@ Author: Aaron Parsons
 """
 
 import aipy as a, numpy as n, pylab as p, sys, optparse, ephem, math
+from mpl_toolkits.basemap import Basemap
 
 o = optparse.OptionParser()
 o.set_usage('plot_img.py [options] *.fits')
@@ -52,16 +53,6 @@ for cnt, filename in enumerate(args):
 
     # Put array in (ra,dec) order for plotting
     d = d.transpose((ra_ax,dec_ax))
-    try:
-        ra_rng = (kwds['ra'] - d.shape[0] * kwds['d_ra']/2, 
-            kwds['ra'] + d.shape[0] * kwds['d_ra']/2)
-        assert(ra_rng[0] != ra_rng[1])
-    except(KeyError,AssertionError): ra_rng = (-d.shape[0]/2,d.shape[0]/2)
-    try:
-        dec_rng = (kwds['dec'] - d.shape[1] * kwds['d_dec']/2, 
-            kwds['dec'] + d.shape[1] * kwds['d_dec']/2)
-        assert(dec_rng[0] != dec_rng[1])
-    except(KeyError,AssertionError): dec_rng = (-d.shape[1]/2,d.shape[1]/2)
 
     # Generate plots
     if opts.mode.startswith('phs'): d = n.angle(d.filled(0))
@@ -79,8 +70,38 @@ for cnt, filename in enumerate(args):
     else: min = d.min()
 
     p.subplot(m2, m1, cnt+1)
-    p.imshow(d, vmin=min, vmax=max, 
-        extent=(ra_rng[0],ra_rng[1],dec_rng[0],dec_rng[1]), aspect='auto')
+    xpx,ypx = d.shape
+    dx1 = -(xpx/2 + .5) * kwds['d_ra'] * a.img.deg2rad
+    dx2 = (xpx/2 - .5) * kwds['d_ra'] * a.img.deg2rad
+    dy1 = -(ypx/2 + .5) * kwds['d_dec'] * a.img.deg2rad
+    dy2 = (ypx/2 - .5) * kwds['d_dec'] * a.img.deg2rad
+    map = Basemap(projection='ortho', lon_0=180, lat_0=kwds['dec'],
+        rsphere=1, llcrnrx=dx1, llcrnry=dy1, urcrnrx=dx2,urcrnry=dy2)
+    map.drawmeridians(n.arange(kwds['ra']-180,kwds['ra']+180,30))
+    map.drawparallels(n.arange(-90,120,30))
+    map.drawmapboundary()
+    map.imshow(d, vmin=min, vmax=max)
     p.colorbar(shrink=.5, fraction=.05)
     p.title(filename)
+
+# Add right-click functionality for finding locations/strengths in map.
+cnt = 1
+def click(event):
+    global cnt
+    if event.button != 3: return
+    lon,lat = map(event.xdata, event.ydata, inverse=True)
+    lon = (180 + kwds['ra'] - lon) % 360
+    lon *= a.img.deg2rad; lat *= a.img.deg2rad
+    ra,dec = ephem.hours(lon), ephem.degrees(lat)
+    ypx = n.around(event.xdata / (kwds['d_ra'] * a.img.deg2rad))
+    xpx = n.around(event.ydata / (kwds['d_dec'] * a.img.deg2rad))
+    flx = d[xpx,ypx]
+    if opts.mode.startswith('log'): flx = 10**flx
+    print '#%d (RA,DEC): (%s, %s), PX: (%d,%d) Jy: %f' % \
+        (cnt, ra, dec, xpx, ypx, flx)
+    cnt += 1
+
+#register this function with the event handler
+p.connect('button_press_event', click)
+
 p.show()
