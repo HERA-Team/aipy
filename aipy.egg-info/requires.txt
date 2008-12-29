@@ -1,5 +1,3 @@
-pyephem
-pyfits
-matplotlib
-basemap
-numpy
+pyephem>=3.7.3.2
+pyfits>=1.3
+numpy>=1.2

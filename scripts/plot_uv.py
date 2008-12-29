@@ -1,7 +1,12 @@
 #! /usr/bin/env python
 """
 Creates waterfall plots from Miriad UV files.  Can tile multiple plots
-on one window, or plot just a single baseline.
+on one window, or plot just a single baseline.  When taking the delay
+transform (-d), channels are interepreted as selecting delays after the
+the transform operation.  Similarly, the time select (-t) will be interpreted
+as selecting fringe rates if the fringe-rate transform (-f) has been selected.
+In both cases, the ranges specified are intepreted to be the units of the
+output plot (i.e. as specified by --chan_axis and --time_axis).
 
 Author: Aaron Parsons, Griffin Foster
 """
@@ -29,7 +34,7 @@ o.add_option('--df', dest='df', action='store_true',
     help='Remove a linear extrapolation from adjacent frequency channels.')
 o.add_option('-o', '--out_file', dest='out_file', default='',
     help='If provided, will save the figure to the specified file instead of popping up a window.')
-o.add_option('--plot_max', dest='plot_max', default=None, type='float', 
+o.add_option('--max', dest='max', default=None, type='float', 
     help='Upper clip value on 2D plots.')
 o.add_option('--dyn_rng', dest='dyn_rng', default=None, type='float', 
     help='Dynamic range in scale of 2D plots.')
@@ -232,7 +237,7 @@ for cnt, bl in enumerate(bls):
             else:
                 c1,c2 = freqs[0], freqs[-1]
                 xlabel = 'Frequency (GHz)'
-        if not opts.plot_max is None: max = opts.plot_max
+        if not opts.max is None: max = opts.max
         else: max = d.max()
         if not opts.dyn_rng is None: min = max - opts.dyn_rng
         else: min = d.min()
@@ -264,7 +269,7 @@ for cnt, bl in enumerate(bls):
         for i,t in enumerate(plot_t):
             p.plot(plot_chans, d[i,:], '-', label=label % t)
         p.xlabel(xlabel)
-        if not opts.plot_max is None: max = opts.plot_max
+        if not opts.max is None: max = opts.max
         else: max = d.max()
         if not opts.dyn_rng is None: min = max - opts.dyn_rng
         else: min = d.min()
@@ -282,7 +287,7 @@ for cnt, bl in enumerate(bls):
                 label = '%f GHz'
             for c, chan in enumerate(chans):
                 p.plot(plot_times, d[:,c], '.', label=label % chan)
-        if not opts.plot_max is None: max = opts.plot_max
+        if not opts.max is None: max = opts.max
         else: max = d.max()
         if not opts.dyn_rng is None: min = max - opts.dyn_rng
         else: min = d.min()

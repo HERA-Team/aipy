@@ -7,14 +7,64 @@ Author: Aaron Parsons
 """
 
 import aipy as a, numpy as n, pylab as p, sys, os, ephem, optparse
+
+class Basemap:
+    """A placeholder class to give plot_map.py some functionality if
+    matplotlib-basemap is not installed."""
+    def __init__(self, projection, lat_0=0, lon_0=0, **kwargs):
+        if projection != 'cyl':
+            raise ValueError('Without matplotlib-basemap installed, only cyl projection is supported.')
+        self.lat_0, self.lon_0 = lat_0, lon_0
+    def __call__(self, lon, lat, inverse=False):
+        if inverse:
+            lon = lon.astype(n.float) * 90 - self.lon_0
+            lon = self.wrap(lon, -180, 180)
+            lat = lat.astype(n.float) * 90 - self.lat_0
+            lat = self.wrap(lat, -90, 90)
+            return lon,lat
+        else:
+            x = (lon + self.lon_0) / 90.
+            x = self.wrap(x, -2, 2)
+            y = (lat + self.lat_0) / 90.
+            y = self.wrap(y, -1, 1)
+            return x,y
+    def wrap(self, data, lo, hi):
+        data = n.where(data >= hi, lo + (data - hi), data)
+        data = n.where(data < lo, hi + (data - lo), data)
+        return data
+    def drawmapboundary(self): pass
+    def drawmeridians(self, locs, **kwargs):
+        x,y = self(locs, n.zeros_like(locs))
+        x = self.wrap(x, -2, 2)
+        p.xticks(x, visible=False)
+        p.grid(True)
+    def drawparallels(self, lats, **kwargs):
+        x,y = self(n.zeros_like(lats),lats)
+        y = self.wrap(y, -1, 1)
+        p.yticks(y, [str(L) for L in lats])
+        p.grid(True)
+    def makegrid(self, dim1, dim2, returnxy=True):
+        y,x = n.indices((dim2,dim1))
+        x = 4 * x.astype(n.float)/dim1 - 2
+        y = 1 - 2 * y.astype(n.float)/dim2
+        lon,lat = self(x,y, inverse=True)
+        if returnxy: return lon,lat, x,y
+        else: return lon,lat
+    def imshow(self, *args, **kwargs):
+        kwargs['extent'] = (-2,2,-1,1)
+        return p.imshow(*args, **kwargs)
+
 try: from mpl_toolkits.basemap import Basemap
-except(ImportError): from matplotlib.toolkits.basemap import Basemap
+except(ImportError): 
+    try: from matplotlib.toolkits.basemap import Basemap
+    except(ImportError): pass
+    
 
 o = optparse.OptionParser()
 o.set_usage('plot_map.py [options] mapfile')
 o.set_description(__doc__)
 o.add_option('-p', '--projection', dest='projection', default='moll',
-    help='Map projection to use: moll (default), mill, cyl, robin.')
+    help='Map projection to use: moll (default), mill, cyl, robin, sinu.')
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plotting mode (can be log,lin).')
 o.add_option('-c', '--cen', dest='cen', type='float', 
@@ -52,6 +102,7 @@ if opts.cen is None:
     else: opts.cen = 0
 map = Basemap(projection=opts.projection,lat_0=0,lon_0=opts.cen, rsphere=1.)
 lons,lats,x,y = map.makegrid(360/opts.res,180/opts.res, returnxy=True)
+# Mask off parts of the image to be plotted that are outside of the map
 lt = lats[:,0]
 ln1 = n.ones_like(lt) * (lons[lons.shape[0]/2,0])
 ln2 = n.ones_like(lt) * (lons[lons.shape[0]/2,-1])
@@ -97,10 +148,10 @@ if not opts.srcs is None:
     slons = n.array([float(s.get()[0]) for s in scrds]) * a.img.rad2deg
     if opts.osys == 'eq': slons = 360 - slons
     slons = n.where(slons < -180, slons + 360, slons)
-    slons = n.where(slons > 180, slons - 360, slons)
+    slons = n.where(slons >= 180, slons - 360, slons)
 
 map.drawmapboundary()
-map.drawmeridians(n.arange(0,360,30))
+map.drawmeridians(n.arange(-180, 180, 30))
 map.drawparallels(n.arange(-90,90,30)[1:], labels=[0,1,0,0], labelstyle='+/-')
 if opts.mode.startswith('log'): data = n.log10(n.abs(data))
 if opts.max is None: max = data.max()

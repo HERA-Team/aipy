@@ -171,13 +171,13 @@ if opts.deconv != 'none':
     print 'RMS residual:', n.sqrt(n.var(rs_img))
     print 'Top 10 sources in field:'
     for i, src_loc in enumerate(src_locs):
-        src_ra,src_dec = ra.flat[src_loc], dec.flat[src_loc]
+        src_ra,src_dec = ra.flatten()[src_loc], dec.flatten()[src_loc]
         eq = ephem.Equatorial(src_ra, src_dec, epoch=aa.epoch)
         eq = ephem.Equatorial(eq, epoch=ephem.J2000)
-        x,y = x_ind.flat[src_loc], y_ind.flat[src_loc]
+        x,y = x_ind.flatten()[src_loc], y_ind.flatten()[src_loc]
         print '#%2d:' % (i+1), eq.get(), 'J2000,',
         print 'px:', (y, x),
-        print 'Jy: %5.1f' % top10_img.flat[src_loc]
+        print 'Jy: %5.1f' % top10_img.flatten()[src_loc]
 
 if opts.outfile:
     print 'Saving data to', opts.outfile

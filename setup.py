@@ -3,7 +3,7 @@ from distutils.core import setup, Extension
 import os, glob, numpy, sys
 if 'upload' in sys.argv:
     from ez_setup import use_setuptools; use_setuptools()
-    #from setuptools import setup, Extension
+    from setuptools import setup, Extension
 
 __version__ = open('VERSION').read().strip()
 

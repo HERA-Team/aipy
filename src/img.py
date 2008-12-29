@@ -3,7 +3,7 @@ Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
 """
 
-import numpy as n, utils, healpix, coord
+import numpy as n, utils, coord, pyfits, time
 
 deg2rad = n.pi / 180.
 rad2deg = 180. / n.pi
@@ -125,7 +125,6 @@ class Img:
         weight in the beam."""
         wgts = n.abs(self.bm[0])
         thresh = wgts.max() * thresh
-        #divisor = n.where(wgts >= wgts.max() * thresh, wgts, thresh)
         divisor = wgts.clip(thresh, n.Inf)
         self.uv /= divisor
         for i in range(len(self.bm)): self.bm[i] /= divisor
@@ -252,3 +251,86 @@ class ImgBW(ImgW):
             if j >= len(has): break
             i = j
 '''
+default_fits_format_codes = {
+    n.bool_:'L', n.uint8:'B', n.int16:'I', n.int32:'J', n.int64:'K',
+    n.float32:'E', n.float64:'D', n.complex64:'C', n.complex128:'M'
+}
+
+def to_fits(filename, data, clobber=False,
+        axes=('ra---sin','dec---sin','freq','stokes'),
+        object='', telescope='', instrument='', observer='', origin='AIPY',
+        obs_date=time.strftime('%D'), cur_date=time.strftime('%D'), 
+        ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000., 
+        freq=0, d_freq=0, bscale=0, bzero=0):
+    """Write image data to a FITS file.  Follows convention of VLA image
+    headers.  "axes" describes dimensions of "data" provided.  (ra,dec) are
+    the degree coordinates of image center in the specified "epoch". 
+    (d_ra,d_dec) are approximate pixel-deltas for ra,dec (approximate because 
+    if sine projections of these coordinates are specified--e.g. 
+    "ra---sin"--then the deltas change away from the image center).  If a 
+    "freq" axis is specified, then "freq" is the frequency of the first entry 
+    (in Hz), and "d_freq" is the width of the channel.  The rest are pretty 
+    self-explanitory/can be used however you want."""
+    data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
+    phdu = pyfits.PrimaryHDU(data)
+    phdu.data = data.transpose()
+    phdu.update_header()
+    phdu.header.update('OBJECT', object, comment='SOURCE NAME')
+    phdu.header.update('TELESCOP', telescope)
+    phdu.header.update('INSTRUME', instrument)
+    phdu.header.update('OBSERVER', observer)
+    phdu.header.update('DATE-OBS', obs_date, 
+        comment='OBSERVATION START DATE DD/MM/YY')
+    #phdu.header.update('DATE-MAP', '', 
+    #    comment='DATE OF LAST PROCESSING DD/MM/YY')
+    phdu.header.update('BSCALE ', bscale,
+        comment='REAL = FITS_VALUE * BSCALE + BZERO')
+    phdu.header.update('BZERO  ', bzero)
+    phdu.header.update('BUNIT  ', 'JY/BEAM ', comment='UNITS OF FLUX')
+    phdu.header.update('EQUINOX', epoch, comment='EQUINOX OF RA DEC')
+    phdu.header.update('DATAMAX', data.max(), comment='MAX PIXEL VALUE')
+    phdu.header.update('DATAMIN', data.min(), comment='MIN PIXEL VALUE')
+    for i,ax in enumerate(axes):
+        if ax.lower().startswith('ra'): val,delta = (ra, d_ra)
+        elif ax.lower().startswith('dec'): val,delta = (dec, d_dec)
+        elif ax.lower().startswith('freq'): val,delta = (freq, d_freq)
+        elif ax.lower().startswith('stokes'): val,delta = (1, 1)
+        else: val,delta = (0,0)
+        phdu.header.update('CTYPE%d' % (i+1), ax.upper())
+        phdu.header.update('CRVAL%d' % (i+1), val)
+        phdu.header.update('CDELT%d' % (i+1), delta)
+        phdu.header.update('CROTA%d' % (i+1), 0)
+        phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
+    phdu.header.update('ORIGIN', origin)
+    phdu.header.update('DATE', cur_date, comment='FILE WRITTEN ON DD/MM/YY')
+    pyfits.writeto(filename, phdu.data, phdu.header, clobber=True)
+
+def from_fits(filename):
+    """Read (data,kwds) from a FITS file.  Matches to_fits() above.  Attempts
+    to deduce each keyword listed in to_fits() from the FITS header, but is
+    accepting of differences.  Returns values in "kwds" dictionary."""
+    phdu = pyfits.open(filename)[0]
+    data = phdu.data.transpose()
+    kwds = {}
+    hitems = (('OBJECT','object'), ('TELESCOP','telescope'),
+        ('INSTRUME','instrument'), ('OBSERVER','observer'),
+        ('DATE-OBS','obs_date'), ('BSCALE','bscale'), ('BZERO','bzero'),
+        ('EQUINOX','epoch'), ('ORIGIN','origin'), ('DATE','cur_date'))
+    for fitsname,name in hitems:
+        try: kwds[name] = phdu.header[fitsname]
+        except(KeyError): pass
+    axes = []
+    for i in range(phdu.header['NAXIS']):
+        try:
+            ax = phdu.header['CTYPE%d' % (i+1)].lower()
+            axes.append(ax)
+            val = phdu.header['CRVAL%d' % (i+1)]
+            delta = phdu.header['CDELT%d' % (i+1)]
+            if ax.startswith('ra'): kwds['ra'],kwds['d_ra'] = (val,delta)
+            elif ax.startswith('dec'): kwds['dec'],kwds['d_dec'] = (val,delta)
+            elif ax.startswith('freq'): kwds['freq'],kwds['d_freq']=(val,delta)
+            elif ax.startswith('stokes'): pass
+            else: pass
+        except(KeyError): pass
+    kwds['axes'] = axes
+    return data, kwds

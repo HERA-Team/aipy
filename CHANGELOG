@@ -1,3 +1,9 @@
+0.7.1
+* Changed "flat" to "flatten()" in plot_img.py, as per numpy-1.2.
+* Made plot_map.py able to function (only for cyl projection) without basemap.
+* Added FITS image I/O convenience functions to img.py.  Defined standard
+  FITS format based on VLA images.  
+
 0.7.0
 * Moved functions from xrfi.py script into rfi module
 * Bugfix in array shape in BeamFlat response() function
