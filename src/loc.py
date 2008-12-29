@@ -1,7 +1,7 @@
-"""Load an AntennaArray using the calibration information contained in the
-specified location-specific module."""
+"""Load calibration information contained in specified location-specific 
+modules."""
 
-import numpy as n, ant, sim, fit, os, sys, coord
+import numpy as n, src, os, sys
 
 def get_freqs(sdf, sfreq, nchan):
     return n.arange(nchan, dtype=n.float) * sdf + sfreq
@@ -22,8 +22,15 @@ def get_aa(*args):
     exec('from %s import get_aa as _get_aa' % loc_key)
     return _get_aa(freqs)
 
-def get_src_prms(loc_key):
+def get_catalog(loc_key=None, srcs=None, cutoff=None):
+    '''Return the source catalog specified by loc_key, which should be the
+    name of a module somewhere in Python's path that implements a
+    "get_catalog(srcs, cutoff)" function.  That function should return a
+    SrcCatalog initialized with appropriate calibration parameters.  This
+    function simply attempts to import that function and then pass it the
+    specified srcs, cutoff.  If no such function is found, src.get_catalog()
+    is called instead.'''
     sys.path.append(os.getcwd())
-    try: exec('from %s import src_prms' % loc_key)
-    except(ImportError): src_prms = {}
-    return src_prms
+    try: exec('from %s import get_catalog as _get_catalog' % loc_key)
+    except(ImportError): _get_catalog = src.get_catalog
+    return _get_catalog(srcs=srcs, cutoff=cutoff)

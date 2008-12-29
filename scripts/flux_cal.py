@@ -28,8 +28,8 @@ aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
 del(uv)
 
 if opts.srcflux:
-    src = a.scripting.parse_srcs(opts.src, force_cat=True)
-    src.set_params(a.loc.get_src_prms(opts.loc))
+    srclist,cutoff = a.scripting.parse_srcs(opts.src)
+    src = a.loc.get_catalog(opts.loc, srclist, cutoff)
     s = src.values()[0]
     print 'Calibrating for source with',
     print 'strength', s._janskies,

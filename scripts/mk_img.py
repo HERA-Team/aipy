@@ -18,7 +18,7 @@ a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, loc2=True,
     src=True, dec=True)
 o.add_option('-o', '--output', dest='output', default='dim,dbm',
     help='Comma delimited list of data to generate FITS files for.  Can be: dim (dirty image), dbm (dirty beam), uvs (uv sampling), or bms (beam sampling).  Default is dim,dbm.')
-o.add_option('--npts', dest='npts', type='int', default=200,
+o.add_option('--facets', dest='facets', type='int', default=200,
     help='If no src is provided, facet the sphere into this many pointings for making a map.  Default 200.')
 o.add_option('--snap', dest='snap', type='int', default=-1,
     help='Number of integrations to use in "snapshot" images.  Default is to not do snapshoting (i.e. all integrations go into one image).')
@@ -45,14 +45,14 @@ opts, args = o.parse_args(sys.argv[1:])
 # Parse command-line options
 locs = a.scripting.files_to_locs(opts.loc, args, sys.argv)
 aas = {}
-for L in locs:
-    uv = a.miriad.UV(locs[L][0])
+for loc in locs:
+    uv = a.miriad.UV(locs[loc][0])
     (j,t,j),j = uv.read()
     chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
     a.scripting.uv_selector(uv, opts.ant, opts.pol)
-    aa = a.loc.get_aa(L, uv['sdf'], uv['sfreq'], uv['nchan'])
+    aa = a.loc.get_aa(loc, uv['sdf'], uv['sfreq'], uv['nchan'])
     aa.select_chans(chans)
-    aas[L] = aa
+    aas[loc] = aa
     afreqs = aa.ants[0].beam.afreqs
     cfreq = n.average(afreqs)
     aa.set_jultime(t)
@@ -67,9 +67,10 @@ if opts.src == 'zen':
     srcs = [a.ant.RadioFixedBody(aa.sidereal_time(), aa.lat, name='zen')]
     cat = a.ant.SrcCatalog(srcs)
 elif not opts.src is None: 
-    cat = a.scripting.parse_srcs(opts.src, force_cat=True)
+    srclist,cutoff = a.scripting.parse_srcs(opts.src)
+    cat = a.loc.get_catalog(locs.keys()[0], srclist, cutoff)
 else:
-    ras,decs = a.map.facet_centers(opts.npts, ncrd=2)
+    ras,decs = a.map.facet_centers(opts.facets, ncrd=2)
     srcs = [a.ant.RadioFixedBody(ra,dec,name=str(i)) 
         for i,(ra,dec) in enumerate(zip(ras,decs))]
     cat = a.ant.SrcCatalog(srcs)
@@ -77,6 +78,7 @@ else:
 # Generate the image object that will be used.
 us,vs,ws,ds,wgts = [],[],[],[],[]
 im = Img(opts.size, opts.res, mf_order=0)
+L,M = im.get_LM()
 DIM = int(opts.size/opts.res)
 
 # Define a quick function writing an image to a FITS file
@@ -87,7 +89,6 @@ def to_fits(ftag,i,src,cnt):
     while len(i.shape) < 4: i.shape = i.shape + (1,)
     cen = ephem.Equatorial(src.ra, src.dec, epoch=aa.epoch)
     cen = ephem.Equatorial(cen, epoch=ephem.J2000)
-    L,M = im.get_LM()
     a.img.to_fits(filename, i, clobber=True,
         object=src.src_name, obs_date=str(aa.date),
         ra=cen.ra*a.img.rad2deg, dec=cen.dec*a.img.rad2deg, epoch=2000.,
@@ -123,25 +124,23 @@ for srccnt, s in enumerate(cat.values()):
         continue
     src = a.fit.SrcCatalog([s])
     # Gather data
-    cnt,snapcnt,curtime = 0, 0, None
-    for L in locs:
-      aa = aas[L]
+    snapcnt,curtime = 0, None
+    for loc in locs:
+      aa = aas[loc]
       # Read each file
-      for filename in locs[L]:
+      for filename in locs[loc]:
         sys.stdout.write('.'); sys.stdout.flush()
         uv = a.miriad.UV(filename)
         a.scripting.uv_selector(uv, opts.ant, opts.pol)
+        uv.select('decimate', opts.decimate, opts.decphs)
         # Read all data from each file
         for (crd,t,(i,j)),d,f in uv.all(raw=True):
             if curtime != t:
-                curtime = t
-                cnt = (cnt + 1) % opts.decimate
-                if cnt == 0:
-                    aa.set_jultime(t)
-                    # Make snapshot images (if specified)
-                    if opts.snap > 0:
-                        snapcnt = (snapcnt + 1) % opts.snap
-                        if snapcnt == 0:
+                # Make snapshot images (if specified)
+                if opts.snap > 0:
+                    snapcnt = (snapcnt + 1) % opts.snap
+                    if snapcnt == 0:
+                        if curtime != None:
                             try:
                                 grid_it(im,us,vs,ws,ds,wgts)
                                 uvs,bms,dim,dbm = img_it(im)
@@ -151,16 +150,17 @@ for srccnt, s in enumerate(cat.values()):
                             for k in ['uvs','bms','dim','dbm']:
                                 if k in outputs: to_fits(k, eval(k), s,imgcnt)
                             imgcnt += 1
-                            us,vs,ws,ds,wgts = [],[],[],[],[]
-                            im = Img(opts.size, opts.res, mf_order=0)
-                            if opts.src == 'zen':
-                                s = a.ant.RadioFixedBody(aa.sidereal_time(), 
-                                    aa.lat, name='zen')
-                                src = a.fit.SrcCatalog([s])
-                    src.compute(aa)
-                    s_eq = src.get_crds('eq', ncrd=3)
-                    aa.sim_cache(s_eq)
-            if cnt != 0: continue
+                        us,vs,ws,ds,wgts = [],[],[],[],[]
+                        im = Img(opts.size, opts.res, mf_order=0)
+                        if opts.src == 'zen':
+                            s = a.ant.RadioFixedBody(aa.sidereal_time(), 
+                                aa.lat, name='zen')
+                            src = a.fit.SrcCatalog([s])
+                curtime = t
+                aa.set_jultime(t)
+                src.compute(aa)
+                s_eq = src.get_crds('eq', ncrd=3)
+                aa.sim_cache(s_eq)
             d,f = d.take(chans), f.take(chans)
             if not opts.skip_amp: d /= aa.passband(i,j)
             try:

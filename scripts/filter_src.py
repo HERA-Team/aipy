@@ -26,7 +26,8 @@ opts, args = o.parse_args(sys.argv[1:])
 uv = a.miriad.UV(args[0])
 if not opts.src is None:
     aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
-    src = a.scripting.parse_srcs(opts.src)
+    srclist,cutoff = a.scripting.parse_srcs(opts.src)
+    src = a.loc.get_catalog(opts.loc, srclist, cutoff)
 else:
     opts.src = 'cut'
     src = None

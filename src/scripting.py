@@ -21,9 +21,13 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
         help='Use specified <loc>.py for location-specific calibration.  Can intersperse locations with UV files to use different calibrations for different files.')
     if src: optparser.add_option('-s', '--src', dest='src',
         help='Phase centers/source catalog entries to use.  Options are "all", "<src_name1>,...", or "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>".')
-    if dec: optparser.add_option('-x', '--decimate', dest='decimate', 
-        default=1, type='int',
-        help='Use only every Nth integration.  Default is 1.')
+    if dec:
+        optparser.add_option('-x', '--decimate', dest='decimate', 
+            default=1, type='int',
+            help='Use only every Nth integration.  Default is 1.')
+        optparser.add_option('--dphs', dest='decphs', 
+            default=0, type='int',
+            help='Offset to use when decimating (i.e. start counting integrations at this number for the purpose of decimation).  Default is 0.')
 
 def _strarg_to_range(strarg):
     """Split command-line lists/ranges into a list of numbers."""
@@ -66,22 +70,23 @@ def parse_chans(chan_str, nchan):
         chans = n.concatenate(chanopt)
     return chans.astype(n.int)
 
-def parse_srcs(src_str, force_cat=False):
-    """Return src/catalog based on string argument for src (can be "all",
-    "<src_name1>,...", or "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>").  Can force
-    a single source to be returned as catalog with force_cat."""
-    if src_str.startswith('all'): return src.get_catalog()
+def parse_srcs(src_str):
+    """Return (src_list,flux_cutoff) based on string argument for src.
+    Can be "all", "<src_name1>,...", or "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>"."""
+    if src_str.startswith('all'): return None, None
+    try:
+        cutoff = float(src_str)
+        return None, cutoff
+    except(ValueError): pass
     src_opt = src_str.split(',')
     if len(src_opt) == 1:
         src_opt = src_opt[0].split('_')
-        if len(src_opt) == 1: s = src.get_src(src_opt[0])
-        else:
-            ra,dec = src_opt
-            s = fit.RadioFixedBody(ra, dec, 0, name=src_str)
-        if force_cat: return src.get_catalog([s])
-        else: return s
+        if len(src_opt) == 1: return src_opt, None
+        ra,dec = src_opt
+        s = fit.RadioFixedBody(ra, dec, 0, name=src_str)
+        return s, None
     else:
-        return src.get_catalog(src_opt)
+        return src_opt, None
 
 def files_to_locs(locations, uvfiles, sysargv):
     import optparse

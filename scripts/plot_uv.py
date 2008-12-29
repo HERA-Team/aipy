@@ -44,6 +44,8 @@ o.add_option('--chan_axis', dest='chan_axis', default='index',
     help='Choose channel axis to be channel/delay index (index), or physical coordinates (physical).  Default is index.')
 o.add_option('--clean', dest='clean', type='float',
     help='Deconvolve delay-domain data by the "beam response" that results from flagged data.  Specify a tolerance for termination (usually 1e-2 or 1e-3).')
+o.add_option('--nolegend', dest='nolegend', action='store_true',
+    help='Omit legend in last plot.')
 
 def convert_arg_range(arg):
     """Split apart command-line lists/ranges into a list of numbers."""
@@ -299,7 +301,8 @@ for cnt, bl in enumerate(bls):
         p.ylim(min,max)
     else: raise ValueError('Either time or chan needs to be a range.')
     p.title(bl)
-if not is_time_range or not is_chan_range: p.legend(loc='best')
+if not opts.nolegend and (not is_time_range or not is_chan_range): 
+    p.legend(loc='best')
 
 # Save to a file or pop up a window
 if opts.out_file != '': p.savefig(opts.out_file)

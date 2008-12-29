@@ -206,6 +206,9 @@ class ArrayLocation(ephem.Observer):
         or (lat,long,elev)."""
         if len(location) == 2: self.lat, self.long = location
         else: self.lat, self.long, self.elev = location
+    def get_jultime(self):
+        """Get current time as a Julian date."""
+        return ephem2juldate(self.date)
     def set_jultime(self, t=None):
         """Set current time as a Julian date."""
         if t is None: t = ephem.julian_date()

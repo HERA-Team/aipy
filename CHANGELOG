@@ -1,3 +1,8 @@
+0.8.3
+* Changed how loc-specific source parameters are implemented (now with
+  get_catalog() instead of src_prms).  Changed scripts to use this format,
+  and scripting.parse_srcs() to return values that can feed get_catalog().
+
 0.8.2
 * Built in decimation to UV files in miriad_wrap.cpp.
 * Added decimation selection with select() to UV files in miriad.py.

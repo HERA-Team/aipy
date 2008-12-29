@@ -13,8 +13,6 @@ o.set_usage('fitmdl.py [options] *.uv')
 o.set_description(__doc__)
 a.scripting.add_standard_options(o, ant=True, pol=True, chan=True,
     loc=True, src=True, dec=True)
-o.add_option('--dphs', dest='decphase', type='int', default=0,
-    help='Offset to use when decimating (i.e. start counting integrations at this number for the purpose of decimation). Default 0')
 o.add_option('--aprms', dest='aprms',
     help='Comma delimited list of paramters to fit independently for each antenna.')
 o.add_option('--fitants', dest='fitants', default='all',
@@ -39,8 +37,8 @@ a.scripting.uv_selector(uv, opts.ant, opts.pol)
 aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
 chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
 aa.select_chans(chans)
-cat = a.scripting.parse_srcs(opts.src, force_cat=True)
-cat.set_params(a.loc.get_src_prms(opts.loc))
+srclist,cutoff = a.scripting.parse_srcs(opts.src)
+cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
 (uvw,t,(i,j)),d = uv.read()
 aa.set_jultime(t)
 cat.compute(aa)
@@ -90,9 +88,10 @@ def fit_func(prms):
         sys.stdout.write('.') ; sys.stdout.flush()
         uv = a.miriad.UV(uvfile)
         a.scripting.uv_selector(uv, opts.ant, opts.pol)
-        uv.select('decimate', opts.decimate, opts.decphase)
+        uv.select('decimate', opts.decimate, opts.decphs)
         for (uvw,t,(i,j)),d,f in uv.all(raw=True):
             if curtime != t:
+                #print t
                 curtime = t
                 aa.set_jultime(t)
                 cat.compute(aa)
@@ -113,7 +112,7 @@ def fit_func(prms):
                 nsamples += n.logical_not(f).sum()
             else:
                 score += difsq.sum()
-                nsamples += sq.sum()
+                nsamples += n.where(f, 0, sq).sum()
     score = n.sqrt(score / nsamples)
     print
     if first_fit is None: first_fit = score

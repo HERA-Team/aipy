@@ -266,20 +266,25 @@ src_data = {
     '3c470' : ('23:58:35.34', '+44:04:38.9',  8.0, 0.159, 1.04, 0.000364),
 }
 
-def get_src(s):
-    """Return a source created out of the parameters in the dictionary srcs."""
+def get_src(s, fixedbody=fit.RadioFixedBody, special=fit.RadioSpecial):
+    """Return a source created out of the parameters in the dictionary srcs.
+    Can pass your own RadioFixedBody or RadioSpecial subclasses to use."""
     if not type(s) == str: return s
     ra, dec, st, mfreq, index, srcshape = src_data[s]
     if s in specials:
-        return fit.RadioSpecial(s, st, mfreq=mfreq, 
+        return special(s, st, mfreq=mfreq, 
             index=index, srcshape=srcshape)
     else:
-        return fit.RadioFixedBody(ra, dec, janskies=st, mfreq=mfreq, 
+        return fixedbody(ra, dec, janskies=st, mfreq=mfreq, 
             index=index, name=s, srcshape=srcshape)
 
-def get_catalog(srcs=None, cutoff=None):
+def get_catalog(srcs=None, cutoff=None, 
+        fixedbody=fit.RadioFixedBody, special=fit.RadioSpecial):
+    """Return a source catalog created out of the parameters in the 
+    dictionary srcs.  Can pass your own RadioFixedBody or RadioSpecial 
+    subclasses to use."""
     if srcs is None:
         if cutoff is None: srcs = src_data.keys()
         else: srcs = [s for s in src_data if src_data[s][2] > cutoff]
-    srcs = [get_src(s) for s in srcs]
+    srcs = [get_src(s, fixedbody=fixedbody, special=special) for s in srcs]
     return fit.SrcCatalog(srcs)

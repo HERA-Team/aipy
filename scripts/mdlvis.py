@@ -50,8 +50,8 @@ del(uv)
 mfq,a1s,a2s,ths = [], [], [], []
 # Initialize point sources
 if not opts.src is None:
-    cat = a.scripting.parse_srcs(opts.src, force_cat=True)
-    cat.set_params(a.loc.get_src_prms(opts.loc))
+    srclist,cutoff = a.scripting.parse_srcs(opts.src)
+    cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
     mfq.append(cat.get_mfreqs())
     a1,a2,th = cat.get_srcshapes()
     a1s.append(a1); a2s.append(a2); ths.append(th)

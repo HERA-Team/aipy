@@ -18,7 +18,8 @@ opts,args = o.parse_args(sys.argv[1:])
 # Parse command-line options
 uv = a.miriad.UV(args[0])
 aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
-src = a.scripting.parse_srcs(opts.src)
+srclist,cutoff = a.scripting.parse_srcs(opts.src)
+src = a.loc.get_catalog(opts.loc, srclist, cutoff).values()[0]
 del(uv)
 
 # A pipe to use for phasing to a source
