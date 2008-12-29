@@ -205,13 +205,13 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
     if (crd3 != NULL) CHK_ARRAY_TYPE(crd3, NPY_DOUBLE);
     // Make array(s) to hold the results
     if (interpolate == 0) {
-        int dimens[1] = {sz};
-        rv = (PyArrayObject *) PyArray_FromDims(1, dimens, PyArray_LONG);
+        npy_intp dimens[1] = {sz};
+        rv = (PyArrayObject *) PyArray_SimpleNew(1, dimens, PyArray_LONG);
         CHK_NULL(rv);
     } else {
-        int dimens[2] = {sz, 4};
-        rv = (PyArrayObject *) PyArray_FromDims(2, dimens, PyArray_LONG);
-        wgt = (PyArrayObject *) PyArray_FromDims(2, dimens, PyArray_DOUBLE);
+        npy_intp dimens[2] = {sz, 4};
+        rv = (PyArrayObject *) PyArray_SimpleNew(2, dimens, PyArray_LONG);
+        wgt = (PyArrayObject *) PyArray_SimpleNew(2, dimens, PyArray_DOUBLE);
         CHK_NULL(rv);
         CHK_NULL(wgt);
     }     
@@ -273,9 +273,9 @@ static PyObject * HPBObject_px2crd(HPBObject *self,
     CHK_ARRAY_TYPE(px,NPY_LONG);
     // Make an array to hold the results
     int sz = px->dimensions[0];
-    int dimens[1] = {sz};
-    crd1 = (PyArrayObject *) PyArray_FromDims(1, dimens, PyArray_DOUBLE);
-    crd2 = (PyArrayObject *) PyArray_FromDims(1, dimens, PyArray_DOUBLE);
+    npy_intp dimens[1] = {sz};
+    crd1 = (PyArrayObject *) PyArray_SimpleNew(1, dimens, PyArray_DOUBLE);
+    crd2 = (PyArrayObject *) PyArray_SimpleNew(1, dimens, PyArray_DOUBLE);
     CHK_NULL(crd1);
     CHK_NULL(crd2);
     if (ncrd == 2) {
@@ -286,7 +286,7 @@ static PyObject * HPBObject_px2crd(HPBObject *self,
         }
         return Py_BuildValue("(OO)",PyArray_Return(crd1),PyArray_Return(crd2));
     } else {
-        crd3 = (PyArrayObject *) PyArray_FromDims(1, dimens, PyArray_DOUBLE);
+        crd3 = (PyArrayObject *) PyArray_SimpleNew(1, dimens, PyArray_DOUBLE);
         for (int i=0; i < sz; i++) {
             p = self->hpb.pix2ang(IND1(px,i,int));
             v = p.to_vec3();

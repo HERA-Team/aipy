@@ -1,10 +1,10 @@
 #! /usr/bin/env python
-import aipy as a, numpy as n, time, os
+import aipy as a, numpy as n, time, os, sys
 
 uvi = a.miriad.UV('test.uv')
 freqs = n.arange(uvi['nchan'], dtype=n.float) * uvi['sdf'] + uvi['sfreq']
 loc = ('0:00', '0:00')
-beam = a.sim.Beam(freqs)
+beam = a.sim.BeamFlat(freqs)
 ants = [
     a.sim.Antenna(0,0,0,beam),
     a.sim.Antenna(100,0,0,beam),
@@ -13,20 +13,27 @@ ants = [
 ]
 aa = a.sim.AntennaArray(ants=ants, location=loc)
 src = a.sim.RadioFixedBody('0','0', 1e4)
+if os.path.exists('test.uvs'):
+    print 'test.uvs exists... skipping'
+    sys.exit(0)
 uvo = a.miriad.UV('test.uvs', status='new')
 uvo.init_from_uv(uvi)
 
 curtime = None
-s_eqs, fluxes, indices, mfreqs = None, None, None, None
+cat = a.sim.SrcCatalog([src] * 4)
 def mfunc(uv, p, data):
-    global curtime, s_eqs, fluxes, indices, mfreqs
+    global curtime
     uvw,t,(i,j) = p
     if curtime != t:
         curtime = t
         aa.set_jultime(t)
         src.compute(aa)
-        s_eqs, fluxes, indices, mfreqs = aa.srcs2vecs([src] * 4)
-    d = aa.sim(i, j, s_eqs, fluxes, indices=indices, mfreqs=mfreqs)
+        s_eqs = cat.get_crds('eq')
+        fluxes = cat.get_fluxes()
+        indices = cat.get_indices()
+        mfreqs = cat.get_mfreqs()
+        aa.sim_cache(s_eqs=s_eqs,fluxes=fluxes,indices=indices,mfreqs=mfreqs)
+    d = aa.sim(i, j)
     return p, n.ma.array(d, mask=data.mask)
 
 t0 = time.time()

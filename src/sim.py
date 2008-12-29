@@ -116,7 +116,8 @@ class SrcCatalog(ant.SrcCatalog):
 class BeamFlat(ant.Beam):
     """Representation of a flat (gain=1) antenna beam pattern."""
     def response(self, xyz):
-        return n.ones((self.afreqs.size, xyz.shape[1]))
+        x,y,z = n.array(xyz)
+        return n.ones((self.afreqs.size, x.size))
 
 class Beam2DGaussian(ant.Beam):
     """Representation of a 2D Gaussian beam pattern, with default setting for 

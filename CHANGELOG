@@ -1,3 +1,12 @@
+0.7.0
+* Moved functions from xrfi.py script into rfi module
+* Bugfix in array shape in BeamFlat response() function
+* Ported to numpy>=1.2.  Involved:
+  - Update flag_by_int in rfi module for new numpy-1.2.ma behavior
+  - Update miriad_wrap.cpp, healpix_wrap.cpp, alm_wrap.cpp for new 
+    numpy-1.2 API (PyArray_SimpleNew instead of PyArray_FromDims, 
+    npy_intp instead of int for array dimensions)
+
 0.6.5
 * Bugfix to source strength polynomials as a function of LST
 * Changed "-a" in scripting.py so that "-a 0,1,2" includes only baselines that
@@ -18,3 +27,10 @@
 * Feature added to plot_map.py to give (ra,dec),flux of location on a map
   when right-clicked.
 * Changed how plot_map.py plots to use imshow instead of contourf.
+
+0.6.3
+* Added _cephes module (from scipy, cutting out fortran dependencies) which
+  implements various scientific functions.  Needed j1 = Bessel function.
+* Moved source-resolution estimator (using symmetric disc approx) from phs2src
+  into separate AntennaArray.resolve_src().  Changed from incorrect sinc
+  function to correct j1 (first order Bessel function).

@@ -77,10 +77,10 @@ PyObject * UVObject_read(UVObject *self, PyObject *args) {
     double preamble[PREAMBLE_SIZE];
     if (!PyArg_ParseTuple(args, "i", &n2read)) return NULL;
     // Make numpy arrays to hold the results
-    int data_dims[1] = {n2read};
-    data = (PyArrayObject *) PyArray_FromDims(1, data_dims, PyArray_CFLOAT);
+    npy_intp data_dims[1] = {n2read};
+    data = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, PyArray_CFLOAT);
     CHK_NULL(data);
-    flags = (PyArrayObject *) PyArray_FromDims(1, data_dims, PyArray_INT);
+    flags = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, PyArray_INT);
     CHK_NULL(flags);
     // Here is the MIRIAD call
     try {
@@ -91,8 +91,8 @@ PyObject * UVObject_read(UVObject *self, PyObject *args) {
         return NULL;
     }
     // Now we build a return value of ((uvw,t,(i,j)), data, flags, nread)
-    int uvw_dims[1] = {3};
-    uvw = (PyArrayObject *) PyArray_FromDims(1, uvw_dims, PyArray_DOUBLE);
+    npy_intp uvw_dims[1] = {3};
+    uvw = (PyArrayObject *) PyArray_SimpleNew(1, uvw_dims, PyArray_DOUBLE);
     CHK_NULL(uvw);
     IND1(uvw,0,double) = preamble[0];
     IND1(uvw,1,double) = preamble[1];
@@ -185,7 +185,7 @@ PyObject * UVObject_trackvr(UVObject *self, PyObject *args) {
     if (length == 1) { \
         uvgetvr_c(self->tno,htype,name,value,length); \
         return pyconstructor((type1) ((type2 *)value)[0]); } \
-    rv = (PyArrayObject *) PyArray_FromDims(1,dims,npy_type); \
+    rv = (PyArrayObject *) PyArray_SimpleNew(1,dims,npy_type); \
     CHK_NULL(rv); \
     uvgetvr_c(self->tno,htype,name,(char *)(rv->data),length);\
     return PyArray_Return(rv);
@@ -195,7 +195,8 @@ PyObject * UVObject_trackvr(UVObject *self, PyObject *args) {
  * arrays as numpy arrays. */
 PyObject * UVObject_rdvr(UVObject *self, PyObject *args) {
     char *name, *type, value[MAXVAR];
-    int length, updated, dims[1];
+    int length, updated;
+    npy_intp dims[1];
     PyArrayObject *rv;
     if (!PyArg_ParseTuple(args, "ss", &name, &type)) return NULL;
     uvprobvr_c(self->tno, name, value, &length, &updated);
@@ -209,7 +210,7 @@ PyObject * UVObject_rdvr(UVObject *self, PyObject *args) {
                 uvgetvr_c(self->tno,H_INT2,name,value,length);
                 if (length == 1)
                     return PyInt_FromLong((long) ((short *)value)[0]);
-                rv = (PyArrayObject *) PyArray_FromDims(1, dims, PyArray_INT);
+                rv = (PyArrayObject *) PyArray_SimpleNew(1, dims, PyArray_INT);
                 CHK_NULL(rv);
                 for (int i=0; i < length; i++)
                     IND1(rv,i,int) = ((short *)value)[i];
@@ -226,7 +227,7 @@ PyObject * UVObject_rdvr(UVObject *self, PyObject *args) {
                     return PyComplex_FromDoubles(((double *)value)[0], 
                                                  ((double *)value)[1]);
                 }
-                rv = (PyArrayObject *) PyArray_FromDims(1,dims,PyArray_CDOUBLE);
+                rv = (PyArrayObject *) PyArray_SimpleNew(1,dims,PyArray_CDOUBLE);
                 CHK_NULL(rv);
                 uvgetvr_c(self->tno,H_CMPLX,name,(char *)rv->data,length);
                 return PyArray_Return(rv);

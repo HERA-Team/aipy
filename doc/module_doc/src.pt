@@ -1,4 +1,4 @@
-\File{(stdin)}{Sat Sep  6 01:10:31 2008}
+\File{(stdin)}{Fri Sep 26 11:45:33 2008}
 
 \PythonNoMath
 
@@ -252,9 +252,8 @@
 
 
 
-
-\I{272}{0}$\K{def}\ \F{get\_src}\,(s)\Y{:}$
-\DS{273}{1}{%
+\I{269}{0}$\K{def}\ \F{get\_src}\,(s)\Y{:}$
+\DS{270}{1}{%
 \verb"Return a source created out of the parameters in the dictionary srcs."}\vskip 5pt 
 
 
@@ -264,7 +263,7 @@
 
 
 
-\I{283}{0}$\K{def}\ \F{get\_catalog}\,(\V{srcs}\Y{=}\V{None},\V{cutoff}\Y{=}\V{None})\Y{:}$
+\I{280}{0}$\K{def}\ \F{get\_catalog}\,(\V{srcs}\Y{=}\V{None},\V{cutoff}\Y{=}\V{None})\Y{:}$
 
 
 

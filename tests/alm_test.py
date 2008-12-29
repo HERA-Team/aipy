@@ -30,7 +30,7 @@ try: alm[1,0] = "hi" ; print alm[1,0]
 except(ValueError): pass
 alm = aipy.healpix.Alm(2,2)
 alm[0,0] = 4
-hmap = aipy.healpix.HealpixMap(64, ordering="RING")
+hmap = aipy.healpix.HealpixMap(64, scheme="RING")
 hmap.from_alm(alm)
 #hmap.SetData(alm.to_map(hmap.Nside(), hmap.Scheme()))
 print "Actual coeffiecients:"

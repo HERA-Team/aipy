@@ -1,4 +1,4 @@
-\File{(stdin)}{Sat Sep  6 01:10:31 2008}
+\File{(stdin)}{Fri Sep 26 11:45:33 2008}
 
 \PythonNoMath
 
@@ -27,13 +27,15 @@
 
 
 
-\I{26}{0}$\K{def}\ \F{\_strarg\_to\_range}\,(\V{strarg})\Y{:}$
-\DS{27}{1}{%
+
+
+\I{28}{0}$\K{def}\ \F{\_strarg\_to\_range}\,(\V{strarg})\Y{:}$
+\DS{29}{1}{%
 \verb"Split command-line lists/ranges into a list of numbers."}\vskip 5pt 
 
 
-\I{31}{0}$\K{def}\ \F{uv\_selector}\,(\V{uv},\V{ant\_str},\V{pol\_str})\Y{:}$
-\DS{32}{1}{%
+\I{33}{0}$\K{def}\ \F{uv\_selector}\,(\V{uv},\V{ant\_str},\V{pol\_str})\Y{:}$
+\DS{34}{1}{%
 \verb"Call uv.select with appropriate options based on string argument for"\\ 
 \verb"antennas (can be 'all', 'auto', 'cross', '0,1,2', or '0_1,0_2') and"\\ 
 \verb"string for polarization ('xx','yy','xy','yx')."}\vskip 5pt 
@@ -49,8 +51,8 @@
 
 
 
-\I{48}{0}$\K{def}\ \F{parse\_chans}\,(\V{chan\_str},\V{nchan})\Y{:}$
-\DS{49}{1}{%
+\I{50}{0}$\K{def}\ \F{parse\_chans}\,(\V{chan\_str},\V{nchan})\Y{:}$
+\DS{51}{1}{%
 \verb"Return array of active channels based on number of channels and"\\ 
 \verb"string argument for chans (can be 'all', '20_30', or '55,56,57')."}\vskip 5pt 
 
@@ -60,11 +62,27 @@
 
 
 
-\I{59}{0}$\K{def}\ \F{parse\_srcs}\,(\V{src\_str},\V{force\_cat}\Y{=}\V{False})\Y{:}$
-\DS{60}{1}{%
+\I{61}{0}$\K{def}\ \F{parse\_srcs}\,(\V{src\_str},\V{force\_cat}\Y{=}\V{False})\Y{:}$
+\DS{62}{1}{%
 \verb"Return src/catalog based on string argument for src (can be ""\verb"all""\verb","\\ 
 "\verb"<src_name1>,...""\verb", or ""\verb"<ra XX[:XX:xx]>_<dec XX[:XX:xx]>""\verb").  Can force"\\ 
 \verb"a single source to be returned as catalog with force_cat."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+\I{78}{0}$\K{def}\ \F{files\_to\_locs}\,(\V{locations},\V{uvfiles},\V{sysargv})\Y{:}$
+
+
+
 
 
 

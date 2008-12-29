@@ -206,9 +206,9 @@ a0.set_data(n.array(
   -8.59938680e+03 +5.79452877j,  2.79592478e+00 +1.71434465j,
   -1.09205152e+04 -3.35049431j]))
 
-coeffs = [a7.get_data(), a6.get_data(), a5.get_data(), a4.get_data(),
-    a3.get_data(), a2.get_data(), a1.get_data(), a0.get_data()]
-b = a.sim.BeamAlmMfreq(freqs, coeffs=coeffs)
+coeffs = {7:a7.get_data(), 6:a6.get_data(), 5:a5.get_data(), 4:a4.get_data(),
+    3:a3.get_data(), 2:a2.get_data(), 1:a1.get_data(), 0:a0.get_data()}
+b = a.sim.BeamAlm(freqs, coeffs=coeffs)
 
 print b.response((0,0,1))
 print b.response((x,y,z))

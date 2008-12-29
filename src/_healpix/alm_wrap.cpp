@@ -155,7 +155,7 @@ static PyObject * AlmObject_get(AlmObject *self, PyObject *args) {
 static int AlmObject_set(AlmObject *self, PyObject *ind, PyObject *val) {
     int l, m, lmax=self->alm.Lmax(), mmax=self->alm.Mmax();
     xcomplex<double> c;
-    if (!PyArg_ParseTuple(ind, "ii", &l, &m)) return NULL;
+    if (!PyArg_ParseTuple(ind, "ii", &l, &m)) return -1;
     if (l < 0 || l > lmax || m < 0 || m > mmax || m > l) {
         PyErr_Format(PyExc_RuntimeError, "Index out of range");
         return -1;
@@ -192,13 +192,16 @@ static PyObject * AlmObject_mmax(AlmObject *self) {
 // Clear all coefficients
 static PyObject * AlmObject_set_to_zero(AlmObject *self) {
     self->alm.SetToZero();
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 // Convert to a Healpix Map
 static PyObject * AlmObject_to_map(AlmObject *self, PyObject *args) {
     PyObject *ordering;
     Healpix_Ordering_Scheme scheme = RING;
-    int nside, npix;
+    int nside;
+    npy_intp npix;
     PyArrayObject *rv;
     if (!PyArg_ParseTuple(args, "iO", &nside, &ordering)) return NULL;
     if (strcmp(PyString_AsString(ordering), "NEST") == 0) {
@@ -212,7 +215,7 @@ static PyObject * AlmObject_to_map(AlmObject *self, PyObject *args) {
         alm2map<double>(self->alm, map);
         // Transfer map contents into numpy array
         npix = map.Npix();
-        rv = (PyArrayObject *) PyArray_FromDims(1, &npix, PyArray_DOUBLE);
+        rv = (PyArrayObject *) PyArray_SimpleNew(1, &npix, PyArray_DOUBLE);
         CHK_NULL(rv);
         for (int i=0; i < npix; i++) IND1(rv,i,double) = map[i];
         return PyArray_Return(rv);
@@ -278,10 +281,10 @@ static PyObject * AlmObject_from_map(AlmObject *self, PyObject *args) {
 static PyObject * AlmObject_lm_indices(AlmObject *self) {
     PyArrayObject *L, *M;
     int lmax = self->alm.Lmax(), mmax = self->alm.Mmax();
-    int num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
+    npy_intp num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
     int cnt=0;
-    L = (PyArrayObject *) PyArray_FromDims(1, &num_alms, PyArray_INT);
-    M = (PyArrayObject *) PyArray_FromDims(1, &num_alms, PyArray_INT);
+    L = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, PyArray_INT);
+    M = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, PyArray_INT);
     CHK_NULL(L); CHK_NULL(M);
     for (int l=0; l<=lmax; ++l) {
         for (int m=0; m<=mmax; ++m) {
@@ -298,10 +301,10 @@ static PyObject * AlmObject_lm_indices(AlmObject *self) {
 static PyObject * AlmObject_get_data(AlmObject *self) {
     PyArrayObject *rv;
     int lmax = self->alm.Lmax(), mmax = self->alm.Mmax();
-    int num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
+    npy_intp num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
     xcomplex<double> c;
     int cnt=0;
-    rv = (PyArrayObject *) PyArray_FromDims(1, &num_alms, PyArray_CDOUBLE);
+    rv = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, PyArray_CDOUBLE);
     CHK_NULL(rv);
     for (int l=0; l<=lmax; ++l) {
         for (int m=0; m<=mmax; ++m) {
