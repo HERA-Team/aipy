@@ -27,6 +27,8 @@ o.add_option('--sim_autos', dest='sim_autos', action='store_true',
     help='Use auto-correlations in fitting.  Default is to use only cross-correlations.')
 o.add_option('-n', '--norm', dest='norm', action='store_true',
     help='Normalize residual to data strength.  Puts weaker sources on similar footing as strong sources.')
+o.add_option('--maxiter', dest='maxiter', type='float', default=-1,
+    help='Maximum # of iterations to run.  Default is infinite.')
 opts, args = o.parse_args(sys.argv[1:])
 
 # Parse command-line options
@@ -122,8 +124,9 @@ def fit_func(prms):
     print '-------------------------------------------------------------------'
     return score / first_fit
 
+if opts.maxiter < 0: opts.maxiter = n.Inf
 a.optimize.fmin(fit_func, prm_list,
-    maxfun=n.Inf, maxiter=n.Inf, ftol=1e-100, xtol=1e-100)
+    maxfun=n.Inf, maxiter=opts.maxiter, ftol=1e-100, xtol=1e-100)
 
 '''
 def anneal(func, x0, T_x, cooling=lambda i: 3*(n.cos(i/50.)+1), 

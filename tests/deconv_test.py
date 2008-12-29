@@ -11,7 +11,7 @@ i[30:40,30:40] = .1
 b = a.img.gaussian_beam(2, shape=i.shape)
 b[0,0] = .05
 
-d = a.img.convolve2d(i, b)
+d = n.abs(n.fft.ifft2(n.fft.fft2(i) * n.fft.fft2(b)))
 ns = n.random.normal(scale=NOISE, size=i.shape)
 d = n.abs(d + ns)
 

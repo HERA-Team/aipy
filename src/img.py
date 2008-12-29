@@ -35,7 +35,7 @@ def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
         ny = n.where(y > shape[1] / 2, y - shape[1], y)
         return n.exp(-(nx**2 + ny**2) / sigma**2)
     g = n.fromfunction(gaussian, shape)
-    g /= g.sum() / amp
+    g *= amp
     return recenter(g, center)
 
 def beam_gain(bm):
@@ -110,7 +110,7 @@ class Img:
     def _gen_img(self, data, center=(0,0)):
         """Return the inverse FFT of the provided data, with the 0,0 point 
         moved to 'center'.  Up=North, Right=East."""
-        return recenter(n.abs(n.fft.ifft2(data)), center)
+        return recenter(n.fft.ifft2(data).real.astype(n.float32), center)
     def image(self, center=(0,0)):
         """Return the inverse FFT of the UV matrix, with the 0,0 point moved
         to 'center'.  Tranposes to put up=North, right=East."""

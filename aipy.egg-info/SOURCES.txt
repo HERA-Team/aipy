@@ -57,9 +57,9 @@ doc/module_doc/src.pt
 locs/med732.py
 locs/pgb564.py
 locs/pwa303.py
-scripts/.plot_img.py.swp
 scripts/.plot_map.py.swp
 scripts/apply_bp.py
+scripts/cl_img.py
 scripts/combine_freqs.py
 scripts/compress_uv.py
 scripts/difuv.py
@@ -81,7 +81,6 @@ scripts/xrfi.py
 scripts/xtalk1.py
 scripts/xtalk2.py
 scripts/xtalk3.py
-src/.sim.py.swp
 src/__init__.py
 src/ant.py
 src/const.py
@@ -362,6 +361,7 @@ tests/ant_test.py
 tests/bm_test.py
 tests/crd_test.py
 tests/deconv1d_test.py
+tests/deconv2d_test.py
 tests/deconv_test.py
 tests/fits_test.py
 tests/hpb_test.py

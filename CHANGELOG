@@ -1,3 +1,9 @@
+0.8.1
+* Split out cleaning functionality from mk_img.py into cl_img.py.
+* Added snapshot capability to mk_img.py
+* Bugfix for plot_img.py grid being upside-down.
+* Reimplemented clean in C for speed.
+
 0.8.0
 * Added resolving support for elliptical sources in resolve_src() in ant.py.  
 * Reworked how get_baseline() and gen_uvw() functioned to facilitate elliptical

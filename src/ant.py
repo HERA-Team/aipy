@@ -326,8 +326,10 @@ class AntennaArray(ArrayLocation):
             the semimajor axis from E."""
         u,v,w = self.gen_uvw(i, j, src=src)
         a1,a2,th = srcshape
-        if len(u.shape) > len(a1.shape): 
-            a1.shape += (1,); a2.shape += (1,); th.shape += (1,)
+        try:
+            if len(u.shape) > len(a1.shape): 
+                a1.shape += (1,); a2.shape += (1,); th.shape += (1,)
+        except(AttributeError): pass
         ru = a1 * (u*n.cos(th) - v*n.sin(th))
         rv = a2 * (u*n.sin(th) + v*n.cos(th))
         x = 2 * n.pi * n.sqrt(ru**2 + rv**2)

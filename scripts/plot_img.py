@@ -5,7 +5,8 @@ This is a general-purpose script for plotting simple FITS images.
 Author: Aaron Parsons
 """
 
-import aipy as a, numpy as n, pylab as p, sys, optparse, ephem, math
+import aipy as a, sys, optparse, os
+import numpy as n, pylab as p, ephem, math
 from mpl_toolkits.basemap import Basemap
 
 o = optparse.OptionParser()
@@ -14,10 +15,12 @@ o.set_description(__doc__)
 a.scripting.add_standard_options(o, chan=True)
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plot mode can be log (logrithmic), lin (linear), phs (phase), real, or imag.')
-o.add_option('-o', '--out_file', dest='out_file', default='',
+o.add_option('-o', '--outfile', dest='outfile', default='',
     help='If provided, will save the figure to the specified file instead of popping up a window.')
 o.add_option('-p', '--pol', dest='pol', type='int', default=0, 
     help='Polarization index if FITS file has multiple polarizations.  Default 0.')
+o.add_option('--batch', dest='batch', action='store_true',
+    help='Process files in batch mode (one plot each) and output to a <input file>.png file')
 o.add_option('--max', dest='max', default=None, type='float',
     help='Upper clip value on 2D plots.')
 o.add_option('--dyn_rng', dest='dyn_rng', default=None, type='float',
@@ -26,12 +29,22 @@ o.add_option('--nogrid', dest='nogrid', action='store_true',
     help='Do not display RA/DEC grid.')
 opts, args = o.parse_args(sys.argv[1:])
 
-m2 = int(math.sqrt(len(args)))
-m1 = int(math.ceil(float(len(args)) / m2))
+if opts.batch: m1,m2 = 1,1
+else:
+    m2 = int(math.sqrt(len(args)))
+    m1 = int(math.ceil(float(len(args)) / m2))
 
 for cnt, filename in enumerate(args):
+    print filename
+    if opts.batch:
+        cnt = 0
+        outfile = filename+'.png'
+        if os.path.exists(outfile):
+            print 'Output file exists... skipping.'
+            continue
     # Gather data
     d, kwds = a.img.from_fits(filename)
+    print d.shape
     print kwds
 
     # Parse command-line options
@@ -88,6 +101,12 @@ for cnt, filename in enumerate(args):
     p.colorbar(shrink=.5, fraction=.05)
     p.title(filename)
 
+    if opts.batch:
+        print 'Saving to', outfile
+        p.savefig(outfile)
+        p.clf()
+        
+
 # Add right-click functionality for finding locations/strengths in map.
 cnt = 1
 def click(event):
@@ -108,4 +127,8 @@ def click(event):
 #register this function with the event handler
 p.connect('button_press_event', click)
 
-p.show()
+if not opts.batch:
+    if opts.outfile != '':
+        print 'Saving to', opts.outfile
+        p.savefig(opts.outfile)
+    else: p.show()
