@@ -7,6 +7,7 @@ VERSION
 ez_setup.py
 install_recommended.sh
 install_required.sh
+setup.cfg
 setup.py
 aipy.egg-info/PKG-INFO
 aipy.egg-info/SOURCES.txt
@@ -57,8 +58,6 @@ doc/module_doc/src.pt
 locs/med732.py
 locs/pgb564.py
 locs/pwa303.py
-scripts/.fitmdl.py.swp
-scripts/.phs2src.py.swp
 scripts/apply_bp.py
 scripts/cl_img.py
 scripts/combine_freqs.py
@@ -81,7 +80,6 @@ scripts/xrfi.py
 scripts/xtalk1.py
 scripts/xtalk2.py
 scripts/xtalk3.py
-src/.sim.py.swp
 src/__init__.py
 src/ant.py
 src/const.py

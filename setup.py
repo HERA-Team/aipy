@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 
 import os, glob, numpy, sys
-if 'upload' in sys.argv:
+if 'upload' in sys.argv or 'register' in sys.argv:
     from ez_setup import use_setuptools; use_setuptools()
     from setuptools import setup, Extension
 
@@ -26,7 +26,7 @@ setup(name = 'aipy',
     license = 'GPL',
     author = 'Aaron Parsons',
     author_email = 'aparsons@astron.berkeley.edu',
-    url = 'http://setiathome.berkeley.edu/~aparsons/aipy',
+    url = 'http://setiathome.berkeley.edu/~aparsons/aipy/aipy.cgi',
     classifiers = [
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

@@ -2,7 +2,7 @@ Metadata-Version: 1.0
 Name: aipy
 Version: 0.8.5
 Summary: Astronomical Interferometry in PYthon
-Home-page: http://setiathome.berkeley.edu/~aparsons/aipy
+Home-page: http://setiathome.berkeley.edu/~aparsons/aipy/aipy.cgi
 Author: Aaron Parsons
 Author-email: aparsons@astron.berkeley.edu
 License: GPL
