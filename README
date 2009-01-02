@@ -14,7 +14,8 @@ ON THE WEB
 INSTALLATION
     This is a *nix package.  With some trouble it can install on intel-based
     Macs. It probably doesn't install on Windows. You need to have
-    python >= 2.4.  AIPY depends on the following python packages:
+    python >= 2.4 (and < 3.0 for now).  AIPY depends on the following 
+    python packages:
         numpy >= 1.2
         pyephem >= 3.7.3
         pyfits >= 1.3
