@@ -81,7 +81,9 @@ class HealpixMap(HealpixBase):
         else:
             if type(crd) is n.ndarray: assert(len(crd.shape) == 1)
             px = mk_arr(crd, dtype=n.int)
-        if px.size == 1: self.map[px] = val
+        if px.size == 1:
+            if type(val) is n.ndarray: val = mk_arr(val, dtype=self.map.dtype)
+            self.map[px] = val
         else:
             m = n.zeros_like(self.map)
             px = px.reshape(px.size,1)
