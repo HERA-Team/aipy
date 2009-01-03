@@ -78,7 +78,7 @@ o.add_option('-j', '--juldate', dest='juldate', type='float',
 o.add_option('--srcs', dest='srcs', type='float', default=1,
     help="Cutoff flux (Jy) for labeling known radio sources in plot.  Default 1 Jy.")
 o.add_option('--src_mark', dest='src_mark', default='',
-    help='Marker to put on src locations.  Can be: ".,o,+,x,^,v".  Default no maker.')
+    help='Marker to put on src locations.  Can be: ".,o,+,x,^,v".  Default no marker.')
 o.add_option('--src_color', dest='src_color', default='k',
     help='Color of source label.  Can be: "k,w,r,b".  Default "k".')
 o.add_option('--isys', dest='isys', default='eq',
