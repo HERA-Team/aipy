@@ -6,7 +6,8 @@ for writing scripts.
 import miriad, ant, sim, fit, src, numpy as n
 
 def add_standard_options(optparser, ant=False, pol=False, chan=False, 
-        loc=False, loc2=False, src=False, dec=False):
+        loc=False, loc2=False, src=False, dec=False, cmap=False, max=False,
+        drng=False):
     """Add standard command-line options to an optparse.OptionParser() on an 
     opt in basis (i.e. specify =True for each option to be added)."""
     if ant: optparser.add_option ('-a', '--ant', dest='ant', default='cross',
@@ -28,6 +29,13 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
         optparser.add_option('--dphs', dest='decphs', 
             default=0, type='int',
             help='Offset to use when decimating (i.e. start counting integrations at this number for the purpose of decimation).  Default is 0.')
+    if cmap: optparser.add_option('--cmap', dest='cmap', default='jet',
+        help='Colormap for plotting.  Can be gist_earth, gist_heat, gist_stern, gist_yarg, hot, cool, gray, bone, spectral, copper, jet to name a few.  For a more complete list, see pylab.cm.datad.keys().  Default is jet.')
+    if max: optparser.add_option( '--max',dest='max',type='float',default=None,
+    help='Manually set the maximum color level, in units matching plotting mode.  Default max(data).')
+    if drng:
+        optparser.add_option('--drng', dest='drng', type='float', default=None,
+    help="Dynamic range in color of image, in units matching plotting mode.  Default max(data)-min(data).")
 
 def _strarg_to_range(strarg):
     """Split command-line lists/ranges into a list of numbers."""

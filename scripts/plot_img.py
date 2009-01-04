@@ -12,7 +12,7 @@ from mpl_toolkits.basemap import Basemap
 o = optparse.OptionParser()
 o.set_usage('plot_img.py [options] *.fits')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, chan=True)
+a.scripting.add_standard_options(o, chan=True, cmap=True, max=True, drng=True)
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plot mode can be log (logrithmic), lin (linear), phs (phase), real, or imag.')
 o.add_option('-o', '--outfile', dest='outfile', default='',
@@ -21,16 +21,13 @@ o.add_option('-p', '--pol', dest='pol', type='int', default=0,
     help='Polarization index if FITS file has multiple polarizations.  Default 0.')
 o.add_option('--batch', dest='batch', action='store_true',
     help='Process files in batch mode (one plot each) and output to a <input file>.png file')
-o.add_option('--max', dest='max', default=None, type='float',
-    help='Upper clip value on 2D plots.')
-o.add_option('--dyn_rng', dest='dyn_rng', default=None, type='float',
-    help='Dynamic range in scale of 2D plots.')
 o.add_option('--nogrid', dest='nogrid', action='store_true',
     help='Do not display RA/DEC grid.')
 o.add_option('-f', '--fft', dest='fft', action='store_true',
     help='Perform 2D FFT of image.')
 opts, args = o.parse_args(sys.argv[1:])
 
+cmap = p.get_cmap(opts.cmap)
 if opts.batch: m1,m2 = 1,1
 else:
     m2 = int(math.sqrt(len(args)))
@@ -87,7 +84,7 @@ for cnt, filename in enumerate(args):
 
     if not opts.max is None: max = opts.max
     else: max = d.max()
-    if not opts.dyn_rng is None: min = max - opts.dyn_rng
+    if not opts.drng is None: min = max - opts.drng
     else: min = d.min()
 
     p.subplot(m2, m1, cnt+1)
@@ -102,8 +99,8 @@ for cnt, filename in enumerate(args):
         map.drawmeridians(n.arange(kwds['ra']-180,kwds['ra']+180,30))
         map.drawparallels(n.arange(-90,120,30))
         map.drawmapboundary()
-        map.imshow(d, vmin=min, vmax=max)
-    else: p.imshow(d, vmin=min, vmax=max, origin='lower')
+        map.imshow(d, vmin=min, vmax=max, cmap=cmap)
+    else: p.imshow(d, vmin=min, vmax=max, origin='lower', cmap=cmap)
     p.colorbar(shrink=.5, fraction=.05)
     p.title(filename)
 

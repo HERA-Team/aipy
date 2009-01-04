@@ -16,7 +16,8 @@ import aipy as a, numpy as n, pylab as p, math, sys, optparse
 o = optparse.OptionParser()
 o.set_usage('plot_uv.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, dec=True)
+a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, dec=True,
+    cmap=True, max=True, drng=True)
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plot mode can be log (logrithmic), lin (linear), phs (phase), real, or imag.')
 o.add_option('--sum_chan', dest='sum_chan', action='store_true',
@@ -34,10 +35,6 @@ o.add_option('--df', dest='df', action='store_true',
     help='Remove a linear extrapolation from adjacent frequency channels.')
 o.add_option('-o', '--out_file', dest='out_file', default='',
     help='If provided, will save the figure to the specified file instead of popping up a window.')
-o.add_option('--max', dest='max', default=None, type='float', 
-    help='Upper clip value on 2D plots.')
-o.add_option('--dyn_rng', dest='dyn_rng', default=None, type='float', 
-    help='Dynamic range in scale of 2D plots.')
 o.add_option('--time_axis', dest='time_axis', default='index',
     help='Choose time axis to be integration/fringe index (index), or physical coordinates (physical), or if doing xy plot in time-mode, (lst) is also available.  Default is index.')
 o.add_option('--chan_axis', dest='chan_axis', default='index',
@@ -46,10 +43,6 @@ o.add_option('--clean', dest='clean', type='float',
     help='Deconvolve delay-domain data by the "beam response" that results from flagged data.  Specify a tolerance for termination (usually 1e-2 or 1e-3).')
 o.add_option('--nolegend', dest='nolegend', action='store_true',
     help='Omit legend in last plot.')
-o.add_option('--cmap', dest='cmap', default='jet',
-    help='Colormap for plotting.  Can be gist_earth, gist_heat, gist_stern, gist_yarg, hot, cool, gray, bone, spectral, copper, jet to name a few.  For a more complete list, see pylab.cm.datad.keys().  Default is jet.')
-
-
 
 def convert_arg_range(arg):
     """Split apart command-line lists/ranges into a list of numbers."""
@@ -251,7 +244,7 @@ for cnt, bl in enumerate(bls):
                 xlabel = 'Frequency (GHz)'
         if not opts.max is None: max = opts.max
         else: max = d.max()
-        if not opts.dyn_rng is None: min = max - opts.dyn_rng
+        if not opts.drng is None: min = max - opts.drng
         else: min = d.min()
         p.imshow(d, extent=(c1,c2,t2,t1), aspect='auto', 
             vmax=max, vmin=min, cmap=cmap)
@@ -284,7 +277,7 @@ for cnt, bl in enumerate(bls):
         p.xlabel(xlabel)
         if not opts.max is None: max = opts.max
         else: max = d.max()
-        if not opts.dyn_rng is None: min = max - opts.dyn_rng
+        if not opts.drng is None: min = max - opts.drng
         else: min = d.min()
         p.ylim(min,max)
     elif not is_chan_range and is_time_range:
@@ -302,7 +295,7 @@ for cnt, bl in enumerate(bls):
                 p.plot(plot_times, d[:,c], '-', label=label % chan)
         if not opts.max is None: max = opts.max
         else: max = d.max()
-        if not opts.dyn_rng is None: min = max - opts.dyn_rng
+        if not opts.drng is None: min = max - opts.drng
         else: min = d.min()
         p.ylim(min,max)
     else: raise ValueError('Either time or chan needs to be a range.')

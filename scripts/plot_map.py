@@ -63,14 +63,11 @@ except(ImportError):
 o = optparse.OptionParser()
 o.set_usage('plot_map.py [options] mapfile')
 o.set_description(__doc__)
+a.scripting.add_standard_options(o, cmap=True, max=True, drng=True)
 o.add_option('-p', '--projection', dest='projection', default='moll',
     help='Map projection to use: moll (default), mill, cyl, robin, sinu.')
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plotting mode, can be log (default), lin.')
-o.add_option( '--max', dest='max', type='float', default=None,
-    help='Manually set the maximum color level, in units matching plotting mode.  Default max(map).')
-o.add_option('--dyn_rng', dest='dyn_rng', type='float', default=None,
-    help="Dynamic range in color of image, in units matching plotting mode.  Default max(map)-min(map).")
 o.add_option('-c', '--cen', dest='cen', type='float', 
     help="Center longitude/right ascension (in degrees) of map.  Default is 0 for galactic coordinate output, 180 for equatorial.")
 o.add_option('-j', '--juldate', dest='juldate', type='float', 
@@ -97,6 +94,7 @@ o.add_option('--nside', dest='nside', type='int',
     help="Manually set NSIDE (possibly degrading map) to a power of 2.")
 opts,args = o.parse_args(sys.argv[1:])
 
+cmap = p.get_cmap(opts.cmap)
 if opts.cen is None:
     if opts.osys == 'eq': opts.cen = 180
     else: opts.cen = 0
@@ -164,13 +162,13 @@ map.drawparallels(n.arange(-90,90,30)[1:], labels=[0,1,0,0], labelstyle='+/-')
 if opts.mode.startswith('log'): data = n.log10(n.abs(data))
 if opts.max is None: max = data.max()
 else: max = opts.max
-if opts.dyn_rng is None:
+if opts.drng is None:
     min = data.min()
     if min < (max - 10): min = max-10
-else: min = max - opts.dyn_rng
+else: min = max - opts.drng
 data = data.clip(min, max)
 data = n.ma.array(data, mask=mask)
-map.imshow(data, vmax=max, vmin=min)
+map.imshow(data, vmax=max, vmin=min, cmap=cmap)
 
 # Plot src labels and markers on top of map image
 if not opts.srcs is None:
@@ -179,7 +177,6 @@ if not opts.srcs is None:
         if xpt >= 1e30 or ypt >= 1e30: continue
         if opts.src_mark != '':
             map.plot(sx, sy, opts.src_color+opts.src_mark,markerfacecolor=None)
-        #p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))))
         p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))),
             color=opts.src_color)
 if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
