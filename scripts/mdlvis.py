@@ -145,13 +145,15 @@ if len(args) > 0:
         uvi = a.miriad.UV(filename)
         uvo = a.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
-        uvo.pipe(uvi, mfunc=mdl, raw=True)
+        uvo.pipe(uvi, mfunc=mdl, raw=True,
+            append2hist="MDLVIS: srcs=%s map=%s sim=%s flag=%s noise=%f\n" % \
+                (opts.src, opts.map, opts.sim, opts.flag, opts.noiselev))
 else:
     # Initialize a new UV file
     pols = opts.pol.split(',')
     uv = a.miriad.UV('new.uv', status='new')
     uv._wrhd('obstype','mixed-auto-cross')
-    uv._wrhd('history','MDLVIS: created file.')
+    uv._wrhd('history','MDLVIS: created file.\nMDLVIS: srcs=%s map=%s sim=%s flag=%s noise=%f\n' % (opts.src, opts.map, opts.sim, opts.flag, opts.noiselev))
     uv.add_var('telescop','a'); uv['telescop'] = 'AIPY'
     uv.add_var('operator','a'); uv['operator'] = 'AIPY'
     uv.add_var('version' ,'a'); uv['version'] = '0.0.1'
@@ -173,7 +175,7 @@ else:
     uv.add_var('sdf'     ,'d'); uv['sdf'] = opts.sdf
     uv.add_var('nchan'   ,'i'); uv['nchan'] = opts.nchan
     uv.add_var('nschan'  ,'i'); uv['nschan'] = opts.nchan
-    uv.add_var('inttime' ,'r'); uv['inttime'] = opts.inttime
+    uv.add_var('inttime' ,'r'); uv['inttime'] = float(opts.inttime)
     # These variables just set to dummy values
     uv.add_var('vsource' ,'r'); uv['vsource'] = 0.
     uv.add_var('ischan'  ,'i'); uv['ischan'] = 1
