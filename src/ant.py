@@ -7,7 +7,7 @@ import ephem, math, numpy as n, coord, const, _cephes
 class PointingError(Exception):
     """An error to throw if a source is below the horizon."""
     def __init__(self, value): self.parameter = value
-    def __str__(self): return repr(self.parameter)
+    def __str__(self): return str(self.parameter)
 
 #  _   _ _   _ _ _ _           _____                 _   _                 
 # | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
@@ -17,12 +17,12 @@ class PointingError(Exception):
 #                      |___/        
 
 def juldate2ephem(num):
-    """Convert Julian date to ephem date, measured from noon, Jan. 1, 1900."""
-    return ephem.date(num - 2415020)
+    """Convert Julian date to ephem date, measured from noon, Dec. 31, 1899."""
+    return ephem.date(num - 2415020.)
 
 def ephem2juldate(num):
-    """Convert ephem date (measured from noon, Jan. 1, 1900) to Julian date."""
-    return float(num + 2415020)
+    """Convert ephem date (measured from noon, Dec. 31, 1899) to Julian date."""
+    return float(num + 2415020.)
 
 #  ____           _ _       ____            _       
 # |  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _ 
