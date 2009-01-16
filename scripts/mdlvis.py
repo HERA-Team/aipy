@@ -23,7 +23,7 @@ o.add_option('--iepoch', dest='iepoch', default=ephem.J2000,
 o.add_option('--freq', dest='freq', default=.150, type='float',
     help='Frequency of flux data in map.')
 o.add_option('-n', '--noiselev', dest='noiselev', default=0., type='float',
-    help='RMS amplitude of noise added to each UV sample of simulation.')
+    help='RMS amplitude of noise (Jy) added to each UV sample of simulation.')
 o.add_option('--nchan', dest='nchan', default=256, type='float',
     help='Number of channels in simulated data if no input data to mimic.  Default is 256')
 o.add_option('--sfreq', dest='sfreq', default=.075, type='float',
@@ -131,7 +131,7 @@ def mdl(uv, p, d, f):
         noise_amp = n.random.random(d.shape) * opts.noiselev
         noise_phs = n.random.random(d.shape) * 2*n.pi * 1j
         noise = noise_amp * n.exp(noise_phs)
-        d += noise
+        d += noise * aa.passband(i, j)
     return p, d, f
 
 if len(args) > 0:
