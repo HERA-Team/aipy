@@ -135,7 +135,8 @@ if not opts.srcs is None:
     if opts.juldate is None:
         o.date = ephem.J2000
         o.epoch = o.date
-        del(cat['Sun'])
+        try: del(cat['Sun'])
+        except(KeyError): pass
     else:
         o.date = a.ant.juldate2ephem(opts.juldate)
         o.epoch = o.date
