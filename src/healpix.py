@@ -103,10 +103,9 @@ class HealpixMap(HealpixBase):
             th,phi = self.px2crd(px, ncrd=2)
             self[px] = hpm[th,phi].astype(self.get_dtype())
         elif hpm.nside() > self.nside():
-            factor = hpm.nside() / self.nside()
             px = n.arange(hpm.npix())
             th,phi = hpm.px2crd(px, ncrd=2)
-            self[th,phi] = hpm[px].astype(self.get_dtype()) / factor
+            self[th,phi] = hpm[px].astype(self.get_dtype())
         else:
             if hpm.scheme() == self.scheme():
                 self.map = hpm.map.astype(self.get_dtype())
