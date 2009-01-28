@@ -107,9 +107,7 @@ for uvfile in args:
             data = phs_dat[bl][cnt[bl],:]
             if not src is None:
                 try: data = aa.unphs2src(data, src, i, j)
-                except(a.ant.PointingError):
-                    if opts.extract: d *= 0
-                    data = 0
+                except(a.ant.PointingError): data *= 0
             cnt[bl] += 1
             if opts.extract: return p, n.ma.array(data, mask=d.mask)
             else: return p, d - data
