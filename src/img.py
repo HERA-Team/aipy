@@ -142,6 +142,7 @@ class Img:
         assuming the image is centered on the provided ra, dec (in radians)."""
         x,y,z = self.get_top(center)
         shape,mask = x.shape, x.mask
+        if len(mask.shape) == 0: mask = n.zeros(x.shape)
         vec = n.array([a.filled().flatten() for a in (x,y,z)])
         m = coord.top2eq_m(-ra, dec)
         vec = n.dot(m, vec)
