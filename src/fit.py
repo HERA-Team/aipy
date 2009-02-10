@@ -52,7 +52,9 @@ def print_params(prms, indent='', grad=None):
     keys.sort()
     for k in keys:
         v = prms[k]
-        if v == {} or v is None or v == []: continue
+        if (if type(v) is dict and v == {}) or v is None or \
+                (type(v) is list and v == []):
+            continue
         if type(v) == dict:
             print indent, k
             if grad is None: print_params(v, indent + '  ')
