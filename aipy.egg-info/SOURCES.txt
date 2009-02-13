@@ -369,6 +369,7 @@ tests/mk_map.py
 tests/phs_test.py
 tests/plot_img.py
 tests/pwa303.py
+tests/scripting_test.py
 tests/sim_test.py
 tests/sphere.py
 tests/tut_ant.py
