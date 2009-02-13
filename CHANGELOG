@@ -1,3 +1,14 @@
+0.8.6
+* Fixed a data-type error for Healpix maps that aren't doubles
+* Added max/drng/cmap parameters to standard command-line options
+* Started adding unit tests
+* Changed noise option in mdlvis.py to add noise in Jy (not data) units.
+* Changed behavior of reducing NSIDE in Healpix maps to sum instead of average.
+* Bugfix on extracting source below the horizon in filter_src.py
+* Work aound problem with numpy MA arrays not having a mask if entire image
+  is valid.
+* Added new option (0,1,2)_3 for specifying antennas on the command line.
+
 0.8.5
 * Added support to mdlvis.py for simulating data without an input UV file.
 * Added "none" mode to xrfi.py to flag only those channels specified manually.
