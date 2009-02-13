@@ -3,7 +3,7 @@ Module containing utilities (like parsing of certain command-line arguments)
 for writing scripts.
 """
 
-import miriad, ant, sim, fit, src, numpy as n
+import miriad, ant, sim, fit, src, numpy as n, re
 
 def add_standard_options(optparser, ant=False, pol=False, chan=False, 
         loc=False, loc2=False, src=False, dec=False, cmap=False, max=False,
@@ -11,7 +11,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
     """Add standard command-line options to an optparse.OptionParser() on an 
     opt in basis (i.e. specify =True for each option to be added)."""
     if ant: optparser.add_option ('-a', '--ant', dest='ant', default='cross',
-         help='Select antennas/baselines to include.  Options are "all", "auto", "cross", "<ant1 #>_<ant2 #>,..." (a list of baselines), or "<ant1 #>,..." (a list of antennas).  Default is "cross".')
+         help='Select ants/baselines to include.  Examples: all (all baselines) auto (of active baselines, only i=j) cross (only i!=j) 0,1,2 (any baseline involving listed ants) 0_2,0_3 (only listed baselines) "(0,1)_(2,3)" (same as 0_2,0_3,1_2,2_3. Quates help bash deal with parentheses) "(-0,1)_(2,-3)" (exclude 0_2,0_3,1_3 include 1_2).')
     if pol: optparser.add_option('-p', '--pol', dest='pol', 
         help='Choose polarization (xx, yy, xy, yx) to include.')
     if chan: optparser.add_option('-c', '--chan', dest='chan', default='all',
@@ -42,27 +42,53 @@ def _strarg_to_range(strarg):
     strarg = strarg.split(',')
     return [map(float, option.split('_')) for option in strarg]
 
-def uv_selector(uv, ant_str, pol_str):
+ant_re = r'(\(((-?\d+,?)+)\)|-?\d+)'
+bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
+def parse_ants(ant_str, nants):
+    """Generate list of (baseline, inlude) tuples based on parsing of the
+    string associated with the 'ants' command-line option."""
+    rv,cnt = [], 0
+    while cnt < len(ant_str):
+        m = re.search(bl_re, ant_str[cnt:])
+        if m is None:
+            if ant_str[cnt:].startswith('all'): rv = []
+            elif ant_str[cnt:].startswith('auto'): rv.append(('auto',1))
+            elif ant_str[cnt:].startswith('cross'): rv.append(('auto',0))
+            else: raise ValueError('Unparsible ant argument "%s"' % ant_str)
+            c = ant_str[cnt:].find(',')
+            if c >= 0: cnt += c + 1
+            else: cnt = len(ant_str)
+        else:
+            m = m.groups()
+            cnt += len(m[0])
+            if m[2] is None:
+                ais = [m[8]]
+                ajs = range(nants)
+            else:
+                if m[3] is None: ais = [m[2]]
+                else: ais = m[3].split(',')
+                if m[6] is None: ajs = [m[5]]
+                else: ajs = m[6].split(',')
+            for i in ais:
+                for j in ajs:
+                    if type(i) == str and i.startswith('-') or \
+                            type(j) == str and j.startswith('-'):
+                        include = 0
+                    else: include = 1
+                    bl = miriad.ij2bl(abs(int(i)),abs(int(j)))
+                    rv.append((bl,include))
+    return rv
+
+def uv_selector(uv, ants, pol_str):
     """Call uv.select with appropriate options based on string argument for
     antennas (can be 'all', 'auto', 'cross', '0,1,2', or '0_1,0_2') and
     string for polarization ('xx','yy','xy','yx')."""
-    if ant_str.startswith('all'): pass
-    elif ant_str.startswith('auto'): uv.select('auto', 0, 0)
-    elif ant_str.startswith('cross'): uv.select('auto', 0, 0, include=0)
-    else:
-        antopt = _strarg_to_range(ant_str)
-        antopt1 = [ao[0] for ao in antopt if len(ao) == 1]
-        antopt2 = [ao for ao in antopt if len(ao) == 2]
-        if len(antopt1) == 1: uv.select('antennae', antopt1[0], -1)
+    if type(ants) == str: ants = parse_ants(ants, uv['nants'])
+    for bl,include in ants:
+        if bl == 'auto': uv.select('auto', 0, 0, include=include)
         else:
-            for a1 in antopt1:
-                for a2 in antopt1:
-                    if a1 != a2: uv.select('antennae', a1, a2)
-        for opt in antopt2:
-            a1,a2 = opt
-            if a1 < 0: a1,include = -a1,False
-            else: include = True
-            uv.select('antennae', a1, a2, include=include)
+            i,j = miriad.bl2ij(bl)
+            uv.select('antennae', i, j, include=include)
     try: polopt = miriad.str2pol[pol_str]
     except(KeyError): raise ValueError('--pol argument invalid or absent')
     uv.select('polarization', polopt, 0)
