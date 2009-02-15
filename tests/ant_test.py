@@ -32,7 +32,7 @@ class TestRadioBody(unittest.TestCase):
         self.assertEqual(s._dec, ephem.degrees('0:00'))
         self.assertEqual(s.mfreq, .200)
         self.assertEqual(s.src_name, 'src1')
-        #self.assertEqual(s._epoch, epoch)
+        self.assertAlmostEqual(s._epoch, epoch, 3)
         self.assertEqual(s.ionref, [.0, .0])
         self.assertEqual(s.srcshape, [.003, .005, .6])
         self.assertRaises(RuntimeError, lambda: s.ra)
@@ -46,16 +46,16 @@ class TestRadioBody(unittest.TestCase):
         self.assertEqual(len(s.get_crd('eq', ncrd=3)), 3)
         self.assertEqual(len(s.get_crd('top', ncrd=3)), 3)
         self.assertEqual(s.map.shape, (3,3))
-    #def testephem(self):
-    #    o = a.ant.ArrayLocation(('0:00','0:00'))
-    #    for epoch in [ephem.B1900, ephem.B1950, ephem.J2000]:
-    #      for ra in n.arange(0, 2*n.pi, n.pi/4):
-    #        for dec in n.arange(-n.pi/2, n.pi/2, n.pi/4):
-    #            s = a.ant.RadioFixedBody(ra, dec, epoch=epoch)
-    #            o.set_ephemtime(epoch)
-    #            s.compute(o)
-    #            self.assertEqual(s.ra, s._ra)
-    #            self.assertEqual(s.dec, s._dec)
+    def testephem(self):
+        o = a.ant.ArrayLocation(('0:00','0:00'))
+        for epoch in [ephem.B1900, ephem.B1950, ephem.J2000]:
+          for ra in n.arange(1*n.pi/8, 2*n.pi, n.pi/8):
+            for dec in n.arange(-3*n.pi/8, n.pi/2, n.pi/8):
+                s = a.ant.RadioFixedBody(ra, dec, epoch=epoch)
+                o.set_ephemtime(epoch)
+                s.compute(o)
+                self.assertAlmostEqual(s.a_ra, s._ra, 9)
+                self.assertAlmostEqual(s.a_dec, s._dec, 9)
     def test_compute(self):
         epoch = ephem.J2000
         o = a.ant.ArrayLocation(('0:00','0:00'))

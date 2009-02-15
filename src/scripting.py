@@ -11,11 +11,12 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
     """Add standard command-line options to an optparse.OptionParser() on an 
     opt in basis (i.e. specify =True for each option to be added)."""
     if ant: optparser.add_option ('-a', '--ant', dest='ant', default='cross',
-         help='Select ants/baselines to include.  Examples: all (all baselines) auto (of active baselines, only i=j) cross (only i!=j) 0,1,2 (any baseline involving listed ants) 0_2,0_3 (only listed baselines) "(0,1)_(2,3)" (same as 0_2,0_3,1_2,2_3. Quates help bash deal with parentheses) "(-0,1)_(2,-3)" (exclude 0_2,0_3,1_3 include 1_2).')
+         help='Select ants/baselines to include.  Examples: all (all baselines) auto (of active baselines, only i=j) cross (only i!=j) 0,1,2 (any baseline involving listed ants) 0_2,0_3 (only listed baselines) "(0,1)_(2,3)" (same as 0_2,0_3,1_2,2_3. Quates help bash deal with parentheses) "(-0,1)_(2,-3)" (exclude 0_2,0_3,1_3 include 1_2).  Default is "cross".')
     if pol: optparser.add_option('-p', '--pol', dest='pol', 
         help='Choose polarization (xx, yy, xy, yx) to include.')
     if chan: optparser.add_option('-c', '--chan', dest='chan', default='all',
-        help='Select channels (taken after any delay/fringe transforms) to include.  Options are "all", "<chan1 #>,..." (a list of channels), or "<chan1 #>_<chan2 #>" (a range of channels).  Default is "all".')
+        help='Select channels (after any delay/delay-rate transforms) to include.  Examples: all (all channels), 0_10 (channels from 0 to 10, including 0 and
+10) 0,10,20_30 (mix of individual channels and ranges).  Default is "all".')
     if loc: optparser.add_option('-l', '--loc', dest='loc', 
         help='Use specified <loc>.py for location-specific calibration.')
     elif loc2: optparser.add_option('-l', '--loc', dest='loc', action='append',
@@ -36,11 +37,6 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
     if drng:
         optparser.add_option('--drng', dest='drng', type='float', default=None,
     help="Dynamic range in color of image, in units matching plotting mode.  Default max(data)-min(data).")
-
-def _strarg_to_range(strarg):
-    """Split command-line lists/ranges into a list of numbers."""
-    strarg = strarg.split(',')
-    return [map(float, option.split('_')) for option in strarg]
 
 ant_re = r'(\(((-?\d+,?)+)\)|-?\d+)'
 bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
@@ -93,16 +89,20 @@ def uv_selector(uv, ants, pol_str):
     except(KeyError): raise ValueError('--pol argument invalid or absent')
     uv.select('polarization', polopt, 0)
 
-def parse_chans(chan_str, nchan):
+def parse_chans(chan_str, nchan, concat=True):
     """Return array of active channels based on number of channels and
-    string argument for chans (can be 'all', '20_30', or '55,56,57')."""
-    if chan_str.startswith('all'): chans = n.arange(nchan)
+    string argument for chans (all, 20_30, or 55,56,57, or 20_30,31,32).
+    Channel ranges include endpoints (i.e. 20_30 includes both 20 and 30)."""
+    if chan_str.startswith('all'): chanopt = [n.arange(nchan)]
     else:
-        chanopt = _strarg_to_range(chan_str)
-        if len(chanopt[0]) != 1:
-            chanopt = [n.arange(x,y, dtype=n.int) for x,y in chanopt]
-        chans = n.concatenate(chanopt)
-    return chans.astype(n.int)
+        chanopt = []
+        for co in chan_str.split(','):
+            co = map(int, co.split('_'))
+            assert(len(co) in [1,2])
+            if len(co) == 1: chanopt.append(n.array(co))
+            else: chanopt.append(n.arange(co[0],co[1]+1))
+    if concat: return n.concatenate(chanopt)
+    return chanopt
 
 def parse_srcs(src_str):
     """Return (src_list,flux_cutoff) based on string argument for src.
