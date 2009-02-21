@@ -15,8 +15,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
     if pol: optparser.add_option('-p', '--pol', dest='pol', 
         help='Choose polarization (xx, yy, xy, yx) to include.')
     if chan: optparser.add_option('-c', '--chan', dest='chan', default='all',
-        help='Select channels (after any delay/delay-rate transforms) to include.  Examples: all (all channels), 0_10 (channels from 0 to 10, including 0 and
-10) 0,10,20_30 (mix of individual channels and ranges).  Default is "all".')
+        help='Select channels (after any delay/delay-rate transforms) to include.  Examples: all (all channels), 0_10 (channels from 0 to 10, including 0 and 10) 0,10,20_30 (mix of individual channels and ranges).  Default is "all".')
     if loc: optparser.add_option('-l', '--loc', dest='loc', 
         help='Use specified <loc>.py for location-specific calibration.')
     elif loc2: optparser.add_option('-l', '--loc', dest='loc', action='append',

@@ -63,7 +63,7 @@ except(ImportError):
 o = optparse.OptionParser()
 o.set_usage('plot_map.py [options] mapfile')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, cmap=True, max=True, drng=True)
+a.scripting.add_standard_options(o, src=True, cmap=True, max=True, drng=True)
 o.add_option('-p', '--projection', dest='projection', default='moll',
     help='Map projection to use: moll (default), mill, cyl, robin, sinu.')
 o.add_option('-m', '--mode', dest='mode', default='log',
@@ -72,8 +72,6 @@ o.add_option('-c', '--cen', dest='cen', type='float',
     help="Center longitude/right ascension (in degrees) of map.  Default is 0 for galactic coordinate output, 180 for equatorial.")
 o.add_option('-j', '--juldate', dest='juldate', type='float', 
     help='Julian date used for locating moving sources.')
-o.add_option('--srcs', dest='srcs', type='float', default=1,
-    help="Cutoff flux (Jy) for labeling known radio sources in plot.  Default 1 Jy.")
 o.add_option('--src_mark', dest='src_mark', default='',
     help='Marker to put on src locations.  Can be: ".,o,+,x,^,v".  Default no marker.')
 o.add_option('--src_color', dest='src_color', default='k',
@@ -129,8 +127,9 @@ except(ValueError): data = h[x,y,z]
 data.shape = lats.shape
 
 # Generate source locations
-if not opts.srcs is None:
-    cat = a.src.get_catalog(cutoff=opts.srcs)
+if not opts.src is None:
+    srclist,cutoff = a.scripting.parse_srcs(opts.src)
+    cat = a.src.get_catalog(srcs=srclist, cutoff=cutoff)
     o = ephem.Observer()
     if opts.juldate is None:
         o.date = ephem.J2000
@@ -172,7 +171,7 @@ data = n.ma.array(data, mask=mask)
 map.imshow(data, vmax=max, vmin=min, cmap=cmap)
 
 # Plot src labels and markers on top of map image
-if not opts.srcs is None:
+if not opts.src is None:
     sx, sy = map(slons,slats)
     for name, xpt, ypt, flx in zip(snams, sx, sy, sflxs):
         if xpt >= 1e30 or ypt >= 1e30: continue
