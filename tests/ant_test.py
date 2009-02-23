@@ -88,7 +88,244 @@ class TestRadioBody(unittest.TestCase):
             az, alt = a.coord.top2azalt(top)
             self.assertAlmostEqual(s.az, az, 10)
             self.assertAlmostEqual(s.alt, alt, 10)
-    
+
+class TestSrcCatalog(unittest.TestCase):
+    def setUp(self):
+        src1 = a.ant.RadioFixedBody('1:00', '1:00', name='src1')
+        src2 = a.ant.RadioFixedBody('2:00', '2:00', name='src2')
+        src3 = a.ant.RadioFixedBody('3:00', '3:00', name='src3')
+        self.srcs = [src1, src2, src3]
+        self.cat = a.ant.SrcCatalog(self.srcs)
+    def test_add_srcs(self):
+        cat = a.ant.SrcCatalog()
+        src1b = a.ant.RadioFixedBody('0:00', '0:00', name='src1')
+        src4 = a.ant.RadioFixedBody('4:00', '4:00', name='src4')
+        cat.add_srcs(self.srcs)
+        self.assertEqual(len(cat), 3)
+        cat.add_srcs(src1b)
+        self.assertEqual(len(cat), 3)
+        cat.add_srcs(src1b, src4)
+        self.assertEqual(len(cat), 4)
+        srclist = [src1b] + self.srcs[1:] + [src4]
+        for name, src in zip([s.src_name for s in srclist], srclist):
+            self.assertEqual(src, cat[name])
+    def test_get_srcs(self):
+        self.assertEqual(self.cat.get_srcs('src1','src2','src3'), self.srcs)
+        self.assertEqual(self.cat.get_srcs(['src1','src2']), self.srcs[:2])
+        self.assertRaises(KeyError, lambda: self.cat.get_srcs('bad'))
+    def test_compute(self):
+        o = ephem.Observer()
+        self.cat.compute(o)
+        for src in self.cat.values():
+            self.assertNotEqual(src.ra, None)
+            self.assertNotEqual(src.dec, None)
+    def test_get_crds(self):
+        o = ephem.Observer()
+        self.cat.compute(o)
+        crd1 = self.cat.get_crds('eq', srcs=['src1'])
+        self.assertEqual(crd1.shape, (3,1))
+        self.assertTrue(n.all(crd1[:,0] == self.srcs[0].get_crd('eq')))
+        crd2 = self.cat.get_crds('top', srcs=['src1','src2'])
+        self.assertEqual(crd2.shape, (3,2))
+    def test_get(self):
+        mfreq = self.cat.get('mfreq',srcs=['src1'])
+        self.assertEqual(mfreq.shape, (1,))
+        mfreq = self.cat.get('mfreq',srcs=['src1','src2'])
+        self.assertEqual(mfreq.shape, (2,))
+        ionrefs = self.cat.get('ionref',srcs=['src1','src2'])
+        self.assertEqual(ionrefs.shape, (2,2))
+        srcshapes = self.cat.get('srcshape',srcs=['src1','src2'])
+        self.assertEqual(srcshapes.shape, (3,2))
+
+class TestBeam(unittest.TestCase):
+    def setUp(self):
+        self.fq = n.arange(0,1,.1)
+        self.bm = a.ant.Beam(self.fq)
+    def test_attributes(self):
+        self.assertTrue(n.all(self.bm.freqs == self.fq))
+        self.assertTrue(n.all(self.bm.chans == n.arange(self.fq.size)))
+        self.assertTrue(n.all(self.bm.afreqs == self.fq))
+    def test_select_chans(self):
+        chans = n.array([1,2,3])
+        self.bm.select_chans(chans)
+        self.assertTrue(n.all(self.bm.chans == chans))
+        self.assertTrue(n.all(self.bm.afreqs == self.fq.take(chans)))
+
+class TestAntenna(unittest.TestCase):
+    def setUp(self):
+        fq = n.arange(0,1,.1)
+        self.bm = a.ant.Beam(fq)
+        self.ant = a.ant.Antenna(1, 2, 3, self.bm, phsoff=[0,1])
+    def test_attributes(self):
+        self.assertEqual(self.ant.beam, self.bm)
+        pos = n.array([1,2,3], n.float64)
+        self.assertTrue(n.all(self.ant.pos == pos))
+        x,y,z = self.ant
+        self.assertEqual(x, pos[0])
+        self.assertEqual(y, pos[1])
+        self.assertEqual(z, pos[2])
+        self.assertTrue(n.all(self.ant + self.ant == pos*2))
+        self.assertTrue(n.all(self.ant - self.ant == 0))
+        self.assertTrue(n.all(-self.ant == -pos))
+    def test_select_chans(self):
+        chans = n.array([1,2,3])
+        self.ant.select_chans(chans)
+        self.assertTrue(n.all(self.bm.chans == chans))
+        self.assertTrue(n.all(self.ant.phsoff == 1))
+        
+class TestArrayLocation(unittest.TestCase):
+    def setUp(self):
+        self.aa = a.ant.ArrayLocation(('0','0'))
+    def test_attributes(self):
+        self.assertEqual(self.aa.pressure, 0)
+        self.assertEqual(self.aa.lat, 0)
+        self.assertEqual(self.aa.long, 0)
+        self.assertEqual(self.aa.elev, 0)
+        self.assertTrue(n.all(self.aa._eq2zen == a.coord.eq2top_m(0., 0.)))
+    def test_set_jultime(self):
+        jd = 2454554.9798841
+        self.aa.set_jultime(jd)
+        self.assertEqual(self.aa.date, self.aa.epoch)
+        self.assertEqual(self.aa.date, a.ant.juldate2ephem(jd))
+        self.assertAlmostEqual(self.aa.sidereal_time(), 0, 7)
+        eq2now_rnd = n.round(self.aa._eq2now, 7)
+        self.assertTrue(n.all(eq2now_rnd ==
+            n.array([[1.,0.,0.], [0.,1.,0.], [0.,0.,1.]])))
+    def test_get_jultime(self):
+        self.aa.set_jultime(2454555)
+        self.assertEqual(self.aa.get_jultime(), 2454555)
+
+class TestAntennaArray(unittest.TestCase):
+    def setUp(self):
+        bm = a.ant.Beam(n.arange(0,1,.1))
+        a1 = a.ant.Antenna(0,0,0,bm, [0,0])
+        a2 = a.ant.Antenna(1,0,0,bm, [0,1])
+        a3 = a.ant.Antenna(0,1,0,bm, [0,2])
+        a4 = a.ant.Antenna(0,0,1,bm, [0,3])
+        self.ants = [a1,a2,a3,a4]
+        self.aa = a.ant.AntennaArray(('0','0'), self.ants)
+    def test_attributes(self):
+        self.assertEqual(len(self.aa), 4)
+        for ai, aj in zip(self.aa, self.ants): self.assertEqual(ai, aj)
+        for i in range(4): self.assertEqual(len(self.aa[:i]), i)
+    def test_select_chans(self):
+        chans = n.array([1,2,3])
+        self.aa.select_chans(chans)
+        for ant in self.aa.ants:
+            self.assertTrue(n.all(ant.beam.chans == chans))
+    def test_ij2bl(self):
+        self.assertEqual(self.aa.ij2bl(0,1), 258)
+        self.assertEqual(self.aa.ij2bl(0,2), 259)
+        self.assertEqual(self.aa.ij2bl(1,2), 515)
+    def test_bl2ij(self):
+        self.assertEqual(self.aa.bl2ij(258), (0,1))
+        self.assertEqual(self.aa.bl2ij(259), (0,2))
+        self.assertEqual(self.aa.bl2ij(515), (1,2))
+    def test_get_baseline(self):
+        for j, ant in enumerate(self.aa):
+            if j in [0,3]:
+                self.aa.set_jultime(2454554.9)
+                self.assertTrue(n.all(self.aa.get_baseline(0,j,'r') == ant.pos))
+                self.assertTrue(n.all(self.aa.get_baseline(0,j,'e') == ant.pos))
+            else:
+                self.assertTrue(n.all(self.aa.get_baseline(0,j,'r') == ant.pos))
+                self.aa.set_jultime(2454554.9798841)
+                bl_rnd = n.round(self.aa.get_baseline(0,j,'e'), 7)
+                self.assertTrue(n.all(bl_rnd == ant.pos))
+                self.aa.set_jultime(2454554.9)
+                bl_rnd = n.round(self.aa.get_baseline(0,j,'e'), 7)
+                self.assertFalse(n.all(bl_rnd == ant.pos))
+        src = a.ant.RadioFixedBody('12:00', '0:00')
+        src.compute(self.aa)
+        self.assertRaises(a.ant.PointingError, 
+            lambda: self.aa.get_baseline(0,1,src))
+        for t in n.random.random((10,)):
+            self.aa.set_jultime(2454555. + t)
+            src = a.ant.RadioFixedBody(self.aa.sidereal_time(), self.aa.lat,
+                epoch=self.aa.epoch)
+            src.compute(self.aa)
+            zbl_rnd = n.round(self.aa.get_baseline(0,1,'z'), 3)
+            sbl_rnd = n.round(self.aa.get_baseline(0,1,src), 3)
+            self.assertTrue(n.all(zbl_rnd == sbl_rnd))
+    def test_get_phs_offset(self):
+        self.assertTrue(n.all(self.aa.get_phs_offset(0,0) == 0))
+        self.assertTrue(n.all(self.aa.get_phs_offset(0,1) == 1))
+        self.assertTrue(n.all(self.aa.get_phs_offset(0,2) == 2))
+        self.assertTrue(n.all(self.aa.get_phs_offset(0,3) == 3))
+    def test_gen_uvw(self):
+        self.aa.select_chans()
+        afreqs = self.aa[0].beam.afreqs
+        u,v,w = self.aa.gen_uvw(0,1,'z')
+        self.assertEqual(u.shape, (afreqs.size,))
+        self.assertTrue(n.all(u == 0*afreqs))
+        self.assertTrue(n.all(v == 0*afreqs))
+        self.assertTrue(n.all(w == 1*afreqs))
+        u,v,w = self.aa.gen_uvw(0,2,'z')
+        self.assertTrue(n.all(u == 1*afreqs))
+        self.assertTrue(n.all(v == 0*afreqs))
+        self.assertTrue(n.all(w == 0*afreqs))
+        u,v,w = self.aa.gen_uvw(0,3,'z')
+        self.assertTrue(n.all(u == 0*afreqs))
+        self.assertTrue(n.all(v == 1*afreqs))
+        self.assertTrue(n.all(w == 0*afreqs))
+    def test_gen_phs(self):
+        self.aa.select_chans([1,2,3])
+        afreqs = self.aa[0].beam.afreqs
+        for t in n.random.random((10,)):
+            self.aa.set_jultime(2454555. + t)
+            src = a.ant.RadioFixedBody(self.aa.sidereal_time(), self.aa.lat,
+                epoch=self.aa.epoch)
+            src.compute(self.aa)
+            phs = n.round(self.aa.gen_phs(src, 0, 1, mfreq=.1), 6)
+            ans = n.round(n.exp(-1j*2*n.pi*afreqs), 6)
+            self.assertEqual(phs.shape, (3,))
+            self.assertTrue(n.all(phs == ans))
+            phs = n.round(self.aa.gen_phs(src, 0, 2, mfreq=.1), 3)
+            self.assertTrue(n.all(phs == 1+0j))
+            phs = n.round(self.aa.gen_phs(src, 0, 3, mfreq=.1), 3)
+            self.assertTrue(n.all(phs == 1+0j))
+        phs1 = self.aa.gen_phs(src, 0, 2, mfreq=.1, ionref=(.001,.001))
+        phs2 = self.aa.gen_phs(src, 0, 2, mfreq=.1, srcshape=(.01,.01,0))
+        self.assertTrue(n.all(phs1 != 1+0j))
+        self.assertTrue(n.all(phs2 != 1+0j))
+    def test_resolve_src(self):
+        amp = self.aa.resolve_src(100., 100., srcshape=(0,0,0))
+        self.assertEqual(amp, 1)
+        amp1 = self.aa.resolve_src(100., 50., srcshape=(.01,0,n.pi/2))
+        amp2 = self.aa.resolve_src(100., 50., srcshape=(0,.01,0))
+        self.assertAlmostEqual(amp1, amp2, 15)
+        amp1 = self.aa.resolve_src(100., 100., srcshape=(.02,0,0))
+        amp2 = self.aa.resolve_src(100., 100., srcshape=(.01414,.01414,0))
+        self.assertAlmostEqual(amp1, amp2, 3)
+        amp = self.aa.resolve_src(100., 0., srcshape=(0.001,0,0))
+        x = 2*n.pi * .1
+        self.assertEqual(amp, 2*a._cephes.j1(x)/x)
+    def test_refract(self):
+        self.aa.select_chans([1,2,3])
+        afreqs = self.aa[0].beam.afreqs
+        dw = self.aa.refract(1., 0., mfreq=.1, ionref=(.001,0))
+        self.assertTrue(n.all(dw == .001/(afreqs/.1)**2))
+        dw = self.aa.refract(0., n.ones_like(afreqs), mfreq=.1,ionref=(.001,0))
+        self.assertTrue(n.all(dw == 0))
+        dw = self.aa.refract(1., 0., mfreq=.1, ionref=(0,.001))
+        self.assertTrue(n.all(dw == 0))
+        dw = self.aa.refract(n.zeros_like(afreqs), 2*n.ones_like(afreqs), 
+            mfreq=.1, ionref=(0,.001))
+        self.assertTrue(n.all(dw == 2*.001/(afreqs/.1)**2))
+    def test_phs2src(self):
+        self.aa.select_chans([1,2,3])
+        self.aa.set_jultime(2454555.)
+        src = a.ant.RadioFixedBody('0:00', '20:00')
+        src.compute(self.aa)
+        self.assertTrue(n.all(self.aa.phs2src(1.,src,0,1) == \
+            self.aa.gen_phs(src,0,1)))
+    def test_unphs2src(self):
+        self.aa.select_chans([1,2,3])
+        self.aa.set_jultime(2454555.)
+        src = a.ant.RadioFixedBody('0:00', '20:00')
+        src.compute(self.aa)
+        self.assertTrue(n.all(
+            self.aa.unphs2src(self.aa.gen_phs(src,0,1),src,0,1) == 1.))
 
 if __name__ == '__main__':
     unittest.main()

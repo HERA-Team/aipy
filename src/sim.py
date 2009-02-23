@@ -90,15 +90,16 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
 #                                             |___/
 
 class SrcCatalog(ant.SrcCatalog):
-    """Class for holding a catalog of celestial sources."""
-    def get_fluxes(self, srcs=None):
-        """Return list of fluxes of all src objects in catalog."""
-        if srcs is None: srcs = self.keys()
-        return n.array([self[s].janskies for s in srcs])
-    def get_indices(self, srcs=None):
-        """Return list of spectral indices of all src objects in catalog."""
-        if srcs is None: srcs = self.keys()
-        return n.array([self[s].index for s in srcs])
+    pass
+#    """Class for holding a catalog of celestial sources."""
+#    def get_fluxes(self, srcs=None):
+#        """Return list of fluxes of all src objects in catalog."""
+#        if srcs is None: srcs = self.keys()
+#        return n.array([self[s].janskies for s in srcs])
+#    def get_indices(self, srcs=None):
+#        """Return list of spectral indices of all src objects in catalog."""
+#        if srcs is None: srcs = self.keys()
+#        return n.array([self[s].index for s in srcs])
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -217,17 +218,20 @@ class BeamAlm(ant.Beam):
 class Antenna(ant.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array."""
-    def __init__(self, x, y, z, beam, delay=0., offset=0., bp_r=n.array([1]),
+    def __init__(self, x, y, z, beam, phsoff=[0.,0.], bp_r=n.array([1]),
             bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
         """x,y z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object (implements response() function)
-        delay = signal delay (linear phase vs. frequency)
-        offset = signal phase offset (constant phase vs. frequency)
+        phsoff = polynomial phase vs. frequency.  Phs term that is linear
+                 with freq is often called 'delay'.
         bp_r = polynomial (in freq) modeling real component of passband
         bp_i = polynomial (in freq) modeling imaginary component of passband
         amp = overall multiplicative scaling of gain
         pointing = antenna pointing (az,alt).  Default is zenith."""
-        ant.Antenna.__init__(self, x,y,z, beam=beam, delay=delay, offset=offset)
+        self.bp_r = bp_r
+        self.bp_i = bp_i
+        self.amp = amp
+        ant.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff)
         self.update_gain(bp_r, bp_i, amp)
         self.update_pointing(*pointing)
     def select_chans(self, active_chans=None):
@@ -239,14 +243,8 @@ class Antenna(ant.Antenna):
         bp_r = polynomial (in freq) modeling real component of passband
         bp_i = polynomial (in freq) modeling imaginary component of passband
         amp = overall multiplicative scaling of gain"""
-        if not bp_r is None:
-            try: len(bp_r)
-            except: bp_r = [bp_r]
-            self.bp_r = bp_r
-        if not bp_i is None:
-            try: len(bp_i)
-            except: bp_i = [bp_i]
-            self.bp_i = bp_i
+        if not bp_r is None: self.bp_r = bp_r
+        if not bp_i is None: self.bp_i = bp_i
         if not amp is None: self.amp = amp
         bp = n.polyval(self.bp_r, self.beam.afreqs) + \
              1j*n.polyval(self.bp_i, self.beam.afreqs)
@@ -287,7 +285,7 @@ class AntennaArray(ant.AntennaArray):
         self.eq2top_m = coord.eq2top_m(-self.sidereal_time(), self.lat)
         self._cache = None
     def passband(self, i, j):
-        return self.ants[i].passband() * self.ants[j].passband(conj=True)
+        return self[i].passband() * self[j].passband(conj=True)
     def bm_response(self, i, j, pol='xx'):
         assert(pol in ('xx','yy','xy','yx'))
         p1, p2 = pol
@@ -296,7 +294,7 @@ class AntennaArray(ant.AntennaArray):
             if not self._cache.has_key(c): self._cache[c] = {}
             if not self._cache[c].has_key(p):
                 x,y,z = self._cache['s_top']
-                resp = self.ants[c].bm_response((x,y,z), pol=p).transpose()
+                resp = self[c].bm_response((x,y,z), pol=p).transpose()
                 self._cache[c][p] = resp
         return self._cache[i][p1] * n.conjugate(self._cache[j][p2])
     def sim_cache(self, s_eqs, fluxes=n.array([1.]), indices=n.array([0.]), 
@@ -337,8 +335,8 @@ class AntennaArray(ant.AntennaArray):
             fluxes.shape = (fluxes.size, 1)
             mfreqs.shape = (mfreqs.size, 1)
             indices.shape = (indices.size, 1)
-            freqs = n.resize(self.ants[0].beam.afreqs, 
-                (fluxes.size, self.ants[0].beam.afreqs.size))
+            freqs = n.resize(self[0].beam.afreqs, 
+                (fluxes.size, self[0].beam.afreqs.size))
             self._cache = {
                 'I_sf':fluxes * (freqs / mfreqs)**indices,
                 'mfreq':mfreqs,
@@ -363,10 +361,8 @@ class AntennaArray(ant.AntennaArray):
         Bij_sf = self.bm_response(i,j,pol=pol)
         if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
         # Get the phase of each src vs. freq, also does resolution effects
-        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, 
-            mfreq=self._cache['mfreq'],
-            dores=True, srcshape=self._cache['s_shp'],
-            doref=True, ionref=self._cache['i_ref']))
+        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],
+            srcshape=self._cache['s_shp'], ionref=self._cache['i_ref']))
         try: E_sf.shape = I_sf.shape
         except(AttributeError): pass
         # Combine and sum over sources

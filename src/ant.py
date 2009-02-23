@@ -113,16 +113,22 @@ class RadioSpecial(RadioBody, object):
 #                                             |___/ 
 
 class SrcCatalog(dict):
-    """A catalog of celestial sources."""
-    def __init__(self, srcs, **kwargs):
+    """A catalog of celestial sources.  Can be initialized with a list
+    of src objects, of as an empty catalog."""
+    def __init__(self, *srcs, **kwargs):
         dict.__init__(self)
-        for s in srcs: self.add_src(s)
-    def add_src(self, src):
-        """Add provided src object (RadioFixedBody,RadioSpecial) to catalog."""
-        self[src.src_name] = src
-    def get_srcs(self, *args):
+        self.add_srcs(*srcs)
+    def add_srcs(self, *srcs):
+        """Add src object(s) (RadioFixedBody,RadioSpecial) to catalog."""
+        if len(srcs) == 1 and getattr(srcs[0], 'src_name', None) == None:
+            srcs = srcs[0]
+        for s in srcs: self[s.src_name] = s
+    def get_srcs(self, *srcs):
         """Return list of all src objects in catalog."""
-        return [self[s] for s in args]
+        if len(srcs) == 0: srcs = self.keys()
+        elif len(srcs) == 1 and type(srcs[0]) != str:
+            return [self[s] for s in srcs[0]]
+        else: return [self[s] for s in srcs]
     def compute(self, observer):
         """Call compute method of all objects in catalog."""
         for s in self: self[s].compute(observer)
@@ -131,22 +137,12 @@ class SrcCatalog(dict):
         if srcs is None: srcs = self.keys()
         crds = n.array([self[s].get_crd(crdsys, ncrd=ncrd) for s in srcs])
         return crds.transpose()
-    def get_mfreqs(self, srcs=None):
-        """Return list of frequencies where attributes are measured for all 
-        objects in catalog."""
+    def get(self, attribute, srcs=None):
+        """Return the specified source attribute (e.g. "mfreq" for src.mfreq)
+        in an array for all src names in 'srcs'.  If not provided, defaults to 
+        all srcs in catalog."""
         if srcs is None: srcs = self.keys()
-        return n.array([self[s].mfreq for s in srcs])
-    def get_ionrefs(self, srcs=None):
-        if srcs is None: srcs = self.keys()
-        ionref = n.array([self[s].ionref for s in srcs])
-        return ionref.transpose()
-    def get_srcshapes(self, srcs=None):
-        """Return list of angular sizes of all src objects in catalog."""
-        if srcs is None: srcs = self.keys()
-        a1 = n.array([self[s].srcshape[0] for s in srcs])
-        a2 = n.array([self[s].srcshape[1] for s in srcs])
-        th = n.array([self[s].srcshape[2] for s in srcs])
-        return (a1,a2,th)
+        return n.array([getattr(self[s], attribute) for s in srcs]).transpose()
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -177,28 +173,22 @@ class Beam:
 
 class Antenna:
     """Representation of physical attributes of individual antenna."""
-    def __init__(self, x, y, z, beam, delay=0., offset=0., **kwargs):
+    def __init__(self, x, y, z, beam, phsoff=[0.,0.], **kwargs):
         """x,y,z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object
-        delay = signal delay (linear phase vs. frequency)
-        offset = signal phase offset (constant phase vs. frequency)"""
+        phsoff = polynomial phase vs. frequency.  Phs term that is linear
+                 with freq is often called 'delay'."""
         self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
         self.beam = beam
-        self.delay = delay
-        self._offset = offset
-        try:
-            len(offset)
-            self.offset = n.polyval(offset, self.beam.afreqs)
-        except(AttributeError,TypeError): self.offset = (offset % 1)
+        self._phsoff = phsoff
+        self.select_chans(self.beam.chans)
     def select_chans(self, active_chans=None):
         """Select only the specified channels for use in future calculations."""
         self.beam.select_chans(active_chans)
-        try:
-            len(self._offset)
-            self.offset = n.polyval(self._offset, self.beam.afreqs)
-        except(AttributeError,TypeError): self.offset = (self._offset % 1)
-    def __tuple__(self): return (self.pos[0], self.pos[1], self.pos[2])
-    def __list__(self): return [self.pos[0], self.pos[1], self.pos[2]]
+        self.update()
+    def update(self):
+        self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
+    def __iter__(self): return self.pos.__iter__()
     def __add__(self, a): return self.pos + a.pos
     __radd__ = __add__
     def __neg__(self): return -self.pos
@@ -224,6 +214,7 @@ class ArrayLocation(ephem.Observer):
         or (lat,long,elev)."""
         if len(location) == 2: self.lat, self.long = location
         else: self.lat, self.long, self.elev = location
+        self._eq2zen = coord.eq2top_m(0., self.lat)
     def get_jultime(self):
         """Get current time as a Julian date."""
         return ephem2juldate(self.date)
@@ -232,9 +223,11 @@ class ArrayLocation(ephem.Observer):
         if t is None: t = ephem.julian_date()
         self.set_ephemtime(juldate2ephem(t))
     def set_ephemtime(self, t=None):
-        """Set current time as derived from the ephem package."""
+        """Set current time as derived from the ephem package.  Recalculates
+        matrix for projecting baselines into current positions."""
         if t is None: t = ephem.now()
         self.date, self.epoch = t, t
+        self._eq2now = coord.rot_m(-self.sidereal_time(), n.array([0.,0.,1.]))
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -250,24 +243,15 @@ class AntennaArray(ArrayLocation):
         """ location = (lat,long,[elev]) of array
         ants = list of Antenna objects."""
         ArrayLocation.__init__(self, location=location)
-        self.update_antennas(ants)
-        self.select_chans()
-    def update_antennas(self, ants):
-        """Update antenna array to use the provided list of Antenna objects."""
         self.ants = ants
-        self.update()
-    def update(self):
-        """Update variables derived from antenna parameters/active channels."""
-        self._eq2zen = coord.eq2top_m(0., self.lat)
-    def set_ephemtime(self, t=None):
-        """Set current time as derived from the ephem package.  Recalculates
-        matrix for projecting baselines into current positions."""
-        ArrayLocation.set_ephemtime(self, t=t)
-        self._eq2now = coord.rot_m(-self.sidereal_time(), n.array([0.,0.,1.]))
+        self.select_chans()
+    def __iter__(self): return self.ants.__iter__()
+    def __getitem__(self, *args): return self.ants.__getitem__(*args)
+    def __setitem__(self, *args): return self.ants.__setitem__(*args)
+    def __len__(self): return self.ants.__len__()
     def select_chans(self, active_chans=None):
         """Select which channels are used in computations.  Default is all."""
-        for a in self.ants: a.select_chans(active_chans)
-        self.update()
+        for a in self: a.select_chans(active_chans)
     def ij2bl(self, i, j):
         """Convert baseline i,j (0 indexed) to Miriad's (i+1) << 8 | (j+1) 
         indexing scheme."""
@@ -282,7 +266,7 @@ class AntennaArray(ArrayLocation):
         projections: src='e' for current equatorial, 'z' for zenith 
         topocentric, 'r' for unrotated equatorial, or a RadioBody for
         projection toward that source."""
-        bl = self.ants[j] - self.ants[i]
+        bl = self[j] - self[i]
         if type(src) == str:
             if src == 'e': return n.dot(self._eq2now, bl)
             elif src == 'z': return n.dot(self._eq2zen, bl)
@@ -296,37 +280,27 @@ class AntennaArray(ArrayLocation):
             ra,dec = coord.eq2radec(src)
             m = coord.eq2top_m(self.sidereal_time() - ra, dec)
         return n.dot(m, bl).transpose()
-    def get_delay(self, i, j):
-        """Return the delay corresponding to baseline i,j."""
-        return self.ants[j].delay - self.ants[i].delay
-    def get_offset(self, i, j):
-        """Return the delay corresponding to baseline i,j."""
-        return self.ants[j].offset - self.ants[i].offset
+    def get_phs_offset(self, i, j):
+        """Return the frequency-dependent phase offset of baseline i,j."""
+        return self[j].phsoff - self[i].phsoff
     def gen_uvw(self, i, j, src='z'):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates."""
         x,y,z = self.get_baseline(i,j, src=src)
-        afreqs = self.ants[0].beam.afreqs
+        afreqs = self[0].beam.afreqs
         if len(x.shape) == 0: return n.array([x*afreqs, y*afreqs, z*afreqs])
         afreqs = n.reshape(afreqs, (1,afreqs.size))
         x.shape += (1,); y.shape += (1,); z.shape += (1,)
         return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
-    def gen_phs(self, src, i, j, doref=False, dores=False,
-            mfreq=.150, ionref=(0.,0.), srcshape=(0.,0.,0.)):
+    def gen_phs(self, src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Return phasing that is multiplied to data to point to src."""
-        try:
-            if doref: ionref = src.ionref
-            if dores: srcshape = srcshape
-        except(AttributeError): pass
         u,v,w = self.gen_uvw(i,j,src=src)
-        if doref: dw = self.refract(u, v, ionref=ionref)
-        else: dw = 0.
-        if dores: res = self.resolve_src(u, v, srcshape=srcshape)
-        else: res = 1.
-        t = self.get_delay(i,j)
-        o = self.get_offset(i,j)
-        afreqs = self.ants[0].beam.afreqs
-        phs = res * n.exp(-1j*2*n.pi*(w + dw + t*afreqs + o))
+        if ionref is None: ionref = src.ionref
+        dw = self.refract(u, v, mfreq=mfreq, ionref=ionref)
+        if srcshape is None: srcshape = src.srcshape
+        res = self.resolve_src(u, v, srcshape=srcshape)
+        o = self.get_phs_offset(i,j)
+        phs = res * n.exp(-1j*2*n.pi*(w + dw + o))
         return phs.squeeze()
     def resolve_src(self, u, v, srcshape=(0,0,0)):
         """Adjust amplitudes to reflect resolution effects for a uniform 
@@ -354,7 +328,7 @@ class AntennaArray(ArrayLocation):
         u,v = u,v components of baseline, which are used to compute the
             change in w given angle offsets and the small angle approx."""
         dra,ddec = ionref
-        f2 = (self.ants[0].beam.afreqs / mfreq)**2
+        f2 = (self[0].beam.afreqs / mfreq)**2
         f2.shape = (1, f2.size)
         try:
             if len(dra.shape) < len(f2.shape):
@@ -362,13 +336,11 @@ class AntennaArray(ArrayLocation):
         except(AttributeError): pass
         dw = dra / f2 * u + ddec / f2 * v
         return dw
-    def phs2src(self, data, src, i, j, doref=False, dores=False,
-            mfreq=.150, ionref=(0.,0.), srcshape=(0.,0.,0.)):
+    def phs2src(self, data, src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Apply phasing to zenith-phased data to point to src."""
-        return data * self.gen_phs(src, i, j, doref=doref, dores=dores,
+        return data * self.gen_phs(src, i, j, 
             mfreq=mfreq, ionref=ionref, srcshape=srcshape)
-    def unphs2src(self, data, src, i, j, doref=False, dores=False,
-            mfreq=.150, ionref=(0.,0.), srcshape=(0.,0.,0.)):
+    def unphs2src(self,data,src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Remove phasing from src-phased data to point to zenith."""
-        return data * n.conjugate(self.gen_phs(src, i, j, doref=doref, 
-            dores=dores, mfreq=mfreq, ionref=ionref, srcshape=srcshape))
+        return data * n.conjugate(self.gen_phs(src, i, j,
+            mfreq=mfreq, ionref=ionref, srcshape=srcshape))
