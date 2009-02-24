@@ -15,7 +15,7 @@ def gen_skypass_delay(aa, sdf, nchan, max_bl_frac=1.):
         bl = aa.ij2bl(i,j)
         max_bl = aa.get_baseline(i,j)
         max_bl = max_bl_frac * n.sqrt(n.dot(max_bl, max_bl))
-        dly = aa.get_delay(i,j)
+        dly,off = aa.phsoff[-2:]
         uthresh, lthresh = (dly + max_bl)/bin_dly + 1, (dly - max_bl)/bin_dly
         uthresh, lthresh = int(n.round(uthresh)), int(n.round(lthresh))
         f = n.ones((nchan,), dtype=n.float)
@@ -24,7 +24,7 @@ def gen_skypass_delay(aa, sdf, nchan, max_bl_frac=1.):
     return filters
 
 def gen_skypass_fringe(aa, inttime, N_int, nchan, margin=1.2):
-    freqs = aa.ants[0].beam.freqs
+    freqs = aa[0].beam.freqs
     bin_dly = 1. / (inttime * N_int)
     dth_dt = 2*n.pi / a.const.sidereal_day
     filters = {}

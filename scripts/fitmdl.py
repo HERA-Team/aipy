@@ -79,7 +79,7 @@ else: sprms = []
 prm_list, key_list = a.fit.flatten_prms(start_prms)
 
 first_fit = None    # Used to normalize fit values to the starting fit
-mfq = cat.get_mfreqs()
+mfq = cat.get('mfreq')
 dbuf = None
 
 # The function to be optimized
@@ -93,7 +93,7 @@ def fit_func(prms, filelist, decimate, decphs):
             prms[ant][prm] = prms[fitants[0]][prm]
     aa.set_params(prms)
     cat.set_params(prms)
-    a1,a2,th = cat.get_srcshapes()
+    a1,a2,th = cat.get('srcshape')
     score,nsamples = 0.,0.
     # Cache data from file to avoid hitting disk excessively
     if dbuf is None:
@@ -115,9 +115,9 @@ def fit_func(prms, filelist, decimate, decphs):
         aa.set_jultime(t)
         cat.compute(aa)
         eqs = cat.get_crds('eq', ncrd=3)
-        flx = cat.get_fluxes()
-        ind = cat.get_indices()
-        dra,ddec = cat.get_ionrefs()
+        flx = cat.get('janskies')
+        ind = cat.get('index')
+        dra,ddec = cat.get('ionref')
         aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq, 
             ionrefs=(dra,ddec), srcshapes=(a1,a2,th))
         for bl in dbuf[t]:

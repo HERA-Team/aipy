@@ -240,12 +240,11 @@ class Beam2DGaussian(sim.Beam2DGaussian):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        xwidth, ywidth = None, None
-        try: xwidth = prms['bm_xwidth']
+        try: self.xwidth = prms['bm_xwidth']
         except(KeyError): pass
-        try: ywidth = prms['bm_ywidth']
+        try: self.ywidth = prms['bm_ywidth']
         except(KeyError): pass
-        self.update(xwidth, ywidth)
+        self.update()
 
 class BeamPolynomial(sim.BeamPolynomial):
     """Representation of a gaussian beam model whose width varies with azimuth
@@ -261,8 +260,12 @@ class BeamPolynomial(sim.BeamPolynomial):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        try: self.update(prms['bm_poly'])
+        try: 
+            poly_azfreq = prms['bm_poly']
+            poly_azfreq.shape = self.poly.shape
+            self.poly = poly_azfreq
         except(KeyError): pass
+        self.update()
 
 class BeamAlm(sim.BeamAlm):
     """Representation of a beam model where each pointing has a response
@@ -286,10 +289,11 @@ class BeamAlm(sim.BeamAlm):
         for p in prms:
             if not p.startswith('alm'): continue
             data = n.array(prms[p])
-            p = int(p[3:])
+            c = int(p[3:])
             data.shape = (data.size/2, 2)
             data = data[:,0] + data[:,1] * 1j
-            self.update(coeffs={p:data})
+            if c < len(self.alm): self.alm[-1-c].set_data(data)
+        self.update()
 
 #     _          _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _ 
@@ -330,9 +334,13 @@ class Antenna(sim.Antenna):
         except(KeyError): pass
         try: self._phsoff = prms['phsoff']
         except(KeyError): pass
+        try: self.bp_r = prms['bp_r']
+        except(KeyError): pass
+        try: self.bp_i = prms['bp_i']
+        except(KeyError): pass
+        try: self.amp = prms['amp']
+        except(KeyError): pass
         self.update()
-        self.update_gain(bp_r=prms.get('bp_r', None),
-            bp_i=prms.get('bp_i', None), amp=prms.get('amp', None))
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -359,8 +367,7 @@ class AntennaArray(sim.AntennaArray):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        for i, a in enumerate(self.ants):
+        for i, a in enumerate(self):
             try: a.set_params(prms[i])
             except(KeyError): pass
-        self.update_antennas(self.ants)
-
+        self.update()

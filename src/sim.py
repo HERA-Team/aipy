@@ -120,12 +120,7 @@ class Beam2DGaussian(ant.Beam):
         """xwidth = angular width (radians) in EW direction
         ywidth = angular width (radians) in NS direction"""
         ant.Beam.__init__(self, freqs)
-        self.update(xwidth=xwidth, ywidth=ywidth)
-    def update(self, xwidth=None, ywidth=None):
-        """Set the width in the x (EW) and y (NS) directions of the gaussian 
-        beam."""
-        if not xwidth is None: self.xwidth = xwidth
-        if not ywidth is None: self.ywidth = ywidth
+        self.xwidth, self,ywidth = xwidth, ywidth
     def response(self, xyz):
         """Return beam response across active band for specified topocentric 
         coordinates: (x=E,y=N,z=UP). x,y,z may be arrays of multiple 
@@ -144,21 +139,19 @@ class BeamPolynomial(ant.Beam):
         in freq**n for second axis."""
         self.poly = poly_azfreq
         ant.Beam.__init__(self, freqs)
-        self.update(poly_azfreq)
+        self.poly = poly_azfreq
+        self._update_sigma()
     def select_chans(self, active_chans):
         """Select only enumerated channels to use for future calculations."""
         ant.Beam.select_chans(self, active_chans)
         self.update()
-    def update(self, poly_azfreq=None):
-        """Update beam with new polynomial coefficients.
-        poly_azfreq = a 2D polynomial in cos(2*n*az) for first axis and 
-        in freq**n for second axis."""
-        if poly_azfreq is None: poly_azfreq = self.poly
-        elif len(poly_azfreq.shape) == 1: poly_azfreq.shape = self.poly.shape
-        self.poly = poly_azfreq
+    def _update_sigma(self):
         f = n.resize(self.afreqs, (self.poly.shape[1], self.afreqs.size))
         f = f**n.array([range(self.poly.shape[1])]).transpose()
         self.sigma = n.dot(self.poly, f)
+    def update(self):
+        ant.Beam.update(self)
+        self._update_sigma()
     def response(self, top):
         """Return beam response across active band for specified topocentric 
         coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  
@@ -186,19 +179,21 @@ class BeamAlm(ant.Beam):
         nside = resolution of underlying HealpixMap to use
         coeffs = dictionary of polynomial term (integer) and corresponding Alm 
         coefficients (see healpix.py doc)."""
+        ant.Beam.__init__(self, freqs)
         self.alm = [healpix.Alm(lmax,mmax) for i in range(deg+1)]
         self.hmap = [healpix.HealpixMap(nside,scheme='RING',interp=True)
             for a in self.alm]
-        ant.Beam.__init__(self, freqs)
-        self.update(coeffs)
-    def update(self, coeffs={}):
+        for c in coeffs:
+            if c < len(self.alm): self.alm[-1-c].set_data(coeffs[c])
+        self._update_hmap()
+    def _update_hmap(self):
+        for c,alm in enumerate(self.alm): self.hmap[c].from_alm(self.alm[c])
+    def update(self):
         """Update beam model using new set of coefficients.
         coeffs = dictionary of polynomial term (integer) and corresponding Alm 
         coefficients (see healpix.py doc)."""
-        for c in coeffs:
-            if c >= len(self.alm): continue
-            self.alm[-1-c].set_data(coeffs[c])
-            self.hmap[-1-c].from_alm(self.alm[-1-c])
+        ant.Beam.update(self)
+        self._update_hmap()
     def response(self, top):
         """Return beam response across active band for specified topocentric 
         coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  
@@ -228,28 +223,20 @@ class Antenna(ant.Antenna):
         bp_i = polynomial (in freq) modeling imaginary component of passband
         amp = overall multiplicative scaling of gain
         pointing = antenna pointing (az,alt).  Default is zenith."""
+        ant.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff)
+        self.set_pointing(*pointing)
         self.bp_r = bp_r
         self.bp_i = bp_i
         self.amp = amp
-        ant.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff)
-        self.update_gain(bp_r, bp_i, amp)
-        self.update_pointing(*pointing)
-    def select_chans(self, active_chans=None):
-        """Select only enumerated channels to use for future calculations."""
-        ant.Antenna.select_chans(self, active_chans)
-        self.update_gain()
-    def update_gain(self, bp_r=None, bp_i=None, amp=None):
-        """Update passband information using provided parameters.
-        bp_r = polynomial (in freq) modeling real component of passband
-        bp_i = polynomial (in freq) modeling imaginary component of passband
-        amp = overall multiplicative scaling of gain"""
-        if not bp_r is None: self.bp_r = bp_r
-        if not bp_i is None: self.bp_i = bp_i
-        if not amp is None: self.amp = amp
+        self._update_gain()
+    def _update_gain(self):
         bp = n.polyval(self.bp_r, self.beam.afreqs) + \
              1j*n.polyval(self.bp_i, self.beam.afreqs)
         self._gain = self.amp * bp
-    def update_pointing(self, az=0, alt=n.pi/2, twist=0):
+    def update(self):
+        ant.Antenna.update(self)
+        self._update_gain()
+    def set_pointing(self, az=0, alt=n.pi/2, twist=0):
         """Set the antenna beam to point at (az, alt) with specified
         right-hand twist to polarizations.  Polarization y is assumed
         to be +pi/2 azimuth from pol x."""

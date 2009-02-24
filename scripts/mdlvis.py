@@ -24,7 +24,7 @@ o.add_option('--freq', dest='freq', default=.150, type='float',
     help='Frequency of flux data in map.')
 o.add_option('-n', '--noiselev', dest='noiselev', default=0., type='float',
     help='RMS amplitude of noise (Jy) added to each UV sample of simulation.')
-o.add_option('--nchan', dest='nchan', default=256, type='float',
+o.add_option('--nchan', dest='nchan', default=256, type='int',
     help='Number of channels in simulated data if no input data to mimic.  Default is 256')
 o.add_option('--sfreq', dest='sfreq', default=.075, type='float',
     help='Start frequency (GHz) in simulated data if no input data to mimic.  Default is 0.075')
@@ -61,10 +61,10 @@ dras,ddecs = [], []
 if not opts.src is None:
     srclist,cutoff = a.scripting.parse_srcs(opts.src)
     cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
-    mfq.append(cat.get_mfreqs())
-    a1,a2,th = cat.get_srcshapes()
+    mfq.append(cat.get('mfreq'))
+    a1,a2,th = cat.get('srcshape')
     a1s.append(a1); a2s.append(a2); ths.append(th)
-    dra, ddec = cat.get_ionrefs()
+    dra, ddec = cat.get('ionref')
     dras.append(dra); ddecs.append(ddec)
 
 # Initialize pixel map
@@ -109,8 +109,8 @@ def mdl(uv, p, d, f):
         if not opts.src is None:
             cat.compute(aa)
             eqs.append(cat.get_crds('eq', ncrd=3))
-            flx.append(cat.get_fluxes())
-            ind.append(cat.get_indices())
+            flx.append(cat.get('janskies'))
+            ind.append(cat.get('index'))
         if not opts.map is None:
             m_precess = a.coord.convert_m('eq','eq',
                 iepoch=opts.iepoch, oepoch=aa.epoch)
@@ -165,9 +165,9 @@ else:
     uv.add_var('longitu' ,'d'); uv['longitu'] = aa.long
     uv.add_var('npol'    ,'i'); uv['npol'] = len(pols)
     uv.add_var('nspect'  ,'i'); uv['nspect'] = 1
-    uv.add_var('nants'   ,'i'); uv['nants'] = len(aa.ants)
+    uv.add_var('nants'   ,'i'); uv['nants'] = len(aa)
     uv.add_var('antpos'  ,'d')
-    antpos = n.array([ant.pos for ant in aa.ants], dtype=n.double)
+    antpos = n.array([ant.pos for ant in aa], dtype=n.double)
     uv['antpos'] = antpos.transpose().flatten()
     uv.add_var('sfreq'   ,'d'); uv['sfreq'] = opts.sfreq
     uv.add_var('freq'    ,'d'); uv['freq'] = opts.sfreq
@@ -198,8 +198,8 @@ else:
         uv['lst'] = aa.sidereal_time()
         uv['ra'] = aa.sidereal_time()
         uv['obsra'] = aa.sidereal_time()
-        for i,ai in enumerate(aa.ants):
-            for j,aj in enumerate(aa.ants):
+        for i,ai in enumerate(aa):
+            for j,aj in enumerate(aa):
                 if j < i: continue
                 crd = ai.pos - aj.pos
                 preamble = (crd, t, (i,j))

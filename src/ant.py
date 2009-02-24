@@ -154,16 +154,20 @@ class Beam:
     """Template for representing antenna beam pattern.  Beams also hold
     info about which frequencies are active (i.e. Antennas and AntennaArrays
     access frequencies through Beam)."""
-    def __init__(self, freqs, active_chans=None, **kwargs):
-        """freqs = frequencies (in GHz) at bin centers across spectrum
-        active_chans = indices of channels to use for future calculations."""
+    def __init__(self, freqs, **kwargs):
+        """freqs = frequencies (in GHz) at bin centers across spectrum."""
         self.freqs = freqs
-        self.select_chans(active_chans)
+        self.chans = n.arange(self.freqs.size)
+        self._update_afreqs()
+    def _update_afreqs(self):
+        self.afreqs = self.freqs.take(self.chans)
+    def update(self):
+        self._update_afreqs()
     def select_chans(self, active_chans=None):
         """Select only enumerated channels to use for future calculations."""
         if active_chans is None: active_chans = n.arange(self.freqs.size)
         self.chans = active_chans
-        self.afreqs = self.freqs.take(active_chans)
+        self.update()
 
 #     _          _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _ 
@@ -181,13 +185,15 @@ class Antenna:
         self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
         self.beam = beam
         self._phsoff = phsoff
-        self.select_chans(self.beam.chans)
+        self._update_phsoff()
     def select_chans(self, active_chans=None):
         """Select only the specified channels for use in future calculations."""
         self.beam.select_chans(active_chans)
         self.update()
-    def update(self):
+    def _update_phsoff(self):
         self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
+    def update(self):
+        self._update_phsoff()
     def __iter__(self): return self.pos.__iter__()
     def __add__(self, a): return self.pos + a.pos
     __radd__ = __add__
@@ -208,13 +214,13 @@ class ArrayLocation(ephem.Observer):
         """location = (lat,long,[elev]) of array"""
         ephem.Observer.__init__(self)
         self.pressure = 0
-        self.update_location(location)
-    def update_location(self, location):
-        """Initialize antenna array wth provided location.  May be (lat,long) 
-        or (lat,long,elev)."""
         if len(location) == 2: self.lat, self.long = location
         else: self.lat, self.long, self.elev = location
+        self._update_eq2zen()
+    def _update_eq2zen(self):
         self._eq2zen = coord.eq2top_m(0., self.lat)
+    def update(self):
+        self._update_eq2zen()
     def get_jultime(self):
         """Get current time as a Julian date."""
         return ephem2juldate(self.date)
@@ -244,14 +250,17 @@ class AntennaArray(ArrayLocation):
         ants = list of Antenna objects."""
         ArrayLocation.__init__(self, location=location)
         self.ants = ants
-        self.select_chans()
     def __iter__(self): return self.ants.__iter__()
     def __getitem__(self, *args): return self.ants.__getitem__(*args)
     def __setitem__(self, *args): return self.ants.__setitem__(*args)
     def __len__(self): return self.ants.__len__()
+    def update(self):
+        ArrayLocation.update(self)
+        for a in self: a.update()
     def select_chans(self, active_chans=None):
         """Select which channels are used in computations.  Default is all."""
         for a in self: a.select_chans(active_chans)
+        self.update()
     def ij2bl(self, i, j):
         """Convert baseline i,j (0 indexed) to Miriad's (i+1) << 8 | (j+1) 
         indexing scheme."""

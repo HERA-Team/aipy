@@ -76,6 +76,8 @@ o.add_option('--src_mark', dest='src_mark', default='',
     help='Marker to put on src locations.  Can be: ".,o,+,x,^,v".  Default no marker.')
 o.add_option('--src_color', dest='src_color', default='k',
     help='Color of source label.  Can be: "k,w,r,b".  Default "k".')
+o.add_option('-o', '--outfile', dest='outfile', default='',
+    help='If provided, will save the figure to the specified file instead of popping up a window.')
 o.add_option('--isys', dest='isys', default='eq',
     help='Input coordinate system (in map).  Can be eq (equatorial, default), ga (galactic), or ec (ecliptic).')
 o.add_option('--osys', dest='osys', default='eq',
@@ -142,7 +144,7 @@ if not opts.src is None:
     cat.compute(o)
     # lat/lon coordinates of sources
     scrds = [ephem.Equatorial(s.ra,s.dec,epoch=o.epoch) for s in cat.values()]
-    sflxs = cat.get_fluxes()
+    sflxs = cat.get('janskies')
     snams = cat.keys()
     if opts.osys == 'ga':
         scrds = [ephem.Galactic(s, epoch=opts.oepoch) for s in scrds]
@@ -182,21 +184,25 @@ if not opts.src is None:
 if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
 else: p.subplots_adjust(.05,.05,.95,.95)
 
-# Add right-click functionality for finding locations/strengths in map.
-cnt = 1
-def click(event):
-    global cnt
-    if event.button != 3: return
-    lon,lat = map(event.xdata, event.ydata, inverse=True)
-    if opts.osys == 'eq': lon = (360 - lon) % 360
-    lon *= a.img.deg2rad; lat *= a.img.deg2rad
-    ra,dec = ephem.hours(lon), ephem.degrees(lat)
-    x,y,z = a.coord.radec2eq((ra,dec))
-    flx = h[(x,y,z)]
-    print '#%d (RA,DEC): (%s, %s), Jy: %f' % (cnt, ra, dec, flx)
-    cnt += 1
+if opts.outfile != '':
+    print 'Saving to', opts.outfile
+    p.savefig(opts.outfile)
+else:
+    # Add right-click functionality for finding locations/strengths in map.
+    cnt = 1
+    def click(event):
+        global cnt
+        if event.button != 3: return
+        lon,lat = map(event.xdata, event.ydata, inverse=True)
+        if opts.osys == 'eq': lon = (360 - lon) % 360
+        lon *= a.img.deg2rad; lat *= a.img.deg2rad
+        ra,dec = ephem.hours(lon), ephem.degrees(lat)
+        x,y,z = a.coord.radec2eq((ra,dec))
+        flx = h[(x,y,z)]
+        print '#%d (RA,DEC): (%s, %s), Jy: %f' % (cnt, ra, dec, flx)
+        cnt += 1
 
-#register this function with the event handler
-p.connect('button_press_event', click)
+    #register this function with the event handler
+    p.connect('button_press_event', click)
 
-p.show()
+    p.show()

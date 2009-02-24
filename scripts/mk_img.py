@@ -59,7 +59,7 @@ for loc in locs:
     aa = a.loc.get_aa(loc, uv['sdf'], uv['sfreq'], uv['nchan'])
     aa.select_chans(chans)
     aas[loc] = aa
-    afreqs = aa.ants[0].beam.afreqs
+    afreqs = aa[0].beam.afreqs
     cfreq = n.average(afreqs)
     aa.set_jultime(t)
     del(uv)
@@ -123,7 +123,7 @@ def to_fits(ftag,i,src,cnt):
         object=src.src_name, obs_date=str(aa.date),
         ra=cen.ra*a.img.rad2deg, dec=cen.dec*a.img.rad2deg, epoch=2000.,
         d_ra=L[-1,-1]*a.img.rad2deg, d_dec=M[1,1]*a.img.rad2deg,
-        freq=n.average(aa.ants[0].beam.afreqs))
+        freq=n.average(aa[0].beam.afreqs))
 
 def grid_it(im,us,vs,ws,ds,wgts):
     #print 'Gridding %d integrations' % n_ints
