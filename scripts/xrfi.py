@@ -39,8 +39,8 @@ else:
 del(uv)
 
 for uvfile in args:
-    print 'Working on', uvfile
     uvofile = uvfile+'r'
+    print uvfile,'->',uvofile
     if os.path.exists(uvofile):
         print uvofile, 'exists, skipping.'
         continue

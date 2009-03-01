@@ -140,7 +140,7 @@ ignore_vars = ['bandpass', 'freqs', 'ngains', 'nspect0',
 
 # Process all files passed from the command line.
 for filename in args:
-    print filename,
+    print filename,'->',filename+'b'
     if os.path.exists(filename+'b'):
         print 'File exists: skipping'
         continue

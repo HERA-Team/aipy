@@ -40,8 +40,8 @@ def phs(uv, p, d, f):
 
 # Process data
 for filename in args:
-    print filename
     uvofile = filename + '.' + opts.src
+    print filename,'->',uvofile
     if os.path.exists(uvofile):
         print 'File exists: skipping'
         continue

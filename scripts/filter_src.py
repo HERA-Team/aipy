@@ -35,10 +35,10 @@ del(uv)
 
 phs_dat = {}
 for uvfile in args:
-    print 'Working on', uvfile
     if not opts.together: phs_dat = {}
     if opts.extract: uvofile = uvfile+'.e_'+opts.src
     else: uvofile = uvfile+'.'+opts.src
+    print uvfile,'->',uvofile
     if os.path.exists(uvofile):
         if opts.together:
             print uvofile, 'exists, aborting.'

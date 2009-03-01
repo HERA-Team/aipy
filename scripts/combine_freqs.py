@@ -24,7 +24,7 @@ opts, args = o.parse_args(sys.argv[1:])
 
 uvo = None
 for uvfile in args:
-    print uvfile
+    print uvfile,'->',uvfile+'m'
     uvi = a.miriad.UV(uvfile)
     sfreq,sdf,nchan = uvi['sfreq'], uvi['sdf'], uvi['nchan']
     newsfreq = sfreq + ((nchan/opts.nchan) * sdf) / 2

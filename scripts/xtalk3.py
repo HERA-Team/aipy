@@ -65,7 +65,7 @@ if opts.reprocess:
 
 guess, cnt, xtalk = {}, {}, {}
 for filename in args:
-    print filename
+    print filename,'->',filename+'x'
     if not opts.outfile and os.path.exists(filename+'x'):
         print filename+'x', 'exists.  Skipping...'
         continue

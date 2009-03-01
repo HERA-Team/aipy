@@ -65,8 +65,8 @@ if opts.passband: ext += 'p'
 if opts.beam: ext += 'b'
 if opts.srcflux: ext += 'f'
 for filename in args:
-    print filename
     uvofile = filename + ext
+    print filename,'->',uvofile
     if os.path.exists(uvofile):
         print 'File exists: skipping'
         continue

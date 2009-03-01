@@ -137,8 +137,8 @@ def mdl(uv, p, d, f):
 if len(args) > 0:
     # Run mdl on all files
     for filename in args:
-        print filename
         uvofile = filename + 's'
+        print filename,'->',uvofile
         if os.path.exists(uvofile):
             print 'File exists: skipping'
             continue
