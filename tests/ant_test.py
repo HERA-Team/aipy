@@ -256,7 +256,7 @@ class TestAntennaArray(unittest.TestCase):
         self.aa.select_chans()
         afreqs = self.aa[0].beam.afreqs
         u,v,w = self.aa.gen_uvw(0,1,'z')
-        self.assertEqual(u.shape, (afreqs.size,))
+        self.assertEqual(u.shape, (1,afreqs.size))
         self.assertTrue(n.all(u == 0*afreqs))
         self.assertTrue(n.all(v == 0*afreqs))
         self.assertTrue(n.all(w == 1*afreqs))
@@ -271,14 +271,19 @@ class TestAntennaArray(unittest.TestCase):
     def test_gen_phs(self):
         self.aa.select_chans([1,2,3])
         afreqs = self.aa[0].beam.afreqs
-        for t in n.random.random((10,)):
+        for t in n.random.random((40,)):
             self.aa.set_jultime(2454555. + t)
             src = a.ant.RadioFixedBody(self.aa.sidereal_time(), self.aa.lat,
                 epoch=self.aa.epoch)
             src.compute(self.aa)
-            phs = n.round(self.aa.gen_phs(src, 0, 1, mfreq=.1), 6)
+            if t > .5: 
+                seq = src.get_crd('eq', ncrd=3)
+                if t > .75: seq = n.array([seq,seq]).transpose()
+            else: seq = src
+            phs = n.round(self.aa.gen_phs(seq, 0, 1, mfreq=.1), 6)
             ans = n.round(n.exp(-1j*2*n.pi*afreqs), 6)
-            self.assertEqual(phs.shape, (3,))
+            if t > .75: self.assertEqual(phs.shape, (2,3))
+            else: self.assertEqual(phs.shape, (3,))
             self.assertTrue(n.all(phs == ans))
             phs = n.round(self.aa.gen_phs(src, 0, 2, mfreq=.1), 3)
             self.assertTrue(n.all(phs == 1+0j))
@@ -303,15 +308,29 @@ class TestAntennaArray(unittest.TestCase):
     def test_refract(self):
         self.aa.select_chans([1,2,3])
         afreqs = self.aa[0].beam.afreqs
-        dw = self.aa.refract(1., 0., mfreq=.1, ionref=(.001,0))
-        self.assertTrue(n.all(dw == .001/(afreqs/.1)**2))
-        dw = self.aa.refract(0., n.ones_like(afreqs), mfreq=.1,ionref=(.001,0))
+        zeros = n.zeros((1,3), dtype=n.float)
+        ones = n.ones((1,3), dtype=n.float)
+        # Test non-vectors, dra->u association
+        dw = self.aa.refract(ones, zeros, mfreq=.1, ionref=(.001,0))
+        ans = .001 / (afreqs/.1)**2 ; ans.shape = (1, ans.size)
+        self.assertEqual(len(dw.shape), 2)
+        self.assertTrue(n.all(n.round(dw,10) == n.round(ans,10)))
+        # Test non-vectors, no dra-> v association
+        dw = self.aa.refract(zeros, ones, mfreq=.1,ionref=(.001,0))
         self.assertTrue(n.all(dw == 0))
-        dw = self.aa.refract(1., 0., mfreq=.1, ionref=(0,.001))
+        # Test non-vectors, no ddec->u association
+        dw = self.aa.refract(ones, zeros, mfreq=.1, ionref=(0,.001))
         self.assertTrue(n.all(dw == 0))
-        dw = self.aa.refract(n.zeros_like(afreqs), 2*n.ones_like(afreqs), 
-            mfreq=.1, ionref=(0,.001))
-        self.assertTrue(n.all(dw == 2*.001/(afreqs/.1)**2))
+        # Test non-vectors, ddec->v association, v scaling
+        dw = self.aa.refract(zeros, 2*ones, mfreq=.1, ionref=(0,.001))
+        self.assertTrue(n.all(n.round(dw,10) == n.round(2*ans,10)))
+        # Test vectors, mfreq scaling
+        ones = n.ones((2,3), dtype=n.float)
+        ionref = (n.array([0, .001]), n.array([.001, 0]))
+        mfreq = n.array([.1, .2])
+        ans = n.array([.002/(afreqs / .1)**2, .002/(afreqs / .2)**2])
+        dw = self.aa.refract(2*ones, 2*ones, mfreq=mfreq, ionref=ionref)
+        self.assertTrue(n.all(n.round(dw,10) == n.round(ans,10)))
     def test_phs2src(self):
         self.aa.select_chans([1,2,3])
         self.aa.set_jultime(2454555.)

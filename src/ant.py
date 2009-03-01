@@ -296,18 +296,22 @@ class AntennaArray(ArrayLocation):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates."""
         x,y,z = self.get_baseline(i,j, src=src)
-        afreqs = self[0].beam.afreqs
+        afreqs = n.reshape(self[0].beam.afreqs, (1,self[0].beam.afreqs.size))
         if len(x.shape) == 0: return n.array([x*afreqs, y*afreqs, z*afreqs])
-        afreqs = n.reshape(afreqs, (1,afreqs.size))
+        #afreqs = n.reshape(afreqs, (1,afreqs.size))
         x.shape += (1,); y.shape += (1,); z.shape += (1,)
         return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
     def gen_phs(self, src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Return phasing that is multiplied to data to point to src."""
         u,v,w = self.gen_uvw(i,j,src=src)
-        if ionref is None: ionref = src.ionref
-        dw = self.refract(u, v, mfreq=mfreq, ionref=ionref)
-        if srcshape is None: srcshape = src.srcshape
-        res = self.resolve_src(u, v, srcshape=srcshape)
+        if ionref is None:
+            try: dw = self.refract(u, v, mfreq=mfreq, ionref=src.ionref)
+            except(AttributeError): dw = 0
+        else: dw = self.refract(u, v, mfreq=mfreq, ionref=ionref)
+        if srcshape is None:
+            try: res = self.resolve_src(u, v, srcshape=src.srcshape)
+            except(AttributeError): res = 1
+        else: res = self.resolve_src(u, v, srcshape=srcshape)
         o = self.get_phs_offset(i,j)
         phs = res * n.exp(-1j*2*n.pi*(w + dw + o))
         return phs.squeeze()
@@ -327,24 +331,27 @@ class AntennaArray(ArrayLocation):
         x = 2 * n.pi * n.sqrt(ru**2 + rv**2)
         # Use first Bessel function of the first kind (J_1)
         return n.where(x == 0, 1, 2 * _cephes.j1(x)/x).squeeze()
-    def refract(self, u, v, mfreq=.150, ionref=(0.,0.)):
+    def refract(self, u_sf, v_sf, mfreq=.150, ionref=(0.,0.)):
         """Calibrate a frequency-dependent source offset by scaling measured
         offsets at a given frequency.  Generates dw, a change in the
         projection of a baseline towards that source, which can be used to
         fix the computed phase of that source.
         ionref = (dra, ddec) where dra, ddec are angle offsets (in radians)
-            of the source along ra/dec axes at the specified mfreq.
-        u,v = u,v components of baseline, which are used to compute the
-            change in w given angle offsets and the small angle approx."""
+            of sources along ra/dec axes at the specified mfreq.
+        u_sf,v_sf = u,v components of baseline, used to compute the
+            change in w given angle offsets and the small angle approx.  Should
+            be numpy arrays with sources (s) along the 1st axis and
+            freqs (f) along the 2nd."""
         dra,ddec = ionref
-        f2 = (self[0].beam.afreqs / mfreq)**2
-        f2.shape = (1, f2.size)
-        try:
-            if len(dra.shape) < len(f2.shape):
-                dra.shape += (1,); ddec.shape += (1,)
+        s,f = u_sf.shape
+        try: dra.shape = (s,1)
         except(AttributeError): pass
-        dw = dra / f2 * u + ddec / f2 * v
-        return dw
+        try: ddec.shape = (s,1)
+        except(AttributeError): pass
+        try: mfreq.shape = (s,1)
+        except(AttributeError): pass
+        f2 = self[0].beam.afreqs**2 ; f2.shape = (1, f)
+        return (dra*u_sf + ddec*v_sf) * mfreq**2 / f2
     def phs2src(self, data, src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Apply phasing to zenith-phased data to point to src."""
         return data * self.gen_phs(src, i, j, 
