@@ -68,6 +68,7 @@ for uvfile in args:
 
     curtime = None
     print '    Performing delay transform and cleaning...'
+    src_up = False
     for (uvw,t,(i,j)),d,f in uvi.all(raw=True):
         if i == j: continue
         if curtime != t:
@@ -81,7 +82,8 @@ for uvfile in args:
             gain = n.sqrt(n.average(flags**2))
             ker = n.fft.ifft(flags)
             d = n.where(f, 0, d)
-            if not src is None: d = aa.phs2src(d, src, i, j)
+            if not src is None:d = aa.phs2src(d, src, i, j)
+            src_up = True
             d = n.fft.ifft(d)
             if not n.all(d == 0):
                 d, info = a.deconv.clean(d, ker, tol=opts.clean)
@@ -95,6 +97,9 @@ for uvfile in args:
             print '    Performing delay-rate transform and cleaning...'
         for bl in phs_dat:
             d = n.array(phs_dat[bl])
+            if not src_up:
+                phs_dat[bl] = d
+                continue
             if opts.drw != -1:
                 flags = n.where(d[:,0] != 0, 1., 0.)
                 gain = n.sqrt(n.average(flags**2))
