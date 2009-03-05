@@ -119,6 +119,8 @@ def to_fits(ftag,i,src,cnt):
     while len(i.shape) < 4: i.shape = i.shape + (1,)
     cen = ephem.Equatorial(src.ra, src.dec, epoch=aa.epoch)
     cen = ephem.Equatorial(cen, epoch=ephem.J2000)
+    # There's an inaccuracy here... ra/dec axes aren't aligned between
+    # epochs.  How big is the error introduced here?
     a.img.to_fits(filename, i, clobber=True,
         object=src.src_name, obs_date=str(aa.date),
         ra=cen.ra*a.img.rad2deg, dec=cen.dec*a.img.rad2deg, epoch=2000.,
