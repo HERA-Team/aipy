@@ -15,7 +15,7 @@ sys_dict = {
 }
 
 def convert(crd, isys, osys, iepoch=e.J2000, oepoch=e.J2000):
-    """Convert 'crd' from coordinate system 'isys' to 'osys', including
+    """Convert 'crd' from coordinate system isys to osys, including
     epoch precession.  Valid coordinate systems are 'ec' (Ecliptic), 'eq' 
     (Equatorial), and 'ga' (Galactic).  Epochs may be date strings, or
     numerical ephemeris times."""
@@ -131,5 +131,9 @@ def eq2top_m(ha, dec):
 def top2eq_m(ha, dec):
     """Return the 3x3 matrix converting topocentric coordinates to equatorial
     at the given hour angle (ha) and declination (dec)."""
-    return n.linalg.inv(eq2top_m(ha, dec))
+    m = eq2top_m(ha, dec)
+    if len(m.shape) == 3:
+        for i in range(m.shape[0]): m[i] = n.linalg.inv(m[i])
+        return m
+    else: return n.linalg.inv(eq2top_m(ha, dec))
 
