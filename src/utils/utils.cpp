@@ -161,7 +161,7 @@ PyObject *add2array(PyObject *self, PyObject *args) {
 // Wrap function into module
 static PyMethodDef UtilsMethods[] = {
     {"add2array", (PyCFunction)add2array, METH_VARARGS,
-        "Add 'data' to 'a' at the indices specified in 'ind'.  'data' must be 1 dimensional, 'ind' must have 1st axis same as 'data' and 2nd axis equal to number of dimensions in 'a'.  Data types of 'a' and 'data' must match."},
+        "add2array(a,ind,data)\nAdd 'data' to 'a' at the indices specified in 'ind'.  'data' must be 1 dimensional, 'ind' must have 1st axis same as 'data' and 2nd axis equal to number of dimensions in 'a'.  Data types of 'a' and 'data' must match."},
     {NULL, NULL}
 };
 
