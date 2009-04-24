@@ -216,11 +216,11 @@ for cnt, bl in enumerate(bls):
                 else:
                     t1 = len(plot_t['jd'])/2 - len(plot_t['jd'])
                     t2 = len(plot_t['jd'])/2
-                ylabel = 'Fringe Rate (bins)'
+                ylabel = 'Delay-Rate (bins)'
             else:
                 t1 = -500/inttime
                 t2 =  500/inttime - 1000 / (inttime * len(plot_t['jd']))
-                ylabel = 'Fringe Rate (milliHz)'
+                ylabel = 'Delay-Rate (milliHz)'
         else:
             if opts.time_axis == 'index':
                 t1,t2 = plot_t['cnt'][0], plot_t['cnt'][-1]
