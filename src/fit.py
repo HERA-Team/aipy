@@ -3,7 +3,6 @@ Module for reading and setting parameters in components of an AntennaArray
 simulation for purpose of fitting.
 """
 import ant, sim, numpy as n
-from interp import interpolate
 
 #  _   _ _   _ _ _ _           _____                 _   _                 
 # | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
@@ -92,15 +91,15 @@ class RadioFixedBody(sim.RadioFixedBody):
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {
-            'str':      list(self._janskies),
-            'index':    list(self._index),
+            'jys':      float(self._jys),
+            'index':    float(self.index),
             'ra':       float(self._ra),
             'dec':      float(self._dec),
-            'a1':  float(self.srcshape[0]),
-            'a2':  float(self.srcshape[1]),
-            'th':  float(self.srcshape[2]),
-            'dra':  float(self.ionref[0]),
-            'ddec':  float(self.ionref[1]),
+            'a1':       float(self.srcshape[0]),
+            'a2':       float(self.srcshape[1]),
+            'th':       float(self.srcshape[2]),
+            'dra':      float(self.ionref[0]),
+            'ddec':     float(self.ionref[1]),
         }
         prms = {}
         for p in prm_list:
@@ -110,16 +109,10 @@ class RadioFixedBody(sim.RadioFixedBody):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        if prms.has_key('str'):
-            try:
-                len(prms['str'])
-                self._janskies = prms['str']
-            except: self._janskies = [prms['str']]
-        if prms.has_key('index'):
-            try:
-                len(prms['index'])
-                self._index = prms['index']
-            except: self._index = [prms['index']]
+        try: self._jys = prms['jys']
+        except(KeyError): pass
+        try: self.index = prms['index']
+        except(KeyError): pass
         try: self._ra = prms['ra']
         except(KeyError): pass
         try: self._dec = prms['dec']
@@ -148,13 +141,13 @@ class RadioSpecial(sim.RadioSpecial):
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {
-            'str':      list(self._janskies),
-            'index':    list(self._index),
+            'jys':      float(self._jys),
+            'index':    float(self.index),
             'a1':       float(self.srcshape[0]),
             'a2':       float(self.srcshape[1]),
             'th':       float(self.srcshape[2]),
-            'dra':  float(self.ionref[0]),
-            'ddec':  float(self.ionref[1]),
+            'dra':      float(self.ionref[0]),
+            'ddec':     float(self.ionref[1]),
         }
         prms = {}
         for p in prm_list:
@@ -164,16 +157,10 @@ class RadioSpecial(sim.RadioSpecial):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        if prms.has_key('str'):
-            try:
-                len(prms['str'])
-                self._janskies = prms['str']
-            except: self._janskies = [prms['str']]
-        if prms.has_key('index'):
-            try:
-                len(prms['index'])
-                self._index = prms['index']
-            except: self._index = [prms['index']]
+        try: self._jys = prms['jys']
+        except(KeyError): pass
+        try: self.index = prms['index']
+        except(KeyError): pass
         try: self.srcshape[0] = prms['a1']
         except(KeyError): pass
         try: self.srcshape[1] = prms['a2']

@@ -277,7 +277,7 @@ def get_src(s, fixedbody=fit.RadioFixedBody, special=fit.RadioSpecial):
         return special(s, st, mfreq=mfreq, 
             index=index, srcshape=srcshape)
     else:
-        return fixedbody(ra, dec, janskies=st, mfreq=mfreq, 
+        return fixedbody(ra, dec, jys=st, mfreq=mfreq, 
             index=index, name=s, srcshape=srcshape)
 
 def get_catalog(srcs=None, cutoff=None, 

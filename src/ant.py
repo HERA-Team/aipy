@@ -43,7 +43,7 @@ class RadioBody:
         called at each time step before accessing information."""
         # Generate a map for projecting baselines to uvw coordinates
         self.map = coord.eq2top_m(observer.sidereal_time()-self.ra, self.dec)
-    def get_crd(self, crdsys, ncrd=3):
+    def get_crds(self, crdsys, ncrd=3):
         """Return the coordinates of this location in the desired coordinate
         system ('eq','top') in the current epoch.  If ncrd=2, angular
         coordinates (ra/dec or az/alt) are returned, and if ncrd=3,
@@ -135,7 +135,7 @@ class SrcCatalog(dict):
     def get_crds(self, crdsys, ncrd=3, srcs=None):
         """Return coordinates of all objects in catalog."""
         if srcs is None: srcs = self.keys()
-        crds = n.array([self[s].get_crd(crdsys, ncrd=ncrd) for s in srcs])
+        crds = n.array([self[s].get_crds(crdsys, ncrd=ncrd) for s in srcs])
         return crds.transpose()
     def get(self, attribute, srcs=None):
         """Return the specified source attribute (e.g. "mfreq" for src.mfreq)
@@ -270,6 +270,9 @@ class AntennaArray(ArrayLocation):
         i,j (0 indexed)"""
         bl = int(bl)
         return ((bl >> 8) & 255) - 1, (bl & 255) - 1
+    def get_afreqs(self):
+        """Return array of frequencies that are active for simulation."""
+        return self[0].beam.afreqs
     def get_baseline(self, i, j, src='z'):
         """Return the baseline corresponding to i,j in various coordinate 
         projections: src='e' for current equatorial, 'z' for zenith 
@@ -296,7 +299,8 @@ class AntennaArray(ArrayLocation):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates."""
         x,y,z = self.get_baseline(i,j, src=src)
-        afreqs = n.reshape(self[0].beam.afreqs, (1,self[0].beam.afreqs.size))
+        afreqs = self.get_afreqs()
+        afreqs = n.reshape(afreqs, (1,afreqs.size))
         if len(x.shape) == 0: return n.array([x*afreqs, y*afreqs, z*afreqs])
         #afreqs = n.reshape(afreqs, (1,afreqs.size))
         x.shape += (1,); y.shape += (1,); z.shape += (1,)
@@ -350,7 +354,7 @@ class AntennaArray(ArrayLocation):
         except(AttributeError): pass
         try: mfreq.shape = (s,1)
         except(AttributeError): pass
-        f2 = self[0].beam.afreqs**2 ; f2.shape = (1, f)
+        f2 = self.get_afreqs()**2 ; f2.shape = (1, f)
         return (dra*u_sf + ddec*v_sf) * mfreq**2 / f2
     def phs2src(self, data, src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Apply phasing to zenith-phased data to point to src."""

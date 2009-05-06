@@ -29,12 +29,12 @@ del(uv)
 
 if opts.srcflux:
     srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    src = a.loc.get_catalog(opts.loc, srclist, cutoff)
-    s = src.values()[0]
+    cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
+    s = cat.values()[0]
     print 'Calibrating for source with',
-    print 'strength', s._janskies,
+    print 'strength', s._jys,
     print 'measured at', s.mfreq, 'GHz',
-    print 'with index', s._index
+    print 'with index', s.index
     src_spec = None
 else: src_spec = 1
 
@@ -47,9 +47,9 @@ def mfunc(uv, p, d, f):
         curtime = t
         aa.set_jultime(t)
         if opts.srcflux:
-            src.compute(aa)
-            src_spec = src.get_fluxes()
-            s_eq = src.get_crds('eq', ncrd=3)
+            s.compute(aa)
+            src_spec = s.get_jys()
+            s_eq = cat.get_crds('eq', ncrd=3)
             aa.sim_cache(s_eq)
     if i == j: return p, d, f
     if opts.passband: passband = aa.passband(i,j)

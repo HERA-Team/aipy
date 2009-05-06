@@ -29,7 +29,7 @@ o.set_usage('filter_src.py [options] *.uv')
 o.set_description(__doc__)
 a.scripting.add_standard_options(o, src=True, loc=True)
 o.add_option('-r', '--drw', dest='drw', type=int, default=-1,
-    help='The number of fringe bins to null.  Default is -1 = no fringe filtering.')
+    help='The number of delay-rate bins to null.  Default is -1 = no fringe filtering.')
 o.add_option('-d', '--dw', dest='dw', type=int, default=5,
     help='The number of delay bins to null. If -1, uses baseline lengths to generate a sky-pass filter.')
 o.add_option('-e', '--extract', dest='extract', action='store_true',

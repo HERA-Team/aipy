@@ -33,7 +33,7 @@ xrfi.py -c 0_1,14_15 -m none new.uv
 
 # Exercise filter_src.py, create new.uvx.cyg
 echo "Running: filter_src.py -l ex_cal -s cyg -f 2 -d 2 --clean=1e-3 new.uvm"
-filter_src.py -l ex_cal -s cyg -f 2 -d 2 --clean=1e-3 new.uvr
+filter_src.py -l ex_cal -s cyg -r 2 -d 2 --clean=1e-3 new.uvr
 
 # Exercise difuv.py, create new.uvd
 echo "Running: difuv.py new.uv new.uv"
@@ -44,6 +44,7 @@ echo "Running: flux_cal.py -l ex_cal -s cyg -p -b -f new.uv"
 flux_cal.py -l ex_cal -s cyg -p -b -f new.uv
 
 # Exercise fitmdl.py, create fitmdl_out.txt
+echo "Running: fitmdl.py -a 0_1 -p xx -c 5_10 -l ex_cal -s cyg -x 10 --fitants=0,1 --shprms=amp --aprms=phsoff --maxiter=200 new.uv"
 fitmdl.py -a 0_1 -p xx -c 5_10 -l ex_cal -s cyg -x 10 --fitants=0,1 --shprms=amp --aprms=phsoff --maxiter=200 new.uv | tee fitmdl_out.txt
 
 # Exercise mk_img.py, create out0.{dim,dbm}.fits

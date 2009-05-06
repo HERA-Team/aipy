@@ -1,51 +1,75 @@
-#! /usr/bin/env python
-import aipy as a, numpy as n, time, os, sys
+import unittest
+import aipy.sim as sim, numpy as n
 
-uvi = a.miriad.UV('test.uv')
-freqs = n.arange(uvi['nchan'], dtype=n.float) * uvi['sdf'] + uvi['sfreq']
-loc = ('0:00', '0:00')
-beam = a.sim.BeamFlat(freqs)
-ants = [
-    a.sim.Antenna(0,0,0,beam),
-    a.sim.Antenna(100,0,0,beam),
-    a.sim.Antenna(0,100,0,beam),
-    a.sim.Antenna(100,100,0,beam),
-]
-aa = a.sim.AntennaArray(ants=ants, location=loc)
-src = a.sim.RadioFixedBody('0','0', 1e4)
-if os.path.exists('test.uvs'):
-    print 'test.uvs exists... skipping'
-    sys.exit(0)
-uvo = a.miriad.UV('test.uvs', status='new')
-uvo.init_from_uv(uvi)
+class TestRadioBody(unittest.TestCase):
+    def setUp(self):
+        self.fqs = n.arange(.1,.2,.01)
+        bm = sim.BeamFlat(self.fqs)
+        ant0 = sim.Antenna(0,0,0,bm)
+        self.aa = sim.AntennaArray(('0','0'), [ant0])
+    def test_attributes(self):
+        s = sim.RadioFixedBody('0:00', '0:00',
+            jys=100, index=-2, mfreq=.1, name='src1')
+        self.assertEqual(s._jys, 100)
+        self.assertEqual(s.index, -2)
+        s.compute(self.aa)
+        self.assertTrue(n.all(s.get_jys() == 100 * (self.fqs / .1)**-2))
 
-curtime = None
-cat = a.sim.SrcCatalog([src] * 4)
-def mfunc(uv, p, data):
-    global curtime
-    uvw,t,(i,j) = p
-    if curtime != t:
-        curtime = t
-        aa.set_jultime(t)
-        src.compute(aa)
-        s_eqs = cat.get_crds('eq')
-        fluxes = cat.get_fluxes()
-        indices = cat.get_indices()
-        mfreqs = cat.get_mfreqs()
-        aa.sim_cache(s_eqs=s_eqs,fluxes=fluxes,indices=indices,mfreqs=mfreqs)
-    d = aa.sim(i, j)
-    return p, n.ma.array(d, mask=data.mask)
+class TestBeamFlat(unittest.TestCase):
+    def setUp(self):
+        self.fqs = n.arange(.1,.2,.01)
+        self.bm = sim.BeamFlat(self.fqs)
+    def test_response(self):
+        xyz = (0,0,1)
+        self.assertTrue(n.all(self.bm.response(xyz) == n.ones_like(self.fqs)))
+        x = n.array([0, .1, .2])
+        y = n.array([.1, .2, 0])
+        z = n.array([.2, 0, .1])
+        xyz = (x,y,z)
+        self.assertTrue(n.all(self.bm.response(xyz) == \
+            n.ones((self.fqs.size,3))))
+        self.bm.select_chans([0,1,2])
+        self.assertTrue(n.all(self.bm.response(xyz) == n.ones((3,3))))
 
-t0 = time.time()
-uvo.pipe(uvi, mfunc=mfunc)
-print 'Simulation finished in %f seconds.' % (time.time() - t0)
-del(uvo)
-print 'Checking against knowngood.uvs ...'
-uv1 = a.miriad.UV('knowngood.uvs')
-uv2 = a.miriad.UV('test.uvs')
+class TestBeam2DGaussian(unittest.TestCase):
+    def setUp(self):
+        self.fqs = n.arange(.1,.2,.01)
+        self.bm = sim.Beam2DGaussian(self.fqs, .05, .025)
+    def test_response(self):
+        xyz = (0,0,1)
+        self.assertTrue(n.all(self.bm.response(xyz) == n.ones_like(self.fqs)))
+        x = n.array([0, .05,   0])
+        y = n.array([0,   0, .05])
+        z = n.array([1,   1,   1])
+        xyz = (x,y,z)
+        resp = self.bm.response(xyz)
+        self.assertEqual(resp.shape, (self.fqs.size,3))
+        ans = n.sqrt(n.array([1., n.exp(-1), n.exp(-4)]))
+        ans.shape = (1,3)
+        self.bm.select_chans([0])
+        resp = self.bm.response(xyz)
+        self.assertTrue(n.all(n.round(resp - ans, 3) == 0))
 
-for (p1,d1),(p2,d2) in zip(uv1.all(), uv2.all()):
-    dif = (d1.filled(0) - d2.filled(0)).sum()
-    if dif > 1e-10:
-        raise ValueError('Failed verification (%f > 1e-10).' % dif)
-print 'Passed.'
+# TODO: other beam types
+
+class TestAntenna(unittest.TestCase):
+    def setUp(self):
+        self.fqs = n.arange(.1,.2,.01)
+        bm = sim.Beam2DGaussian(self.fqs, .05, .025)
+        self.ant = sim.Antenna(0,0,0, beam=bm)
+    def test_passband(self):
+        pb = self.ant.passband()
+        self.assertTrue(n.all(pb == n.ones_like(self.fqs)))
+        self.ant.select_chans([0,1,2])
+        pb = self.ant.passband()
+        self.assertEqual(pb.shape, (3,))
+    def test_bm_response(self):
+        xyz = (.05,0,1)
+        self.ant.select_chans([0])
+        resp = self.ant.bm_response(xyz, pol='x')
+        self.assertAlmostEqual(resp, n.sqrt(n.exp(-1)), 3)
+        resp = self.ant.bm_response(xyz, pol='y')
+        self.assertAlmostEqual(resp, n.sqrt(n.exp(-4)), 3)
+        
+if __name__ == '__main__':
+    unittest.main()

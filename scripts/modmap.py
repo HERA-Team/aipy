@@ -94,7 +94,7 @@ for srcname in cat:
     a1,a2,th = src.srcshape
     dras,ddecs = ras - ra, decs - dec
     print '--------------------------------------------------'
-    strength = src.janskies * (opts.freq / src.mfreq)**src.index * opts.sscale
+    strength = src._jys * (opts.freq / src.mfreq)**src.index * opts.sscale
     print 'Adding', srcname, 'with strength %f Jy' % strength,
     print 'and index %f' % src.index
     print 'Source shape: a1=%f, a2=%f, th=%f' % (a1, a2, th)

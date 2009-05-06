@@ -141,10 +141,12 @@ if not opts.src is None:
     else:
         o.date = a.ant.juldate2ephem(opts.juldate)
         o.epoch = o.date
-    cat.compute(o)
+    for s in cat.values():
+        a.ant.RadioFixedBody.compute(s, o)
+    #cat.compute(o)
     # lat/lon coordinates of sources
     scrds = [ephem.Equatorial(s.ra,s.dec,epoch=o.epoch) for s in cat.values()]
-    sflxs = cat.get('janskies')
+    sflxs = cat.get('_jys')
     snams = cat.keys()
     if opts.osys == 'ga':
         scrds = [ephem.Galactic(s, epoch=opts.oepoch) for s in scrds]

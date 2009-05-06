@@ -115,10 +115,9 @@ def fit_func(prms, filelist, decimate, decphs):
         aa.set_jultime(t)
         cat.compute(aa)
         eqs = cat.get_crds('eq', ncrd=3)
-        flx = cat.get('janskies')
-        ind = cat.get('index')
+        flx = cat.get_jys()
         dra,ddec = cat.get('ionref')
-        aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq, 
+        aa.sim_cache(eqs, flx, mfreqs=mfq, 
             ionrefs=(dra,ddec), srcshapes=(a1,a2,th))
         for bl in dbuf[t]:
             i,j = a.miriad.bl2ij(bl)

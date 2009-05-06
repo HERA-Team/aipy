@@ -16,12 +16,12 @@ o.add_option('--sim', dest='sim', action='store_true',
     help='Output a simulated dataset (rather than subtracting).')
 o.add_option('-f', '--flag', dest='flag', action='store_true',
     help='If outputting a simulated data set, mimic the data flagging of the original dataset.')
-o.add_option('-m', '--map', dest='map',
-    help='The Healpix map to use for simulation input.')
-o.add_option('--iepoch', dest='iepoch', default=ephem.J2000, 
-    help='The epoch of coordinates in the map. Default J2000.')
-o.add_option('--freq', dest='freq', default=.150, type='float',
-    help='Frequency of flux data in map.')
+#o.add_option('-m', '--map', dest='map',
+#    help='The Healpix map to use for simulation input.')
+#o.add_option('--iepoch', dest='iepoch', default=ephem.J2000, 
+#    help='The epoch of coordinates in the map. Default J2000.')
+#o.add_option('--freq', dest='freq', default=.150, type='float',
+#    help='Frequency of flux data in map.')
 o.add_option('-n', '--noiselev', dest='noiselev', default=0., type='float',
     help='RMS amplitude of noise (Jy) added to each UV sample of simulation.')
 o.add_option('--nchan', dest='nchan', default=256, type='int',
@@ -55,46 +55,46 @@ else:
 
 # Generate a model of the sky with point sources and a pixel map
 
-mfq,a1s,a2s,ths = [], [], [], []
-dras,ddecs = [], []
+#mfq,a1s,a2s,ths = [], [], [], []
+#dras,ddecs = [], []
 # Initialize point sources
-if not opts.src is None:
-    srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
-    mfq.append(cat.get('mfreq'))
-    a1,a2,th = cat.get('srcshape')
-    a1s.append(a1); a2s.append(a2); ths.append(th)
-    dra, ddec = cat.get('ionref')
-    dras.append(dra); ddecs.append(ddec)
+#if not opts.src is None:
+srclist,cutoff = a.scripting.parse_srcs(opts.src)
+cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
+mfq = cat.get('mfreq')
+a1s,a2s,ths = cat.get('srcshape')
+#a1s.append(a1); a2s.append(a2); ths.append(th)
+dras, ddecs = cat.get('ionref')
+#dras.append(dra); ddecs.append(ddec)
 
-# Initialize pixel map
-if not opts.map is None:
-    h = a.map.Map(fromfits=opts.map)
-    px = n.arange(h.npix())
-    try: mflx, i_poly = h[px]
-    except(ValueError): mflx = h[px]
-    px = n.compress(mflx > 0, px)
-    try: mflx, i_poly = h[px]
-    except(ValueError):
-        mflx = h[px]
-        i_poly = [n.zeros_like(mflx)]
-    mind = i_poly[0]    # Only implementing first index term for now
-    mmfq = opts.freq * n.ones_like(mind)
-    mfq.append(mmfq)
-    x,y,z = h.px2crd(px, ncrd=3)
-    m_eq = n.array((x,y,z))
-    # Should pixels include information for resolving them?
-    a1s.append(n.zeros_like(mmfq))
-    a2s.append(n.zeros_like(mmfq))
-    ths.append(n.zeros_like(mmfq))
-    dras.append(n.zeros_like(mmfq))
-    ddecs.append(n.zeros_like(mmfq))
-mfq = n.concatenate(mfq)
-a1s = n.concatenate(a1s)
-a2s = n.concatenate(a2s)
-ths = n.concatenate(ths)
-dras = n.concatenate(dras)
-ddecs = n.concatenate(ddecs)
+## Initialize pixel map
+#if not opts.map is None:
+#    h = a.map.Map(fromfits=opts.map)
+#    px = n.arange(h.npix())
+#    try: mflx, i_poly = h[px]
+#    except(ValueError): mflx = h[px]
+#    px = n.compress(mflx > 0, px)
+#    try: mflx, i_poly = h[px]
+#    except(ValueError):
+#        mflx = h[px]
+#        i_poly = [n.zeros_like(mflx)]
+#    mind = i_poly[0]    # Only implementing first index term for now
+#    mmfq = opts.freq * n.ones_like(mind)
+#    mfq.append(mmfq)
+#    x,y,z = h.px2crd(px, ncrd=3)
+#    m_eq = n.array((x,y,z))
+#    # Should pixels include information for resolving them?
+#    a1s.append(n.zeros_like(mmfq))
+#    a2s.append(n.zeros_like(mmfq))
+#    ths.append(n.zeros_like(mmfq))
+#    dras.append(n.zeros_like(mmfq))
+#    ddecs.append(n.zeros_like(mmfq))
+#mfq = n.concatenate(mfq)
+#a1s = n.concatenate(a1s)
+#a2s = n.concatenate(a2s)
+#ths = n.concatenate(ths)
+#dras = n.concatenate(dras)
+#ddecs = n.concatenate(ddecs)
 
 # A pipe for applying the model
 curtime = None
@@ -105,22 +105,21 @@ def mdl(uv, p, d, f):
     if curtime != t:
         curtime = t
         aa.set_jultime(t)
-        eqs,flx,ind = [],[],[]
-        if not opts.src is None:
-            cat.compute(aa)
-            eqs.append(cat.get_crds('eq', ncrd=3))
-            flx.append(cat.get('janskies'))
-            ind.append(cat.get('index'))
-        if not opts.map is None:
-            m_precess = a.coord.convert_m('eq','eq',
-                iepoch=opts.iepoch, oepoch=aa.epoch)
-            eqs.append(n.dot(m_precess, m_eq))
-            flx.append(mflx); ind.append(mind)
-        eqs = n.concatenate(eqs, axis=-1)
-        flx = n.concatenate(flx)
-        ind = n.concatenate(ind)
-        aa.sim_cache(eqs, flx, indices=ind, mfreqs=mfq, 
-            ionrefs=(dras,ddecs), srcshapes=(a1,a2,th))
+        #eqs,flx,ind = [],[],[]
+        #if not opts.src is None:
+        cat.compute(aa)
+        eqs = cat.get_crds('eq', ncrd=3)
+        flx = cat.get_jys()
+        #if not opts.map is None:
+        #    m_precess = a.coord.convert_m('eq','eq',
+        #        iepoch=opts.iepoch, oepoch=aa.epoch)
+        #    eqs.append(n.dot(m_precess, m_eq))
+        #    flx.append(mflx); ind.append(mind)
+        #eqs = n.concatenate(eqs, axis=-1)
+        #flx = n.concatenate(flx)
+        #ind = n.concatenate(ind)
+        aa.sim_cache(eqs, flx, mfreqs=mfq, 
+            ionrefs=(dras,ddecs), srcshapes=(a1s,a2s,ths))
     sd = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
     if opts.sim:
         d = sd
@@ -146,14 +145,14 @@ if len(args) > 0:
         uvo = a.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
         uvo.pipe(uvi, mfunc=mdl, raw=True,
-            append2hist="MDLVIS: srcs=%s map=%s sim=%s flag=%s noise=%f\n" % \
-                (opts.src, opts.map, opts.sim, opts.flag, opts.noiselev))
+            append2hist="MDLVIS: srcs=%s sim=%s flag=%s noise=%f\n" % \
+                (opts.src, opts.sim, opts.flag, opts.noiselev))
 else:
     # Initialize a new UV file
     pols = opts.pol.split(',')
     uv = a.miriad.UV('new.uv', status='new')
     uv._wrhd('obstype','mixed-auto-cross')
-    uv._wrhd('history','MDLVIS: created file.\nMDLVIS: srcs=%s map=%s sim=%s flag=%s noise=%f\n' % (opts.src, opts.map, opts.sim, opts.flag, opts.noiselev))
+    uv._wrhd('history','MDLVIS: created file.\nMDLVIS: srcs=%s sim=%s flag=%s noise=%f\n' % (opts.src, opts.sim, opts.flag, opts.noiselev))
     uv.add_var('telescop','a'); uv['telescop'] = 'AIPY'
     uv.add_var('operator','a'); uv['operator'] = 'AIPY'
     uv.add_var('version' ,'a'); uv['version'] = '0.0.1'
