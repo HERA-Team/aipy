@@ -38,8 +38,8 @@ setup(name = 'aipy',
     dependency_links = [
         'http://www.stsci.edu/resources/software_hardware/pyfits'
     ],
-    package_dir = {'aipy':'src', 'aipy.optimize':'src/optimize'},
-    packages = ['aipy', 'aipy.optimize'],
+    package_dir = {'aipy':'src', 'aipy.optimize':'src/optimize', 'aipy._src':'src/_src'},
+    packages = ['aipy', 'aipy.optimize','aipy._src'],
     ext_modules = [
         Extension('aipy._healpix',
             ['src/_healpix/healpix_wrap.cpp', 
@@ -74,5 +74,5 @@ setup(name = 'aipy',
             include_dirs = [numpy.get_include()]),
     ],
     scripts=glob.glob('scripts/*'),
-    package_data = {'aipy': ['doc/*.tex', 'doc/*.png']},
+    package_data = {'aipy': ['_src/*.txt']},
 )

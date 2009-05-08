@@ -97,9 +97,10 @@ def parse_chans(chan_str, nchan, concat=True):
         chanopt = []
         for co in chan_str.split(','):
             co = map(int, co.split('_'))
-            assert(len(co) in [1,2])
+            assert(len(co) in [1,2,3])
             if len(co) == 1: chanopt.append(n.array(co))
-            else: chanopt.append(n.arange(co[0],co[1]+1))
+            elif len(co) == 2: chanopt.append(n.arange(co[0],co[1]+1))
+            else: chanopt.append(n.arange(co[0],co[1]+1,co[2]))
     if concat: return n.concatenate(chanopt)
     return chanopt
 

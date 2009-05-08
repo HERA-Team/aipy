@@ -131,7 +131,7 @@ data.shape = lats.shape
 # Generate source locations
 if not opts.src is None:
     srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    cat = a.src.get_catalog(srcs=srclist, cutoff=cutoff)
+    cat = a.src.get_catalog(srcs=srclist, cutoff=(cutoff,.150))
     o = ephem.Observer()
     if opts.juldate is None:
         o.date = ephem.J2000
@@ -146,7 +146,9 @@ if not opts.src is None:
     #cat.compute(o)
     # lat/lon coordinates of sources
     scrds = [ephem.Equatorial(s.ra,s.dec,epoch=o.epoch) for s in cat.values()]
-    sflxs = cat.get('_jys')
+    afreqs = n.array([.150])
+    cat.update_jys(afreqs)
+    sflxs = cat.get_jys().squeeze()
     snams = cat.keys()
     if opts.osys == 'ga':
         scrds = [ephem.Galactic(s, epoch=opts.oepoch) for s in scrds]

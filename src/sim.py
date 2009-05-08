@@ -20,10 +20,10 @@ class RadioBody:
         index = index of power-law spectral model of source emission."""
         self._jys = jys
         self.index = index
-    def compute(self, observer):
+    def update_jys(self, afreqs):
         """Update fluxes relative to the provided observer.  Must be
         called at each time step before accessing information."""
-        self.jys = self._jys * (observer.get_afreqs() / self.mfreq)**self.index
+        self.jys = self._jys * (afreqs / self.mfreq)**self.index
     def get_jys(self):
         """Return the fluxes vs. freq that should be used for simulation."""
         return self.jys
@@ -51,7 +51,7 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
         RadioBody.__init__(self, jys, index)
     def compute(self, observer):
         ant.RadioFixedBody.compute(self, observer)
-        RadioBody.compute(self, observer)
+        RadioBody.update_jys(self, observer.get_afreqs())
 
 #  ____           _ _      ____                  _       _ 
 # |  _ \ __ _  __| (_) ___/ ___| _ __   ___  ___(_) __ _| |
@@ -73,7 +73,7 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
         RadioBody.__init__(self, jys, index)
     def compute(self, observer):
         ant.RadioSpecial.compute(self, observer)
-        RadioBody.compute(self, observer)
+        RadioBody.update_jys(self, observer.get_afreqs())
 
 #  ____            ____      _        _             
 # / ___| _ __ ___ / ___|__ _| |_ __ _| | ___   __ _ 
@@ -88,6 +88,8 @@ class SrcCatalog(ant.SrcCatalog):
         """Return list of fluxes of all src objects in catalog."""
         if srcs is None: srcs = self.keys()
         return n.array([self[s].get_jys() for s in srcs])
+    def update_jys(self, afreqs):
+        for s in self.keys(): self[s].update_jys(afreqs)
 
 #  ____
 # | __ )  ___  __ _ _ __ ___

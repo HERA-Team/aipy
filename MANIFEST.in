@@ -37,5 +37,6 @@ include src/_healpix/cxx/libfftpack/*.c
 include src/_miriad/*
 include src/_miriad/mir/*.c
 include src/_miriad/mir/*.h
+include src/_src/*
 include src/optimize/*
 include src/utils/*
