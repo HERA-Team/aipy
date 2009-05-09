@@ -280,7 +280,7 @@ src_data = {
 #        return fixedbody(ra, dec, jys=st, mfreq=mfreq, 
 #            index=index, name=s, srcshape=srcshape)
 
-def get_catalog(srcs=None, cutoff=None, cats=['helm'],
+def get_catalog(srcs=None, cutoff=None, cats=['helm','misc'],
         fixedbody=fit.RadioFixedBody, special=fit.RadioSpecial):
     """Return a source catalog created out of the parameters in the 
     dictionary srcs.  Can pass your own RadioFixedBody or RadioSpecial 

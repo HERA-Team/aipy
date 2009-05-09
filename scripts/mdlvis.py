@@ -11,7 +11,7 @@ import numpy as n, aipy as a, optparse, os, sys, ephem
 o = optparse.OptionParser()
 o.set_usage('mdlvis.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, loc=True, src=True)
+a.scripting.add_standard_options(o, cal=True, src=True)
 o.add_option('--sim', dest='sim', action='store_true',
     help='Output a simulated dataset (rather than subtracting).')
 o.add_option('-f', '--flag', dest='flag', action='store_true',
@@ -44,12 +44,12 @@ assert(len(args) > 0 or (opts.sim and not opts.flag and not (opts.pol is None)))
 # Parse command-line options
 if len(args) > 0:
     uv = a.miriad.UV(args[0])
-    aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+    aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
     p,d,f = uv.read(raw=True)
     no_flags = n.zeros_like(f)
     del(uv)
 else:
-    aa = a.loc.get_aa(opts.loc, opts.sdf, opts.sfreq, opts.nchan)
+    aa = a.cal.get_aa(opts.cal, opts.sdf, opts.sfreq, opts.nchan)
     no_data = n.zeros(opts.nchan, dtype=n.complex64)
     no_flags = n.zeros(opts.nchan, dtype=n.int32)
 
@@ -60,7 +60,7 @@ else:
 # Initialize point sources
 #if not opts.src is None:
 srclist,cutoff = a.scripting.parse_srcs(opts.src)
-cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
+cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
 mfq = cat.get('mfreq')
 a1s,a2s,ths = cat.get('srcshape')
 #a1s.append(a1); a2s.append(a2); ths.append(th)

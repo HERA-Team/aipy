@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 """
-A script for fitting the amplitudes and passbands of antennas given
-starting parameters in "a.loc" and a list of sources (from "a.src").
-
-Author: Aaron Parsons
+A script for fitting parameters of a measuremet equation given 
+starting parameters in a cal file and a list of sources.
 """
 
 import aipy as a, numpy as n, sys, os, optparse
@@ -12,7 +10,7 @@ o = optparse.OptionParser()
 o.set_usage('fitmdl.py [options] *.uv')
 o.set_description(__doc__)
 a.scripting.add_standard_options(o, ant=True, pol=True, chan=True,
-    loc=True, src=True, dec=True)
+    cal=True, src=True, dec=True)
 o.add_option('--snap', dest='snap', action='store_true',
     help='Snapshot mode.  Fits parameters separately for each integration.')
 o.add_option('--fitants', dest='fitants', default='all',
@@ -24,7 +22,7 @@ o.add_option('--shprms', dest='shprms',
 o.add_option('--sprms', dest='sprms', 
     help='Source=param pairs for fitting source parameters.')
 o.add_option('--aaprms', dest='aaprms',
-    help='Comma delimited list of AntennaArray (not Antenna) parameters to fit.  Unless added specifically in loc file, default AntennaArray has no parameters to fit.')
+    help='Comma delimited list of AntennaArray (not Antenna) parameters to fit.  Unless added specifically in cal file, default AntennaArray has no parameters to fit.')
 o.add_option('-q', '--quiet', dest='quiet', action='store_true',
     help='Be less verbose.')
 o.add_option('--maxiter', dest='maxiter', type='float', default=-1,
@@ -42,11 +40,11 @@ opts, args = o.parse_args(sys.argv[1:])
 uv = a.miriad.UV(args[0])
 opts.ant += ',cross'
 a.scripting.uv_selector(uv, opts.ant, opts.pol)
-aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
 aa.select_chans(chans)
 srclist,cutoff = a.scripting.parse_srcs(opts.src)
-cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
+cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
 (uvw,t,(i,j)),d = uv.read()
 aa.set_jultime(t)
 cat.compute(aa)

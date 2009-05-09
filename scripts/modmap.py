@@ -4,7 +4,7 @@ import aipy as a, ephem as e, numpy as n, sys, optparse, os
 o = optparse.OptionParser()
 o.set_usage('modmap.py [options]')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, src=True, loc=True)
+a.scripting.add_standard_options(o, src=True, cal=True)
 o.add_option('-m', '--map', dest='map', default='out.fits',
     help='The location to save the map.')
 o.add_option('-i', '--in_map', dest='in_map', 
@@ -73,9 +73,9 @@ if opts.src is None:
     sys.exit(0)
 
 srclist,cutoff = a.scripting.parse_srcs(opts.src)
-if not opts.loc is None:
-    cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
-    aa = a.loc.get_aa(opts.loc, .1, opts.freq, 1)
+if not opts.cal is None:
+    cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
+    aa = a.cal.get_aa(opts.cal, .1, opts.freq, 1)
     aa.set_jultime(opts.juldate)
     cat.compute(aa)
 else:

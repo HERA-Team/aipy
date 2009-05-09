@@ -1,4 +1,3 @@
-include locs/*
 include scripts/*
 include src/*
 include tests/*.py

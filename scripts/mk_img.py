@@ -14,7 +14,7 @@ import aipy as a, numpy as n, sys, optparse, ephem, os
 o = optparse.OptionParser()
 o.set_usage('mk_img.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, loc2=True,
+a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, cal=True,
     src=True, dec=True)
 o.add_option('-o', '--output', dest='output', default='dim,dbm',
     help='Comma delimited list of data to generate FITS files for.  Can be: dim (dirty image), dbm (dirty beam), uvs (uv sampling), or bms (beam sampling).  Default is dim,dbm.')
@@ -49,20 +49,16 @@ o.add_option('--buf_thresh', dest='buf_thresh', default=2e6, type='float',
 opts, args = o.parse_args(sys.argv[1:])
 
 # Parse command-line options
-locs = a.scripting.files_to_locs(opts.loc, args, sys.argv)
-aas = {}
-for loc in locs:
-    uv = a.miriad.UV(locs[loc][0])
-    (j,t,j),j = uv.read()
-    chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
-    a.scripting.uv_selector(uv, opts.ant, opts.pol)
-    aa = a.loc.get_aa(loc, uv['sdf'], uv['sfreq'], uv['nchan'])
-    aa.select_chans(chans)
-    aas[loc] = aa
-    afreqs = aa[0].beam.afreqs
-    cfreq = n.average(afreqs)
-    aa.set_jultime(t)
-    del(uv)
+uv = a.miriad.UV(args[0])
+(j,t,j),j = uv.read()
+chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
+a.scripting.uv_selector(uv, opts.ant, opts.pol)
+aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
+aa.select_chans(chans)
+afreqs = aa[0].beam.afreqs
+cfreq = n.average(afreqs)
+aa.set_jultime(t)
+del(uv)
 outputs = opts.output.split(',')
 if opts.no_w: Img = a.img.Img
 else: Img = a.img.ImgW
@@ -70,16 +66,16 @@ else: Img = a.img.ImgW
 # Get all sources that will be used as phase centers.  If no sources are
 # specified, define phase centers for faceting a sphere.
 if opts.src == 'zen':
-    srcs = [a.ant.RadioFixedBody(aa.sidereal_time(), aa.lat, name='zen')]
-    cat = a.ant.SrcCatalog(srcs)
+    srcs = [a.phs.RadioFixedBody(aa.sidereal_time(), aa.lat, name='zen')]
+    cat = a.phs.SrcCatalog(srcs)
 elif not opts.src is None: 
     srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    cat = a.loc.get_catalog(locs.keys()[0], srclist, cutoff)
+    cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
 else:
     ras,decs = a.map.facet_centers(opts.facets, ncrd=2)
-    srcs = [a.ant.RadioFixedBody(ra,dec,name=str(i)) 
+    srcs = [a.phs.RadioFixedBody(ra,dec,name=str(i)) 
         for i,(ra,dec) in enumerate(zip(ras,decs))]
-    cat = a.ant.SrcCatalog(srcs)
+    cat = a.phs.SrcCatalog(srcs)
 
 if opts.list_facets:
     cat.compute(aa)
@@ -160,69 +156,67 @@ for srccnt, s in enumerate(cat.values()):
     src = a.fit.SrcCatalog([s])
     # Gather data
     snapcnt,curtime = 0, None
-    for loc in locs:
-      aa = aas[loc]
-      # Read each file
-      for filename in locs[loc]:
-        sys.stdout.write('.'); sys.stdout.flush()
-        uv = a.miriad.UV(filename)
-        a.scripting.uv_selector(uv, opts.ant, opts.pol)
-        uv.select('decimate', opts.decimate, opts.decphs)
-        # Read all data from each file
-        for (crd,t,(i,j)),d,f in uv.all(raw=True):
-            if curtime != t:
-                # Make snapshot images (if specified)
-                if opts.snap > 0:
-                    snapcnt = (snapcnt + 1) % opts.snap
-                    if snapcnt == 0:
-                        if curtime != None:
-                            try:
-                                grid_it(im,us,vs,ws,ds,wgts)
-                                uvs,bms,dim,dbm = img_it(im)
-                            except(ValueError):
-                                uvs = n.abs(im.uv)
-                                bms,dim,dbm = uvs,uvs,uvs
-                            for k in ['uvs','bms','dim','dbm']:
-                                if k in outputs: to_fits(k, eval(k), s,imgcnt)
-                            imgcnt += 1
-                        us,vs,ws,ds,wgts = [],[],[],[],[]
-                        im = Img(opts.size, opts.res, mf_order=0)
-                        if opts.src == 'zen':
-                            s = a.ant.RadioFixedBody(aa.sidereal_time(), 
-                                aa.lat, name='zen')
-                            src = a.fit.SrcCatalog([s])
-                curtime = t
-                aa.set_jultime(t)
-                src.compute(aa)
-                if s.alt < opts.altmin * a.img.deg2rad: continue
-                s_eq = src.get_crds('eq', ncrd=3)
-                aa.sim_cache(s_eq)
-            if s.alt < opts.altmin * a.img.deg2rad: continue
-            d,f = d.take(chans), f.take(chans)
-            if not opts.skip_amp: d /= aa.passband(i,j)
-            # Throws PointingError if not up:
-            d = aa.phs2src(d, s, i, j)
-            u,v,w = aa.gen_uvw(i,j,src=s)
-            if not opts.skip_bm:
-                # Calculate beam strength for weighting purposes
-                wgt = aa.bm_response(i,j,pol=opts.pol).squeeze()
-                # Optimal SNR: down-weight beam-attenuated data 
-                # by another factor of the beam response.
-                d *= wgt; wgt *= wgt
-            else: wgt = n.ones(d.shape, dtype=n.float)
-            valid = n.logical_not(f)
-            d = d.compress(valid)
-            if len(d) == 0: continue
-            n_ints += 1
-            ds.append(d)
-            us.append(u.compress(valid))
-            vs.append(v.compress(valid))
-            ws.append(w.compress(valid))
-            wgts.append(wgt.compress(valid))
-            # If data buffer is full, grid data
-            if len(ds) * len(chans) > opts.buf_thresh:
-                grid_it(im,us,vs,ws,ds,wgts)
-                us,vs,ws,ds,wgts = [],[],[],[],[]
+    # Read each file
+    for filename in args:
+      sys.stdout.write('.'); sys.stdout.flush()
+      uv = a.miriad.UV(filename)
+      a.scripting.uv_selector(uv, opts.ant, opts.pol)
+      uv.select('decimate', opts.decimate, opts.decphs)
+      # Read all data from each file
+      for (crd,t,(i,j)),d,f in uv.all(raw=True):
+          if curtime != t:
+              # Make snapshot images (if specified)
+              if opts.snap > 0:
+                  snapcnt = (snapcnt + 1) % opts.snap
+                  if snapcnt == 0:
+                      if curtime != None:
+                          try:
+                              grid_it(im,us,vs,ws,ds,wgts)
+                              uvs,bms,dim,dbm = img_it(im)
+                          except(ValueError):
+                              uvs = n.abs(im.uv)
+                              bms,dim,dbm = uvs,uvs,uvs
+                          for k in ['uvs','bms','dim','dbm']:
+                              if k in outputs: to_fits(k, eval(k), s,imgcnt)
+                          imgcnt += 1
+                      us,vs,ws,ds,wgts = [],[],[],[],[]
+                      im = Img(opts.size, opts.res, mf_order=0)
+                      if opts.src == 'zen':
+                          s = a.phs.RadioFixedBody(aa.sidereal_time(), 
+                              aa.lat, name='zen')
+                          src = a.fit.SrcCatalog([s])
+              curtime = t
+              aa.set_jultime(t)
+              src.compute(aa)
+              if s.alt < opts.altmin * a.img.deg2rad: continue
+              s_eq = src.get_crds('eq', ncrd=3)
+              aa.sim_cache(s_eq)
+          if s.alt < opts.altmin * a.img.deg2rad: continue
+          d,f = d.take(chans), f.take(chans)
+          if not opts.skip_amp: d /= aa.passband(i,j)
+          # Throws PointingError if not up:
+          d = aa.phs2src(d, s, i, j)
+          u,v,w = aa.gen_uvw(i,j,src=s)
+          if not opts.skip_bm:
+              # Calculate beam strength for weighting purposes
+              wgt = aa.bm_response(i,j,pol=opts.pol).squeeze()
+              # Optimal SNR: down-weight beam-attenuated data 
+              # by another factor of the beam response.
+              d *= wgt; wgt *= wgt
+          else: wgt = n.ones(d.shape, dtype=n.float)
+          valid = n.logical_not(f)
+          d = d.compress(valid)
+          if len(d) == 0: continue
+          n_ints += 1
+          ds.append(d)
+          us.append(u.compress(valid))
+          vs.append(v.compress(valid))
+          ws.append(w.compress(valid))
+          wgts.append(wgt.compress(valid))
+          # If data buffer is full, grid data
+          if len(ds) * len(chans) > opts.buf_thresh:
+              grid_it(im,us,vs,ws,ds,wgts)
+              us,vs,ws,ds,wgts = [],[],[],[],[]
 
     # Grid remaining data into UV matrix
     try:

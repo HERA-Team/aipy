@@ -131,7 +131,7 @@ data.shape = lats.shape
 # Generate source locations
 if not opts.src is None:
     srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    cat = a.src.get_catalog(srcs=srclist, cutoff=(cutoff,.150))
+    cat = a.src.get_catalog(srcs=srclist, cutoff=cutoff)
     o = ephem.Observer()
     if opts.juldate is None:
         o.date = ephem.J2000
@@ -139,10 +139,10 @@ if not opts.src is None:
         try: del(cat['Sun'])
         except(KeyError): pass
     else:
-        o.date = a.ant.juldate2ephem(opts.juldate)
+        o.date = a.phs.juldate2ephem(opts.juldate)
         o.epoch = o.date
     for s in cat.values():
-        a.ant.RadioFixedBody.compute(s, o)
+        a.phs.RadioFixedBody.compute(s, o)
     #cat.compute(o)
     # lat/lon coordinates of sources
     scrds = [ephem.Equatorial(s.ra,s.dec,epoch=o.epoch) for s in cat.values()]

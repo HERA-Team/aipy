@@ -2,7 +2,7 @@
 Module for reading and setting parameters in components of an AntennaArray
 simulation for purpose of fitting.
 """
-import ant, sim, numpy as n
+import amp, numpy as n
 
 #  _   _ _   _ _ _ _           _____                 _   _                 
 # | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
@@ -85,9 +85,9 @@ def print_params(prms, indent='', grad=None):
 # |_| \_\__,_|\__,_|_|\___/|_|   |_/_/\_\___|\__,_|____/ \___/ \__,_|\__, |
 #                                                                    |___/ 
 
-class RadioFixedBody(sim.RadioFixedBody):
+class RadioFixedBody(amp.RadioFixedBody):
     """Class representing a source at fixed RA,DEC.  Adds get_params() and
-    set_params() to sim.RadioFixedBody."""
+    set_params() to amp.RadioFixedBody."""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {
@@ -135,9 +135,9 @@ class RadioFixedBody(sim.RadioFixedBody):
 # |_| \_\__,_|\__,_|_|\___/____/| .__/ \___|\___|_|\__,_|_|
 #                               |_|                        
 
-class RadioSpecial(sim.RadioSpecial):
+class RadioSpecial(amp.RadioSpecial):
     """Class representing moving sources (Sun,Moon,planets). Adds get_params() 
-    and set_params() to sim.RadioSpecial."""
+    and set_params() to amp.RadioSpecial."""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {
@@ -179,9 +179,9 @@ class RadioSpecial(sim.RadioSpecial):
 # |____/|_|  \___|\____\__,_|\__\__,_|_|\___/ \__, |
 #                                             |___/ 
 
-class SrcCatalog(sim.SrcCatalog):
+class SrcCatalog(amp.SrcCatalog):
     """Class for holding a catalog of celestial sources.  Adds get_params()
-    and set_params() to sim.SrcCatalog."""
+    and set_params() to amp.SrcCatalog."""
     def get_params(self, src_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
         prms = {}
@@ -206,14 +206,14 @@ class SrcCatalog(sim.SrcCatalog):
 # | |_) |  __/ (_| | | | | | |
 # |____/ \___|\__,_|_| |_| |_|
 
-class BeamFlat(sim.BeamFlat):
+class Beam(amp.Beam):
     """Representation of a flat (gain=1) antenna beam pattern."""
     def get_params(self, prm_list=None):
         return {}
     def set_params(self, prms):
         pass
 
-class Beam2DGaussian(sim.Beam2DGaussian):
+class Beam2DGaussian(amp.Beam2DGaussian):
     """Representation of a 2D Gaussian beam pattern, with default setting for 
     a flat beam."""
     def get_params(self, prm_list=None):
@@ -233,7 +233,7 @@ class Beam2DGaussian(sim.Beam2DGaussian):
         except(KeyError): pass
         self.update()
 
-class BeamPolynomial(sim.BeamPolynomial):
+class BeamPolynomial(amp.BeamPolynomial):
     """Representation of a gaussian beam model whose width varies with azimuth
     angle and with frequency."""
     def get_params(self, prm_list=None):
@@ -254,7 +254,7 @@ class BeamPolynomial(sim.BeamPolynomial):
         except(KeyError): pass
         self.update()
 
-class BeamAlm(sim.BeamAlm):
+class BeamAlm(amp.BeamAlm):
     """Representation of a beam model where each pointing has a response
     defined as a polynomial in frequency, and the spatial distributions of 
     these coefficients decomposed into spherical harmonics."""
@@ -288,9 +288,9 @@ class BeamAlm(sim.BeamAlm):
 #  / ___ \| | | | ||  __/ | | | | | | (_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
 
-class Antenna(sim.Antenna):
+class Antenna(amp.Antenna):
     """Representation of physical location and beam pattern of individual 
-    antenna in array.  Adds get_params() and set_params() to sim.Antenna."""
+    antenna in array.  Adds get_params() and set_params() to amp.Antenna."""
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         x,y,z = self.pos
@@ -336,10 +336,10 @@ class Antenna(sim.Antenna):
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
 #                                                                 |___/ 
 
-class AntennaArray(sim.AntennaArray):
+class AntennaArray(amp.AntennaArray):
     """Representation of location and time of observation, and response of
     array of antennas as function of pointing and frequency.  Adds get_params()
-    and set_params() to sim.AntennaArray."""
+    and set_params() to amp.AntennaArray."""
     def get_params(self, ant_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
         prms = {}

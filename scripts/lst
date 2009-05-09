@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 """
 Output LST, Julian date, and Sun position at the provided location.
-Author: Aaron Parsons
 """
 
 import aipy as a, sys, optparse, ephem
@@ -9,12 +8,12 @@ import aipy as a, sys, optparse, ephem
 o = optparse.OptionParser()
 o.set_usage('lst [options]')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, loc=True)
+a.scripting.add_standard_options(o, cal=True)
 o.add_option('-j', '--juldate', dest='juldate', type='float', 
     default=ephem.julian_date(), help='Use provided Julian date.  Default now.')
 opts, args = o.parse_args(sys.argv[1:])
 
-aa = a.loc.get_aa(opts.loc, .1, .1, 1)
+aa = a.cal.get_aa(opts.cal, .1, .1, 1)
 sun = ephem.Sun()
 aa.set_jultime(opts.juldate)
 sun.compute(aa)

@@ -10,7 +10,7 @@ All code provided is released under the GNU General Public License
 Author: Aaron Parsons
 """
 
-import ant, const, coord, deconv
+import phs, const, coord, deconv
 import ephem, fit, healpix, img 
-import interp, loc, map, miriad
-import optimize, rfi, sim, scripting, src, utils
+import interp, cal, map, miriad
+import optimize, rfi, amp, scripting, src, _src, utils

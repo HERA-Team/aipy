@@ -12,7 +12,7 @@ import aipy as a, numpy as n, pylab as p, os, sys, optparse, pickle
 o = optparse.OptionParser()
 o.set_usage('flux_cal.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, src=True, loc=True)
+a.scripting.add_standard_options(o, src=True, cal=True)
 o.add_option('-b', '--beam', dest='beam', action='store_true',
     help='Normalize by the primary beam response in the direction of the specified source.')
 o.add_option('-p', '--passband', dest='passband', action='store_true',
@@ -23,13 +23,13 @@ opts, args = o.parse_args(sys.argv[1:])
 
 assert(not (opts.src is None and (opts.beam or opts.srcflux)))
 uv = a.miriad.UV(args[0])
-freqs = a.loc.get_freqs(uv['sdf'], uv['sfreq'], uv['nchan'])
-aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+freqs = a.cal.get_freqs(uv['sdf'], uv['sfreq'], uv['nchan'])
+aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 del(uv)
 
 if opts.srcflux:
     srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    cat = a.loc.get_catalog(opts.loc, srclist, cutoff)
+    cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
     s = cat.values()[0]
     print 'Calibrating for source with',
     print 'strength', s._jys,

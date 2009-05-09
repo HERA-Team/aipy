@@ -5,7 +5,7 @@ def get_aa(freqs):
     lat, lon = '45:00', '90:00'
     # Create a model of the primary beam.  BeamFlat is a minimal model 
     # that has unity gain in all directions.  
-    beam = a.fit.BeamFlat(freqs)
+    beam = a.fit.Beam(freqs)
     # Make a list of antennas with requisite nanosecond locations, 
     # primary beams, and any other calibration parameters you wish to provide.
     ants = [

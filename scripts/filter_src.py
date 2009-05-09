@@ -27,7 +27,7 @@ def gen_skypass_delay(aa, sdf, nchan, max_bl_frac=1.5):
 o = optparse.OptionParser()
 o.set_usage('filter_src.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, src=True, loc=True)
+a.scripting.add_standard_options(o, src=True, cal=True)
 o.add_option('-r', '--drw', dest='drw', type=int, default=-1,
     help='The number of delay-rate bins to null.  Default is -1 = no fringe filtering.')
 o.add_option('-d', '--dw', dest='dw', type=int, default=5,
@@ -42,11 +42,11 @@ opts, args = o.parse_args(sys.argv[1:])
 
 uv = a.miriad.UV(args[0])
 if not opts.src is None:
-    aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+    aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
     srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    src = a.loc.get_catalog(opts.loc, srclist, cutoff).values()[0]
+    src = a.cal.get_catalog(opts.cal, srclist, cutoff).values()[0]
 else:
-    aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+    aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
     src = None
     filters = gen_skypass_delay(aa, uv['sdf'], uv['nchan'])
 del(uv)
@@ -88,7 +88,7 @@ for uvfile in args:
             if not n.all(d == 0):
                 d, info = a.deconv.clean(d, ker, tol=opts.clean)
                 d += info['res'] / gain
-        except(a.ant.PointingError): d = n.zeros_like(d)
+        except(a.phs.PointingError): d = n.zeros_like(d)
         try: phs_dat[bl].append(d)
         except(KeyError): phs_dat[bl] = [d]
 
@@ -134,7 +134,7 @@ for uvfile in args:
             data = phs_dat[bl][cnt[bl],:]
             if not src is None:
                 try: data = aa.unphs2src(data, src, i, j)
-                except(a.ant.PointingError): data *= 0
+                except(a.phs.PointingError): data *= 0
             cnt[bl] += 1
             if opts.extract: return p, n.ma.array(data, mask=d.mask)
             else: return p, d - data
@@ -184,7 +184,7 @@ if opts.together:
         data = phs_dat[bl][cnt[bl],:]
         if not src is None:
             try: data = aa.unphs2src(data, src, i, j)
-            except(a.ant.PointingError):
+            except(a.phs.PointingError):
                 if opts.extract: d *= 0
                 data = 0
         cnt[bl] += 1

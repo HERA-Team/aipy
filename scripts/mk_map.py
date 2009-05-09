@@ -31,7 +31,7 @@ prev_dra = None
 for i, filename in enumerate(args):
     img, kwds = a.img.from_fits(filename)
     img = img.squeeze()
-    s = a.ant.RadioFixedBody(kwds['ra']*a.img.deg2rad,
+    s = a.phs.RadioFixedBody(kwds['ra']*a.img.deg2rad,
                              kwds['dec']*a.img.deg2rad)
     print '-----------------------------------------------------------'
     print 'Reading file %s (%d / %d)' % (filename, i + 1, len(args))

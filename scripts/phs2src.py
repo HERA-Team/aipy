@@ -10,16 +10,16 @@ import aipy as a, numpy as n, sys, os, optparse
 o = optparse.OptionParser()
 o.set_usage('phs2src.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, loc=True, src=True)
+a.scripting.add_standard_options(o, cal=True, src=True)
 o.add_option('--setphs', dest='setphs', action='store_true',
     help='Instead of rotating phase, assign a phase corresponding to the specified source.')
 opts,args = o.parse_args(sys.argv[1:])
 
 # Parse command-line options
 uv = a.miriad.UV(args[0])
-aa = a.loc.get_aa(opts.loc, uv['sdf'], uv['sfreq'], uv['nchan'])
+aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 srclist,cutoff = a.scripting.parse_srcs(opts.src)
-src = a.loc.get_catalog(opts.loc, srclist, cutoff).values()[0]
+src = a.cal.get_catalog(opts.cal, srclist, cutoff).values()[0]
 del(uv)
 
 # A pipe to use for phasing to a source
@@ -35,7 +35,7 @@ def phs(uv, p, d, f):
     try:
         if opts.setphs: d = aa.unphs2src(n.abs(d), src, i, j)
         else: d = aa.phs2src(d, src, i, j)
-    except(a.ant.PointingError): d *= 0
+    except(a.phs.PointingError): d *= 0
     return p, d, f
 
 # Process data

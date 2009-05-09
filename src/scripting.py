@@ -3,11 +3,10 @@ Module containing utilities (like parsing of certain command-line arguments)
 for writing scripts.
 """
 
-import miriad, ant, sim, fit, src, numpy as n, re
+import miriad, fit, src, numpy as n, re
 
 def add_standard_options(optparser, ant=False, pol=False, chan=False, 
-        loc=False, loc2=False, src=False, dec=False, cmap=False, max=False,
-        drng=False):
+        cal=False, src=False, dec=False, cmap=False, max=False, drng=False):
     """Add standard command-line options to an optparse.OptionParser() on an 
     opt in basis (i.e. specify =True for each option to be added)."""
     if ant: optparser.add_option ('-a', '--ant', dest='ant', default='cross',
@@ -15,11 +14,9 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
     if pol: optparser.add_option('-p', '--pol', dest='pol', 
         help='Choose polarization (xx, yy, xy, yx) to include.')
     if chan: optparser.add_option('-c', '--chan', dest='chan', default='all',
-        help='Select channels (after any delay/delay-rate transforms) to include.  Examples: all (all channels), 0_10 (channels from 0 to 10, including 0 and 10) 0,10,20_30 (mix of individual channels and ranges).  Default is "all".')
-    if loc: optparser.add_option('-l', '--loc', dest='loc', 
-        help='Use specified <loc>.py for location-specific calibration.')
-    elif loc2: optparser.add_option('-l', '--loc', dest='loc', action='append',
-        help='Use specified <loc>.py for location-specific calibration.  Can intersperse locations with UV files to use different calibrations for different files.')
+        help='Select channels (after any delay/delay-rate transforms) to include.  Examples: all (all channels), 0_10 (channels from 0 to 10, including 0 and 10) 0_10_2 (channels from 0 to 10, counting by 2), 0,10,20_30 (mix of individual channels and ranges).  Default is "all".')
+    if cal: optparser.add_option('-C', '--cal', dest='cal', 
+        help='Use specified <cal>.py for calibration information.')
     if src: optparser.add_option('-s', '--src', dest='src',
         help='Phase centers/source catalog entries to use.  Options are "all", "<src_name1>,...", or "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>".')
     if dec:
@@ -106,12 +103,12 @@ def parse_chans(chan_str, nchan, concat=True):
 
 def parse_srcs(src_str):
     """Return (src_list,flux_cutoff) based on string argument for src.
-    Can be "all", "<src_name1>,...", or "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>"."""
+    Can be "all", "<src_name1>,...", "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>", or
+    "val/freq" (sources with Jy flux density above val at freq in GHz)."""
     if src_str.startswith('all'): return None, None
-    try:
-        cutoff = float(src_str)
+    if src_str.find('/') != -1:
+        cutoff = map(float, src_str.split('/'))
         return None, cutoff
-    except(ValueError): pass
     src_opt = src_str.split(',')
     if len(src_opt) == 1:
         src_opt = src_opt[0].split('_')
@@ -121,21 +118,4 @@ def parse_srcs(src_str):
         return [s], None
     else:
         return src_opt, None
-
-def files_to_locs(locations, uvfiles, sysargv):
-    import optparse
-    o = optparse.OptionParser(); add_standard_options(o, loc2=True)
-    locs = {}
-    pos = [sysargv.index(uv) for uv in uvfiles]
-    curloc = locations[0]
-    for i in range(len(pos)):
-        locs[curloc] = locs.get(curloc, []) + [sysargv[pos[i]]]
-        if i < len(pos)-1 and pos[i+1] - pos[i] > 1:
-            opts,args = o.parse_args(sysargv[pos[i]+1:pos[i+1]])
-            if not opts.loc is None:
-                if curloc is None:
-                    locs[opts.loc[-1]] = locs[None]
-                    del(locs[None])
-                curloc = opts.loc[-1]
-    return locs
 

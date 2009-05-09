@@ -3,7 +3,7 @@ Module adding simulation support to RadioBodys and AntennaArrays.
 Mostly, this means adding gain/amplitude information vs. frequency.
 """
 
-import ant, numpy as n, ephem, coord, healpix
+import phs, numpy as n, ephem, coord, healpix
 
 #  ____           _ _       ____            _       
 # |  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _ 
@@ -35,9 +35,9 @@ class RadioBody:
 # |_| \_\__,_|\__,_|_|\___/|_|   |_/_/\_\___|\__,_|____/ \___/ \__,_|\__, |
 #                                                                    |___/ 
 
-class RadioFixedBody(ant.RadioFixedBody, RadioBody):
+class RadioFixedBody(phs.RadioFixedBody, RadioBody):
     """Class representing a source at fixed RA,DEC.  Adds flux information to
-    ant.RadioFixedBody."""
+    phs.RadioFixedBody."""
     def __init__(self, ra, dec, name='', epoch=ephem.J2000,
             jys=0., index=-1, mfreq=.150,
             ionref=(0.,0.), srcshape=(0.,0.,0.), **kwargs):
@@ -46,11 +46,11 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
         jys = source strength in Janskies at mfreq)
         mfreq = frequency (in GHz) where source strength was measured
         index = power-law index of source emission vs. freq."""
-        ant.RadioFixedBody.__init__(self, ra, dec, mfreq=mfreq, name=name,
+        phs.RadioFixedBody.__init__(self, ra, dec, mfreq=mfreq, name=name,
             epoch=epoch, ionref=ionref, srcshape=srcshape)
         RadioBody.__init__(self, jys, index)
     def compute(self, observer):
-        ant.RadioFixedBody.compute(self, observer)
+        phs.RadioFixedBody.compute(self, observer)
         RadioBody.update_jys(self, observer.get_afreqs())
 
 #  ____           _ _      ____                  _       _ 
@@ -60,19 +60,19 @@ class RadioFixedBody(ant.RadioFixedBody, RadioBody):
 # |_| \_\__,_|\__,_|_|\___/____/| .__/ \___|\___|_|\__,_|_|
 #                               |_|                        
 
-class RadioSpecial(ant.RadioSpecial, RadioBody):
+class RadioSpecial(phs.RadioSpecial, RadioBody):
     """Class representing moving sources (Sun,Moon,planets).  Adds flux
-    information to ant.RadioSpecial."""
+    information to phs.RadioSpecial."""
     def __init__(self, name, jys=0., index=-1., mfreq=.150,
             ionref=(0.,0.), srcshape=(0.,0.,0.), **kwargs):
         """jys = source strength in Janskies at mfreq)
         mfreq = frequency (in GHz) where source strength was measured
         index = power-law index of source emission vs. freq."""
-        ant.RadioSpecial.__init__(self, name, mfreq=mfreq,
+        phs.RadioSpecial.__init__(self, name, mfreq=mfreq,
             ionref=ionref, srcshape=srcshape)
         RadioBody.__init__(self, jys, index)
     def compute(self, observer):
-        ant.RadioSpecial.compute(self, observer)
+        phs.RadioSpecial.compute(self, observer)
         RadioBody.update_jys(self, observer.get_afreqs())
 
 #  ____            ____      _        _             
@@ -82,7 +82,7 @@ class RadioSpecial(ant.RadioSpecial, RadioBody):
 # |____/|_|  \___|\____\__,_|\__\__,_|_|\___/ \__, |
 #                                             |___/
 
-class SrcCatalog(ant.SrcCatalog):
+class SrcCatalog(phs.SrcCatalog):
     """Class for holding a catalog of celestial sources."""
     def get_jys(self, srcs=None):
         """Return list of fluxes of all src objects in catalog."""
@@ -97,20 +97,20 @@ class SrcCatalog(ant.SrcCatalog):
 # | |_) |  __/ (_| | | | | | |
 # |____/ \___|\__,_|_| |_| |_|
 
-class BeamFlat(ant.Beam):
+class Beam(phs.Beam):
     """Representation of a flat (gain=1) antenna beam pattern."""
     def response(self, xyz):
         """Return the (unity) beam response as a function of position."""
         x,y,z = n.array(xyz)
         return n.ones((self.afreqs.size, x.size))
 
-class Beam2DGaussian(ant.Beam):
+class Beam2DGaussian(phs.Beam):
     """Representation of a 2D Gaussian beam pattern, with default setting for 
     a flat beam."""
     def __init__(self, freqs, xwidth=n.Inf, ywidth=n.Inf):
         """xwidth = angular width (radians) in EW direction
         ywidth = angular width (radians) in NS direction"""
-        ant.Beam.__init__(self, freqs)
+        phs.Beam.__init__(self, freqs)
         self.xwidth, self.ywidth = xwidth, ywidth
     def response(self, xyz):
         """Return beam response across active band for specified topocentric 
@@ -122,26 +122,26 @@ class Beam2DGaussian(ant.Beam):
         resp = n.resize(resp, (self.afreqs.size, resp.size))
         return resp
 
-class BeamPolynomial(ant.Beam):
+class BeamPolynomial(phs.Beam):
     """Representation of a gaussian beam model whose width varies with azimuth
     angle and with frequency."""
     def __init__(self, freqs, poly_azfreq=n.array([[.5]])):
         """poly_azfreq = a 2D polynomial in cos(2*n*az) for first axis and 
         in freq**n for second axis."""
         self.poly = poly_azfreq
-        ant.Beam.__init__(self, freqs)
+        phs.Beam.__init__(self, freqs)
         self.poly = poly_azfreq
         self._update_sigma()
     def select_chans(self, active_chans):
         """Select only enumerated channels to use for future calculations."""
-        ant.Beam.select_chans(self, active_chans)
+        phs.Beam.select_chans(self, active_chans)
         self.update()
     def _update_sigma(self):
         f = n.resize(self.afreqs, (self.poly.shape[1], self.afreqs.size))
         f = f**n.array([range(self.poly.shape[1])]).transpose()
         self.sigma = n.dot(self.poly, f)
     def update(self):
-        ant.Beam.update(self)
+        phs.Beam.update(self)
         self._update_sigma()
     def response(self, top):
         """Return beam response across active band for specified topocentric 
@@ -159,7 +159,7 @@ class BeamPolynomial(ant.Beam):
         s = n.dot(a, self.sigma)
         return n.sqrt(n.exp(-(zang/s)**2)).transpose()
 
-class BeamAlm(ant.Beam):
+class BeamAlm(phs.Beam):
     """Representation of a beam model where each pointing has a response
     defined as a polynomial in frequency, and the spatial distributions of 
     these coefficients decomposed into spherical harmonics."""
@@ -170,7 +170,7 @@ class BeamAlm(ant.Beam):
         nside = resolution of underlying HealpixMap to use
         coeffs = dictionary of polynomial term (integer) and corresponding Alm 
         coefficients (see healpix.py doc)."""
-        ant.Beam.__init__(self, freqs)
+        phs.Beam.__init__(self, freqs)
         self.alm = [healpix.Alm(lmax,mmax) for i in range(deg+1)]
         self.hmap = [healpix.HealpixMap(nside,scheme='RING',interp=True)
             for a in self.alm]
@@ -183,7 +183,7 @@ class BeamAlm(ant.Beam):
         """Update beam model using new set of coefficients.
         coeffs = dictionary of polynomial term (integer) and corresponding Alm 
         coefficients (see healpix.py doc)."""
-        ant.Beam.update(self)
+        phs.Beam.update(self)
         self._update_hmap()
     def response(self, top):
         """Return beam response across active band for specified topocentric 
@@ -201,7 +201,7 @@ class BeamAlm(ant.Beam):
 #  / ___ \| | | | ||  __/ | | | | | | (_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
 
-class Antenna(ant.Antenna):
+class Antenna(phs.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array."""
     def __init__(self, x, y, z, beam, phsoff=[0.,0.], bp_r=n.array([1]),
@@ -214,7 +214,7 @@ class Antenna(ant.Antenna):
         bp_i = polynomial (in freq) modeling imaginary component of passband
         amp = overall multiplicative scaling of gain
         pointing = antenna pointing (az,alt).  Default is zenith."""
-        ant.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff)
+        phs.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff)
         self.set_pointing(*pointing)
         self.bp_r = bp_r
         self.bp_i = bp_i
@@ -225,7 +225,7 @@ class Antenna(ant.Antenna):
              1j*n.polyval(self.bp_i, self.beam.afreqs)
         self._gain = self.amp * bp
     def update(self):
-        ant.Antenna.update(self)
+        phs.Antenna.update(self)
         self._update_gain()
     def set_pointing(self, az=0, alt=n.pi/2, twist=0):
         """Set the antenna beam to point at (az, alt) with specified
@@ -254,12 +254,12 @@ class Antenna(ant.Antenna):
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
 #                                                                 |___/ 
 
-class AntennaArray(ant.AntennaArray):
+class AntennaArray(phs.AntennaArray):
     """Representation of location and time of observation, and response of
     array of antennas as function of pointing and frequency."""
     def set_jultime(self, t=None):
         """Set current time as a Julian date."""
-        ant.AntennaArray.set_jultime(self, t=t)
+        phs.AntennaArray.set_jultime(self, t=t)
         self.eq2top_m = coord.eq2top_m(-self.sidereal_time(), self.lat)
         self._cache = None
     def passband(self, i, j):
