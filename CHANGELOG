@@ -1,3 +1,29 @@
+0.9.0
+* Made some major noming changes in preparation for an AIPY publication.  These include
+  renaming aipy.ant to aipy.phs, aipy.sim to aipy.amp, aipy.loc to aipy.cal.
+* Renamed BeamFlat to just plain Beam
+* Changed the -l options (for "loc files") in scripting interfaces to -C (for "cal" files)
+* Added support in scripting interface channel selection for constructions of the form
+  0_10_2, meaning channels 0 to 10 (including endpoints), counting by 2.
+* Refactored code so source spectra are computed internally to RadioBodys, and are
+  accessed through the get_jys() method.  Added an update_jys() method for computing
+  a source spectrum for specified frequencies without needing an AntennaArray object.
+* Added a get_afreqs() method to AntennaArrays to elucidate the opaque incantation;
+  "AntennaArray.ants[0].beam.afreqs."
+* Added a system support for adding source catalogs through src.py calling catalog
+  interfaces stored in the _srcs directory.  Made the Helmboldt catalog the default 
+  catalog that AIPY comes with (since it's pretty small and geared toward low frequencies).
+* Added unit tests (in "test" directory) for the most-used modules, and will continue to 
+  add them as other modules are revisited.  There is also a script called 
+  "script_battery.sh" that does basic exercising of most AIPY scripts.
+* In Antennas, grouped delay/offset into an array called phsoff which is a phase
+  polynomial in frequency.
+* Couple of bugfixes on how objects are updated (now made explicit with "update()"
+  methods) and fixed an array shape bug in Antenna.refract()
+* Fixed a bug in filter_src.py where data were zeroed when a source is below the horizon.
+* Transitioned all nomenclature from "Fringe-Rate" to "Delay-Rate" as per 
+  Parsons & Backer (2009) in AJ.
+
 0.8.6
 * Fixed a data-type error for Healpix maps that aren't doubles
 * Added max/drng/cmap parameters to standard command-line options

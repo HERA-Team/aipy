@@ -34,7 +34,7 @@ setup(name = 'aipy',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
     setup_requires = ['numpy>=1.2'],
-    install_requires = ['pyephem>=3.7.3.2', 'pyfits>=1.3', 'numpy>=1.2'],
+    install_requires = ['pyephem>=3.7.3.2', 'pyfits>=2.1', 'numpy>=1.2'],
     dependency_links = [
         'http://www.stsci.edu/resources/software_hardware/pyfits'
     ],
