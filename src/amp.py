@@ -316,7 +316,6 @@ class AntennaArray(phs.AntennaArray):
             src_top = src_top.compress(valid, axis=1)
             s_eqs = s_eqs.compress(valid, axis=1)
             # Get src fluxes vs. freq
-            jys.shape = (jys.size, 1)
             self._cache = {
                 'jys':   jys,
                 'mfreq': mfreqs,
