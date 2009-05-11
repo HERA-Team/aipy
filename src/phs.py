@@ -270,6 +270,18 @@ class AntennaArray(ArrayLocation):
         i,j (0 indexed)"""
         bl = int(bl)
         return ((bl >> 8) & 255) - 1, (bl & 255) - 1
+    def bl_indices(self, auto=True, cross=True):
+        """Return bl indices for baselines in the array."""
+        if auto:
+            if cross: return [self.ij2bl(i,j) 
+                for i in range(len(self)) 
+                for j in range(i,len(self))]
+            else: return [self.ij2bl(i,i) for i in range(len(self))]
+        else:
+            if cross: return [self.ij2bl(i,j) 
+                for i in range(len(self)) 
+                for j in range(i+1,len(self))]
+            else: return []
     def get_afreqs(self):
         """Return array of frequencies that are active for simulation."""
         return self[0].beam.afreqs
