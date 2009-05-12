@@ -6,7 +6,8 @@ for writing scripts.
 import miriad, fit, src, numpy as n, re
 
 def add_standard_options(optparser, ant=False, pol=False, chan=False, 
-        cal=False, src=False, dec=False, cmap=False, max=False, drng=False):
+        cal=False, src=False, prms=False, dec=False, cmap=False, 
+        max=False, drng=False):
     """Add standard command-line options to an optparse.OptionParser() on an 
     opt in basis (i.e. specify =True for each option to be added)."""
     if ant: optparser.add_option ('-a', '--ant', dest='ant', default='cross',
@@ -19,6 +20,8 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
         help='Use specified <cal>.py for calibration information.')
     if src: optparser.add_option('-s', '--src', dest='src',
         help='Phase centers/source catalog entries to use.  Options are "all", "<src_name1>,...", or "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>".')
+    if prms: optparser.add_option('-P', '--prms', dest='prms',
+        help='Parameters (for fitting, usually), can be specified as can be: "obj=prm", "obj=prm/val", "obj=prm/val/sig", "(obj1/obj2)=prm/(val1/val2)/sig", "obj=(prm1/prm2)/val/(sig1/sig2)", comma separated versions of the above, and so on.')
     if dec:
         optparser.add_option('-x', '--decimate', dest='decimate', 
             default=1, type='int',
@@ -118,4 +121,57 @@ def parse_srcs(src_str):
         return [s], None
     else:
         return src_opt, None
+
+name = r'([^\(/,\)=]+)'
+grp = r'(%s|\((%s(/%s)*)\))' % tuple([name]*3)
+prm = r'(%s=%s(/(%s)?(/%s)?)?)' % tuple([grp]*4)
+prm_rgx = re.compile(prm)
+def parse_prms(prm_str):
+    """Return a dict of the form: {'obj': {'prm':(val,sig),...}...} where
+    val is a starting value and sig is a known error associated with that 
+    start value.  Both default to None if a value is not provided.  The
+    string to be parsed can be: "obj=prm", "obj=prm/val", 
+    "obj=prm/val/sig", "(obj1/obj2)=prm/(val1/val2)/sig", 
+    "obj=(prm1/prm2)/val/(sig1/sig2)", comma separated versions of the above,
+    and so on."""
+    prms = {}
+    for prm in prm_str.split(','):
+        m = prm_rgx.match(prm)
+        g = m.groups()
+        if g[2]: obj = [g[2]]
+        else: obj = g[3].split('/')
+        if g[8]: plist = [g[8]]
+        else: plist = g[9].split('/')
+        if g[16]: ival = [float(g[16])]
+        elif g[17]: ival = map(float, g[17].split('/'))
+        else: ival = [None]
+        if g[23]: sval = [float(g[23])]
+        elif g[24]: sval = map(float, g[24].split('/'))
+        else: sval = [None]
+        if len(obj) != 1:
+            if len(plist) != 1:
+                assert(len(ival) == 1 and len(sval) == 1)
+                ival = [ival * len(plist)] * len(obj)
+                sval = [sval * len(plist)] * len(obj)
+            else:
+                if len(ival) == 1: ival = ival * len(obj)
+                if len(sval) == 1: sval = sval * len(obj)
+                assert(len(ival) == len(obj) and len(sval) == len(obj))
+                ival = [[i] for i in ival]
+                sval = [[i] for i in sval]
+        else:
+            if len(plist) != 1:
+                if len(ival) == 1: ival = ival * len(plist)
+                if len(sval) == 1: sval = sval * len(plist)
+                assert(len(ival) == len(plist) and len(sval) == len(plist))
+                assert(len(ival) == 1 and len(sval) == 1)
+            else:
+                assert(len(ival) == 1 and len(sval) == 1)
+            ival = [ival]
+            sval = [sval]
+        for o,il,sl in zip(obj,ival,sval):
+            prms[o] = {}
+            for p,i,s in zip(plist,il,sl):
+                prms[o][p] = (i,s)
+    return prms
 

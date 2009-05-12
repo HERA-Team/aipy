@@ -88,7 +88,7 @@ def print_params(prms, indent='', grad=None):
 class RadioFixedBody(amp.RadioFixedBody):
     """Class representing a source at fixed RA,DEC.  Adds get_params() and
     set_params() to amp.RadioFixedBody."""
-    def get_params(self, prm_list=None):
+    def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
         aprms = {
             'jys':      float(self._jys),
@@ -138,7 +138,7 @@ class RadioFixedBody(amp.RadioFixedBody):
 class RadioSpecial(amp.RadioSpecial):
     """Class representing moving sources (Sun,Moon,planets). Adds get_params() 
     and set_params() to amp.RadioSpecial."""
-    def get_params(self, prm_list=None):
+    def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
         aprms = {
             'jys':      float(self._jys),
@@ -208,7 +208,7 @@ class SrcCatalog(amp.SrcCatalog):
 
 class Beam(amp.Beam):
     """Representation of a flat (gain=1) antenna beam pattern."""
-    def get_params(self, prm_list=None):
+    def get_params(self, prm_list=['*']):
         return {}
     def set_params(self, prms):
         pass
@@ -216,7 +216,7 @@ class Beam(amp.Beam):
 class Beam2DGaussian(amp.Beam2DGaussian):
     """Representation of a 2D Gaussian beam pattern, with default setting for 
     a flat beam."""
-    def get_params(self, prm_list=None):
+    def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
         aprms = {'bm_xwidth':self.xwidth, 'bm_ywidth':self.ywidth}
         prms = {}
@@ -236,7 +236,7 @@ class Beam2DGaussian(amp.Beam2DGaussian):
 class BeamPolynomial(amp.BeamPolynomial):
     """Representation of a gaussian beam model whose width varies with azimuth
     angle and with frequency."""
-    def get_params(self, prm_list=None):
+    def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
         aprms = {'bm_poly':self.poly.flatten()}
         prms = {}
@@ -258,7 +258,7 @@ class BeamAlm(amp.BeamAlm):
     """Representation of a beam model where each pointing has a response
     defined as a polynomial in frequency, and the spatial distributions of 
     these coefficients decomposed into spherical harmonics."""
-    def get_params(self, prm_list=[]):
+    def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
         aprms = {}
         for i, a in enumerate(self.alm):
@@ -291,7 +291,7 @@ class BeamAlm(amp.BeamAlm):
 class Antenna(amp.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array.  Adds get_params() and set_params() to amp.Antenna."""
-    def get_params(self, prm_list=None):
+    def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
         x,y,z = self.pos
         aprms = {'x':x, 'y':y, 'z':z, 'dly':self._phsoff[-2], 
@@ -344,17 +344,17 @@ class AntennaArray(amp.AntennaArray):
         """Return all fitable parameters in a dictionary."""
         prms = {}
         for k in ant_prms:
-            if type(k) is str:
-                if k.startswith('*'): ants = range(len(self.ants))
-                else: continue
+            if k.startswith('*'): ants = map(str, range(len(self)))
             else: ants = [k]
             prm_list = ant_prms[k]
             if type(prm_list) is str: prm_list = [prm_list]
-            for a in ants: prms[a] = self.ants[a].get_params(prm_list)
+            for a in ants:
+                try: prms[a] = self.ants[int(a)].get_params(prm_list)
+                except(ValueError): pass
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
         for i, a in enumerate(self):
-            try: a.set_params(prms[i])
+            try: a.set_params(prms[str(i)])
             except(KeyError): pass
         self.update()

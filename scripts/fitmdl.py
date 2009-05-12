@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 """
-A script for fitting parameters of a measuremet equation given 
-starting parameters in a cal file and a list of sources.
+A script for fitting parameters of a measurement equation given 
+starting parameters in a cal file and a list of sources.  The fitter used
+here is a steepest-decent filter and does not make use of priors.
 """
 
 import aipy as a, numpy as n, sys, os, optparse
@@ -10,19 +11,9 @@ o = optparse.OptionParser()
 o.set_usage('fitmdl.py [options] *.uv')
 o.set_description(__doc__)
 a.scripting.add_standard_options(o, ant=True, pol=True, chan=True,
-    cal=True, src=True, dec=True)
+    cal=True, src=True, dec=True, prms=True)
 o.add_option('--snap', dest='snap', action='store_true',
     help='Snapshot mode.  Fits parameters separately for each integration.')
-o.add_option('--fitants', dest='fitants', default='all',
-    help='Comma delimited list of antennas to fit. Default "all".')
-o.add_option('--aprms', dest='aprms',
-    help='Comma delimited list of paramters to fit independently for each antenna.')
-o.add_option('--shprms', dest='shprms',
-    help='Comma delimited list of parameters to fit whose values will be shared for all antennas.')
-o.add_option('--sprms', dest='sprms', 
-    help='Source=param pairs for fitting source parameters.')
-o.add_option('--aaprms', dest='aaprms',
-    help='Comma delimited list of AntennaArray (not Antenna) parameters to fit.  Unless added specifically in cal file, default AntennaArray has no parameters to fit.')
 o.add_option('-q', '--quiet', dest='quiet', action='store_true',
     help='Be less verbose.')
 o.add_option('--maxiter', dest='maxiter', type='float', default=-1,
@@ -48,32 +39,22 @@ cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
 (uvw,t,(i,j)),d = uv.read()
 aa.set_jultime(t)
 cat.compute(aa)
-if opts.fitants.startswith('all'): fitants = range(uv['nants'])
-else: fitants = map(int, opts.fitants.split(','))
+#if opts.fitants.startswith('all'): fitants = range(uv['nants'])
+#else: fitants = map(int, opts.fitants.split(','))
 del(uv)
 if opts.maxiter < 0: opts.maxiter = n.Inf
 
-# Generate list of parameters to fit
-if opts.aprms is None: aprms = []
-else: aprms = opts.aprms.split(',')
-if opts.shprms is None: shprms = []
-else: shprms = opts.shprms.split(',')
-if opts.aaprms is None: aaprms = []
-else: aaprms = opts.aaprms.split(',')
+# Figure out parameters to fit
+prms = a.scripting.parse_prms(opts.prms)
 prm_dict = {}
-for ant in fitants: prm_dict[ant] = aprms[:]
-prm_dict[fitants[0]].extend(shprms)
-prm_dict['aa'] = aaprms
-#print prm_dict
+for prm in prms: prm_dict[prm] = prms[prm].keys()
 start_prms = aa.get_params(prm_dict)
-if opts.sprms != None:
-    sprms = [w.split('=') for w in opts.sprms.split(',')]
-    sprm_dict = {}
-    for src,prm in sprms:
-        if sprm_dict.has_key(src): sprm_dict[src].append(prm)
-        else: sprm_dict[src] = [prm]
-    start_prms.update(cat.get_params(sprm_dict))
-else: sprms = []
+start_prms.update(cat.get_params(prm_dict))
+for obj in start_prms:
+    for prm in start_prms[obj]:
+        if prms[obj][prm][0] != None:
+            start_prms[obj][prm] = prms[obj][prm][0]
+        
 prm_list, key_list = a.fit.flatten_prms(start_prms)
 
 first_fit = None    # Used to normalize fit values to the starting fit
@@ -86,9 +67,6 @@ def fit_func(prms, filelist, decimate, decphs):
     if first_fit == 0: return 0
     prms = a.fit.reconstruct_prms(prms, key_list)
     if not opts.quiet: a.fit.print_params(prms)
-    for ant in fitants:
-        for prm in shprms:
-            prms[ant][prm] = prms[fitants[0]][prm]
     aa.set_params(prms)
     cat.set_params(prms)
     a1,a2,th = cat.get('srcshape')
