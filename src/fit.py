@@ -11,11 +11,12 @@ import amp, numpy as n
 #  \___/ \__|_|_|_|\__|\__, | |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
 #                      |___/        
 
-def flatten_prms(prms, prm_list=[]):
+def flatten_prms(prms, prm_list=None):
     """Generate list of parameters suitable for passing to fitting
     algorithm from heirarchical parameter dictionary 'prms', along
     with 'key_list' information for reconstructing such a dictionary from
     a list.  'prm_list' is only for recursion."""
+    if prm_list is None: prm_list = []
     key_list = {}
     keys = prms.keys()
     keys.sort()

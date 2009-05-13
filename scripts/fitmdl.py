@@ -39,8 +39,6 @@ cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
 (uvw,t,(i,j)),d = uv.read()
 aa.set_jultime(t)
 cat.compute(aa)
-#if opts.fitants.startswith('all'): fitants = range(uv['nants'])
-#else: fitants = map(int, opts.fitants.split(','))
 del(uv)
 if opts.maxiter < 0: opts.maxiter = n.Inf
 

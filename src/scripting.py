@@ -170,7 +170,7 @@ def parse_prms(prm_str):
             ival = [ival]
             sval = [sval]
         for o,il,sl in zip(obj,ival,sval):
-            prms[o] = {}
+            if not prms.has_key(o): prms[o] = {}
             for p,i,s in zip(plist,il,sl):
                 prms[o][p] = (i,s)
     return prms

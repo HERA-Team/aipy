@@ -107,6 +107,11 @@ class TestParsePrms(unittest.TestCase):
         self.assertEqual(prms['src15']['index'], (None,1.))
         self.assertRaises(AssertionError, 
             a.scripting.parse_prms,'(a/b)=(c/d)/(1/2)/(3/4)')
+        t = '(1/2/3)=jys,(2/3)=index'
+        prms = a.scripting.parse_prms(t)
+        self.assertEqual(len(prms['1']), 1)
+        self.assertEqual(len(prms['2']), 2)
+        self.assertEqual(len(prms['3']), 2)
 
 if __name__ == '__main__':
     unittest.main()
