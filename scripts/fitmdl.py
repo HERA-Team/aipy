@@ -12,6 +12,8 @@ o.set_usage('fitmdl.py [options] *.uv')
 o.set_description(__doc__)
 a.scripting.add_standard_options(o, ant=True, pol=True, chan=True,
     cal=True, src=True, dec=True, prms=True)
+o.add_option('-S', '--shared_prms', dest='shprms',
+    help='Parameter listing w/ same syntax as "-P/--prms" except that all objects listed for a parameter will share an instance of that parameter.')
 o.add_option('--snap', dest='snap', action='store_true',
     help='Snapshot mode.  Fits parameters separately for each integration.')
 o.add_option('-q', '--quiet', dest='quiet', action='store_true',
@@ -43,8 +45,24 @@ del(uv)
 if opts.maxiter < 0: opts.maxiter = n.Inf
 
 # Figure out parameters to fit
-prms = a.scripting.parse_prms(opts.prms)
-prm_dict = {}
+prms, prm_dict, shkeys = {}, {}, []
+# Handle shared parameters
+if opts.shprms:
+    shprms = map(a.scripting.parse_prms, opts.shprms.split(','))
+    for s in shprms:
+        keys = s.keys(); keys.sort()
+        k = keys[0]
+        # Only enter one instance of shared parameters (indexed under first key)
+        if prms.has_key(k): prms[k].update(s[k])
+        else: prms.update({k:s[k]})
+        # Add an entry to shkeys for propagating variables to other objects
+        shkeys.append((keys, s[k].keys()))
+# Handle normal parameters
+if opts.prms:
+    pd = a.scripting.parse_prms(opts.prms)
+    for k in pd:
+        if prms.has_key(k): prms[k].update(pd[k])
+        else: prms[k] = pd[k]
 for prm in prms: prm_dict[prm] = prms[prm].keys()
 start_prms = aa.get_params(prm_dict)
 start_prms.update(cat.get_params(prm_dict))
@@ -64,6 +82,13 @@ def fit_func(prms, filelist, decimate, decphs):
     global first_fit, dbuf
     if first_fit == 0: return 0
     prms = a.fit.reconstruct_prms(prms, key_list)
+    # Propagate shared params
+    for (skey,sprm) in shkeys:
+        k = skey[0]
+        for k2 in skey[1:]:
+            if not prms.has_key(k2): prms[k2] = {}
+            for sp in sprm:
+                prms[k2][sp] = prms[k][sp]
     if not opts.quiet: a.fit.print_params(prms)
     aa.set_params(prms)
     cat.set_params(prms)
