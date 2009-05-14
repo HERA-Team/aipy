@@ -164,7 +164,6 @@ def parse_prms(prm_str):
                 if len(ival) == 1: ival = ival * len(plist)
                 if len(sval) == 1: sval = sval * len(plist)
                 assert(len(ival) == len(plist) and len(sval) == len(plist))
-                assert(len(ival) == 1 and len(sval) == 1)
             else:
                 assert(len(ival) == 1 and len(sval) == 1)
             ival = [ival]

@@ -112,6 +112,8 @@ class TestParsePrms(unittest.TestCase):
         self.assertEqual(len(prms['1']), 1)
         self.assertEqual(len(prms['2']), 2)
         self.assertEqual(len(prms['3']), 2)
+        prms = a.scripting.parse_prms('a=(b/c)')
+        self.assertEqual(len(prms['a']), 2)
 
 if __name__ == '__main__':
     unittest.main()
