@@ -4,11 +4,12 @@ import aipy as a, numpy as n, os
 
 class HelmboldtFixedBody(a.fit.RadioFixedBody):
     def compute(self, observer):
-        a.ant.RadioFixedBody.compute(self, observer)
+        a.phs.RadioFixedBody.compute(self, observer)
         self.update_jys(observer.get_afreqs())
     def update_jys(self, afreqs):
         A = n.log10(self._jys)
-        B,C,D = (list(self.index) + [0,0,0])[:3]
+        try: B,C,D = (list(self.index) + [0,0,0])[:3]
+        except(TypeError): B,C,D = (self.index,0,0)
         X = n.log10(afreqs / self.mfreq)
         self.jys = 10**(A + B*X + C*n.exp(D*X))
     def get_params(self, prm_list=None):
