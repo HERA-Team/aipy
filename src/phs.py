@@ -317,17 +317,20 @@ class AntennaArray(ArrayLocation):
         #afreqs = n.reshape(afreqs, (1,afreqs.size))
         x.shape += (1,); y.shape += (1,); z.shape += (1,)
         return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
-    def gen_phs(self, src, i, j, mfreq=.150, ionref=None, srcshape=None):
+    def gen_phs(self, src, i, j, mfreq=.150, ionref=None, srcshape=None, 
+            resolve_src=False):
         """Return phasing that is multiplied to data to point to src."""
         u,v,w = self.gen_uvw(i,j,src=src)
         if ionref is None:
             try: dw = self.refract(u, v, mfreq=mfreq, ionref=src.ionref)
             except(AttributeError): dw = 0
         else: dw = self.refract(u, v, mfreq=mfreq, ionref=ionref)
-        if srcshape is None:
-            try: res = self.resolve_src(u, v, srcshape=src.srcshape)
-            except(AttributeError): res = 1
-        else: res = self.resolve_src(u, v, srcshape=srcshape)
+        if resolve_src:
+            if srcshape is None:
+                try: res = self.resolve_src(u, v, srcshape=src.srcshape)
+                except(AttributeError): res = 1
+            else: res = self.resolve_src(u, v, srcshape=srcshape)
+        else: res = 1
         o = self.get_phs_offset(i,j)
         phs = res * n.exp(-1j*2*n.pi*(w + dw + o))
         return phs.squeeze()
@@ -371,8 +374,8 @@ class AntennaArray(ArrayLocation):
     def phs2src(self, data, src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Apply phasing to zenith-phased data to point to src."""
         return data * self.gen_phs(src, i, j, 
-            mfreq=mfreq, ionref=ionref, srcshape=srcshape)
+            mfreq=mfreq, ionref=ionref, srcshape=srcshape, resolve_src=False)
     def unphs2src(self,data,src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Remove phasing from src-phased data to point to zenith."""
-        return data * n.conjugate(self.gen_phs(src, i, j,
-            mfreq=mfreq, ionref=ionref, srcshape=srcshape))
+        return data / self.gen_phs(src, i, j,
+            mfreq=mfreq, ionref=ionref, srcshape=srcshape, resolve_src=False)

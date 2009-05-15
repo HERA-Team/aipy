@@ -290,7 +290,8 @@ class TestAntennaArray(unittest.TestCase):
             phs = n.round(self.aa.gen_phs(src, 0, 3, mfreq=.1), 3)
             self.assertTrue(n.all(phs == 1+0j))
         phs1 = self.aa.gen_phs(src, 0, 2, mfreq=.1, ionref=(.001,.001))
-        phs2 = self.aa.gen_phs(src, 0, 2, mfreq=.1, srcshape=(.01,.01,0))
+        phs2 = self.aa.gen_phs(src, 0, 2, mfreq=.1, srcshape=(.01,.01,0), 
+            resolve_src=True)
         self.assertTrue(n.all(phs1 != 1+0j))
         self.assertTrue(n.all(phs2 != 1+0j))
     def test_resolve_src(self):

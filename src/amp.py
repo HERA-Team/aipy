@@ -341,7 +341,8 @@ class AntennaArray(phs.AntennaArray):
         if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
         # Get the phase of each src vs. freq, also does resolution effects
         E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],
-            srcshape=self._cache['s_shp'], ionref=self._cache['i_ref']))
+            srcshape=self._cache['s_shp'], ionref=self._cache['i_ref'],
+            resolve_src=True))
         try: E_sf.shape = I_sf.shape
         except(AttributeError): pass
         # Combine and sum over sources
