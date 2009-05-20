@@ -128,6 +128,9 @@ class HealpixMap(HealpixBase):
         """Read a HealpixMap from the specified location in a fits file."""
         hdu = pyfits.open(filename)[hdunum]
         data = hdu.data.field(colnum)
+        if not data.dtype.isnative:
+            data.dtype = data.dtype.newbyteorder()
+            data.byteswap(True)
         scheme= hdu.header['ORDERING'][:4]
         self.set_map(data, scheme=scheme)
     def _set_fits_header(self, hdr):
