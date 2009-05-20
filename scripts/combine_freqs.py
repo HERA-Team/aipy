@@ -18,6 +18,8 @@ o.add_option('-n', '--nchan', dest='nchan', default=256, type='int',
     help='Reduce the number of channels in a spectrum to this number.')
 o.add_option('-c', '--careful_flag', dest='careful_flag', action='store_true',
     help='Flag resultant bin if any component bins are flagged (otherwise, flags only when there are more flagged bins than unflagged bins).')
+o.add_option('-d', '--dont_flag', dest='dont_flag', action='store_true',
+    help='Only flag resultant bin if every component bin is flagged (otherwise, uses any data available).')
 o.add_option('-u', '--unify', dest='unify', action='store_true',
     help='Output to a single UV file.')
 opts, args = o.parse_args(sys.argv[1:])
@@ -51,11 +53,12 @@ for uvfile in args:
             f = n.logical_not(f).astype(n.int).sum(axis=1)
             d /= f.clip(1,n.Inf)
             if opts.careful_flag: f = n.where(f < nchan/opts.nchan, 1, 0)
+            elif opts.dont_flag: f = n.where(f < 1, 1, 0)
             else: f = n.where(f <= nchan/opts.nchan/2, 1, 0)
             return p, d, f
         uvo.pipe(uvi, mfunc=mfunc, raw=True,
-            append2hist='COMB_FREQ: nchan=%d, careful=%s, unify=%s\n' % \
-                (opts.nchan, opts.careful_flag, opts.unify))
+            append2hist='COMB_FREQ: nchan=%d careful=%s dont=%s unify=%s\n' % \
+                (opts.nchan, opts.careful_flag, opts.dont_flag, opts.unify))
     else:
         uvo.pipe(uvi, append2hist='Miniaturized...\n')
     if not opts.unify:

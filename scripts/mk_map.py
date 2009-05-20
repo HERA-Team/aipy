@@ -11,7 +11,6 @@ import sys, numpy as n, os, aipy as a, optparse
 o = optparse.OptionParser()
 o.set_usage('mk_map.py [options] *.fits')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, pol=True, chan=True)
 o.add_option('-i', '--interpolate', dest='interpolate', action='store_true',
     help='Use sub-pixel interpolation when gridding data to healpix map.')
 o.add_option('-m', '--map', dest='map',
