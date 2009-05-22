@@ -5,7 +5,7 @@ is specified, will remove/extract that source.  If none is specified,
 will filter/extract in absolute terms.
 """
 
-import aipy as a, numpy as n, os, sys, optparse
+import aipy as a, numpy as n, os, sys, optparse, math
 
 def gen_skypass_delay(aa, sdf, nchan, max_bl_frac=1.5):
     bin_dly = 1. / (sdf * nchan)
@@ -100,6 +100,10 @@ for uvfile in args:
             if not src_up:
                 phs_dat[bl] = d
                 continue
+            # create some padding data on either end to mitigate wrap-around
+            # effects of a delay-rate filter
+            padlen = math.ceil(d.shape[0] * .1)
+            d = n.concatenate([n.flipud(d[:padlen]), d, n.flipud(d[-padlen:])])
             if opts.drw != -1:
                 flags = n.where(d[:,0] != 0, 1., 0.)
                 gain = n.sqrt(n.average(flags**2))
@@ -118,6 +122,8 @@ for uvfile in args:
             d[:,y1:y2] = 0
             if opts.drw != -1: d = n.fft.fft(d, axis=0)
             d = n.fft.fft(d, axis=1)
+            # unpad the data
+            d = d[padlen:-padlen]
             phs_dat[bl] = d
 
         cnt = {}
