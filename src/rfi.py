@@ -39,7 +39,7 @@ def flag_by_int(preflagged_auto, nsig=1):
     (both positive and negative)."""
     pwr_vs_t = n.ma.average(abs(preflagged_auto), axis=1)
     mask = pwr_vs_t.mask
-    spikey_pwr_vs_t = n.abs(pwr_vs_t - remove_spikes(pwr_vs_t, mask))
+    spikey_pwr_vs_t = n.abs(pwr_vs_t - remove_spikes(pwr_vs_t, mask.copy()))
     hi_thr, lo_thr = gen_rfi_thresh(spikey_pwr_vs_t, cnt_per_bin=20, nsig=nsig)
     spikey_pwr_vs_t = spikey_pwr_vs_t.filled(hi_thr)
     mask = spikey_pwr_vs_t >= hi_thr
