@@ -142,7 +142,8 @@ if not opts.src is None:
         o.date = a.phs.juldate2ephem(opts.juldate)
         o.epoch = o.date
     for s in cat.values():
-        a.phs.RadioFixedBody.compute(s, o)
+        try: a.phs.RadioFixedBody.compute(s, o)
+        except(TypeError): a.phs.RadioSpecial.compute(s, o)
     #cat.compute(o)
     # lat/lon coordinates of sources
     scrds = [ephem.Equatorial(s.ra,s.dec,epoch=o.epoch) for s in cat.values()]
@@ -183,6 +184,7 @@ if not opts.src is None:
         if xpt >= 1e30 or ypt >= 1e30: continue
         if opts.src_mark != '':
             map.plot(sx, sy, opts.src_color+opts.src_mark,markerfacecolor=None)
+        if flx < 10: flx = 10
         p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))),
             color=opts.src_color)
 if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')

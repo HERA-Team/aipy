@@ -44,8 +44,8 @@ echo "Running: flux_cal.py -C ex_cal -s cyg -p -b -f new.uv"
 flux_cal.py -C ex_cal -s cyg -p -b -f new.uv
 
 # Exercise fitmdl.py, create fitmdl_out.txt
-echo "Running: fitmdl.py -a 0_1 -p xx -c 5_10 -C ex_cal -s cyg -x 10 --fitants=0,1 --shprms=amp --aprms=phsoff --maxiter=200 new.uv"
-fitmdl.py -a 0_1 -p xx -c 5_10 -C ex_cal -s cyg -x 10 --fitants=0,1 --shprms=amp --aprms=phsoff --maxiter=200 new.uv | tee fitmdl_out.txt
+echo 'Running: fitmdl.py -a 0_1 -p xx -c 5_10 -C ex_cal -s cyg -x 10 -P "(0/1)=phsoff" -S "(0/1)=amp" --maxiter=200 new.uv'
+fitmdl.py -a 0_1 -p xx -c 5_10 -C ex_cal -s cyg -x 10 -P "(0/1)=phsoff" -S "(0/1)=amp" --maxiter=200 new.uv
 
 # Exercise mk_img.py, create out0.{dim,dbm}.fits
 echo "Running: mk_img.py -p xx -C ex_cal -s cyg -o dim,dbm --fmt=out --altmin=30 new.uv"

@@ -1,4 +1,4 @@
-import aipy as a
+import aipy as a, numpy as n
 
 specials = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter',
     'Saturn', 'Uranus', 'Neptune']
