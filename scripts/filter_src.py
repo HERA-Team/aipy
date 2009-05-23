@@ -30,10 +30,10 @@ o.add_option('-r', '--drw', dest='drw', type=int, default=-1,
     help='The number of delay-rate bins to null.  Default is -1 = no fringe filtering.')
 o.add_option('-d', '--dw', dest='dw', type=int, default=5,
     help='The number of delay bins to null. If -1, uses baseline lengths to generate a sky-pass filter.')
-o.add_option('--nopass', dest='nopass', action='store_true',
-    help='Do not divide by the model passband before transforming.')
-o.add_option('--nobeam', dest='nobeam', action='store_true',
-    help='Do not divide by the model beam response before transforming.')
+o.add_option('-p','--pass', dest='pass', action='store_true',
+    help='Divide by the model passband before transforming.')
+o.add_option('-b','--beam', dest='beam', action='store_true',
+    help='Divide by the model beam response before transforming.')
 o.add_option('-e', '--extract', dest='extract', action='store_true',
     help='Extract the source instead of removing it.')
 o.add_option('--clean', dest='clean', type='float', default=1e-3,
@@ -74,7 +74,7 @@ for uvfile in args:
             if not src is None:
                 aa.set_jultime(t)
                 cat.compute(aa)
-                if not opts.nobeam:
+                if not opts.beam:
                     s_eqs = cat.get_crds('eq', ncrd=3)
                     aa.sim_cache(s_eqs)
         bl = a.miriad.ij2bl(i,j)
@@ -85,9 +85,9 @@ for uvfile in args:
             d = n.where(f, 0, d)
             if not src is None:
                 d = aa.phs2src(d, src, i, j)
-                if not opts.nobeam:
+                if not opts.beam:
                     d /= aa.bm_response(i,j, a.miriad.pol2str[uvi['pol']]).squeeze()
-            if not opts.nopass: d /= aa.passband(i,j)
+            if not opts.pass: d /= aa.passband(i,j)
             src_up = True
             d = n.fft.ifft(d)
             if not n.all(d == 0):
@@ -146,15 +146,15 @@ for uvfile in args:
                 curtime = t
                 aa.set_jultime(t)
                 cat.compute(aa)
-                if not opts.nobeam:
+                if not opts.beam:
                     s_eqs = cat.get_crds('eq', ncrd=3)
                     aa.sim_cache(s_eqs)
             try:
                 data = aa.unphs2src(data, src, i, j)
-                if not opts.nobeam:
+                if not opts.beam:
                     d *= aa.bm_response(i,j, a.miriad.pol2str[uv['pol']]).squeeze()
             except(a.phs.PointingError): data *= 0
-        if not opts.nopass: data *= aa.passband(i,j)
+        if not opts.pass: data *= aa.passband(i,j)
         cnt[bl] += 1
         if opts.extract: return p, n.ma.array(data, mask=d.mask)
         else: return p, d - data
@@ -164,5 +164,5 @@ for uvfile in args:
     uvo = a.miriad.UV(uvofile, status='new')
     uvo.init_from_uv(uvi)
     # Apply the pipe to the data
-    uvo.pipe(uvi, mfunc=rm_mfunc, append2hist='FILTER_SRC: src=%s drw=%d dw=%d extract=%s clean=%f nopass=%s nobeam=%s\n' % (opts.src, opts.drw, opts.dw, opts.extract, opts.clean, opts.nopass, opts.nobeam))
+    uvo.pipe(uvi, mfunc=rm_mfunc, append2hist='FILTER_SRC: src=%s drw=%d dw=%d extract=%s clean=%f pass=%s beam=%s\n' % (opts.src, opts.drw, opts.dw, opts.extract, opts.clean, opts.pass, opts.beam))
 
