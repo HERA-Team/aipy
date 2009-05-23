@@ -30,7 +30,7 @@ o.add_option('-r', '--drw', dest='drw', type=int, default=-1,
     help='The number of delay-rate bins to null.  Default is -1 = no fringe filtering.')
 o.add_option('-d', '--dw', dest='dw', type=int, default=5,
     help='The number of delay bins to null. If -1, uses baseline lengths to generate a sky-pass filter.')
-o.add_option('-p','--pass', dest='pass', action='store_true',
+o.add_option('-p','--passband', dest='passband', action='store_true',
     help='Divide by the model passband before transforming.')
 o.add_option('-b','--beam', dest='beam', action='store_true',
     help='Divide by the model beam response before transforming.')
@@ -87,7 +87,7 @@ for uvfile in args:
                 d = aa.phs2src(d, src, i, j)
                 if not opts.beam:
                     d /= aa.bm_response(i,j, a.miriad.pol2str[uvi['pol']]).squeeze()
-            if not opts.pass: d /= aa.passband(i,j)
+            if not opts.passband: d /= aa.passband(i,j)
             src_up = True
             d = n.fft.ifft(d)
             if not n.all(d == 0):
@@ -154,7 +154,7 @@ for uvfile in args:
                 if not opts.beam:
                     d *= aa.bm_response(i,j, a.miriad.pol2str[uv['pol']]).squeeze()
             except(a.phs.PointingError): data *= 0
-        if not opts.pass: data *= aa.passband(i,j)
+        if not opts.passband: data *= aa.passband(i,j)
         cnt[bl] += 1
         if opts.extract: return p, n.ma.array(data, mask=d.mask)
         else: return p, d - data
@@ -164,5 +164,5 @@ for uvfile in args:
     uvo = a.miriad.UV(uvofile, status='new')
     uvo.init_from_uv(uvi)
     # Apply the pipe to the data
-    uvo.pipe(uvi, mfunc=rm_mfunc, append2hist='FILTER_SRC: src=%s drw=%d dw=%d extract=%s clean=%f pass=%s beam=%s\n' % (opts.src, opts.drw, opts.dw, opts.extract, opts.clean, opts.pass, opts.beam))
+    uvo.pipe(uvi, mfunc=rm_mfunc, append2hist='FILTER_SRC: src=%s drw=%d dw=%d extract=%s clean=%f passband=%s beam=%s\n' % (opts.src, opts.drw, opts.dw, opts.extract, opts.clean, opts.passband, opts.beam))
 
