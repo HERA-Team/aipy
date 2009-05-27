@@ -3,10 +3,7 @@
 This is a general-purpose script for making images from MIRIAD UV files.  Data
 (optionally selected for baseline, channel) are read from the file, phased
 to a provided position, normalized for passband/primary beam effects, gridded
-to a UV matrix, imaged, and optionally deconvolved by a corresponding PSF to
-produce a clean image.
-
-Author: Aaron Parsons
+to a UV matrix, and imaged
 """
 
 import aipy as a, numpy as n, sys, optparse, ephem, os
@@ -114,9 +111,15 @@ def to_fits(ftag,i,src,cnt):
     print 'Saving data to', filename
     while len(i.shape) < 4: i.shape = i.shape + (1,)
     cen = ephem.Equatorial(src.ra, src.dec, epoch=aa.epoch)
+    # We precess the coordinates of the center of the image here to
+    # J2000, just to have a well-defined epoch for them.  For image coords to
+    # be accurately reconstructed, precession needs to be applied per pixel
+    # and not just per phase-center because ra/dec axes aren't necessarily
+    # aligned between epochs.  When reading these images, to be 100% accurate,
+    # one should precess the ra/dec coordinates back to the date of the
+    # observation, infer the coordinates of all the pixels, and then
+    # precess the coordinates for each pixel independently.
     cen = ephem.Equatorial(cen, epoch=ephem.J2000)
-    # There's an inaccuracy here... ra/dec axes aren't aligned between
-    # epochs.  How big is the error introduced here?
     a.img.to_fits(filename, i, clobber=True,
         object=src.src_name, obs_date=str(aa.date),
         ra=cen.ra*a.img.rad2deg, dec=cen.dec*a.img.rad2deg, epoch=2000.,

@@ -51,17 +51,15 @@ if opts.centers != None:
         ccat = a.src.get_catalog(srcs=clist, cutoff=coff)
 else: ccat = {}
     
-o = ephem.Observer()
-if opts.juldate is None: o.date = ephem.J2000
-else: o.date = a.phs.juldate2ephem(opts.juldate)
-o.epoch = o.date
+if opts.juldate is None: date = ephem.J2000
+else: date = a.phs.juldate2ephem(opts.juldate)
 
 for c in [cat, xcat, ccat]:
     for s in c.keys():
-        try: a.phs.RadioFixedBody.compute(c[s], o)
+        try: ephem.FixedBody.compute(c[s], date)
         except(TypeError):
             if opts.juldate is None: del(c[s])
-            else: a.phs.RadioSpecial.compute(c[s],o)
+            else: ephem.Body.compute(c[s], date)
 
 srcs = cat.keys()
 srcs = [s for s in srcs if s not in xcat]
@@ -78,18 +76,18 @@ if opts.sep != None:
 if opts.ra_rng != None:
     ra1,ra2 = map(ephem.hours, opts.ra_rng.split('_'))
     if ra1 < ra2:
-        srcs = [s for s in srcs if (cat[s]._ra > ra1 and cat[s]._ra < ra2)]
+        srcs = [s for s in srcs if (cat[s].ra > ra1 and cat[s].ra < ra2)]
     else:
-        srcs = [s for s in srcs if (cat[s]._ra > ra1 or cat[s]._ra < ra2)]
+        srcs = [s for s in srcs if (cat[s].ra > ra1 or cat[s].ra < ra2)]
 
 if opts.dec_rng != None:
     dec1,dec2 = map(ephem.degrees, opts.dec_rng.split('_'))
     if dec1 < dec2:
-        srcs = [s for s in srcs if (cat[s]._dec > dec1 and cat[s]._dec < dec2)]
+        srcs = [s for s in srcs if (cat[s].dec > dec1 and cat[s].dec < dec2)]
     else:
-        srcs = [s for s in srcs if (cat[s]._dec > dec1 or cat[s]._dec < dec2)]
+        srcs = [s for s in srcs if (cat[s].dec > dec1 or cat[s].dec < dec2)]
 
-
+# We're done selecting sources now.  Time to print information
 srcs.sort()
 if opts.prms == None:
     print opts.divstr.join(srcs)
@@ -97,4 +95,6 @@ else:
     prms = opts.prms.split(',')
     for s in srcs:
         p = cat.get_params({s:prms})
+        if p[s].has_key('ra'):  p[s]['ra'] = ephem.hours(p[s]['ra'])
+        if p[s].has_key('dec'): p[s]['dec'] = ephem.degrees(p[s]['dec'])
         a.fit.print_params(p)
