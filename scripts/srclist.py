@@ -13,12 +13,16 @@ o.add_option('-P','--prms', dest='prms',
     help='A comma-delimited list of parameters to print for each source.  Can be "*" to list all parameters.  If no parameters are specified, a list of the selected sources is printed.')
 o.add_option('-x','--exclude', dest='exclude', 
     help='A string that is parsed similarly to "srcs", but excludes sources that may otherwise have been selected by the "srcs" parameter.')
+o.add_option('-c','--cen', dest='centers', 
+    help='A string that is parsed similarly to "srcs", but is used along with --sep to select sources near specified locations.')
 o.add_option('-j','--juldate', dest='juldate', type='float',
     help='A Julian Date to use for placing sources.')
 o.add_option('--ra',dest='ra_rng', 
     help='A range RA1_RA2 of right-ascensions to select for.  Default: None.')
 o.add_option('--dec',dest='dec_rng',
     help='A range DEC1_DEC2 of declinations to select for.  Default: None.')
+o.add_option('--sep',dest='sep', type='float', 
+    help='Include areas within the specified angular separation (in degrees) of any sources listed in --src.')
 o.add_option('--divstr', dest='divstr', default=' ',
     help='Divider string to use between source names when printing.  Default is " ".')
 opts,args = o.parse_args(sys.argv[1:])
@@ -38,19 +42,38 @@ if opts.exclude != None:
         xcat = a.src.get_catalog(srcs=xlist, cutoff=xoff)
 else: xcat = {}
 
+if opts.centers != None:
+    assert(opts.sep != None)
+    clist,coff = a.scripting.parse_srcs(opts.centers)
+    if opts.cal != None:
+        ccat = a.cal.get_catalog(opts.cal, srcs=clist, cutoff=coff)
+    else:
+        ccat = a.src.get_catalog(srcs=clist, cutoff=coff)
+else: ccat = {}
+    
 o = ephem.Observer()
 if opts.juldate is None: o.date = ephem.J2000
 else: o.date = a.phs.juldate2ephem(opts.juldate)
 o.epoch = o.date
 
-for s in cat.keys():
-    try: a.phs.RadioFixedBody.compute(cat[s], o)
-    except(TypeError):
-        if opts.juldate is None: del(cat[s])
-        else: a.phs.RadioSpecial.compute(cat[s],o)
+for c in [cat, xcat, ccat]:
+    for s in c.keys():
+        try: a.phs.RadioFixedBody.compute(c[s], o)
+        except(TypeError):
+            if opts.juldate is None: del(c[s])
+            else: a.phs.RadioSpecial.compute(c[s],o)
 
 srcs = cat.keys()
 srcs = [s for s in srcs if s not in xcat]
+if opts.sep != None:
+    nsrcs = []
+    for s1 in srcs:
+        for s2 in ccat.keys():
+            if ephem.separation(cat[s1], ccat[s2]) <= opts.sep * a.img.deg2rad:
+                nsrcs.append(s1)
+                break
+    srcs = nsrcs
+    
 
 if opts.ra_rng != None:
     ra1,ra2 = map(ephem.hours, opts.ra_rng.split('_'))
@@ -65,6 +88,7 @@ if opts.dec_rng != None:
         srcs = [s for s in srcs if (cat[s]._dec > dec1 and cat[s]._dec < dec2)]
     else:
         srcs = [s for s in srcs if (cat[s]._dec > dec1 or cat[s]._dec < dec2)]
+
 
 srcs.sort()
 if opts.prms == None:

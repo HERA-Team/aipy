@@ -290,6 +290,8 @@ def get_catalog(srcs=None, cutoff=None, cats=['helm','misc'],
         try: c = getattr(_src, c)
         except(AttributeError): continue
         srclist += c.get_srcs(srcs=srcs, cutoff=cutoff)
+    # Add in sources that are already made
+    if srcs != None: srclist += [s for s in srcs if type(s) != str]
     return fit.SrcCatalog(srclist)
     #if srcs is None:
     #    if cutoff is None: srcs = src_data.keys()
