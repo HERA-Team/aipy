@@ -1,5 +1,5 @@
 0.9.0
-* Made some major noming changes in preparation for an AIPY publication.  These include
+* Made some major naming changes in preparation for an AIPY publication.  These include
   renaming aipy.ant to aipy.phs, aipy.sim to aipy.amp, aipy.loc to aipy.cal.
 * Renamed BeamFlat to just plain Beam
 * Changed the -l options (for "loc files") in scripting interfaces to -C (for "cal" files)
@@ -23,6 +23,14 @@
 * Fixed a bug in filter_src.py where data were zeroed when a source is below the horizon.
 * Transitioned all nomenclature from "Fringe-Rate" to "Delay-Rate" as per 
   Parsons & Backer (2009) in AJ.
+* Changed how fit parameters are input in scripting module
+* Bugfix for when resolution effects are taken into account in 
+  AntennaArray.gen_phs.
+* Bugfix in xrfi.py for flagging by integration
+* Improved filtering in filter_src.py to use padding and optionally passband
+  information.
+* Added script srclist.py
+* Added masking by wieght to plot_map.py
 
 0.8.6
 * Fixed a data-type error for Healpix maps that aren't doubles
