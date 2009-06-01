@@ -92,6 +92,8 @@ o.add_option('--res', dest='res', type='float', default=0.25,
     help="Resolution of plot (in degrees).  Default 0.25.")
 o.add_option('--nside', dest='nside', type='int',
     help="Manually set NSIDE (possibly degrading map) to a power of 2.")
+o.add_option('--mask', dest='mask', type='float',
+    help="Optional dB of weight below which data will be masked. Recommended=30")
 opts,args = o.parse_args(sys.argv[1:])
 
 cmap = p.get_cmap(opts.cmap)
@@ -126,7 +128,17 @@ m = a.coord.convert_m(opts.osys, opts.isys,
 x,y,z = n.dot(m, crd)
 try: data, indices = h[x,y,z]
 except(ValueError): data = h[x,y,z]
+if not opts.mask is None:
+    try:
+        wgts = h.wgt[x,y,z]
+        threshold = 10**(-opts.mask/10.)*n.max(wgts)
+        msk = n.where(wgts > threshold, 1, 0)
+        data *= msk
+        print "Masking %2.0f%% of sky"% ((1 - msk.sum() / float(len(msk)))*100)
+    except(AttributeError):
+        print "Weights not included in file. No mask will be applied."
 data.shape = lats.shape
+
 
 # Generate source locations
 if not opts.src is None:
