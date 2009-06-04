@@ -24,6 +24,8 @@ o.add_option('--xtol', dest='xtol', type='float', default=1e-10,
     help='Fractional change sought in it parameters before convergence.  Default 1e-10.')
 o.add_option('--ftol', dest='ftol', type='float', default=1e-10,
     help='Fractional tolerance sought in score before convergence.  Default 1e-10.')
+o.add_option('--remem', dest='remember', action='store_true',
+    help='Remember values from last fit when fitting in snapshot mode.')
 o.add_option('--sim_autos', dest='sim_autos', action='store_true',
     help='Use auto-correlations in fitting.  Default is to use only cross-correlations.')
 
@@ -185,3 +187,4 @@ else:
             print 'Score:', score * first_fit, 
             print '(%2.2f%% of %f)' % (100 * score, first_fit)
             print '------------------------------------------------------------'
+            if opts.remember: prm_list, key_list = a.fit.flatten_prms(prms)
