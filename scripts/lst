@@ -1,24 +1,25 @@
 #! /usr/bin/env python
 """
-Output LST, Julian date, and Sun position at the provided location.
+Output LST, Julian date, and Sun position at the provided location
 """
 
 import aipy as a, sys, optparse, ephem
 
 o = optparse.OptionParser()
-o.set_usage('lst [options]')
+o.set_usage('lst [options] jd1 jd2 ...')
 o.set_description(__doc__)
 a.scripting.add_standard_options(o, cal=True)
-o.add_option('-j', '--juldate', dest='juldate', type='float', 
-    default=ephem.julian_date(), help='Use provided Julian date.  Default now.')
 opts, args = o.parse_args(sys.argv[1:])
 
 aa = a.cal.get_aa(opts.cal, .1, .1, 1)
 sun = ephem.Sun()
-aa.set_jultime(opts.juldate)
-sun.compute(aa)
-print 'LST:', aa.sidereal_time(),
-print '     Julian Date:', opts.juldate,
-print '     Day:', aa.date
-print 'Sun is at (RA, DEC):', str((str(sun.ra), str(sun.dec)))
+if len(args) == 0: args = [a.phs.ephem2juldate(ephem.now())]
+for jd in map(float, args):
+    aa.set_jultime(jd)
+    sun.compute(aa)
+    print 'LST:', aa.sidereal_time(),
+    print '     Julian Date:', jd,
+    print '     Day:', aa.date
+    print 'Sun is at (RA, DEC):', str((str(sun.ra), str(sun.dec)))
+    print '-' * 70
 
