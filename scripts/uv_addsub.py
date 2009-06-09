@@ -26,7 +26,9 @@ def mfunc(uv, p, d, f):
 
 if opts.sub: filename = args[0] + 'd'
 else: filename = args[0] + 'a'
-assert(not os.path.exists(filename))
+if os.path.exists(filename):
+    print 'File exists: skipping'
+    sys.exit(0)
 print args[0], '->', filename
 uvo = a.miriad.UV(filename, status='new')
 uvo.init_from_uv(uv1)
