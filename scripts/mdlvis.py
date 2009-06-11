@@ -12,8 +12,8 @@ o = optparse.OptionParser()
 o.set_usage('mdlvis.py [options] *.uv')
 o.set_description(__doc__)
 a.scripting.add_standard_options(o, cal=True, src=True)
-o.add_option('--sim', dest='sim', action='store_true',
-    help='Output a simulated dataset (rather than subtracting).')
+o.add_option('-m','--mode', dest='mode', default='sim',
+    help='Operation mode.  Can be "sim" (output simulated data), "sub" (subtract from input data), or "add" (add to input data).  Default is "sim"')
 o.add_option('-f', '--flag', dest='flag', action='store_true',
     help='If outputting a simulated data set, mimic the data flagging of the original dataset.')
 #o.add_option('-m', '--map', dest='map',
@@ -121,10 +121,15 @@ def mdl(uv, p, d, f):
         aa.sim_cache(eqs, flx, mfreqs=mfq, 
             ionrefs=(dras,ddecs), srcshapes=(a1s,a2s,ths))
     sd = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
-    if opts.sim:
+    if opts.mode.startswith('sim'):
         d = sd
         if not opts.flag: f = no_flags
-    else: d -= sd
+    elif opts.mode.startswith('sub'):
+        d -= sd
+    elif opts.mode.startswith('add'):
+        d += sd
+    else:
+        raise ValueError('Mode "%s" not supported.' % opts.mode)
     if opts.noiselev != 0:
         # Add on some noise for a more realistic experience
         noise_amp = n.random.random(d.shape) * opts.noiselev
@@ -145,8 +150,8 @@ if len(args) > 0:
         uvo = a.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
         uvo.pipe(uvi, mfunc=mdl, raw=True,
-            append2hist="MDLVIS: srcs=%s sim=%s flag=%s noise=%f\n" % \
-                (opts.src, opts.sim, opts.flag, opts.noiselev))
+            append2hist="MDLVIS: srcs=%s mode=%s flag=%s noise=%f\n" % \
+                (opts.src, opts.mode, opts.flag, opts.noiselev))
 else:
     # Initialize a new UV file
     pols = opts.pol.split(',')
