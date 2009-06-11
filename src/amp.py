@@ -232,7 +232,8 @@ class Antenna(phs.Antenna):
         right-hand twist to polarizations.  Polarization y is assumed
         to be +pi/2 azimuth from pol x."""
         y, z = n.array([0,1,0]), n.array([0,0,1])
-        rot = coord.rot_m(twist, z)
+        # Twist is negative b/c we apply it to the coords, not the beam
+        rot = coord.rot_m(-twist, z)
         rot = n.dot(rot, coord.rot_m(alt-n.pi/2, y))
         rot = n.dot(rot, coord.rot_m(-az, z))
         self.rot_pol_x = rot
@@ -240,7 +241,8 @@ class Antenna(phs.Antenna):
     def bm_response(self, top, pol='x'):
         """Return response of beam for specified polarization."""
         top = n.array(top)
-        top = {'x':top, 'y':n.dot(self.rot_pol_y, top)}[pol]
+        top = {'x':n.dot(self.rot_pol_x, top), 
+               'y':n.dot(self.rot_pol_y, top)}[pol]
         x,y,z = top
         return self.beam.response((x,y,z))
     def passband(self, conj=False):
