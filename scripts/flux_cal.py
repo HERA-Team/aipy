@@ -51,7 +51,6 @@ def mfunc(uv, p, d, f):
             src_spec = s.get_jys()
             s_eq = cat.get_crds('eq', ncrd=3)
             aa.sim_cache(s_eq)
-    if i == j: return p, d, f
     if opts.passband: passband = aa.passband(i,j)
     else: passband = 1
     if opts.beam: bm_resp = aa.bm_response(i,j,pol=pol).squeeze()
