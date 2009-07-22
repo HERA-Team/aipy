@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/global/paper/bin/python
 """
 Script for displaying a projection of a spherical (Healpix) data set stored
 in a *.fits file.
@@ -202,6 +202,11 @@ if not opts.src is None:
 if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
 else: p.subplots_adjust(.05,.05,.95,.95)
 
+
+def mk_arr(val, dtype=n.double):
+    if type(val) is n.ndarray: return val.astype(dtype)
+    return n.array(val, dtype=dtype).flatten()
+
 if opts.outfile != '':
     print 'Saving to', opts.outfile
     p.savefig(opts.outfile)
@@ -210,17 +215,31 @@ else:
     cnt = 1
     def click(event):
         global cnt
-        if event.button != 3: return
-        lon,lat = map(event.xdata, event.ydata, inverse=True)
-        if opts.osys == 'eq': lon = (360 - lon) % 360
-        lon *= a.img.deg2rad; lat *= a.img.deg2rad
-        ra,dec = ephem.hours(lon), ephem.degrees(lat)
-        x,y,z = a.coord.radec2eq((ra,dec))
-        flx = h[(x,y,z)]
-        print '#%d (RA,DEC): (%s, %s), Jy: %f' % (cnt, ra, dec, flx)
-        cnt += 1
+        if event.button == 3: 
+            lon,lat = map(event.xdata, event.ydata, inverse=True)
+            if opts.osys == 'eq': lon = (360 - lon) % 360
+            lon *= a.img.deg2rad; lat *= a.img.deg2rad
+            ra,dec = ephem.hours(lon), ephem.degrees(lat)
+            x,y,z = a.coord.radec2eq((ra,dec))
+            flx = h[(x,y,z)]
+            print '#%d (RA,DEC): (%s, %s), Jy: %f' % (cnt, ra, dec, flx)
+            cnt += 1
+        elif event.button==2:
+            lon,lat = map(event.xdata, event.ydata, inverse=True)
+            if opts.osys == 'eq': lon = (360 - lon) % 360
+            lon *= a.img.deg2rad; lat *= a.img.deg2rad
+            ra,dec = ephem.hours(lon), ephem.degrees(lat)
+            x,y,z = a.coord.radec2eq((ra,dec))
+            #flx = h[(x,y,z)]
+            crd = [mk_arr(c, dtype=n.double) for c in (x,y,z)]
+            px,wgts = h.crd2px(*crd, **{'interpolate':1})
+            flx = n.sum(h[px],axis=-1)
+            print '#%d (RA,DEC): (%s, %s), Jy: %f (4px sum)' % (cnt, ra, dec, flx)
+            cnt += 1
+        else: return
+            
+
 
     #register this function with the event handler
     p.connect('button_press_event', click)
-
     p.show()
