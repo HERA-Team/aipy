@@ -1,8 +1,7 @@
 #! /usr/bin/env python
 """
-Rotate zenith UV data to a particular source.  
-
-Author: Aaron Parsons
+Rotate zenith UV data to a particular source.  Can specify 'zen' to phase data
+to zenith, or nothing at all to just remove delay/offset phase components.
 """
 
 import aipy as a, numpy as n, sys, os, optparse
@@ -18,8 +17,12 @@ opts,args = o.parse_args(sys.argv[1:])
 # Parse command-line options
 uv = a.miriad.UV(args[0])
 aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
-srclist,cutoff = a.scripting.parse_srcs(opts.src)
-src = a.cal.get_catalog(opts.cal, srclist, cutoff).values()[0]
+if not opts.src is None:
+    if not opts.src.startswith('zen'):
+        srclist,cutoff = a.scripting.parse_srcs(opts.src)
+        src = a.cal.get_catalog(opts.cal, srclist, cutoff).values()[0]
+    else: src = 'z'
+else: src = None
 del(uv)
 
 # A pipe to use for phasing to a source
@@ -30,17 +33,19 @@ def phs(uv, p, d, f):
     if curtime != t:
         curtime = t
         aa.set_jultime(t)
-        src.compute(aa)
+        if not src is None and not type(src) == str: src.compute(aa)
     if i == j: return p, d, f
     try:
         if opts.setphs: d = aa.unphs2src(n.abs(d), src, i, j)
+        elif src is None: d *= n.exp(-1j*n.pi*aa.get_phs_offset(i,j))
         else: d = aa.phs2src(d, src, i, j)
     except(a.phs.PointingError): d *= 0
     return p, d, f
 
 # Process data
 for filename in args:
-    uvofile = filename + '.' + opts.src
+    if not opts.src is None: uvofile = filename + '.' + opts.src
+    else: uvofile = filename + 'P'
     print filename,'->',uvofile
     if os.path.exists(uvofile):
         print 'File exists: skipping'
