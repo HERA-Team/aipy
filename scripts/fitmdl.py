@@ -26,6 +26,12 @@ o.add_option('--ftol', dest='ftol', type='float', default=1e-10,
     help='Fractional tolerance sought in score before convergence.  Default 1e-10.')
 o.add_option('--remem', dest='remember', action='store_true',
     help='Remember values from last fit when fitting in snapshot mode.')
+o.add_option('--baseport', dest='baseport', type='int', default=53000,
+    help="Base port # to use for tx/rx.  Each daemon adds it's daemon id to this to determine the actual port used for TCP transactions.")
+o.add_option('--daemon', dest='daemon', type='int', 
+    help='Operate in daemon mode, opening a TCP Server to handle requests on the specified increment to the base port.')
+o.add_option('--master', dest='master', 
+    help='Operate in master mode, employing daemon-mode servers to do the work and collecting the results.  Should be a comma delimited list of host:daemonid pairs to contact.  Daemon ID will be added to baseport to determine actual port used for TCP transactions.')
 o.add_option('--sim_autos', dest='sim_autos', action='store_true',
     help='Use auto-correlations in fitting.  Default is to use only cross-correlations.')
 
@@ -128,6 +134,7 @@ def fit_func(prms, filelist, decimate, decphs):
             difsq = n.where(f, 0, difsq)
             score += difsq.sum()
             nsamples += nsamp
+    if opts.daemon: return score, nsamples
     if nsamples == 0:
         first_fit = 0.
         return 0.
@@ -137,11 +144,81 @@ def fit_func(prms, filelist, decimate, decphs):
         print
         print 'Score:', score, 
         print '(%2.2f%% of %f)' % (100 * score / first_fit, first_fit)
-        print '------------------------------------------------------------'
+        print '-' * 70
     return score / first_fit
 
 # Call the optimizer
-if not opts.snap:
+if opts.daemon:
+    import SocketServer, struct
+    class TCPServer(SocketServer.TCPServer):
+        allow_reuse_address = True
+    class FitHandler(SocketServer.BaseRequestHandler):
+        def setup(self): print self.client_address, 'connected'
+        def finish(self): print self.client_address, 'disconnected'
+        def handle(self):
+            data = self.request.recv(struct.calcsize('d')*len(prm_list))
+            data = struct.unpack('<%dd' % (len(prm_list)), data)
+            score, nsamples = fit_func(data, args, opts.decimate, opts.decphs)
+            print 'Returning score=%f, nsamples=%d' % (score, nsamples)
+            rv = struct.pack('<dQ', score, nsamples)
+            self.request.send(rv)
+    s = TCPServer(('', opts.baseport + opts.daemon), FitHandler)
+    print 'Starting daemon on TCP port %d' % (opts.baseport + opts.daemon)
+    s.serve_forever()
+elif opts.master:
+    import socket, struct
+    def parsehostport(hostport):
+        host, port = hostport.split(':')
+        return (host, opts.baseport + int(port))
+    hostports = [parsehostport(w) for w in opts.master.split(',')]
+    def fit_func(prms):
+        global first_fit
+        if first_fit == 0: return 0
+        pdict = a.fit.reconstruct_prms(prms, key_list)
+        if not opts.quiet: a.fit.print_params(pdict)
+        data = struct.pack('<%dd' % (len(prms)), *prms)
+        socks = []
+        for hostport in hostports:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect(hostport)
+            sock.send(data)
+            socks.append(sock)
+        score, nsamples = 0, 0
+        for sock in socks:
+            data = sock.recv(1024)
+            scr, nsp = struct.unpack('<dQ', data)
+            score += scr; nsamples += nsp
+            print score, nsamples
+        score = n.sqrt(score / nsamples)
+        if nsamples == 0:
+            first_fit = 0.
+            return 0.
+        if first_fit is None: first_fit = score
+        if not opts.quiet:
+            print
+            print 'Score:', score, 
+            print '(%2.2f%% of %f)' % (100 * score / first_fit, first_fit)
+            print '-' * 70
+        return score / first_fit
+    print 'Starting in master mode...'
+    rv = a.optimize.fmin(
+        fit_func, prm_list,
+        #args=(args, opts.decimate, opts.decphs),
+        full_output=1, disp=0,
+        maxfun=opts.maxiter, maxiter=n.Inf, 
+        ftol=opts.ftol, xtol=opts.xtol
+    )
+    prms,score = rv[:2]
+    prms = a.fit.reconstruct_prms(prms, key_list)
+    print
+    a.fit.print_params(prms)
+    print 'Score:', score * first_fit, 
+    print '(%2.2f%% of %f)' % (100 * score, first_fit)
+    print '------------------------------------------------------------'
+            
+    
+
+elif not opts.snap:
     rv = a.optimize.fmin(
         fit_func, prm_list,
         args=(args, opts.decimate, opts.decphs),

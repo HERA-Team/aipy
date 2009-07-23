@@ -5,8 +5,8 @@ echo "Running: lst -C ex_cal -j 2454555.5 > lst_out.txt"
 lst -C ex_cal -j 2454555.5 | tee lst_out.txt
 
 # Exercise mdlvis.py, create new.uv
-echo "Running: mdlvis.py -C ex_cal -s cyg --nchan=16 --sfreq=.1 --sdf=.001 --inttime=60 --startjd=2454555.5 --endjd=2454555.6 --pol=xx --sim"
-mdlvis.py -C ex_cal -s cyg --nchan=16 --sfreq=.1 --sdf=.001 --inttime=60 --startjd=2454555.5 --endjd=2454555.6 --pol=xx --sim
+echo "Running: mdlvis.py -C ex_cal -s cyg --nchan=16 --sfreq=.1 --sdf=.001 --inttime=60 --startjd=2454555.5 --endjd=2454555.6 --pol=xx -m sim"
+mdlvis.py -C ex_cal -s cyg --nchan=16 --sfreq=.1 --sdf=.001 --inttime=60 --startjd=2454555.5 --endjd=2454555.6 --pol=xx -m sim
 
 # Exercise uvlist.py
 echo "Running: uvlist.py -k sdf,sfreq,nchan new.uv > uvlist_out.txt"
