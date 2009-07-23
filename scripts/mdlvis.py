@@ -40,7 +40,7 @@ o.add_option('--pol', dest='pol',
     help='Polarizations to simulate (xx,yy,xy,yx) if starting file from scratch.')
 opts, args = o.parse_args(sys.argv[1:])
 
-assert(len(args) > 0 or (opts.sim and not opts.flag and not (opts.pol is None)))
+assert(len(args) > 0 or (opts.mode == 'sim' and not opts.flag and not (opts.pol is None)))
 # Parse command-line options
 if len(args) > 0:
     uv = a.miriad.UV(args[0])
@@ -157,7 +157,7 @@ else:
     pols = opts.pol.split(',')
     uv = a.miriad.UV('new.uv', status='new')
     uv._wrhd('obstype','mixed-auto-cross')
-    uv._wrhd('history','MDLVIS: created file.\nMDLVIS: srcs=%s sim=%s flag=%s noise=%f\n' % (opts.src, opts.sim, opts.flag, opts.noiselev))
+    uv._wrhd('history','MDLVIS: created file.\nMDLVIS: srcs=%s mode=%s flag=%s noise=%f\n' % (opts.src, opts.mode, opts.flag, opts.noiselev))
     uv.add_var('telescop','a'); uv['telescop'] = 'AIPY'
     uv.add_var('operator','a'); uv['operator'] = 'AIPY'
     uv.add_var('version' ,'a'); uv['version'] = '0.0.1'
