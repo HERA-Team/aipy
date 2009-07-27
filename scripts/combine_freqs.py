@@ -55,12 +55,14 @@ for uvfile in args:
             if opts.careful_flag: f = n.where(f < nchan/opts.nchan, 1, 0)
             elif opts.dont_flag: f = n.where(f < 1, 1, 0)
             else: f = n.where(f <= nchan/opts.nchan/2, 1, 0)
-            return p, d, f
+            return p, n.where(f, 0, d), f
         uvo.pipe(uvi, mfunc=mfunc, raw=True,
             append2hist='COMB_FREQ: nchan=%d careful=%s dont=%s unify=%s\n' % \
                 (opts.nchan, opts.careful_flag, opts.dont_flag, opts.unify))
     else:
-        uvo.pipe(uvi, append2hist='Miniaturized...\n')
+        uvo.pipe(uvi, 
+            append2hist='COMB_FREQ: nchan=%d careful=%s dont=%s unify=%s\n' % \
+                (opts.nchan, opts.careful_flag, opts.dont_flag, opts.unify))
     if not opts.unify:
         del(uvo)
         uvo = None

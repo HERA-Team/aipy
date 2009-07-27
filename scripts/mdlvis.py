@@ -136,7 +136,7 @@ def mdl(uv, p, d, f):
         noise_phs = n.random.random(d.shape) * 2*n.pi * 1j
         noise = noise_amp * n.exp(noise_phs)
         d += noise * aa.passband(i, j)
-    return p, d, f
+    return p, n.where(f, 0, d), f
 
 if len(args) > 0:
     # Run mdl on all files

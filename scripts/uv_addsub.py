@@ -22,7 +22,7 @@ def mfunc(uv, p, d, f):
     f = n.logical_or(f,f2)
     if opts.sub: d = d - d2
     else: d = d + d2
-    return p, d, f
+    return p, n.where(f, 0, d), f
 
 if opts.sub: filename = args[0] + 'd'
 else: filename = args[0] + 'a'

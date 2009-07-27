@@ -130,13 +130,12 @@ for uvfile in args:
         pickle.dump(mask, f)
         f.close()
     else:
-        # Generate a pipe for applying both the total_mask and the int_mask
-        # to the data as it comes it.
+        # Generate a pipe for applying the mask to data as it comes in.
         def rfi_mfunc(uv, preamble, data, flags):
             uvw, t, (i,j) = preamble
-            return preamble, data, mask[t]
+            return preamble, n.where(mask[t], 0, data), mask[t]
 
         uvi.rewind()
         uvo = a.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
-        uvo.pipe(uvi, mfunc=rfi_mfunc, raw=True, append2hist='XRFI: nsig %f, chans %s, mode %s, ch_thresh %f\n' %  (opts.nsig, opts.chan, opts.flagmode, opts.ch_thresh))
+        uvo.pipe(uvi, mfunc=rfi_mfunc, raw=True, append2hist='XRFI: nsig=%f chans=%s mode=%s ch_thresh=%f\n' %  (opts.nsig, opts.chan, opts.flagmode, opts.ch_thresh))
