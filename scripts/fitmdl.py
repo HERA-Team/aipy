@@ -114,7 +114,9 @@ def fit_func(prms, filelist, decimate, decphs):
                 if not dbuf.has_key(t): dbuf[t] = {}
                 if not opts.sim_autos and i == j: continue
                 bl = a.miriad.ij2bl(i,j)
-                dbuf[t][bl] = (d.take(chans), f.take(chans), 
+                d = d.take(chans)
+                f = f.take(chans)
+                dbuf[t][bl] = (d, f, 
                         n.where(f, 0, n.abs(d)**2).sum(),
                         a.miriad.pol2str[uv['pol']])
     # Process data from cache
