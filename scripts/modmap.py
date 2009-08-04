@@ -84,9 +84,9 @@ else:
 m = a.coord.convert_m('eq', opts.osys, oepoch=opts.oepoch)
 ths,phis = h.px2crd(n.arange(h.npix()), ncrd=2)
 ras,decs = phis, n.pi/2 - ths
+afreq = n.array([opts.freq])
 for srcname in cat:
     src = cat[srcname]
-    #ra,dec,flux,mfreq,index,size = a.src.src_data[src]
     eq = e.Equatorial(src._ra, src._dec, epoch=e.J2000)
     eq = e.Equatorial(eq, epoch=opts.oepoch)
     ra,dec = eq.get()
@@ -94,9 +94,10 @@ for srcname in cat:
     a1,a2,th = src.srcshape
     dras,ddecs = ras - ra, decs - dec
     print '--------------------------------------------------'
-    strength = src._jys * (opts.freq / src.mfreq)**src.index * opts.sscale
+    src.update_jys(afreq)
+    strength = src.get_jys()[0] * opts.sscale
     print 'Adding', srcname, 'with strength %f Jy' % strength,
-    print 'and index %f' % src.index
+    print 'and index', src.index
     print 'Source shape: a1=%f, a2=%f, th=%f' % (a1, a2, th)
     da1 = dras*n.cos(th) - ddecs*n.sin(th)
     da2 = dras*n.sin(th) + ddecs*n.cos(th)
