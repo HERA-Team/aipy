@@ -27,6 +27,8 @@ o.add_option('-i', '--infile', dest='infile', action='store_true',
     help='Apply xrfi flags generated with the -o option.')
 o.add_option('-o', '--outfile', dest='outfile', action='store_true',
     help='Rather than apply the flagging to the data, store them in a file (named by JD) to apply to a different file with the same JD.')
+o.add_option('--raw', dest='raw', action='store_true',
+    help='Flag by integration without removing a smooth function.')
 opts, args = o.parse_args(sys.argv[1:])
 
 # Parse command-line options
@@ -118,11 +120,12 @@ for uvfile in args:
                 data_times.sort()
                 d = n.ma.array([data[pol][bl][t] for t in data_times],
                     mask=[mask[t] for t in data_times])
-                for i in n.where(a.rfi.flag_by_int(d))[0]:
+                bad_ints = a.rfi.flag_by_int(d, nsig=opts.nsig, raw=opts.raw)
+                for i in n.where(bad_ints)[0]:
                     t = data_times[i]
                     new_mask[t] = new_mask.get(t, 0) + 1
             for t in new_mask:
-                if new_mask[t] > 1: mask[t] |= 1
+                if new_mask[t] > 0: mask[t] |= 1
     if opts.outfile:
         for t in mask: mask[t] = list(mask[t])
         print 'Writing %f.xrfi' % jd
