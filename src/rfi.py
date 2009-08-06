@@ -23,7 +23,7 @@ def gen_rfi_thresh(data, nsig=2, cnt_per_bin=1000):
     try: data = data.compressed()
     except(AttributeError): pass
     data = n.log10(n.abs(data))
-    try: h, bvals = n.histogram(data, bins=data.size/cnt_per_bin, new=True)
+    try: h, bvals = n.histogram(data, bins=data.size/cnt_per_bin)
     except(ValueError): return None, None
     if h.size == 0: return None, None
     # Fit a gaussian to histogram (better than just std-dev of data)
