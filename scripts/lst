@@ -8,9 +8,12 @@ import aipy as a, sys, optparse, ephem
 o = optparse.OptionParser()
 o.set_usage('lst [options] jd1 jd2 ...')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, cal=True)
+a.scripting.add_standard_options(o, cal=True, src=True)
 opts, args = o.parse_args(sys.argv[1:])
 
+if not opts.src is None: srclist,cutoff = a.scripting.parse_srcs(opts.src)
+else: srclist,cutoff = [], None
+cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
 aa = a.cal.get_aa(opts.cal, .1, .1, 1)
 sun = ephem.Sun()
 if len(args) == 0: args = [a.phs.ephem2juldate(ephem.now())]
@@ -21,5 +24,9 @@ for jd in map(float, args):
     print '     Julian Date:', jd,
     print '     Day:', aa.date
     print 'Sun is at (RA, DEC):', str((str(sun.ra), str(sun.dec)))
+    cat.compute(aa)
+    for src in cat:
+        print src, '\tALT=%11s' % cat[src].alt, 
+        print '\tNEXT TRANSIT=%9.5f' % a.phs.ephem2juldate(aa.next_transit(cat[src]))
     print '-' * 70
 
