@@ -128,11 +128,14 @@ template<typename T> struct Clean {
                     }
                     best_mdl[argmax1*dim1+argmax2] -= step;
                     best_score = score;
+                    i = 0;  // Reset maxiter counter
                 }
             } else if (score > 0 && fabs(score - nscore) / firstscore < tol) {
                 // We're done
                 if (best_mdl != NULL) { free(best_mdl); free(best_res); }
                 return i;
+            } else if (not stop_if_div && (best_score < 0 || nscore < best_score)) {
+                i = 0;  // Reset maxiter counter
             }
             score = nscore;
             argmax1 = nargmax1; argmax2 = nargmax2;
@@ -220,11 +223,14 @@ template<typename T> struct Clean {
                     }
                     best_mdl[argmax] -= step;
                     best_score = score;
+                    i = 0;  // Reset maxiter counter
                 }
             } else if (score > 0 && (score - nscore) / firstscore < tol) {
                 // We're done
                 if (best_mdl != NULL) { free(best_mdl); free(best_res); }
                 return i;
+            } else if (not stop_if_div && (best_score < 0 || nscore < best_score)) {
+                i = 0;  // Reset maxiter counter
             }
             score = nscore;
             argmax = nargmax;
@@ -336,11 +342,14 @@ template<typename T> struct Clean {
                     best_mdl[2*(argmax1*dim1+argmax2)+0] -= stepr;
                     best_mdl[2*(argmax1*dim1+argmax2)+1] -= stepi;
                     best_score = score;
+                    i = 0;  // Reset maxiter counter
                 }
             } else if (score > 0 && (score - nscore) / firstscore < tol) {
                 // We're done
                 if (best_mdl != NULL) { free(best_mdl); free(best_res); }
                 return i;
+            } else if (not stop_if_div && (best_score < 0 || nscore < best_score)) {
+                i = 0;  // Reset maxiter counter
             }
             score = nscore;
             argmax1 = nargmax1; argmax2 = nargmax2;
@@ -446,11 +455,14 @@ template<typename T> struct Clean {
                     best_mdl[2*argmax+0] -= stepr;
                     best_mdl[2*argmax+1] -= stepi;
                     best_score = score;
+                    i = 0;  // Reset maxiter counter
                 }
             } else if (score > 0 && (score - nscore) / firstscore < tol) {
                 // We're done
                 if (best_mdl != NULL) { free(best_mdl); free(best_res); }
                 return i;
+            } else if (not stop_if_div && (best_score < 0 || nscore < best_score)) {
+                i = 0;  // Reset maxiter counter
             }
             score = nscore;
             argmax = nargmax;

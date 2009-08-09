@@ -68,15 +68,15 @@ for cnt, k in enumerate(keys):
             abms = n.abs(bms)
             thresh = abms.max() * level
             divisor = abms.clip(thresh, n.Inf)
-            dim = n.fft.ifft2(uvs / divisor)
-            dbm = n.fft.ifft2(bms / divisor)
+            dim = n.fft.ifft2(uvs / divisor).real
+            dbm = n.fft.ifft2(bms / divisor).real
         elif opts.rewgt.startswith('radial'):
             x,y = n.indices(dim.shape)
             x = a.img.recenter(x - DIM/2, (DIM/2,DIM/2))
             y = a.img.recenter(y - DIM/2, (DIM/2,DIM/2))
             r = n.sqrt(x**2 + y**2)
-            dim = n.fft.ifft2(uvs * r)
-            dbm = n.fft.ifft2(bms * r)
+            dim = n.fft.ifft2(uvs * r).real
+            dbm = n.fft.ifft2(bms * r).real
         else: raise ValueError('Unrecognized rewgt: %s' % opts.rewgt)
     dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
     bm_gain = a.img.beam_gain(dbm)
