@@ -52,11 +52,17 @@ template<typename T> struct Clean {
     // Does a 2d real-valued clean
     static int clean_2d_r(PyArrayObject *res, PyArrayObject *ker,
             PyArrayObject *mdl, double gain, int maxiter, 
-            double tol, int verb) {
-        T score=-1, nscore, max=0, mmax, val, mval, step, q=0, mq=0;
+            double tol, int stop_if_div, int verb) {
+        T score=-1, nscore, best_score=-1; 
+        T max=0, mmax, val, mval, step, q=0, mq=0;
         T firstscore=-1;
         int argmax1=0, argmax2=0, nargmax1=0, nargmax2=0;
         int dim1=DIM(res,0), dim2=DIM(res,1), wrap_n1, wrap_n2;
+        T *best_mdl=NULL, *best_res=NULL;
+        if (!stop_if_div) {
+            best_mdl = (T *)malloc(dim1*dim2*sizeof(T));
+            best_res = (T *)malloc(dim1*dim2*sizeof(T));
+        }
         // Compute gain/phase of kernel
         for (int n1=0; n1 < dim1; n1++) {
             for (int n2=0; n2 < dim2; n2++) {
@@ -94,27 +100,53 @@ template<typename T> struct Clean {
             nscore = sqrt(nscore / (dim1 * dim2));
             if (firstscore < 0) firstscore = nscore;
             if (verb != 0)
-                printf("Iter %d: Max=(%d,%d), Score = %f, Prev = %f\n", \
+                printf("Iter %d: Max=(%d,%d), Score=%f, Prev=%f, Delta=%f\n", \
                     i, nargmax1, nargmax2, (double) (nscore/firstscore), \
-                    (double) (score/firstscore));
+                    (double) (score/firstscore), 
+                    (double) fabs(score - nscore) / firstscore);
             if (score > 0 && nscore > score) {
-                // We've diverged: undo last step and give up
-                IND2(mdl,argmax1,argmax2,T) -= step;
-                for (int n1=0; n1 < dim1; n1++) {
-                    wrap_n1 = (n1 + argmax1) % dim1;
-                    for (int n2=0; n2 < dim2; n2++) {
-                        wrap_n2 = (n2 + argmax2) % dim2;
-                        IND2(res,wrap_n1,wrap_n2,T) += IND2(ker,n1,n2,T) * step;
+                if (stop_if_div) {
+                    // We've diverged: undo last step and give up
+                    IND2(mdl,argmax1,argmax2,T) -= step;
+                    for (int n1=0; n1 < dim1; n1++) {
+                        wrap_n1 = (n1 + argmax1) % dim1;
+                        for (int n2=0; n2 < dim2; n2++) {
+                            wrap_n2 = (n2 + argmax2) % dim2;
+                            IND2(res,wrap_n1,wrap_n2,T) += IND2(ker,n1,n2,T) * step;
+                        }
                     }
+                    return -i;
+                } else if (best_score < 0 || score < best_score) {
+                    // We've diverged: buf prev score in case it's global best
+                    for (int n1=0; n1 < dim1; n1++) {
+                        wrap_n1 = (n1 + argmax1) % dim1;
+                        for (int n2=0; n2 < dim2; n2++) {
+                            wrap_n2 = (n2 + argmax2) % dim2;
+                            best_mdl[n1*dim1+n2] = IND2(mdl,n1,n2,T);
+                            best_res[wrap_n1*dim1+wrap_n2] = IND2(res,wrap_n1,wrap_n2,T) + IND2(ker,n1,n2,T) * step;
+                        }
+                    }
+                    best_mdl[argmax1*dim1+argmax2] -= step;
+                    best_score = score;
                 }
-                return -i;
-            } else if (score > 0 && (score - nscore) / firstscore < tol) {
+            } else if (score > 0 && fabs(score - nscore) / firstscore < tol) {
                 // We're done
+                if (best_mdl != NULL) { free(best_mdl); free(best_res); }
                 return i;
             }
             score = nscore;
             argmax1 = nargmax1; argmax2 = nargmax2;
         }
+        // If we end on maxiter, then make sure mdl/res reflect best score
+        if (best_score > 0 && best_score < nscore) {
+            for (int n1=0; n1 < dim1; n1++) {
+                for (int n2=0; n2 < dim2; n2++) {
+                    IND2(mdl,n1,n2,T) = best_mdl[n1*dim1+n2];
+                    IND2(res,n1,n2,T) = best_res[n1*dim1+n2];
+                }
+            }
+        }   
+        if (best_mdl != NULL) { free(best_mdl); free(best_res); }
         return maxiter;
     }
     //   ____ _                  _     _      
@@ -125,10 +157,16 @@ template<typename T> struct Clean {
     // Does a 1d real-valued clean
     static int clean_1d_r(PyArrayObject *res, PyArrayObject *ker, 
             PyArrayObject *mdl, double gain, int maxiter, double tol,
-            int verb) {
-        T score=-1, nscore, max=0, mmax, val, mval, step, q=0, mq=0;
+            int stop_if_div, int verb) {
+        T score=-1, nscore, best_score=-1;
+        T max=0, mmax, val, mval, step, q=0, mq=0;
         T firstscore=-1;
         int argmax=0, nargmax=0, dim=DIM(res,0), wrap_n;
+        T *best_mdl=NULL, *best_res=NULL;
+        if (!stop_if_div) {
+            best_mdl = (T *)malloc(dim*sizeof(T));
+            best_res = (T *)malloc(dim*sizeof(T));
+        }
         // Compute gain/phase of kernel
         for (int n=0; n < dim; n++) {
             val = IND1(ker,n,T);
@@ -165,20 +203,40 @@ template<typename T> struct Clean {
                     i, nargmax, (double) (nscore/firstscore), \
                     (double) (score/firstscore));
             if (score > 0 && nscore > score) {
-                // We've diverged: undo last step and give up
-                IND1(mdl,argmax,T) -= step;
-                for (int n=0; n < dim; n++) {
-                    wrap_n = (n + argmax) % dim;
-                    IND1(res,wrap_n,T) += IND1(ker,n,T) * step;
+                if (stop_if_div) {
+                    // We've diverged: undo last step and give up
+                    IND1(mdl,argmax,T) -= step;
+                    for (int n=0; n < dim; n++) {
+                        wrap_n = (n + argmax) % dim;
+                        IND1(res,wrap_n,T) += IND1(ker,n,T) * step;
+                    }
+                    return -i;
+                } else if (best_score < 0 || score < best_score) {
+                    // We've diverged: buf prev score in case it's global best
+                    for (int n=0; n < dim; n++) {
+                        wrap_n = (n + argmax) % dim;
+                        best_mdl[n] = IND1(mdl,n,T);
+                        best_res[wrap_n] = IND1(res,wrap_n,T) + IND1(ker,n,T) * step;
+                    }
+                    best_mdl[argmax] -= step;
+                    best_score = score;
                 }
-                return -i;
             } else if (score > 0 && (score - nscore) / firstscore < tol) {
                 // We're done
+                if (best_mdl != NULL) { free(best_mdl); free(best_res); }
                 return i;
             }
             score = nscore;
             argmax = nargmax;
         }
+        // If we end on maxiter, then make sure mdl/res reflect best score
+        if (best_score > 0 && best_score < nscore) {
+            for (int n=0; n < dim; n++) {
+                IND1(mdl,n,T) = best_mdl[n];
+                IND1(res,n,T) = best_res[n];
+            }
+        }   
+        if (best_mdl != NULL) { free(best_mdl); free(best_res); }
         return maxiter;
     }
     //   ____ _                  ____     _      
@@ -189,12 +247,18 @@ template<typename T> struct Clean {
     // Does a 2d complex-valued clean
     static int clean_2d_c(PyArrayObject *res, PyArrayObject *ker,
             PyArrayObject *mdl, double gain, int maxiter, double tol,
-            int verb) {
+            int stop_if_div, int verb) {
         T maxr=0, maxi=0, valr, vali, stepr, stepi, qr=0, qi=0;
-        T score=-1, nscore, mmax, mval, mq=0;
+        T score=-1, nscore, best_score=-1;
+        T mmax, mval, mq=0;
         T firstscore=-1;
         int argmax1=0, argmax2=0, nargmax1=0, nargmax2=0;
         int dim1=DIM(res,0), dim2=DIM(res,1), wrap_n1, wrap_n2;
+        T *best_mdl=NULL, *best_res=NULL;
+        if (!stop_if_div) {
+            best_mdl = (T *)malloc(2*dim1*dim2*sizeof(T));
+            best_res = (T *)malloc(2*dim1*dim2*sizeof(T));
+        }
         // Compute gain/phase of kernel
         for (int n1=0; n1 < dim1; n1++) {
             for (int n2=0; n2 < dim2; n2++) {
@@ -244,27 +308,55 @@ template<typename T> struct Clean {
                     i, nargmax1, nargmax2, (double) (nscore/firstscore), \
                     (double) (score/firstscore));
             if (score > 0 && nscore > score) {
-                // We've diverged: undo last step and give up
-                CIND2R(mdl,argmax1,argmax2,T) -= stepr;
-                CIND2I(mdl,argmax1,argmax2,T) -= stepi;
-                for (int n1=0; n1 < dim1; n1++) {
-                    wrap_n1 = (n1 + argmax1) % dim1;
-                    for (int n2=0; n2 < dim2; n2++) {
-                        wrap_n2 = (n2 + argmax2) % dim2;
-                        CIND2R(res,wrap_n1,wrap_n2,T) += \
-                          CIND2R(ker,n1,n2,T)*stepr - CIND2I(ker,n1,n2,T)*stepi;
-                        CIND2I(res,wrap_n1,wrap_n2,T) += \
-                          CIND2R(ker,n1,n2,T)*stepi + CIND2I(ker,n1,n2,T)*stepr;
+                if (stop_if_div) {
+                    // We've diverged: undo last step and give up
+                    CIND2R(mdl,argmax1,argmax2,T) -= stepr;
+                    CIND2I(mdl,argmax1,argmax2,T) -= stepi;
+                    for (int n1=0; n1 < dim1; n1++) {
+                        wrap_n1 = (n1 + argmax1) % dim1;
+                        for (int n2=0; n2 < dim2; n2++) {
+                            wrap_n2 = (n2 + argmax2) % dim2;
+                            CIND2R(res,wrap_n1,wrap_n2,T) += CIND2R(ker,n1,n2,T)*stepr - CIND2I(ker,n1,n2,T)*stepi;
+                            CIND2I(res,wrap_n1,wrap_n2,T) += CIND2R(ker,n1,n2,T)*stepi + CIND2I(ker,n1,n2,T)*stepr;
+                        }
                     }
+                    return -i;
+                } else if (best_score < 0 || score < best_score) {
+                    // We've diverged: buf prev score in case it's global best
+                    for (int n1=0; n1 < dim1; n1++) {
+                        wrap_n1 = (n1 + argmax1) % dim1;
+                        for (int n2=0; n2 < dim2; n2++) {
+                            wrap_n2 = (n2 + argmax2) % dim2;
+                            best_mdl[2*(n1*dim1+n2)+0] = CIND2R(mdl,n1,n2,T);
+                            best_mdl[2*(n1*dim1+n2)+1] = CIND2I(mdl,n1,n2,T);
+                            best_res[2*(wrap_n1*dim1+wrap_n2)+0] = CIND2R(res,wrap_n1,wrap_n2,T) + CIND2R(ker,n1,n2,T) * stepr - CIND2I(ker,n1,n2,T) * stepi;
+                            best_res[2*(wrap_n1*dim1+wrap_n2)+1] = CIND2I(res,wrap_n1,wrap_n2,T) + CIND2R(ker,n1,n2,T) * stepi + CIND2I(ker,n1,n2,T) * stepr;
+                        }
+                    }
+                    best_mdl[2*(argmax1*dim1+argmax2)+0] -= stepr;
+                    best_mdl[2*(argmax1*dim1+argmax2)+1] -= stepi;
+                    best_score = score;
                 }
             } else if (score > 0 && (score - nscore) / firstscore < tol) {
                 // We're done
+                if (best_mdl != NULL) { free(best_mdl); free(best_res); }
                 return i;
-                return -i;
             }
             score = nscore;
             argmax1 = nargmax1; argmax2 = nargmax2;
         }
+        // If we end on maxiter, then make sure mdl/res reflect best score
+        if (best_score > 0 && best_score < nscore) {
+            for (int n1=0; n1 < dim1; n1++) {
+                for (int n2=0; n2 < dim2; n2++) {
+                    CIND2R(mdl,n1,n2,T) = best_mdl[2*(n1*dim1+n2)+0];
+                    CIND2I(mdl,n1,n2,T) = best_mdl[2*(n1*dim1+n2)+1];
+                    CIND2R(res,n1,n2,T) = best_res[2*(n1*dim1+n2)+0];
+                    CIND2I(res,n1,n2,T) = best_res[2*(n1*dim1+n2)+1];
+                }
+            }
+        }   
+        if (best_mdl != NULL) { free(best_mdl); free(best_res); }
         return maxiter;
     }
     //   ____ _                  _     _      
@@ -275,11 +367,17 @@ template<typename T> struct Clean {
     // Does a 1d complex-valued clean
     static int clean_1d_c(PyArrayObject *res, PyArrayObject *ker, 
             PyArrayObject *mdl, double gain, int maxiter, double tol,
-            int verb) {
+            int stop_if_div, int verb) {
         T maxr=0, maxi=0, valr, vali, stepr, stepi, qr=0, qi=0;
-        T score=-1, nscore, mmax, mval, mq=0;
+        T score=-1, nscore, best_score=-1;
+        T mmax, mval, mq=0;
         T firstscore=-1;
         int argmax=0, nargmax=0, dim=DIM(res,0), wrap_n;
+        T *best_mdl=NULL, *best_res=NULL;
+        if (!stop_if_div) {
+            best_mdl = (T *)malloc(2*dim*sizeof(T));
+            best_res = (T *)malloc(2*dim*sizeof(T));
+        }
         // Compute gain/phase of kernel
         for (int n=0; n < dim; n++) {
             valr = CIND1R(ker,n,T);
@@ -326,24 +424,47 @@ template<typename T> struct Clean {
                     i, nargmax, (double) (nscore/firstscore), \
                     (double) (score/firstscore));
             if (score > 0 && nscore > score) {
-                // We've diverged: undo last step and give up
-                CIND1R(mdl,argmax,T) -= stepr;
-                CIND1I(mdl,argmax,T) -= stepi;
-                for (int n=0; n < dim; n++) {
-                    wrap_n = (n + argmax) % dim;
-                    CIND1R(res,wrap_n,T) += CIND1R(ker,n,T) * stepr - \
-                                            CIND1I(ker,n,T) * stepi;
-                    CIND1I(res,wrap_n,T) += CIND1R(ker,n,T) * stepi + \
-                                            CIND1I(ker,n,T) * stepr;
+                if (stop_if_div) {
+                    // We've diverged: undo last step and give up
+                    CIND1R(mdl,argmax,T) -= stepr;
+                    CIND1I(mdl,argmax,T) -= stepi;
+                    for (int n=0; n < dim; n++) {
+                        wrap_n = (n + argmax) % dim;
+                        CIND1R(res,wrap_n,T) += CIND1R(ker,n,T) * stepr - CIND1I(ker,n,T) * stepi;
+                        CIND1I(res,wrap_n,T) += CIND1R(ker,n,T) * stepi + CIND1I(ker,n,T) * stepr;
+                    }
+                    return -i;
+                } else if (best_score < 0 || score < best_score) {
+                    // We've diverged: buf prev score in case it's global best
+                    for (int n=0; n < dim; n++) {
+                        wrap_n = (n + argmax) % dim;
+                        best_mdl[2*n+0] = CIND1R(mdl,n,T);
+                        best_mdl[2*n+1] = CIND1I(mdl,n,T);
+                        best_res[2*wrap_n+0] = CIND1R(res,wrap_n,T) + CIND1R(ker,n,T) * stepr - CIND1I(ker,n,T) * stepi;
+                        best_res[2*wrap_n+1] = CIND1I(res,wrap_n,T) + CIND1R(ker,n,T) * stepi + CIND1I(ker,n,T) * stepr;
+                    }
+                    best_mdl[2*argmax+0] -= stepr;
+                    best_mdl[2*argmax+1] -= stepi;
+                    best_score = score;
                 }
-                return -i;
             } else if (score > 0 && (score - nscore) / firstscore < tol) {
                 // We're done
+                if (best_mdl != NULL) { free(best_mdl); free(best_res); }
                 return i;
             }
             score = nscore;
             argmax = nargmax;
         }
+        // If we end on maxiter, then make sure mdl/res reflect best score
+        if (best_score > 0 && best_score < nscore) {
+            for (int n=0; n < dim; n++) {
+                CIND1R(mdl,n,T) = best_mdl[2*n+0];
+                CIND1I(mdl,n,T) = best_mdl[2*n+1];
+                CIND1R(res,n,T) = best_res[2*n+0];
+                CIND1I(res,n,T) = best_res[2*n+1];
+            }
+        }   
+        if (best_mdl != NULL) { free(best_mdl); free(best_res); }
         return maxiter;
     }
 };  // END TEMPLATE
@@ -359,13 +480,14 @@ template<typename T> struct Clean {
 PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
     PyArrayObject *res, *ker, *mdl;
     double gain=.1, tol=.001;
-    int maxiter=200, rank=0, dim1, dim2, rv, verb;
+    int maxiter=200, rank=0, dim1, dim2, rv, stop_if_div=0, verb=0;
     static char *kwlist[] = {"res", "ker", "mdl", "gain", \
-                             "maxiter", "tol", "verbose", NULL};
+                             "maxiter", "tol", 
+                            "stop_if_div", "verbose", NULL};
     // Parse arguments and perform sanity check
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!O!O!|didi", kwlist, \
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!O!O!|didii", kwlist, \
             &PyArray_Type, &res, &PyArray_Type, &ker, &PyArray_Type, &mdl, 
-            &gain, &maxiter, &tol, &verb)) 
+            &gain, &maxiter, &tol, &stop_if_div, &verb)) 
         return NULL;
     if (RANK(res) == 1) {
         rank = 1;
@@ -387,39 +509,39 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
     // Use template to implement data loops for all data types
     if (TYPE(res) == NPY_FLOAT) {
         if (rank == 1) {
-            rv = Clean<float>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<float>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         } else {
-            rv = Clean<float>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<float>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         }
     } else if (TYPE(res) == NPY_DOUBLE) {
         if (rank == 1) {
-            rv = Clean<double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         } else {
-            rv = Clean<double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         }
     } else if (TYPE(res) == NPY_LONGDOUBLE) {
         if (rank == 1) {
-            rv = Clean<long double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<long double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         } else {
-            rv = Clean<long double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<long double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         }
     } else if (TYPE(res) == NPY_CFLOAT) {
         if (rank == 1) {
-            rv = Clean<float>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<float>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         } else {
-            rv = Clean<float>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<float>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         }
     } else if (TYPE(res) == NPY_CDOUBLE) {
         if (rank == 1) {
-            rv = Clean<double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         } else {
-            rv = Clean<double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         }
     } else if (TYPE(res) == NPY_CLONGDOUBLE) {
         if (rank == 1) {
-            rv = Clean<long double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<long double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         } else {
-            rv = Clean<long double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,verb);
+            rv = Clean<long double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
         }
     } else {
         PyErr_Format(PyExc_ValueError, "Unsupported data type.");
@@ -432,7 +554,7 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
 // Wrap function into module
 static PyMethodDef DeconvMethods[] = {
     {"clean", (PyCFunction)clean, METH_VARARGS|METH_KEYWORDS,
-        "clean(res,ker,mdl,gain=.1,maxiter=200,tol=.001)\nPerform a 1 or 2 dimensional deconvolution using the CLEAN algorithm.."},
+        "clean(res,ker,mdl,gain=.1,maxiter=200,tol=.001,stop_if_div=0,verbose=0)\nPerform a 1 or 2 dimensional deconvolution using the CLEAN algorithm.."},
     {NULL, NULL}
 };
 

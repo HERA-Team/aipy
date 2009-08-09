@@ -19,6 +19,8 @@ o.add_option('--var', dest='var', type='float', default=.6,
     help='Starting guess for variance in maximum entropy fit (defaults to variance of dirty image.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
     help='Tolerance for successful deconvolution.  For annealing, interpreted as cooling speed.')
+o.add_option('--div', dest='div', action='store_true',
+    help='Allow clean to diverge (i.e. allow residual score to increase)')
 #o.add_option('--taper', dest='taper', type='float', default=n.Inf,
 #    help='Width of tapering window (in pixels) to apply to both dirty beam and dirty image before deconvolving.')
 o.add_option('--maxiter', dest='maxiter', type='int', default=200,
@@ -76,7 +78,8 @@ for cnt, k in enumerate(keys):
             maxiter=opts.maxiter, verbose=True, tol=opts.tol)
     elif opts.deconv == 'cln':
         cim,info = a.deconv.clean(dim, dbm, 
-            maxiter=opts.maxiter, verbose=True, tol=opts.tol)
+            maxiter=opts.maxiter, stop_if_div=not opts.div, 
+            verbose=True, tol=opts.tol)
     elif opts.deconv == 'ann':
         cim,info = a.deconv.anneal(dim, dbm, maxiter=opts.maxiter, 
             cooling=lambda i,x: opts.tol*(1-n.cos(i/50.))*(x**2), verbose=True)
