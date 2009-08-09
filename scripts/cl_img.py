@@ -2,8 +2,6 @@
 """
 This is a general-purpose script for deconvolving dirty images by a 
 corresponding PSF to produce a clean image.
-
-Author: Aaron Parsons
 """
 
 import aipy as a, numpy as n, sys, optparse, ephem, os
@@ -11,7 +9,7 @@ import aipy as a, numpy as n, sys, optparse, ephem, os
 o = optparse.OptionParser()
 o.set_usage('cl_img.py [options] *.dim.fits *.dbm.fits')
 o.set_description(__doc__)
-o.add_option('-d', '--deconv', dest='deconv', default='mem',
+o.add_option('-d', '--deconv', dest='deconv', default='cln',
     help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).')
 o.add_option('-o', '--output', dest='output', default='bim',
     help='Comma delimited list of data to generate FITS files for.  Can be: cim (clean image), rim (residual image), or bim (best image = clean + residuals). Default is bim.')
@@ -21,8 +19,8 @@ o.add_option('--tol', dest='tol', type='float', default=1e-6,
     help='Tolerance for successful deconvolution.  For annealing, interpreted as cooling speed.')
 o.add_option('--div', dest='div', action='store_true',
     help='Allow clean to diverge (i.e. allow residual score to increase)')
-#o.add_option('--taper', dest='taper', type='float', default=n.Inf,
-#    help='Width of tapering window (in pixels) to apply to both dirty beam and dirty image before deconvolving.')
+o.add_option('-r', '--rewgt', dest='rewgt',  default='natural',
+    help='Reweighting to apply to dim/dbm data before cleaning.  Options are: natural, uniform(LEVEL), or radial, where LEVEL is the fractional cutoff for using uniform weighting (recommended range .01 to .1).  Default is natural')
 o.add_option('--maxiter', dest='maxiter', type='int', default=200,
     help='Number of allowable iterations per deconvolve attempt.')
 opts, args = o.parse_args(sys.argv[1:])
@@ -61,12 +59,25 @@ for cnt, k in enumerate(keys):
     print kwds
     dim,dbm = dim.squeeze(), dbm.squeeze()
     DIM = dim.shape[0]
-    #if opts.taper < n.Inf:
-    #    taper = a.img.gaussian_beam(opts.taper,
-    #        shape=dim.shape,center=(DIM/2,DIM/2))
-    #    taper = 2*taper.clip(0,.5)
-    #    dbm *= taper
-    #    #dim *= taper
+    if opts.rewgt.startswith('natural'): pass
+    else:
+        uvs = n.fft.fft2(dim)
+        bms = n.fft.fft2(dbm)
+        if opts.rewgt.startswith('uniform'): 
+            level = float(opts.rewgt.split('(')[-1][:-1])
+            abms = n.abs(bms)
+            thresh = abms.max() * level
+            divisor = abms.clip(thresh, n.Inf)
+            dim = n.fft.ifft2(uvs / divisor)
+            dbm = n.fft.ifft2(bms / divisor)
+        elif opts.rewgt.startswith('radial'):
+            x,y = n.indices(dim.shape)
+            x = a.img.recenter(x - DIM/2, (DIM/2,DIM/2))
+            y = a.img.recenter(y - DIM/2, (DIM/2,DIM/2))
+            r = n.sqrt(x**2 + y**2)
+            dim = n.fft.ifft2(uvs * r)
+            dbm = n.fft.ifft2(bms * r)
+        else: raise ValueError('Unrecognized rewgt: %s' % opts.rewgt)
     dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
     bm_gain = a.img.beam_gain(dbm)
     print 'Gain of dirty beam:', bm_gain

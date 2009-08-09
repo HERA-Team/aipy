@@ -25,8 +25,6 @@ o.add_option('--cnt', dest='cnt', type='int', default=0,
     help='Start counting output images from this number.  Default 0.')
 o.add_option('--fmt', dest='fmt', default='im%04d',
     help='A format string for counting successive images written to files.  Default is im%04d (i.e. im0001).')
-o.add_option('-u', '--uniform', dest='uniform', type='float', default=0,
-    help="Use uniform (rather than natural) weighting for uv bins that have a weight above the specified fraction of the maximum weighting.")
 o.add_option('--skip_amp', dest='skip_amp', action='store_true',
     help='Do not use amplitude information to normalize visibilities.')
 o.add_option('--skip_bm', dest='skip_bm', action='store_true',
@@ -141,7 +139,6 @@ def img_it(im):
     global n_ints
     #print 'Imaging with %d integrations' % n_ints
     n_ints = 0
-    if opts.uniform > 0: im.uniform_wgt(thresh=opts.uniform)
     # Form dirty images/beams
     uvs = a.img.recenter(n.abs(im.uv).astype(n.float), (DIM/2,DIM/2))
     bms = a.img.recenter(n.abs(im.bm[0]).astype(n.float), (DIM/2,DIM/2))

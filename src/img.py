@@ -123,15 +123,6 @@ class Img:
             return self._gen_img(self.bm[term], center=center)
         else:
             return [self._gen_img(b, center=center) for b in self.bm]
-    def uniform_wgt(self, thresh=.1):
-        """Reweight data in the UV/BM to reflect uniform weighting above
-        the specified threshold (expressed as a fraction of the maximum
-        weight in the beam."""
-        wgts = n.abs(self.bm[0])
-        thresh = wgts.max() * thresh
-        divisor = wgts.clip(thresh, n.Inf)
-        self.uv /= divisor
-        for i in range(len(self.bm)): self.bm[i] /= divisor
     def get_top(self, center=(0,0)):
         """Return the topocentric coordinates of each pixel in the image."""
         x,y = self.get_LM(center)
