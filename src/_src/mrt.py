@@ -1,3 +1,5 @@
+'''The Mauritius Radio Telescope catalog.  Can be downloaded from:
+http://www.rri.res.in/surveys/MRT/Catalogues/CatalogueMRTa.txt'''
 import aipy as a, numpy as n, os
 
 class MRTCatalog(a.fit.SrcCatalog):
