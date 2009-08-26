@@ -12,7 +12,7 @@ class MRTCatalog(a.fit.SrcCatalog):
                 jys=float(jys), index=0, mfreq=.150))
         self.add_srcs(addsrcs)
 
-POSFILE = os.path.dirname(__file__) + os.sep + 'CatalogueMRTa.txt'
+MRTFILE = os.path.dirname(__file__) + os.sep + 'CatalogueMRTa.txt'
 _mrtcat = None
 
 def get_srcs(srcs=None, cutoff=None):
@@ -20,7 +20,7 @@ def get_srcs(srcs=None, cutoff=None):
     global _mrtcat
     if _mrtcat is None:
         _mrtcat = MRTCatalog()
-        _mrtcat.fromfile(POSFILE, FITFILE)
+        _mrtcat.fromfile(MRTFILE)
     if srcs is None:
         if cutoff is None: srcs = _mrtcat.keys()
         else:

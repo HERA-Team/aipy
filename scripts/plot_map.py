@@ -63,7 +63,8 @@ except(ImportError):
 o = optparse.OptionParser()
 o.set_usage('plot_map.py [options] mapfile')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, src=True, cmap=True, max=True, drng=True)
+a.scripting.add_standard_options(o, cal=True, src=True, 
+    cmap=True, max=True, drng=True)
 o.add_option('-p', '--projection', dest='projection', default='moll',
     help='Map projection to use: moll (default), mill, cyl, robin, sinu.')
 o.add_option('-m', '--mode', dest='mode', default='log',
@@ -143,7 +144,10 @@ data.shape = lats.shape
 # Generate source locations
 if not opts.src is None:
     srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    cat = a.src.get_catalog(srcs=srclist, cutoff=cutoff)
+    if not opts.cal is None:
+        cat = a.cal.get_catalog(opts.cal, srcs=srclist, cutoff=cutoff)
+    else:
+        cat = a.src.get_catalog(srcs=srclist, cutoff=cutoff)
     o = ephem.Observer()
     if opts.juldate is None:
         o.date = ephem.J2000
