@@ -198,7 +198,9 @@ for cnt, bl in enumerate(bls):
         d = d.sum(axis=1)
         is_chan_range = False
     if opts.mode.startswith('phs'): d = n.angle(d.filled(0))
-    elif opts.mode.startswith('lin'): d = n.ma.absolute(d)
+    elif opts.mode.startswith('lin'):
+        d = n.ma.absolute(d.filled(0))
+        d = n.ma.masked_less_equal(d, 0)
     elif opts.mode.startswith('real'): d = d.real
     elif opts.mode.startswith('imag'): d = d.imag
     elif opts.mode.startswith('log'):
