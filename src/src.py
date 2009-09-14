@@ -280,11 +280,10 @@ src_data = {
 #        return fixedbody(ra, dec, jys=st, mfreq=mfreq, 
 #            index=index, name=s, srcshape=srcshape)
 
-def get_catalog(srcs=None, cutoff=None, cats=['helm','misc'],
-        fixedbody=fit.RadioFixedBody, special=fit.RadioSpecial):
-    """Return a source catalog created out of the parameters in the 
-    dictionary srcs.  Can pass your own RadioFixedBody or RadioSpecial 
-    subclasses to use."""
+def get_catalog(srcs=None, cutoff=None, cats=['helm','misc']):
+    """Return a source catalog created out of the sources listed in 'srcs',
+    or with fluxes above the specified (jy_cutoff,freq_ghz) in 'cutoff'.
+    Searches catalogs listed in 'cats'."""
     srclist = []
     for c in cats:
         try: c = getattr(_src, c)
@@ -293,7 +292,3 @@ def get_catalog(srcs=None, cutoff=None, cats=['helm','misc'],
     # Add in sources that are already made
     if srcs != None: srclist += [s for s in srcs if type(s) != str]
     return fit.SrcCatalog(srclist)
-    #if srcs is None:
-    #    if cutoff is None: srcs = src_data.keys()
-    #    else: srcs = [s for s in src_data if src_data[s][2] > cutoff]
-    #srcs = [get_src(s, fixedbody=fixedbody, special=special) for s in srcs]

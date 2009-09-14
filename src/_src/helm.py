@@ -33,11 +33,22 @@ class HelmboldtFixedBody(a.fit.RadioFixedBody):
         return prms
 
 class HelmboldtCatalog(a.fit.SrcCatalog):
+    metadata = {}
+    def get_metadata(self):
+        '''Return info from posfile about constituent measurements from which
+        spectral fits were obtained.  Returns dictionary with source names
+        linked to lists of (freq,flux,error) triplets.'''
+        return self.metadata
     def fromfile(self, posfile, fitfile):
         srcs = {}
         # Read RA/DEC
         srclines = [L for L in open(posfile).readlines() if L.startswith('J')]
-        for line in srclines: srcs[line[:9]] = line[35:57]
+        for line in srclines:
+            srcname = line[:9]
+            srcs[srcname] = line[35:57]
+            if not self.metadata.has_key(srcname): self.metadata[srcname] = []
+            md = (float(line[58:64])/1e3,float(line[65:73]),float(line[74:81]))
+            self.metadata[srcname].append(md)
         for s in srcs:
             ra = srcs[s][:10].strip().replace(' ',':')
             dec = srcs[s][11:].strip().replace(' ',':')

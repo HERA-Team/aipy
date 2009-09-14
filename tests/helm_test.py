@@ -14,9 +14,9 @@ class TestHelmboldtFixedBody(unittest.TestCase):
     def test_compute(self):
         fq = n.array([.074, .150, .300])
         X = n.log10(fq / .074)
-        bm = a.ant.Beam(fq)
-        ant = a.ant.Antenna(0,0,0,bm)
-        aa = a.ant.AntennaArray(('0:00','0:00'),[ant])
+        bm = a.phs.Beam(fq)
+        ant = a.phs.Antenna(0,0,0,bm)
+        aa = a.phs.AntennaArray(('0:00','0:00'),[ant])
         self.s1.compute(aa)
         B = self.s1.index[0]
         self.assertTrue(n.all(n.round(self.s1.get_jys() - 100*10**(B*X), 10) == 0))
@@ -53,22 +53,20 @@ class TestHelmboldtCatalog(unittest.TestCase):
             d = n.array(srcs[s])
             fq = d[:,0] / 1e3
             flx = d[:,1]
-            bm = a.ant.Beam(fq)
-            ant = a.ant.Antenna(0,0,0,bm)
-            aa = a.ant.AntennaArray(('0:00','0:00'),[ant])
+            bm = a.phs.Beam(fq)
+            ant = a.phs.Antenna(0,0,0,bm)
+            aa = a.phs.AntennaArray(('0:00','0:00'),[ant])
             self.cat[s].compute(aa)
             jys = self.cat[s].get_jys()
             ratio = jys / flx
-            #print s, self.cat[s]._jys, self.cat[s].index
-            #print fq
-            #print jys
-            #print flx
-            #print ratio
             bad = n.logical_or(ratio > 1.5, ratio < .5).sum()
             if isinstance(self.cat[s], h.HelmboldtFixedBody) and s != 'J0320+413':
                 self.assertTrue(bad < len(ratio)/2.)
-            #print '-------------------------------------'
-            
+    def test_get_metadata(self):
+        md = self.cat.get_metadata()
+        self.assertEqual(md['J0000+554'][0], (.074, 15.92, 0.37))    
+        self.assertEqual(md['J0000+554'][1], (.325,  5.78, 0.01))    
+        self.assertEqual(md['J2359+440'][-1], (14.900,  0.12, 0.01))    
         
 
 
