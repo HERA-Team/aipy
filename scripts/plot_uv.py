@@ -43,6 +43,8 @@ o.add_option('--clean', dest='clean', type='float',
     help='Deconvolve delay-domain data by the "beam response" that results from flagged data.  Specify a tolerance for termination (usually 1e-2 or 1e-3).')
 o.add_option('--nolegend', dest='nolegend', action='store_true',
     help='Omit legend in last plot.')
+o.add_option('--share', dest='share', action='store_true',
+    help='Share plots in a single frame.')
 
 def convert_arg_range(arg):
     """Split apart command-line lists/ranges into a list of numbers."""
@@ -208,7 +210,7 @@ for cnt, bl in enumerate(bls):
         d = n.ma.masked_less_equal(d, 0)
         d = n.ma.log10(d)
     else: raise ValueError('Unrecognized plot mode.')
-    p.subplot(m2, m1, cnt+1)
+    if not opts.share: p.subplot(m2, m1, cnt+1)
     if is_chan_range and is_time_range:
         if opts.fringe:
             if opts.time_axis == 'index':
