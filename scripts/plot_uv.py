@@ -181,6 +181,7 @@ m2 = int(math.sqrt(len(bls)))
 m1 = int(math.ceil(float(len(bls)) / m2))
 
 # Generate all the plots
+dmin,dmax = None, None
 for cnt, bl in enumerate(bls):
     d = n.ma.concatenate(plot_x[bl], axis=0)
     if opts.df: d = d[:,:-2]/2 + d[:,2:]/2 - d[:,1:-1]
@@ -210,7 +211,10 @@ for cnt, bl in enumerate(bls):
         d = n.ma.masked_less_equal(d, 0)
         d = n.ma.log10(d)
     else: raise ValueError('Unrecognized plot mode.')
-    if not opts.share: p.subplot(m2, m1, cnt+1)
+    if not opts.share:
+        p.subplot(m2, m1, cnt+1)
+        label = ''
+    else: label = bl + ' '
     if is_chan_range and is_time_range:
         if opts.fringe:
             if opts.time_axis == 'index':
@@ -246,12 +250,14 @@ for cnt, bl in enumerate(bls):
             else:
                 c1,c2 = freqs[0], freqs[-1]
                 xlabel = 'Frequency (GHz)'
-        if not opts.max is None: max = opts.max
-        else: max = d.max()
-        if not opts.drng is None: min = max - opts.drng
-        else: min = d.min()
+        if not opts.max is None: dmax = opts.max
+        elif dmax is None: dmax = d.max()
+        else: dmax = max(dmax,d.max())
+        if not opts.drng is None: dmin = dmax - opts.drng
+        elif dmin is None: dmin = d.min()
+        else: dmin = min(dmin,d.min())
         p.imshow(d, extent=(c1,c2,t2,t1), aspect='auto', 
-            vmax=max, vmin=min, cmap=cmap)
+            vmax=dmax, vmin=dmin, cmap=cmap)
         p.colorbar()
         p.xlabel(xlabel); p.ylabel(ylabel)
     elif is_chan_range and not is_time_range:
@@ -272,36 +278,40 @@ for cnt, bl in enumerate(bls):
         if cnt == 0:
             if opts.time_axis == 'index':
                 plot_t = plot_t['cnt']
-                label = '#%d'
+                label += '#%d'
             else:
                 plot_t = plot_t['jd']
-                label = 'jd%f'
+                label += 'jd%f'
         for i,t in enumerate(plot_t):
             p.plot(plot_chans, d[i,:], '-', label=label % t)
         p.xlabel(xlabel)
-        if not opts.max is None: max = opts.max
-        else: max = d.max()
-        if not opts.drng is None: min = max - opts.drng
-        else: min = d.min()
-        p.ylim(min,max)
+        if not opts.max is None: dmax = opts.max
+        elif dmax is None: dmax = d.max()
+        else: dmax = max(dmax,d.max())
+        if not opts.drng is None: dmin = dmax - opts.drng
+        elif dmin is None: dmin = d.min()
+        else: dmin = min(dmin,d.min())
+        p.ylim(dmin,dmax)
     elif not is_chan_range and is_time_range:
         if opts.time_axis == 'index': plot_times = range(len(plot_t['jd']))
         elif opts.time_axis == 'physical': plot_times = plot_t['jd']
         elif opts.time_axis == 'lst': plot_times = plot_t['lst']
         else: raise ValueError('Unrecognized time axis type.')
-        if opts.sum_chan: p.plot(plot_times, d, '-', label='(+)')
+        if opts.sum_chan: p.plot(plot_times, d, '-', label=label+'(+)')
         else:
-            if opts.chan_axis == 'index': label = '#%d'
+            if opts.chan_axis == 'index': label += '#%d'
             else:
                 chans = freqs
-                label = '%f GHz'
+                label += '%f GHz'
             for c, chan in enumerate(chans):
                 p.plot(plot_times, d[:,c], '-', label=label % chan)
-        if not opts.max is None: max = opts.max
-        else: max = d.max()
-        if not opts.drng is None: min = max - opts.drng
-        else: min = d.min()
-        p.ylim(min,max)
+        if not opts.max is None: dmax = opts.max
+        elif dmax is None: dmax = d.max()
+        else: dmax = max(dmax,d.max())
+        if not opts.drng is None: dmin = dmax - opts.drng
+        elif dmin is None: dmin = d.min()
+        else: dmin = min(dmin,d.min())
+        p.ylim(dmin,dmax)
     else: raise ValueError('Either time or chan needs to be a range.')
     p.title(bl)
 if not opts.nolegend and (not is_time_range or not is_chan_range): 
