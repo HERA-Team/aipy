@@ -275,13 +275,12 @@ for cnt, bl in enumerate(bls):
             else:
                 plot_chans = freqs
                 xlabel = 'Frequency (GHz)'
-        if cnt == 0:
-            if opts.time_axis == 'index':
-                plot_t = plot_t['cnt']
-                label += '#%d'
-            else:
-                plot_t = plot_t['jd']
-                label += 'jd%f'
+        if opts.time_axis == 'index':
+            if cnt == 0: plot_t = plot_t['cnt']
+            label += '#%d'
+        else:
+            if cnt == 0: plot_t = plot_t['jd']
+            label += 'jd%f'
         for i,t in enumerate(plot_t):
             p.plot(plot_chans, d[i,:], '-', label=label % t)
         p.xlabel(xlabel)
@@ -313,7 +312,7 @@ for cnt, bl in enumerate(bls):
         else: dmin = min(dmin,d.min())
         p.ylim(dmin,dmax)
     else: raise ValueError('Either time or chan needs to be a range.')
-    p.title(bl)
+    if not opts.share: p.title(bl)
 if not opts.nolegend and (not is_time_range or not is_chan_range): 
     p.legend(loc='best')
 
