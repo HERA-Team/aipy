@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/global/paper/bin/python
 """
 A script for fitting parameters of a measurement equation given 
 starting parameters in a cal file and a list of sources.  The fitter used
@@ -104,6 +104,7 @@ def fit_func(prms, filelist, decimate, decphs):
     score,nsamples = 0.,0.
     # Cache data from file to avoid hitting disk excessively
     if dbuf is None:
+        if not opts.quiet: print 'Caching data...'
         dbuf = {}
         for uvfile in filelist:
             sys.stdout.write('.') ; sys.stdout.flush()
@@ -119,6 +120,18 @@ def fit_func(prms, filelist, decimate, decphs):
                 dbuf[t][bl] = (d, f, 
                         n.where(f, 0, n.abs(d)**2).sum(),
                         a.miriad.pol2str[uv['pol']])
+        if not opts.quiet:
+            samp, vsamp, wgts = 0, 0, 0.
+            for t in dbuf:
+              for bl in dbuf[t]:
+                samp += len(dbuf[t][bl][1])
+                vsamp += n.logical_not(dbuf[t][bl][1]).astype(n.int).sum()
+                wgts += dbuf[t][bl][2]
+            print 'Cache summary:'
+            print '   %d samples' % samp
+            print '   %d valid' % vsamp
+            print '   %f sum weights' %  wgts
+            sys.stdout.flush()
     # Process data from cache
     for t in dbuf:
         aa.set_jultime(t)
@@ -161,11 +174,13 @@ if opts.daemon:
             data = self.request.recv(struct.calcsize('d')*len(prm_list))
             data = struct.unpack('<%dd' % (len(prm_list)), data)
             score, nsamples = fit_func(data, args, opts.decimate, opts.decphs)
-            print 'Returning score=%f, nsamples=%d' % (score, nsamples)
-            rv = struct.pack('<dQ', score, nsamples)
+            print 'Returning score=%f, nsamples=%f' % (score, nsamples)
+            rv = struct.pack('<dd', score, nsamples)
             self.request.send(rv)
+            sys.stdout.flush()
     s = TCPServer(('', opts.baseport + opts.daemon), FitHandler)
     print 'Starting daemon on TCP port %d' % (opts.baseport + opts.daemon)
+    sys.stdout.flush()
     s.serve_forever()
 elif opts.master:
     import socket, struct
@@ -188,9 +203,9 @@ elif opts.master:
         score, nsamples = 0, 0
         for sock in socks:
             data = sock.recv(1024)
-            scr, nsp = struct.unpack('<dQ', data)
+            scr, nsp = struct.unpack('<dd', data)
             score += scr; nsamples += nsp
-            print score, nsamples
+            if not opts.quiet: print score, nsamples
         score = n.sqrt(score / nsamples)
         if nsamples == 0:
             first_fit = 0.
