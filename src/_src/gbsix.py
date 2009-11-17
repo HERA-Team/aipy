@@ -4,7 +4,7 @@ To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
-txt file.  Copy this file to "gb_six.txt" in the _src directory of your AIPY
+txt file.  Copy this file to "gb6.txt" in the _src directory of your AIPY
 installation.'''
 
 import aipy as a, numpy as n, os
@@ -26,7 +26,7 @@ class GBSixCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=4.85))
         self.add_srcs(addsrcs)
             
-GBSIXFILE = os.path.dirname(__file__) + os.sep + 'gb_six.txt'
+GBSIXFILE = os.path.dirname(__file__) + os.sep + 'gb6.txt'
 _gbsixcat = None
 
 def get_srcs(srcs=None, cutoff=None):

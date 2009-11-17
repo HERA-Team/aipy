@@ -20,7 +20,8 @@ class ParkesCatalog(a.fit.SrcCatalog):
             ra = text[0].replace(' ',':')
             dec = text[1].replace(' ',':')
             name = text[11].strip()
-            jys = float(text[9])
+            try: jys = float(text[9])
+            except(ValueError): continue
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,
                 jys=jys, index=0, mfreq=2.70))
         self.add_srcs(addsrcs)
