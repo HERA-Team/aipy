@@ -143,11 +143,11 @@ data.shape = lats.shape
 
 # Generate source locations
 if not opts.src is None:
-    srclist,cutoff = a.scripting.parse_srcs(opts.src)
+    srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
     if not opts.cal is None:
-        cat = a.cal.get_catalog(opts.cal, srcs=srclist, cutoff=cutoff)
+        cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
     else:
-        cat = a.src.get_catalog(srcs=srclist, cutoff=cutoff)
+        cat = a.src.get_catalog(srclist, cutoff, catalogs)
     o = ephem.Observer()
     if opts.juldate is None:
         o.date = ephem.J2000

@@ -64,8 +64,8 @@ if opts.src == 'zen':
     srcs = [a.phs.RadioFixedBody(aa.sidereal_time(), aa.lat, name='zen')]
     cat = a.phs.SrcCatalog(srcs)
 elif not opts.src is None: 
-    srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
+    srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+    cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
 else:
     ras,decs = a.map.facet_centers(opts.facets, ncrd=2)
     srcs = [a.phs.RadioFixedBody(ra,dec,name=str(i)) 

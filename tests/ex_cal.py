@@ -18,8 +18,8 @@ def get_aa(freqs):
     aa = a.fit.AntennaArray((lat,lon), ants)
     return aa
 
-def get_catalog(srcs=None, cutoff=None):
+def get_catalog(srcs=None, cutoff=None, catalogs=[]):
     # Pass off the request for sources to the AIPY source catalog.  If desired, 
     # you can substitute your own sources or source calibrations.
-    return a.src.get_catalog(srcs=srcs, cutoff=cutoff)
+    return a.src.get_catalog(srcs=srcs, cutoff=cutoff, catalogs=catalogs)
 

@@ -59,8 +59,8 @@ else:
 #dras,ddecs = [], []
 # Initialize point sources
 #if not opts.src is None:
-srclist,cutoff = a.scripting.parse_srcs(opts.src)
-cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
+srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
 mfq = cat.get('mfreq')
 a1s,a2s,ths = cat.get('srcshape')
 #a1s.append(a1); a2s.append(a2); ths.append(th)

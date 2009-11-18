@@ -28,8 +28,8 @@ aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 del(uv)
 
 if opts.srcflux:
-    srclist,cutoff = a.scripting.parse_srcs(opts.src)
-    cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
+    srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+    cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
     s = cat.values()[0]
     print 'Calibrating for source with',
     print 'strength', s._jys,

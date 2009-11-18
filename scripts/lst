@@ -11,9 +11,10 @@ o.set_description(__doc__)
 a.scripting.add_standard_options(o, cal=True, src=True)
 opts, args = o.parse_args(sys.argv[1:])
 
-if not opts.src is None: srclist,cutoff = a.scripting.parse_srcs(opts.src)
-else: srclist,cutoff = [], None
-cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
+if not opts.src is None:
+    srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+else: srclist,cutoff,catalogs = [], None, []
+cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
 aa = a.cal.get_aa(opts.cal, .1, .1, 1)
 sun = ephem.Sun()
 if len(args) == 0: args = [a.phs.ephem2juldate(ephem.now())]

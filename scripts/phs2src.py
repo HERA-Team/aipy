@@ -19,8 +19,8 @@ uv = a.miriad.UV(args[0])
 aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 if not opts.src is None:
     if not opts.src.startswith('zen'):
-        srclist,cutoff = a.scripting.parse_srcs(opts.src)
-        src = a.cal.get_catalog(opts.cal, srclist, cutoff).values()[0]
+        srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+        src = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs).values()[0]
     else: src = 'z'
 else: src = None
 del(uv)

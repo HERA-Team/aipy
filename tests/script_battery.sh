@@ -37,7 +37,7 @@ filter_src.py -C ex_cal -s cyg -r 2 -d 2 --clean=1e-3 new.uvr
 
 # Exercise difuv.py, create new.uvd
 echo "Running: difuv.py new.uv new.uv"
-difuv.py new.uv new.uv
+uv_addsub.py --sub new.uv new.uv
 
 # Exercise flux_cal.py, create new.uvf
 echo "Running: flux_cal.py -C ex_cal -s cyg -p -b -f new.uv"

@@ -72,14 +72,14 @@ if opts.src is None:
     h.to_fits(opts.map)
     sys.exit(0)
 
-srclist,cutoff = a.scripting.parse_srcs(opts.src)
+srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
 if not opts.cal is None:
-    cat = a.cal.get_catalog(opts.cal, srclist, cutoff)
+    cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
     aa = a.cal.get_aa(opts.cal, .1, opts.freq, 1)
     aa.set_jultime(opts.juldate)
     cat.compute(aa)
 else:
-    cat = a.src.get_catalog(srclist, cutoff)
+    cat = a.src.get_catalog(srclist, cutoff, catalogs)
 
 m = a.coord.convert_m('eq', opts.osys, oepoch=opts.oepoch)
 ths,phis = h.px2crd(n.arange(h.npix()), ncrd=2)

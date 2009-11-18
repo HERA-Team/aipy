@@ -27,28 +27,28 @@ o.add_option('--divstr', dest='divstr', default=' ',
     help='Divider string to use between source names when printing.  Default is " ".')
 opts,args = o.parse_args(sys.argv[1:])
 
-srclist,cutoff = a.scripting.parse_srcs(opts.src)
+srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
 
 if opts.cal != None:
-    cat = a.cal.get_catalog(opts.cal, srcs=srclist, cutoff=cutoff)
+    cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
 else:
-    cat = a.src.get_catalog(srcs=srclist, cutoff=cutoff)
+    cat = a.src.get_catalog(srclist, cutoff, catalogs)
 
 if opts.exclude != None:
     xlist,xoff = a.scripting.parse_srcs(opts.exclude)
     if opts.cal != None:
-        xcat = a.cal.get_catalog(opts.cal, srcs=xlist, cutoff=xoff)
+        xcat = a.cal.get_catalog(opts.cal, xlist, xoff, catalogs)
     else:
-        xcat = a.src.get_catalog(srcs=xlist, cutoff=xoff)
+        xcat = a.src.get_catalog(xlist, xoff, catalogs)
 else: xcat = {}
 
 if opts.centers != None:
     assert(opts.sep != None)
     clist,coff = a.scripting.parse_srcs(opts.centers)
     if opts.cal != None:
-        ccat = a.cal.get_catalog(opts.cal, srcs=clist, cutoff=coff)
+        ccat = a.cal.get_catalog(opts.cal, clist, coff catalogs)
     else:
-        ccat = a.src.get_catalog(srcs=clist, cutoff=coff)
+        ccat = a.src.get_catalog(clist, coff, catalogs)
 else: ccat = {}
     
 if opts.juldate is None: date = ephem.J2000

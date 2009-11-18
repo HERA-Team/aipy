@@ -18,8 +18,11 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
         help='Select channels (after any delay/delay-rate transforms) to include.  Examples: all (all channels), 0_10 (channels from 0 to 10, including 0 and 10) 0_10_2 (channels from 0 to 10, counting by 2), 0,10,20_30 (mix of individual channels and ranges).  Default is "all".')
     if cal: optparser.add_option('-C', '--cal', dest='cal', 
         help='Use specified <cal>.py for calibration information.')
-    if src: optparser.add_option('-s', '--src', dest='src',
-        help='Phase centers/source catalog entries to use.  Options are "all", "<src_name1>,...", or "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>".')
+    if src:
+        optparser.add_option('-s', '--src', dest='src',
+            help='Phase centers/source catalog entries to use.  Options are "all", "<src_name1>,...", or "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>".')
+        optparser.add_option('--cat', dest='cat', default='helm,misc',
+            help='A comma-delimited list of catalogs from which sources are to be drawn.  Default is "helm,misc".  Other available catalogs are listed under aipy._src.  Some catalogs may require a separate data file to be downloaded and installed.')
     if prms: optparser.add_option('-P', '--prms', dest='prms',
         help='Parameters (for fitting, usually), can be specified as can be: "obj=prm", "obj=prm/val", "obj=prm/val/sig", "(obj1/obj2)=prm/(val1/val2)/sig", "obj=(prm1/prm2)/val/(sig1/sig2)", comma separated versions of the above, and so on.')
     if dec:
@@ -104,23 +107,24 @@ def parse_chans(chan_str, nchan, concat=True):
     if concat: return n.concatenate(chanopt)
     return chanopt
 
-def parse_srcs(src_str):
-    """Return (src_list,flux_cutoff) based on string argument for src.
-    Can be "all", "<src_name1>,...", "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>", or
+def parse_srcs(src_str, cat_str):
+    """Return (src_list,flux_cutoff,catalogs) based on string argument for src and
+    cat.  Can be "all", "<src_name1>,...", "<ra XX[:XX:xx]>_<dec XX[:XX:xx]>", or
     "val/freq" (sources with Jy flux density above val at freq in GHz)."""
-    if src_str.startswith('all'): return None, None
+    cats = cat_str.split(',')
+    if src_str.startswith('all'): return None, None, cats
     if src_str.find('/') != -1:
         cutoff = map(float, src_str.split('/'))
-        return None, cutoff
+        return None, cutoff, cats
     src_opt = src_str.split(',')
     if len(src_opt) == 1:
         src_opt = src_opt[0].split('_')
-        if len(src_opt) == 1: return src_opt, None
+        if len(src_opt) == 1: return src_opt, None, cats
         ra,dec = src_opt
         s = fit.RadioFixedBody(ra, dec, name=src_str)
-        return [s], None
+        return [s], None, cats
     else:
-        return src_opt, None
+        return src_opt, None, cats
 
 name = r'([^\(/,\)=]+)'
 grp = r'(%s|\((%s(/%s)*)\))' % tuple([name]*3)
