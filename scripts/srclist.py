@@ -46,7 +46,7 @@ if opts.centers != None:
     assert(opts.sep != None)
     clist,coff = a.scripting.parse_srcs(opts.centers)
     if opts.cal != None:
-        ccat = a.cal.get_catalog(opts.cal, clist, coff catalogs)
+        ccat = a.cal.get_catalog(opts.cal, clist, coff, catalogs)
     else:
         ccat = a.src.get_catalog(clist, coff, catalogs)
 else: ccat = {}
