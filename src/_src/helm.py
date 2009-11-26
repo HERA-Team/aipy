@@ -16,7 +16,6 @@ class HelmboldtFixedBody(a.fit.RadioFixedBody):
         """Return all fitable parameters in a dictionary."""
         aprms = {
             'jys':      float(self._jys),
-            'index':    list(self.index),
             'ra':       float(self._ra),
             'dec':      float(self._dec),
             'a1':       float(self.srcshape[0]),
@@ -25,6 +24,8 @@ class HelmboldtFixedBody(a.fit.RadioFixedBody):
             'dra':      float(self.ionref[0]),
             'ddec':     float(self.ionref[1]),
         }
+        try: aprms['index'] = list(self.index)
+        except(TypeError): aprms['index'] = float(self.index)
         prms = {}
         for p in prm_list:
             if p.startswith('*'): return aprms
