@@ -39,6 +39,8 @@ o.add_option('--no_w', dest='no_w', action='store_true',
     help="Don't use W projection.")
 o.add_option('--altmin', dest='altmin', type='float', default=0,
     help="Minimum allowed altitude for pointing, in degrees.  When phase center is lower than this altitude, data is omitted.  Default is 0.")
+o.add_option('--minuv', dest='minuv', type='float', default=0,
+    help="Minimum distance from the origin in the UV plane (in wavelengths) for a baseline to be included.  Default is 0.")
 o.add_option('--buf_thresh', dest='buf_thresh', default=2e6, type='float',
     help='Maximum amount of data to buffer before gridding.  Excessive gridding takes performance hit, but if buffer exceeds memory available... ouch.')
 opts, args = o.parse_args(sys.argv[1:])
@@ -197,6 +199,7 @@ for srccnt, s in enumerate(cat.values()):
           # Throws PointingError if not up:
           d = aa.phs2src(d, s, i, j)
           u,v,w = aa.gen_uvw(i,j,src=s)
+          longenough = n.where(n.sqrt(u**2+v**2) < opts.minuv, 0, 1).squeeze()
           if not opts.skip_bm:
               # Calculate beam strength for weighting purposes
               wgt = aa.bm_response(i,j,pol=opts.pol).squeeze()
@@ -204,7 +207,7 @@ for srccnt, s in enumerate(cat.values()):
               # by another factor of the beam response.
               d *= wgt; wgt *= wgt
           else: wgt = n.ones(d.shape, dtype=n.float)
-          valid = n.logical_not(f)
+          valid = n.logical_and(n.logical_not(f), longenough)
           d = d.compress(valid)
           if len(d) == 0: continue
           n_ints += 1
