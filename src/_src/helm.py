@@ -37,15 +37,33 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
     def get_metadata(self):
         '''Return info from posfile about constituent measurements from which
         spectral fits were obtained.  Returns dictionary with source names
-        linked to lists of (freq,flux,error) triplets.'''
+        linked to lists of (freq,flux,error) triplets. Must first run get_catalog
+        to retrieve data.'''
         return self.metadata
+    rms = {}
+    def get_rms(self):
+        """Return a dictionary giving the Helmboldt fit rms for each source.
+        rms is only computed where enought data below 325MHz is available to 
+        compute a spectral index or Kuehr fit. Null value is indicated with
+        a rms=-1. Must first run get_catalog to retrieve data."""
+        return self.rms
+    ncomp = {}
+    def get_ncomp(self):
+        """Return a dictionary giving the Helmboldt fit rms for each source.
+        rms is only computed where enought data below 325MHz is available to 
+        compute a spectral index or Kuehr fit. Null value is indicated with
+        a rms=-1. Must first run get_catalog to retrieve data."""
+        return self.ncomp
     def fromfile(self, posfile, fitfile):
         srcs = {}
+        rms = {}
+        ncomp = {}
         # Read RA/DEC
         srclines = [L for L in open(posfile).readlines() if L.startswith('J')]
         for line in srclines:
             srcname = line[:9]
             srcs[srcname] = line[35:57]
+            if not self.ncomp.has_key(srcname): self.ncomp[srcname] = int(line[33])
             if not self.metadata.has_key(srcname): self.metadata[srcname] = []
             md = (float(line[58:64])/1e3,float(line[65:73]),float(line[74:81]))
             self.metadata[srcname].append(md)
@@ -57,6 +75,9 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
         srclines = [L for L in open(fitfile).readlines() if L.startswith('J')]
         for line in srclines: 
             srcs[line[:9]].append(map(float, line[13:62].split()))
+            try: self.rms[line[:9]] = float(line[63:70])
+            except(ValueError): self.rms[line[:9]]=-1
+
         addsrcs = []
         for s in srcs:
             ra,dec,spec = srcs[s]
