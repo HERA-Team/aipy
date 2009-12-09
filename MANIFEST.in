@@ -1,6 +1,6 @@
 include scripts/*
 include src/*
-include tests/*.py
+include tests/*.*
 include setup.py
 include VERSION
 include CHANGELOG
