@@ -39,7 +39,8 @@ def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
     return recenter(g, center)
 
 def beam_gain(bm):
-    return n.sqrt((n.abs(bm)**2).sum())
+    #return n.sqrt((n.abs(bm)**2).sum())
+    return n.abs(bm).max()
 
 class Img:
     """Class for gridding uv data, recording the synthesized beam profile,
