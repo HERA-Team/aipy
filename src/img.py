@@ -296,10 +296,15 @@ def to_fits(filename, data, clobber=False,
         elif ax.lower().startswith('stokes'): val,delta = (1, 1)
         else: val,delta = (0,0)
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
+        if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
+            phdu.header.update('CRPIX%d' % (i+1), 
+                    round(phdu.data.shape[-(i+1)]/2.))
+        else:
+            phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
         phdu.header.update('CRVAL%d' % (i+1), val)
         phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
-        phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
+        
     phdu.header.update('ORIGIN', origin)
     phdu.header.update('DATE', cur_date, comment='FILE WRITTEN ON DD/MM/YY')
     pyfits.writeto(filename, phdu.data, phdu.header, clobber=True)
