@@ -18,6 +18,7 @@ class PAPERCatalog(a.fit.SrcCatalog):
             dec = text[2]
             name = text[3].strip()
             jys = float(text[4])
+            print text[0]
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,
                 jys=jys, index=0, mfreq=1.50))
         self.add_srcs(addsrcs)
