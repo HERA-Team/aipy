@@ -49,6 +49,15 @@ class RadioFixedBody(phs.RadioFixedBody, RadioBody):
         phs.RadioFixedBody.__init__(self, ra, dec, mfreq=mfreq, name=name,
             epoch=epoch, ionref=ionref, srcshape=srcshape)
         RadioBody.__init__(self, jys, index)
+    def __str__(self):
+        outstr = phs.RadioFixedBody.__str__(self)
+        outstr = outstr + "\nCatalog flux: " 
+        try: outstr = outstr + str(self._jys) + " Jys"
+        except(AttributeError): outstr = outstr + " ?"
+        outstr = outstr + "\nEst flux: "
+        try: outstr = outstr + str(self.jys) + " Jys"
+        except(AttributeError): outstr = outstr + " ?"
+        return outstr
     def compute(self, observer):
         phs.RadioFixedBody.compute(self, observer)
         RadioBody.update_jys(self, observer.get_afreqs())
