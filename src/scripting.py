@@ -89,9 +89,11 @@ def uv_selector(uv, ants=-1, pol_str=-1):
                 i,j = miriad.bl2ij(bl)
                 uv.select('antennae', i, j, include=include)
     if pol_str != -1:
-        try: polopt = miriad.str2pol[pol_str]
+        try:
+            for pol in pol_str.split(','):
+                polopt = miriad.str2pol[pol]
+                uv.select('polarization', polopt, 0)
         except(KeyError): raise ValueError('--pol argument invalid or absent')
-        uv.select('polarization', polopt, 0)
 
 def parse_chans(chan_str, nchan, concat=True):
     """Return array of active channels based on number of channels and
