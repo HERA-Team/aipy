@@ -50,8 +50,8 @@ def parse_ants(ant_str, nants):
         m = re.search(bl_re, ant_str[cnt:])
         if m is None:
             if ant_str[cnt:].startswith('all'): rv = []
-            elif ant_str[cnt:].startswith('auto'): rv.append(('auto',1))
-            elif ant_str[cnt:].startswith('cross'): rv.append(('auto',0))
+            elif ant_str[cnt:].startswith('auto'): rv.append(('auto',1,-1))
+            elif ant_str[cnt:].startswith('cross'): rv.append(('auto',0,-1))
             else: raise ValueError('Unparsible ant argument "%s"' % ant_str)
             c = ant_str[cnt:].find(',')
             if c >= 0: cnt += c + 1
@@ -73,7 +73,7 @@ def parse_ants(ant_str, nants):
                             type(j) == str and j.startswith('-'):
                         include = 0
                     else: include = 1
-                    pol = 0
+                    pol = None
                     if not i.isdigit():
                         ai = re.search(r'(\d+)([x,y])',i).groups()
                     if not j.isdigit():
@@ -92,7 +92,7 @@ def parse_ants(ant_str, nants):
                             rv.append((bl,include,p))
                     else: 
                         bl = miriad.ij2bl(abs(int(i)),abs(int(j)))
-                        rv.append((bl,include))
+                        rv.append((bl,include,-1))
     return rv
 
 def uv_selector(uv, ants=-1, pol_str=-1):
@@ -101,17 +101,21 @@ def uv_selector(uv, ants=-1, pol_str=-1):
     string for polarization ('xx','yy','xy','yx')."""
     if ants != -1:
         if type(ants) == str: ants = parse_ants(ants, uv['nants'])
-        for bl,include in ants:
+        for bl,include,pol in ants:
             if bl == 'auto': uv.select('auto', 0, 0, include=include)
             else:
                 i,j = miriad.bl2ij(bl)
                 uv.select('antennae', i, j, include=include)
+            if pol!=-1 and pol_str==-1:
+                pol_str = pol
+            elif pol!=-1:
+                pol_str = ','.join([pol_str,pol])
     if pol_str != -1:
         try:
             for pol in pol_str.split(','):
                 polopt = miriad.str2pol[pol]
                 uv.select('polarization', polopt, 0)
-        except(KeyError): raise ValueError('--pol argument invalid or absent')
+        except(NameError,KeyError): raise ValueError('--pol argument invalid or absent')
 
 def parse_chans(chan_str, nchan, concat=True):
     """Return array of active channels based on number of channels and
