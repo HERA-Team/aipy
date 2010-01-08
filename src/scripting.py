@@ -77,19 +77,21 @@ def parse_ants(ant_str, nants):
                     rv.append((bl,include))
     return rv
 
-def uv_selector(uv, ants, pol_str):
+def uv_selector(uv, ants=-1, pol_str=-1):
     """Call uv.select with appropriate options based on string argument for
     antennas (can be 'all', 'auto', 'cross', '0,1,2', or '0_1,0_2') and
     string for polarization ('xx','yy','xy','yx')."""
-    if type(ants) == str: ants = parse_ants(ants, uv['nants'])
-    for bl,include in ants:
-        if bl == 'auto': uv.select('auto', 0, 0, include=include)
-        else:
-            i,j = miriad.bl2ij(bl)
-            uv.select('antennae', i, j, include=include)
-    try: polopt = miriad.str2pol[pol_str]
-    except(KeyError): raise ValueError('--pol argument invalid or absent')
-    uv.select('polarization', polopt, 0)
+    if ants != -1:
+        if type(ants) == str: ants = parse_ants(ants, uv['nants'])
+        for bl,include in ants:
+            if bl == 'auto': uv.select('auto', 0, 0, include=include)
+            else:
+                i,j = miriad.bl2ij(bl)
+                uv.select('antennae', i, j, include=include)
+    if pol_str != -1:
+        try: polopt = miriad.str2pol[pol_str]
+        except(KeyError): raise ValueError('--pol argument invalid or absent')
+        uv.select('polarization', polopt, 0)
 
 def parse_chans(chan_str, nchan, concat=True):
     """Return array of active channels based on number of channels and
