@@ -12,15 +12,14 @@ class PAPERCatalog(a.fit.SrcCatalog):
         for L in [L for L in f.readlines() if not L.startswith('#')]:
             text = L.split('\t')
             if len(text) <= 3: continue
-            try: int(text[0][0])
+            try: int(text[0].strip()[0])
             except(ValueError): continue
             ra = text[1]
             dec = text[2]
             name = text[3].strip()
-            jys = float(text[4])
-            print text[0]
+            jys = float(text[5])
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,
-                jys=jys, index=0, mfreq=1.50))
+                jys=jys, index=0, mfreq=.150))
         self.add_srcs(addsrcs)
 
 PAPERFILE = os.path.dirname(__file__) + os.sep + 'paper.txt'
