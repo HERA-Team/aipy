@@ -334,10 +334,11 @@ def to_fits(filename, data, clobber=False,
         phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
     if history!='':
-        history = word_wrap(history,80,0,10,'#')
         history = history.split("\n")
         for line in history:
-            phdu.header.add_history(line)
+            if len(line)>1:
+                for subline in word_wrap(line,70,5,10,'#').split("\n"):
+                    phdu.header.add_history(subline)
     phdu.header.update('ORIGIN', origin)
     phdu.header.update('DATE', cur_date, comment='FILE WRITTEN ON DD/MM/YY')
     pyfits.writeto(filename, phdu.data, phdu.header, clobber=True)

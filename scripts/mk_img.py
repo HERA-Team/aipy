@@ -169,7 +169,7 @@ for srccnt, s in enumerate(cat.values()):
       # Read all data from each file
       for (crd,t,(i,j)),d,f in uv.all(raw=True):
           history = uv['history']
-          history = history +  "\n "+ ' '.join(sys.argv)
+          history = history +  sys.argv[0].split('/')[-1].strip()+' ' + ' '.join(sys.argv[1:])
           if curtime != t:
               # Make snapshot images (if specified)
               if opts.snap > 0:
