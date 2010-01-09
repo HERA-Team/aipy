@@ -8,6 +8,34 @@ import numpy as n, utils, coord, pyfits, time
 deg2rad = n.pi / 180.
 rad2deg = 180. / n.pi
 
+def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
+    """ word wrapping function.
+        string: the string to wrap
+        width: the column number to wrap at
+        prefix: prefix each line with this string (goes before any indentation)
+        ind1: number of characters to indent the first line
+        ind2: number of characters to indent the rest of the lines
+    """
+    string = prefix + ind1*" " + string
+    newstring = ""
+    if len(string) > width:
+        while True:
+            # find position of nearest whitespace char to the left of "width"
+            marker = width-1
+            while not string[marker].isspace():
+                marker = marker - 1
+
+            # remove line from original string and add it to the new string
+            newline = string[0:marker] + "\n"
+            newstring = newstring + newline
+            string = prefix + ind2*" " + string[marker+1:]
+
+            # break out of loop when finished
+            if len(string) <= width:
+                break
+    
+    return newstring + string
+
 def recenter(a, c):
     """Slide the (0,0) point of matrix a to a new location tuple c.  This is
     useful for making an image centered on your screen after performing an
@@ -261,7 +289,7 @@ def to_fits(filename, data, clobber=False,
         object='', telescope='', instrument='', observer='', origin='AIPY',
         obs_date=time.strftime('%D'), cur_date=time.strftime('%D'), 
         ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000., 
-        freq=0, d_freq=0, bscale=0, bzero=0):
+        freq=0, d_freq=0, bscale=0, bzero=0,history=''):
     """Write image data to a FITS file.  Follows convention of VLA image
     headers.  "axes" describes dimensions of "data" provided.  (ra,dec) are
     the degree coordinates of image center in the specified "epoch". 
@@ -305,7 +333,11 @@ def to_fits(filename, data, clobber=False,
         phdu.header.update('CRVAL%d' % (i+1), val)
         phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
-        
+    if history!='':
+        history = word_wrap(history,80,0,10,'#')
+        history = history.split("\n")
+        for line in history:
+            phdu.header.add_history(line)
     phdu.header.update('ORIGIN', origin)
     phdu.header.update('DATE', cur_date, comment='FILE WRITTEN ON DD/MM/YY')
     pyfits.writeto(filename, phdu.data, phdu.header, clobber=True)

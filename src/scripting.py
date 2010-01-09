@@ -3,7 +3,7 @@ Module containing utilities (like parsing of certain command-line arguments)
 for writing scripts.
 """
 
-import miriad, fit, src, numpy as n, re
+import miriad, fit, src, numpy as n, re,phs
 
 def add_standard_options(optparser, ant=False, pol=False, chan=False, 
         cal=False, src=False, prms=False, dec=False, cmap=False, 
@@ -204,3 +204,6 @@ def parse_prms(prm_str):
                 prms[o][p] = (i,s)
     return prms
 
+def get_null_aa():
+   return phs.AntennaArray([0,0],
+       [phs.Antenna(0,0,0,phs.Beam(n.array([0.15])))])
