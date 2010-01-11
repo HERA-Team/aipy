@@ -372,3 +372,68 @@ def from_fits(filename):
         except(KeyError): pass
     kwds['axes'] = axes
     return data, kwds
+    
+def find_axis(phdu,name):
+    #find the axis number for RA
+    for k in phdu.header.items():
+        if k[0].lower().startswith('ctype'):
+            if k[1].lower().startswith(name):            
+                return int(k[1][5])
+
+
+def from_fits_to_fits(infile,outfile,data,kwds):
+    """
+    Create a fits file in outfile with data using header from infile using
+    kwds to override values in the header.
+    See img.to_fits for typical header variables.
+    """
+
+    phdu = pyfits.open(infile)[0]
+    axes = []
+    for i in range(1,phdu.header.get('naxis')):
+        type = "CTYPE"+str(i)
+        axes.append(phdu.header.get(type))
+    print axes
+    data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
+    phdu.data = data.transpose()
+    for i,ax in enumerate(axes):
+        if ax.lower().startswith('ra'):
+             if kwds.has_key('ra'): val=kwds['ra']
+             else: val=None
+             if kwds.has_key('d_ra'):delta = kwds['d_ra']
+             else: delta=None
+        elif ax.lower().startswith('dec'):
+             if kwds.has_key('dec'): val=kwds['dec']
+             else: val=None
+             if kwds.has_key('d_dec'):delta = kwds['d_dec']
+             else: delta=None
+        elif ax.lower().startswith('freq'):
+             if kwds.has_key('freq'): val=kwds['freq']
+             else: val=None
+             if kwds.has_key('d_freq'):delta = kwds['d_freq']
+             else: delta=None
+        else: val,delta = None,None
+#        elif ax.lower().startswith('dec') and kwds.has_key: val,delta = (dec, d_dec)
+#        elif ax.lower().startswith('freq'): val,delta = (freq, d_freq)
+#        elif ax.lower().startswith('stokes'): val,delta = (1, 1)
+#        else: val,delta = (0,0)
+        phdu.header.update('CTYPE%d' % (i+1), ax.upper())
+        if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
+            phdu.header.update('CRPIX%d' % (i+1), 
+                    round(phdu.data.shape[-(i+1)]/2.))
+        else:
+            phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
+        if not val is None: phdu.header.update('CRVAL%d' % (i+1), val);
+        if not delta is None: phdu.header.update('CDELT%d' % (i+1), delta)
+        phdu.header.update('CROTA%d' % (i+1), 0)
+    for k,v in kwds.iteritems():
+        try:
+            phdu.header.update(k,v)
+            print "updated %s with %s"%(k,str(v))
+        except(ValueError): 
+            print "error on %s "%(k,)
+            continue
+    print phdu.header
+    pyfits.writeto(outfile, phdu.data, phdu.header, clobber=True)
+
+    
