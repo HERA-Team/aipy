@@ -381,7 +381,7 @@ def find_axis(phdu,name):
                 return int(k[1][5])
 
 
-def from_fits_to_fits(infile,outfile,data,kwds):
+def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     """
     Create a fits file in outfile with data using header from infile using
     kwds to override values in the header.
@@ -396,6 +396,7 @@ def from_fits_to_fits(infile,outfile,data,kwds):
     print axes
     data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
     phdu.data = data.transpose()
+    phdu.updaet_header()
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra'):
              if kwds.has_key('ra'): val=kwds['ra']
@@ -422,18 +423,22 @@ def from_fits_to_fits(infile,outfile,data,kwds):
             phdu.header.update('CRPIX%d' % (i+1), 
                     round(phdu.data.shape[-(i+1)]/2.))
         else:
-            phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
+            phdu.header.update('CRPIX%d' % (i+1), 1)
         if not val is None: phdu.header.update('CRVAL%d' % (i+1), val);
         if not delta is None: phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
     for k,v in kwds.iteritems():
         try:
             phdu.header.update(k,v)
-            print "updated %s with %s"%(k,str(v))
         except(ValueError): 
-            print "error on %s "%(k,)
             continue
-    print phdu.header
+    if history is None:history = "from_fits_to_fits: from %s to %s"%(infile,
+                outfile)
+    history = history.split("\n")
+    for line in history:
+        if len(line)>1:
+            for subline in word_wrap(line,70,5,10,'#').split("\n"):
+                phdu.header.add_history(subline)
     pyfits.writeto(outfile, phdu.data, phdu.header, clobber=True)
 
     
