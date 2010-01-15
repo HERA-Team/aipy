@@ -396,7 +396,7 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     print axes
     data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
     phdu.data = data.transpose()
-    phdu.updaet_header()
+    phdu.update_header()
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra'):
              if kwds.has_key('ra'): val=kwds['ra']
