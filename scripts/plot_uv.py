@@ -213,6 +213,7 @@ for cnt, bl in enumerate(bls):
     else: raise ValueError('Unrecognized plot mode.')
     if not opts.share:
         p.subplot(m2, m1, cnt+1)
+        dmin,dmax = None,None
         label = ''
     else: label = bl + ' '
     if is_chan_range and is_time_range:
