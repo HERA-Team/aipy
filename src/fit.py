@@ -212,7 +212,7 @@ class Beam(amp.Beam):
     def get_params(self, prm_list=['*']):
         return {}
     def set_params(self, prms):
-        pass
+        return False
 
 class Beam2DGaussian(amp.Beam2DGaussian):
     """Representation of a 2D Gaussian beam pattern, with default setting for 
@@ -228,11 +228,13 @@ class Beam2DGaussian(amp.Beam2DGaussian):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
-        try: self.xwidth = prms['bm_xwidth']
+        changed = False
+        try: self.xwidth, changed = prms['bm_xwidth'], True
         except(KeyError): pass
-        try: self.ywidth = prms['bm_ywidth']
+        try: self.ywidth, changed = prms['bm_ywidth'], True
         except(KeyError): pass
-        self.update()
+        if changed: self.update()
+        return changed
 
 class BeamPolynomial(amp.BeamPolynomial):
     """Representation of a gaussian beam model whose width varies with azimuth
@@ -248,12 +250,15 @@ class BeamPolynomial(amp.BeamPolynomial):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
+        changed = False
         try: 
             poly_azfreq = prms['bm_poly']
             poly_azfreq.shape = self.poly.shape
             self.poly = poly_azfreq
+            changed = True
         except(KeyError): pass
-        self.update()
+        if changed: self.update()
+        return changed
 
 class BeamAlm(amp.BeamAlm):
     """Representation of a beam model where each pointing has a response
@@ -274,14 +279,17 @@ class BeamAlm(amp.BeamAlm):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
+        changed = False
         for p in prms:
             if not p.startswith('alm'): continue
+            changed = True
             data = n.array(prms[p])
             c = int(p[3:])
             data.shape = (data.size/2, 2)
             data = data[:,0] + data[:,1] * 1j
             if c < len(self.alm): self.alm[-1-c].set_data(data)
-        self.update()
+        if changed: self.update()
+        return changed
 
 #     _          _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _ 
@@ -309,26 +317,28 @@ class Antenna(amp.Antenna):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
+        changed = False
         self.beam.set_params(prms)
-        try: self.pos[0] = prms['x']
+        try: self.pos[0], changed = prms['x'], True
         except(KeyError): pass
-        try: self.pos[1] = prms['y']
+        try: self.pos[1], changed = prms['y'], True
         except(KeyError): pass
-        try: self.pos[2] = prms['z']
+        try: self.pos[2], changed = prms['z'], True
         except(KeyError): pass
-        try: self._phsoff[-2] = prms['dly']
+        try: self._phsoff[-2], changed = prms['dly'], True
         except(KeyError): pass
-        try: self._phsoff[-1] = prms['off']
+        try: self._phsoff[-1], changed = prms['off'], True
         except(KeyError): pass
-        try: self._phsoff = prms['phsoff']
+        try: self._phsoff, changed = prms['phsoff'], True
         except(KeyError): pass
-        try: self.bp_r = prms['bp_r']
+        try: self.bp_r, changed = prms['bp_r'], True
         except(KeyError): pass
-        try: self.bp_i = prms['bp_i']
+        try: self.bp_i, changed = prms['bp_i'], True
         except(KeyError): pass
-        try: self.amp = prms['amp']
+        try: self.amp, changed = prms['amp'], True
         except(KeyError): pass
-        self.update()
+        if changed: self.update()
+        return changed
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -355,7 +365,9 @@ class AntennaArray(amp.AntennaArray):
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
+        changed = False
         for i, a in enumerate(self):
-            try: a.set_params(prms[str(i)])
+            try: changed = changed or a.set_params(prms[str(i)])
             except(KeyError): pass
-        self.update()
+        if changed: self.update()
+        return changed
