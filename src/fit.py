@@ -367,7 +367,7 @@ class AntennaArray(amp.AntennaArray):
         """Set all parameters from a dictionary."""
         changed = False
         for i, a in enumerate(self):
-            try: changed = changed or a.set_params(prms[str(i)])
+            try: changed |= a.set_params(prms[str(i)])
             except(KeyError): pass
         if changed: self.update()
         return changed
