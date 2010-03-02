@@ -35,7 +35,7 @@ else:
     cat = a.src.get_catalog(srclist, cutoff, catalogs)
 
 if opts.exclude != None:
-    xlist,xoff = a.scripting.parse_srcs(opts.exclude)
+    xlist,xoff,catalogs = a.scripting.parse_srcs(opts.exclude, opts.cat)
     if opts.cal != None:
         xcat = a.cal.get_catalog(opts.cal, xlist, xoff, catalogs)
     else:
@@ -44,7 +44,7 @@ else: xcat = {}
 
 if opts.centers != None:
     assert(opts.sep != None)
-    clist,coff = a.scripting.parse_srcs(opts.centers)
+    clist,coff,catalogs = a.scripting.parse_srcs(opts.centers, opts.cat)
     if opts.cal != None:
         ccat = a.cal.get_catalog(opts.cal, clist, coff, catalogs)
     else:
