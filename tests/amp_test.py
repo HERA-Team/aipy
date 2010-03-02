@@ -70,6 +70,17 @@ class TestAntenna(unittest.TestCase):
         self.assertAlmostEqual(resp, n.sqrt(n.exp(-1)), 3)
         resp = self.ant.bm_response(xyz, pol='y')
         self.assertAlmostEqual(resp, n.sqrt(n.exp(-4)), 3)
+
+#class TestMemLeaks(unittest.TestCase):
+#    def test_antenna_create(self):
+#        freqs = n.arange(.1,.2,.001)
+#        beam = amp.Beam(freqs)
+#        while True: ant = amp.Antenna(0,0,0,beam, pointing=(0,n.pi/2,.1))
+#    def test_aa_create(self):
+#        freqs = n.arange(.1,.2,.001)
+#        beam = amp.Beam(freqs)
+#        ants = [amp.Antenna(0,0,0,beam) for i in range(100)]
+#        while True: aa = amp.AntennaArray(('0:00','0:00'), ants)
         
 if __name__ == '__main__':
     unittest.main()
