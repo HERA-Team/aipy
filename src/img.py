@@ -8,6 +8,34 @@ import numpy as n, utils, coord, pyfits, time
 deg2rad = n.pi / 180.
 rad2deg = 180. / n.pi
 
+def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
+    """ word wrapping function.
+        string: the string to wrap
+        width: the column number to wrap at
+        prefix: prefix each line with this string (goes before any indentation)
+        ind1: number of characters to indent the first line
+        ind2: number of characters to indent the rest of the lines
+    """
+    string = prefix + ind1*" " + string
+    newstring = ""
+    if len(string) > width:
+        while True:
+            # find position of nearest whitespace char to the left of "width"
+            marker = width-1
+            while not string[marker].isspace():
+                marker = marker - 1
+
+            # remove line from original string and add it to the new string
+            newline = string[0:marker] + "\n"
+            newstring = newstring + newline
+            string = prefix + ind2*" " + string[marker+1:]
+
+            # break out of loop when finished
+            if len(string) <= width:
+                break
+    
+    return newstring + string
+
 def recenter(a, c):
     """Slide the (0,0) point of matrix a to a new location tuple c.  This is
     useful for making an image centered on your screen after performing an
@@ -261,7 +289,7 @@ def to_fits(filename, data, clobber=False,
         object='', telescope='', instrument='', observer='', origin='AIPY',
         obs_date=time.strftime('%D'), cur_date=time.strftime('%D'), 
         ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000., 
-        freq=0, d_freq=0, bscale=0, bzero=0):
+        freq=0, d_freq=0, bscale=0, bzero=0,history=''):
     """Write image data to a FITS file.  Follows convention of VLA image
     headers.  "axes" describes dimensions of "data" provided.  (ra,dec) are
     the degree coordinates of image center in the specified "epoch". 
@@ -297,10 +325,20 @@ def to_fits(filename, data, clobber=False,
         elif ax.lower().startswith('stokes'): val,delta = (1, 1)
         else: val,delta = (0,0)
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
+        if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
+            phdu.header.update('CRPIX%d' % (i+1), 
+                    round(phdu.data.shape[-(i+1)]/2.))
+        else:
+            phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
         phdu.header.update('CRVAL%d' % (i+1), val)
         phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
-        phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
+    if history!='':
+        history = history.split("\n")
+        for line in history:
+            if len(line)>1:
+                for subline in word_wrap(line,70,5,10,'#').split("\n"):
+                    phdu.header.add_history(subline)
     phdu.header.update('ORIGIN', origin)
     phdu.header.update('DATE', cur_date, comment='FILE WRITTEN ON DD/MM/YY')
     pyfits.writeto(filename, phdu.data, phdu.header, clobber=True)
@@ -334,3 +372,73 @@ def from_fits(filename):
         except(KeyError): pass
     kwds['axes'] = axes
     return data, kwds
+    
+def find_axis(phdu,name):
+    #find the axis number for RA
+    for k in phdu.header.items():
+        if k[0].lower().startswith('ctype'):
+            if k[1].lower().startswith(name):            
+                return int(k[1][5])
+
+
+def from_fits_to_fits(infile,outfile,data,kwds,history=None):
+    """
+    Create a fits file in outfile with data using header from infile using
+    kwds to override values in the header.
+    See img.to_fits for typical header variables.
+    """
+
+    phdu = pyfits.open(infile)[0]
+    axes = []
+    for i in range(1,phdu.header.get('naxis')):
+        type = "CTYPE"+str(i)
+        axes.append(phdu.header.get(type))
+    print axes
+    data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
+    phdu.data = data.transpose()
+    phdu.update_header()
+    for i,ax in enumerate(axes):
+        if ax.lower().startswith('ra'):
+             if kwds.has_key('ra'): val=kwds['ra']
+             else: val=None
+             if kwds.has_key('d_ra'):delta = kwds['d_ra']
+             else: delta=None
+        elif ax.lower().startswith('dec'):
+             if kwds.has_key('dec'): val=kwds['dec']
+             else: val=None
+             if kwds.has_key('d_dec'):delta = kwds['d_dec']
+             else: delta=None
+        elif ax.lower().startswith('freq'):
+             if kwds.has_key('freq'): val=kwds['freq']
+             else: val=None
+             if kwds.has_key('d_freq'):delta = kwds['d_freq']
+             else: delta=None
+        else: val,delta = None,None
+#        elif ax.lower().startswith('dec') and kwds.has_key: val,delta = (dec, d_dec)
+#        elif ax.lower().startswith('freq'): val,delta = (freq, d_freq)
+#        elif ax.lower().startswith('stokes'): val,delta = (1, 1)
+#        else: val,delta = (0,0)
+        phdu.header.update('CTYPE%d' % (i+1), ax.upper())
+        if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
+            phdu.header.update('CRPIX%d' % (i+1), 
+                    round(phdu.data.shape[-(i+1)]/2.))
+        else:
+            phdu.header.update('CRPIX%d' % (i+1), 1)
+        if not val is None: phdu.header.update('CRVAL%d' % (i+1), val);
+        if not delta is None: phdu.header.update('CDELT%d' % (i+1), delta)
+        phdu.header.update('CROTA%d' % (i+1), 0)
+    for k,v in kwds.iteritems():
+        try:
+            phdu.header.update(k,v)
+        except(ValueError): 
+            continue
+    if history is None:history = "from_fits_to_fits: from %s to %s"%(infile,
+                outfile)
+    history = history.split("\n")
+    for line in history:
+        if len(line)>1:
+            for subline in word_wrap(line,70,5,10,'#').split("\n"):
+                phdu.header.add_history(subline)
+    pyfits.writeto(outfile, phdu.data, phdu.header, clobber=True)
+
+    

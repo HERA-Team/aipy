@@ -108,7 +108,7 @@ n_ints = 0
 
 # Define a quick function writing an image to a FITS file
 def fname(ftag, cnt): return '%s.%s.fits' % (opts.fmt % cnt, ftag)
-def to_fits(ftag,i,src,cnt):
+def to_fits(ftag,i,src,cnt,history=''):
     filename = fname(ftag,cnt)
     print 'Saving data to', filename
     while len(i.shape) < 4: i.shape = i.shape + (1,)
@@ -126,7 +126,7 @@ def to_fits(ftag,i,src,cnt):
         object=src.src_name, obs_date=str(aa.date),
         ra=cen.ra*a.img.rad2deg, dec=cen.dec*a.img.rad2deg, epoch=2000.,
         d_ra=L[-1,-1]*a.img.rad2deg, d_dec=M[1,1]*a.img.rad2deg,
-        freq=n.average(aa[0].beam.afreqs))
+        freq=n.average(aa[0].beam.afreqs),history=history)
 
 def grid_it(im,us,vs,ws,ds,wgts):
     #print 'Gridding %d integrations' % n_ints
@@ -168,6 +168,8 @@ for srccnt, s in enumerate(cat.values()):
       uv.select('decimate', opts.decimate, opts.decphs)
       # Read all data from each file
       for (crd,t,(i,j)),d,f in uv.all(raw=True):
+          history = uv['history']
+          history = history +  sys.argv[0].split('/')[-1].strip()+' ' + ' '.join(sys.argv[1:])
           if curtime != t:
               # Make snapshot images (if specified)
               if opts.snap > 0:
@@ -181,7 +183,7 @@ for srccnt, s in enumerate(cat.values()):
                               uvs = n.abs(im.uv)
                               bms,dim,dbm = uvs,uvs,uvs
                           for k in ['uvs','bms','dim','dbm']:
-                              if k in outputs: to_fits(k, eval(k), s,imgcnt)
+                              if k in outputs: to_fits(k, eval(k), s,imgcnt,history=history)
                           imgcnt += 1
                       us,vs,ws,ds,wgts = [],[],[],[],[]
                       im = Img(opts.size, opts.res, mf_order=0)
@@ -231,7 +233,7 @@ for srccnt, s in enumerate(cat.values()):
         print 'No data: skipping output file.'
         continue
     for k in ['uvs','bms','dim','dbm']:
-        if k in outputs: to_fits(k, eval(k), s, imgcnt)
+        if k in outputs: to_fits(k, eval(k), s, imgcnt,history=history)
     imgcnt += 1
     us,vs,ws,ds,wgts = [],[],[],[],[]
     im = Img(opts.size, opts.res, mf_order=0)

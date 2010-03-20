@@ -38,6 +38,8 @@ class RadioBody:
         self.mfreq = mfreq
         self.ionref = list(ionref)
         self.srcshape = list(srcshape)
+    def __str__(self):
+        return "%s"% (self.src_name,)
     def compute(self, observer):
         """Update coordinates relative to the provided observer.  Must be
         called at each time step before accessing information."""
@@ -72,6 +74,9 @@ class RadioFixedBody(ephem.FixedBody, RadioBody):
         ephem.FixedBody.__init__(self)
         self._ra, self._dec = ra, dec
         self._epoch = epoch
+    def __str__(self):
+        if self._dec<0: return RadioBody.__str__(self) + '  ' + str(self._ra) + str(self._dec)
+        else: return RadioBody.__str__(self) + '  ' + str(self._ra) +'+' + str(self._dec)
     def compute(self, observer):
         ephem.FixedBody.compute(self, observer)
         RadioBody.compute(self, observer)

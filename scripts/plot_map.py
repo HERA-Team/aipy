@@ -69,8 +69,12 @@ o.add_option('-p', '--projection', dest='projection', default='moll',
     help='Map projection to use: moll (default), mill, cyl, robin, sinu.')
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plotting mode, can be log (default), lin.')
-o.add_option('-c', '--cen', dest='cen', type='float', 
-    help="Center longitude/right ascension (in degrees) of map.  Default is 0 for galactic coordinate output, 180 for equatorial.")
+#o.add_option('-c', '--cen', dest='cen', type='float', 
+#    help="Center longitude/right ascension (in degrees) of map.  Default is 0 for galactic coordinate output, 180 for equatorial.")
+o.add_option('-c','--cen', dest='cen', 
+    help="""Direction to point projection in the same format as the
+     string that is parsed as a source. Uses default catalogs misc and helm unless
+     other cat option is given.""")
 o.add_option('-j', '--juldate', dest='juldate', type='float', 
     help='Julian date used for locating moving sources.')
 o.add_option('--src_mark', dest='src_mark', default='',
@@ -99,9 +103,19 @@ opts,args = o.parse_args(sys.argv[1:])
 
 cmap = p.get_cmap(opts.cmap)
 if opts.cen is None:
-    if opts.osys == 'eq': opts.cen = 180
-    else: opts.cen = 0
-map = Basemap(projection=opts.projection,lat_0=0,lon_0=opts.cen, rsphere=1.)
+    if opts.osys == 'eq': opts.cen = '12_0'
+    else: opts.cen = '0_0'
+cen,coff,cats = a.scripting.parse_srcs(opts.cen,opts.cat)
+cat = a.src.get_catalog(cen,catalogs=cats)
+cen = cat[cat.keys()[0]]
+ephem.FixedBody.compute(cen,ephem.J2000)
+
+if opts.projection.startswith('sp'):
+    map = Basemap(projection=opts.projection,boundinglat=cen.dec*a.img.rad2deg+90,
+    lon_0=cen.ra*a.img.rad2deg, rsphere=1.)
+else:
+    map = Basemap(projection=opts.projection,lat_0=cen.dec*a.img.rad2deg,
+    lon_0=cen.ra*a.img.rad2deg, rsphere=1.,anchor='N')
 lons,lats,x,y = map.makegrid(360/opts.res,180/opts.res, returnxy=True)
 # Mask off parts of the image to be plotted that are outside of the map
 lt = lats[:,0]
@@ -113,98 +127,107 @@ for c,(i,j) in enumerate(zip(x1,x2)): x[c] = n.ma.masked_outside(x[c], i, j)
 mask = x.mask
 if opts.osys == 'eq': lons = 360 - lons
 lats *= a.img.deg2rad; lons *= a.img.deg2rad
-print 'Reading %s' % args[0]
-h = a.map.Map(fromfits=args[0])
-print 'SCHEME:', h.scheme()
-print 'NSIDE:', h.nside()
-if not opts.nside is None:
-    nh = a.healpix.HealpixMap(nside=opts.nside)
-    nh.from_hpm(h)
-    h = nh
-h.set_interpol(True)
+#if opts.osys=='ga': lons *= -1
 
-crd = a.coord.radec2eq(n.array([lons.flatten(), lats.flatten()]))
-m = a.coord.convert_m(opts.osys, opts.isys, 
-    iepoch=opts.oepoch, oepoch=opts.iepoch)
-x,y,z = n.dot(m, crd)
-try: data, indices = h[x,y,z]
-except(ValueError): data = h[x,y,z]
-if not opts.mask is None:
-    try:
-        wgts = h.wgt[x,y,z]
-        threshold = 10**(-opts.mask/10.)*n.max(wgts)
-        msk = n.where(wgts > threshold, 1, 0)
-        data *= msk
-        print "Masking %2.0f%% of sky"% ((1 - msk.sum() / float(len(msk)))*100)
-    except(AttributeError):
-        print "Weights not included in file. No mask will be applied."
-data.shape = lats.shape
+m1 = n.sqrt(len(args))
+m2 = n.ceil(len(args)/m1)
+for i,file in enumerate(args):
+    print 'Reading %s' % file
+    h = a.map.Map(fromfits=file)
+    print 'SCHEME:', h.scheme()
+    print 'NSIDE:', h.nside()
+    if not opts.nside is None:
+        nh = a.healpix.HealpixMap(nside=opts.nside)
+        nh.from_hpm(h)
+        h = nh
+    h.set_interpol(True)
 
+    crd = a.coord.radec2eq(n.array([lons.flatten(), lats.flatten()]))
+    m = a.coord.convert_m(opts.osys, opts.isys, 
+        iepoch=opts.oepoch, oepoch=opts.iepoch)
+    x,y,z = n.dot(m, crd)
+    try: data, indices = h[x,y,z]
+    except(ValueError): data = h[x,y,z]
+    if not opts.mask is None:
+        try:
+            wgts = h.wgt[x,y,z]
+            threshold = 10**(-opts.mask/10.)*n.max(wgts)
+            msk = n.where(wgts > threshold, 1, 0)
+            data *= msk
+            print "Masking %2.0f%% of sky"% ((1 - msk.sum() / float(len(msk)))*100)
+        except(AttributeError):
+            print "Weights not included in file. No mask will be applied."
+    data.shape = lats.shape
 
-# Generate source locations
-if not opts.src is None:
-    srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
-    if not opts.cal is None:
-        cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
-    else:
-        cat = a.src.get_catalog(srclist, cutoff, catalogs)
-    o = ephem.Observer()
-    if opts.juldate is None:
-        o.date = ephem.J2000
-        o.epoch = o.date
-        try: del(cat['Sun'])
-        except(KeyError): pass
-    else:
-        o.date = a.phs.juldate2ephem(opts.juldate)
-        o.epoch = o.date
-    for s in cat.values():
-        try: a.phs.RadioFixedBody.compute(s, o)
-        except(TypeError): a.phs.RadioSpecial.compute(s, o)
-    #cat.compute(o)
-    # lat/lon coordinates of sources
-    scrds = [ephem.Equatorial(s.ra,s.dec,epoch=o.epoch) for s in cat.values()]
-    afreqs = n.array([.150])
-    cat.update_jys(afreqs)
-    sflxs = cat.get_jys().squeeze()
-    snams = cat.keys()
-    if opts.osys == 'ga':
-        scrds = [ephem.Galactic(s, epoch=opts.oepoch) for s in scrds]
-    elif opts.osys == 'ec':
-        scrds = [ephem.Ecliptic(s, epoch=opts.oepoch) for s in scrds]
-    slats = n.array([float(s.get()[1]) for s in scrds]) * a.img.rad2deg
-    slons = n.array([float(s.get()[0]) for s in scrds]) * a.img.rad2deg
-    if opts.osys == 'eq': slons = 360 - slons
-    slons = n.where(slons < -180, slons + 360, slons)
-    slons = n.where(slons >= 180, slons - 360, slons)
+    # Generate source locations
+    if not opts.src is None:
+        srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+        if not opts.cal is None:
+            cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
+        else:
+            cat = a.src.get_catalog(srclist, cutoff, catalogs)
+        o = ephem.Observer()
+        if opts.juldate is None:
+            o.date = ephem.J2000
+            o.epoch = o.date
+            try: del(cat['Sun'])
+            except(KeyError): pass
+        else:
+            o.date = a.phs.juldate2ephem(opts.juldate)
+            o.epoch = o.date
+        for s in cat.values():
+            try: a.phs.RadioFixedBody.compute(s, o)
+            except(TypeError): a.phs.RadioSpecial.compute(s, o)
+        #cat.compute(o)
+        # lat/lon coordinates of sources
+        scrds = [ephem.Equatorial(s.ra,s.dec,epoch=o.epoch) for s in cat.values()]
+        afreqs = n.array([.150])
+        cat.update_jys(afreqs)
+        sflxs = cat.get_jys().squeeze()
+        snams = cat.keys()
+        if opts.osys == 'ga':
+            scrds = [ephem.Galactic(s, epoch=opts.oepoch) for s in scrds]
+        elif opts.osys == 'ec':
+            scrds = [ephem.Ecliptic(s, epoch=opts.oepoch) for s in scrds]
+        slats = n.array([float(s.get()[1]) for s in scrds]) * a.img.rad2deg
+        slons = n.array([float(s.get()[0]) for s in scrds]) * a.img.rad2deg
+        if opts.osys == 'eq': slons = 360 - slons
+        slons = n.where(slons < -180, slons + 360, slons)
+        slons = n.where(slons >= 180, slons - 360, slons)
+        #if opts.osys=='ga':slons *= -1
 
-# Generate map grid/outline
-map.drawmapboundary()
-map.drawmeridians(n.arange(-180, 180, 30))
-map.drawparallels(n.arange(-90,90,30)[1:], labels=[0,1,0,0], labelstyle='+/-')
-# Set up data to plot
-if opts.mode.startswith('log'): data = n.log10(n.abs(data))
-if opts.max is None: max = data.max()
-else: max = opts.max
-if opts.drng is None:
-    min = data.min()
-    if min < (max - 10): min = max-10
-else: min = max - opts.drng
-data = data.clip(min, max)
-data = n.ma.array(data, mask=mask)
-map.imshow(data, vmax=max, vmin=min, cmap=cmap)
+    # Generate map grid/outline
+    map.drawmapboundary()
+    map.drawmeridians(n.arange(-180, 180, 30))
+    #if not opts.proj.startswith('ortho'): map.drawparallels(n.arange(-90,90,30)[1:], labels=[0,1,0,0], labelstyle='+/-')
+    # Set up data to plot
+    if opts.mode.startswith('log'): data = n.log10(n.abs(data))
+    elif opts.mode.startswith('atan'): data = n.arctan(data)
+    if opts.max is None: max = data.max()
+    else: max = opts.max
+    if opts.drng is None:
+        min = data.min()
+        if min < (max - 10): min = max-10
+    else: min = max - opts.drng
+    data = data.clip(min, max)
+    if not opts.projection in ['ortho','geos','spaeqd']: data = n.ma.array(data, mask=mask)
 
-# Plot src labels and markers on top of map image
-if not opts.src is None:
-    sx, sy = map(slons,slats)
-    for name, xpt, ypt, flx in zip(snams, sx, sy, sflxs):
-        if xpt >= 1e30 or ypt >= 1e30: continue
-        if opts.src_mark != '':
-            map.plot(sx, sy, opts.src_color+opts.src_mark,markerfacecolor=None)
-        if flx < 10: flx = 10
-        p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))),
-            color=opts.src_color)
-if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
-else: p.subplots_adjust(.05,.05,.95,.95)
+    p.subplot(m1,m2,i+1)
+    map.imshow(data, vmax=max, vmin=min, cmap=cmap)
+
+    # Plot src labels and markers on top of map image
+    if not opts.src is None:
+        sx, sy = map(slons,slats)
+        for name, xpt, ypt, flx in zip(snams, sx, sy, sflxs):
+            if xpt >= 1e30 or ypt >= 1e30: continue
+            if opts.src_mark != '':
+                map.plot(sx, sy, opts.src_color+opts.src_mark,markerfacecolor=None)
+            if flx < 10: flx = 10
+            p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))),
+                color=opts.src_color)
+    if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
+    else: p.subplots_adjust(.05,.05,.95,.95)
+    p.title(file)
 
 
 def mk_arr(val, dtype=n.double):
