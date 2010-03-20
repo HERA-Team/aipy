@@ -204,6 +204,8 @@ else:
         uv['obsra'] = aa.sidereal_time()
         for i,ai in enumerate(aa):
             for j,aj in enumerate(aa):
+                try: i,j = ai.num,aj.num
+                except(AttributeError): pass
                 if j < i: continue
                 crd = ai.pos - aj.pos
                 preamble = (crd, t, (i,j))
