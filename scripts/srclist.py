@@ -3,7 +3,7 @@
 A script for listing sources (and optionally source parameters) from
 catalogs.
 """
-import aipy as a, ephem, sys, optparse
+import aipy as a, ephem, sys, optparse,logging
 
 o = optparse.OptionParser()
 o.set_usage('srclist.py [options]')
@@ -25,9 +25,17 @@ o.add_option('--sep',dest='sep', type='float',
     help='Include areas within the specified angular separation (in degrees) of any sources listed in --src.')
 o.add_option('--divstr', dest='divstr', default=' ',
     help='Divider string to use between source names when printing.  Default is " ".')
+o.add_option('-v',dest='verb',action='store_true',
+    help="Print more")
 opts,args = o.parse_args(sys.argv[1:])
 
 srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+if opts.verb:
+    logging.basicConfig(level=logging.DEBUG)
+else:
+     logging.basicConfig(level=logging.WARNING)
+log = logging.getLogger('srclist')
+
 
 if opts.cal != None:
     cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
