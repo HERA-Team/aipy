@@ -150,14 +150,14 @@ if len(args) > 0:
         uvo = a.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
         uvo.pipe(uvi, mfunc=mdl, raw=True,
-            append2hist="MDLVIS: srcs=%s mode=%s flag=%s noise=%f\n" % \
-                (opts.src, opts.mode, opts.flag, opts.noiselev))
+            append2hist="MDLVIS: srcs=%s cat=%s mode=%s flag=%s noise=%f\n" % \
+                (opts.src, opts.cat, opts.mode, opts.flag, opts.noiselev))
 else:
     # Initialize a new UV file
     pols = opts.pol.split(',')
     uv = a.miriad.UV('new.uv', status='new')
     uv._wrhd('obstype','mixed-auto-cross')
-    uv._wrhd('history','MDLVIS: created file.\nMDLVIS: srcs=%s mode=%s flag=%s noise=%f\n' % (opts.src, opts.mode, opts.flag, opts.noiselev))
+    uv._wrhd('history','MDLVIS: created file.\nMDLVIS: srcs=%s cat=%s mode=%s flag=%s noise=%f\n' % (opts.src, opts.cat, opts.mode, opts.flag, opts.noiselev))
     uv.add_var('telescop','a'); uv['telescop'] = 'AIPY'
     uv.add_var('operator','a'); uv['operator'] = 'AIPY'
     uv.add_var('version' ,'a'); uv['version'] = '0.0.1'
