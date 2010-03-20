@@ -69,8 +69,12 @@ o.add_option('-p', '--projection', dest='projection', default='moll',
     help='Map projection to use: moll (default), mill, cyl, robin, sinu.')
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plotting mode, can be log (default), lin.')
-o.add_option('-c', '--cen', dest='cen', type='float', 
-    help="Center longitude/right ascension (in degrees) of map.  Default is 0 for galactic coordinate output, 180 for equatorial.")
+#o.add_option('-c', '--cen', dest='cen', type='float', 
+#    help="Center longitude/right ascension (in degrees) of map.  Default is 0 for galactic coordinate output, 180 for equatorial.")
+o.add_option('-c','--cen', dest='cen', 
+    help="""Direction to point projection in the same format as the
+     string that is parsed as a source. Uses default catalogs misc and helm unless
+     other cat option is given.""")
 o.add_option('-j', '--juldate', dest='juldate', type='float', 
     help='Julian date used for locating moving sources.')
 o.add_option('--src_mark', dest='src_mark', default='',
@@ -99,9 +103,19 @@ opts,args = o.parse_args(sys.argv[1:])
 
 cmap = p.get_cmap(opts.cmap)
 if opts.cen is None:
-    if opts.osys == 'eq': opts.cen = 180
-    else: opts.cen = 0
-map = Basemap(projection=opts.projection,lat_0=0,lon_0=opts.cen, rsphere=1.)
+    if opts.osys == 'eq': opts.cen = '12_0'
+    else: opts.cen = '0_0'
+cen,coff,cats = a.scripting.parse_srcs(opts.cen,opts.cat)
+cat = a.src.get_catalog(cen,catalogs=cats)
+cen = cat[cat.keys()[0]]
+ephem.FixedBody.compute(cen,ephem.J2000)
+
+if opts.projection.startswith('sp'):
+    map = Basemap(projection=opts.projection,boundinglat=cen.dec*a.img.rad2deg+90,
+    lon_0=cen.ra*a.img.rad2deg, rsphere=1.)
+else:
+    map = Basemap(projection=opts.projection,lat_0=cen.dec*a.img.rad2deg,
+    lon_0=cen.ra*a.img.rad2deg, rsphere=1.,anchor='N')
 lons,lats,x,y = map.makegrid(360/opts.res,180/opts.res, returnxy=True)
 # Mask off parts of the image to be plotted that are outside of the map
 lt = lats[:,0]
