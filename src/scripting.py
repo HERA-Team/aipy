@@ -125,8 +125,8 @@ def parse_srcs(src_str, cat_str):
             assert(len(radec) == 2)
             ra,dec = radec
             # Check that this is really an ra_dec pair
-            for piece in ra.split(':'): piece = int(piece)
-            for piece in dec.split(':'): piece = int(piece)
+            for piece in ra.split(':'): piece = float(piece)
+            for piece in dec.split(':'): piece = float(piece)
             src_opt[i] = fit.RadioFixedBody(ra,dec, name=s)
         except(AssertionError,ValueError): continue
     return src_opt, None, cats
