@@ -119,14 +119,17 @@ def parse_srcs(src_str, cat_str):
         cutoff = map(float, src_str.split('/'))
         return None, cutoff, cats
     src_opt = src_str.split(',')
-    if len(src_opt) == 1:
-        src_opt = src_opt[0].split('_')
-        if len(src_opt) == 1: return src_opt, None, cats
-        ra,dec = src_opt
-        s = fit.RadioFixedBody(ra, dec, name=src_str)
-        return [s], None, cats
-    else:
-        return src_opt, None, cats
+    for i, s in enumerate(src_opt):
+        radec = s.split('_')
+        try:
+            assert(len(radec) == 2)
+            ra,dec = radec
+            # Check that this is really an ra_dec pair
+            for piece in ra.split(':'): piece = int(piece)
+            for piece in dec.split(':'): piece = int(piece)
+            src_opt[i] = fit.RadioFixedBody(ra,dec, name=s)
+        except(AssertionError,ValueError): continue
+    return src_opt, None, cats
 
 name = r'([^\(/,\)=]+)'
 grp = r'(%s|\((%s(/%s)*)\))' % tuple([name]*3)
