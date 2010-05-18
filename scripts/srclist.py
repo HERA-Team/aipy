@@ -27,6 +27,8 @@ o.add_option('--divstr', dest='divstr', default=' ',
     help='Divider string to use between source names when printing.  Default is " ".')
 o.add_option('-v',dest='verb',action='store_true',
     help="Print more")
+o.add_option('--fitprms',action='store_true',
+    help="Print as prm inputs for fitmdl")
 opts,args = o.parse_args(sys.argv[1:])
 
 srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
@@ -100,9 +102,27 @@ srcs.sort()
 if opts.prms == None:
     print opts.divstr.join(srcs)
 else:
-    prms = opts.prms.split(',')
-    for s in srcs:
-        p = cat.get_params({s:prms})
-        if p[s].has_key('ra'):  p[s]['ra'] = ephem.hours(p[s]['ra'])
-        if p[s].has_key('dec'): p[s]['dec'] = ephem.degrees(p[s]['dec'])
-        a.fit.print_params(p)
+    if not opts.fitprms:
+        prms = opts.prms.split(',')
+        for s in srcs:
+            p = cat.get_params({s:prms})
+            if p[s].has_key('ra'):  p[s]['ra'] = ephem.hours(p[s]['ra'])
+            if p[s].has_key('dec'): p[s]['dec'] = ephem.degrees(p[s]['dec'])
+            a.fit.print_params(p)
+    else:
+        prms = opts.prms.split(',')
+        outstring = ''
+        scount =0
+        snum = len(srcs)
+        for s in srcs:
+            scount +=1
+            outstring += s+"=("
+            p = cat.get_params({s:prms})
+            pcnt = len(p[s].keys())
+            for i,prm in enumerate(p[s].keys()):
+                if i<pcnt-1: outstring += prm+"/"
+                else: outstring += prm
+            if scount<snum-1:outstring += "),"
+            else: outstring += ")"
+        print outstring
+    
