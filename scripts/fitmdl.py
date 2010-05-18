@@ -1,4 +1,4 @@
-#!/usr/global/paper/bin/python
+#!/usr/bin/env python
 """
 A script for fitting parameters of a measurement equation given 
 starting parameters in a cal file and a list of sources.  The fitter used
