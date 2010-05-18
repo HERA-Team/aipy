@@ -23,6 +23,7 @@ class RadioBody:
     def update_jys(self, afreqs):
         """Update fluxes relative to the provided observer.  Must be
         called at each time step before accessing information."""
+        self.afreqs = afreqs
         self.jys = self._jys * (afreqs / self.mfreq)**self.index
     def get_jys(self):
         """Return the fluxes vs. freq that should be used for simulation."""
@@ -51,12 +52,16 @@ class RadioFixedBody(phs.RadioFixedBody, RadioBody):
         RadioBody.__init__(self, jys, index)
     def __str__(self):
         outstr = phs.RadioFixedBody.__str__(self)
-        outstr = outstr + "\nCatalog flux: " 
-        try: outstr = outstr + str(self._jys) + " Jys"
-        except(AttributeError): outstr = outstr + " ?"
-        outstr = outstr + "\nEst flux: "
-        try: outstr = outstr + str(self.jys) + " Jys"
-        except(AttributeError): outstr = outstr + " ?"
+#        outstr = outstr + "\nCatalog flux: " 
+        try: outstr = outstr +'\t'+ str(self._jys) 
+        except(AttributeError): outstr = outstr + '\t'
+        try: outstr += '\t' + str(self.index)
+        except(AttributeError): outstr += '\t'  
+        outstr += '\t'+str(self.mfreq)
+#        outstr = outstr + "\nEst flux: "
+        try: outstr = outstr +'\t'+ str(self.jys[0]) 
+        except(AttributeError): outstr = outstr + '\t'
+        outstr += '\t'+str(self.afreqs[0])
         return outstr
     def compute(self, observer):
         phs.RadioFixedBody.compute(self, observer)

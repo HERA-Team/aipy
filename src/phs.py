@@ -75,8 +75,8 @@ class RadioFixedBody(ephem.FixedBody, RadioBody):
         self._ra, self._dec = ra, dec
         self._epoch = epoch
     def __str__(self):
-        if self._dec<0: return RadioBody.__str__(self) + '  ' + str(self._ra) + str(self._dec)
-        else: return RadioBody.__str__(self) + '  ' + str(self._ra) +'+' + str(self._dec)
+        if self._dec<0: return RadioBody.__str__(self) + '\t' + str(self._ra) +'\t'+ str(self._dec)
+        else: return RadioBody.__str__(self) + '\t' + str(self._ra) +'\t'+'+' + str(self._dec)
     def compute(self, observer):
         ephem.FixedBody.compute(self, observer)
         RadioBody.compute(self, observer)
