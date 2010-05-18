@@ -40,7 +40,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
         optparser.add_option('--drng', dest='drng', type='float', default=None,
     help="Dynamic range in color of image, in units matching plotting mode.  Default max(data)-min(data).")
 
-ant_re = r'(\(((-?\d+[x,y]?,?)+)\)|-?\d+[x,y]?)'
+ant_re = r'(\(((-?\d+[xy]?,?)+)\)|-?\d+[xy]?)'
 bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
 def parse_ants(ant_str, nants):
     """Generate list of (baseline, inlude) tuples based on parsing of the
@@ -118,7 +118,7 @@ def uv_selector(uv, ants=-1, pol_str=-1):
             for pol in pol_str.split(','):
                 polopt = miriad.str2pol[pol]
                 uv.select('polarization', polopt, 0)
-        except(NameError,KeyError): raise ValueError('--pol argument invalid or absent')
+        except(NameError,KeyError): raise ValueError('--pol=%s argument invalid or absent'%(pol_str))
 
 def parse_chans(chan_str, nchan, concat=True):
     """Return array of active channels based on number of channels and
