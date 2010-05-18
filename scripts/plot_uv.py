@@ -16,8 +16,8 @@ import aipy as a, numpy as n, pylab as p, math, sys, optparse
 o = optparse.OptionParser()
 o.set_usage('plot_uv.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, dec=True,
-    cmap=True, max=True, drng=True)
+a.scripting.add_standard_options(o, src=True,ant=True, pol=True, chan=True, dec=True,
+    cmap=True, max=True, drng=True,cal=True)
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plot mode can be log (logrithmic), lin (linear), phs (phase), real, or imag.')
 o.add_option('--sum_chan', dest='sum_chan', action='store_true',
@@ -115,6 +115,9 @@ delays = delays.take(chans)
 time_sel, is_time_range = gen_times(opts.time, uv, opts.time_axis, 
     opts.decimate, opts.fringe)
 inttime = uv['inttime'] * opts.decimate
+if not opts.src is None:
+    srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+    src = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs).values()[0]
 del(uv)
 
 # Loop through UV files collecting relevant data
@@ -125,11 +128,14 @@ times = []
 for uvfile in args:
     print 'Reading', uvfile
     uv = a.miriad.UV(uvfile)
+    if not opts.cal is None:
+        aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
     # Only select data that is needed to plot
     a.scripting.uv_selector(uv, opts.ant, opts.pol)
     # Read data from a single UV file
     for (uvw,t,(i,j)),d in uv.all():
         bl = '%d,%d' % (i,j)
+#        print bl
         # Implement Decimation
         if len(times) == 0 or times[-1] != t:
             times.append(t)
@@ -140,6 +146,14 @@ for uvfile in args:
                 plot_t['jd'].append(t)
                 plot_t['cnt'].append((len(times)-1) / opts.decimate)
         if not use_this_time: continue
+        #apply cal phases
+        if not opts.cal is None:
+            aa.set_jultime(t)
+            if not opts.src is None:
+                src.compute(aa)
+                d = aa.phs2src(d, src, i, j)
+            else:
+                d *= n.exp(-1j*n.pi*aa.get_phs_offset(i,j))
         # Do delay transform if required
         if opts.delay:
             if opts.unmask:
