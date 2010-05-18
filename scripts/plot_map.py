@@ -93,6 +93,8 @@ o.add_option('--oepoch', dest='oepoch', type='float', default=ephem.J2000,
     help='Epoch of output coordinates (plotted).  Default J2000.')
 o.add_option('--nobar', dest='nobar', action='store_true',
     help="Do not show colorbar.")
+o.add_option('--nolabel',action='store_true',
+    help="Suppress source labels. Only print src_marks (if enabled).")
 o.add_option('--res', dest='res', type='float', default=0.25,
     help="Resolution of plot (in degrees).  Default 0.25.")
 o.add_option('--nside', dest='nside', type='int',
@@ -223,8 +225,9 @@ for i,file in enumerate(args):
             if opts.src_mark != '':
                 map.plot(sx, sy, opts.src_color+opts.src_mark,markerfacecolor=None)
             if flx < 10: flx = 10
-            p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))),
-                color=opts.src_color)
+            if not opts.nolabel: 
+                p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))),
+                    color=opts.src_color)
     if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
     else: p.subplots_adjust(.05,.05,.95,.95)
     p.title(file)
