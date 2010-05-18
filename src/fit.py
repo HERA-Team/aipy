@@ -101,6 +101,7 @@ class RadioFixedBody(amp.RadioFixedBody):
             'th':       float(self.srcshape[2]),
             'dra':      float(self.ionref[0]),
             'ddec':     float(self.ionref[1]),
+            'mfreq':    float(self.mfreq),
         }
         prms = {}
         for p in prm_list:
@@ -351,23 +352,37 @@ class AntennaArray(amp.AntennaArray):
     """Representation of location and time of observation, and response of
     array of antennas as function of pointing and frequency.  Adds get_params()
     and set_params() to amp.AntennaArray."""
+    
     def get_params(self, ant_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
         prms = {}
+#        print "getting"
         for k in ant_prms:
             if k.startswith('*'): ants = map(str, range(len(self)))
             else: ants = [k]
             prm_list = ant_prms[k]
             if type(prm_list) is str: prm_list = [prm_list]
             for a in ants:
-                try: prms[a] = self.ants[int(a)].get_params(prm_list)
-                except(ValueError): pass
+                #check that a is most likely an antenna
+#                print "self.ants[int(%d)].get_params()"%int(a)
+                try: ptypes = self.ants[int(a)].get_params() 
+                except(ValueError,IndexError): continue   
+                for pin in prm_list:
+                    if pin in ptypes.keys() or pin=='*':
+                        prms[a] = self.ants[int(a)].get_params(prm_list)
+                        break
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
         changed = False
         for i, a in enumerate(self):
-            try: changed |= a.set_params(prms[str(i)])
-            except(KeyError): pass
+            #check that a is most likely an antenna
+            try: ptypes = self.ants[i].get_params() 
+            except(ValueError,IndexError): print 'not ant!';continue
+            for pin in prms[prms.keys()[0]].keys():
+                if pin in ptypes.keys():
+                    try: changed |= a.set_params(prms[str(i)])
+                    except(KeyError): continue
+                    break
         if changed: self.update()
         return changed
