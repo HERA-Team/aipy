@@ -175,7 +175,7 @@ else:
     uv['antpos'] = antpos.transpose().flatten()
     uv.add_var('sfreq'   ,'d'); uv['sfreq'] = opts.sfreq
     uv.add_var('freq'    ,'d'); uv['freq'] = opts.sfreq
-    uv.add_var('restfreq','d'); uv['freq'] = opts.sfreq
+    uv.add_var('restfreq','d'); uv['restfreq'] = opts.sfreq
     uv.add_var('sdf'     ,'d'); uv['sdf'] = opts.sdf
     uv.add_var('nchan'   ,'i'); uv['nchan'] = opts.nchan
     uv.add_var('nschan'  ,'i'); uv['nschan'] = opts.nchan
