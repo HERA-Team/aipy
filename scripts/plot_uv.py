@@ -248,6 +248,9 @@ for cnt, bl in enumerate(bls):
             if opts.time_axis == 'index':
                 t1,t2 = plot_t['cnt'][0], plot_t['cnt'][-1]
                 ylabel = 'Time (integrations)'
+            elif opts.time_axis=='lst':
+                t1,t2 = plot_t['lst'][0]*12/n.pi, plot_t['lst'][-1]*12/n.pi
+                ylabel = 'Local Sideral time (hrs)'
             else:
                 t1,t2 = plot_t['jd'][0], plot_t['jd'][-1]
                 ylabel = 'Time (Julian Date)'
