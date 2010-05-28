@@ -196,6 +196,8 @@ m1 = int(math.ceil(float(len(bls)) / m2))
 
 # Generate all the plots
 dmin,dmax = None, None
+fig = p.figure()
+if not opts.src is None:fig.suptitle(opts.src)
 for cnt, bl in enumerate(bls):
     d = n.ma.concatenate(plot_x[bl], axis=0)
     if opts.df: d = d[:,:-2]/2 + d[:,2:]/2 - d[:,1:-1]
