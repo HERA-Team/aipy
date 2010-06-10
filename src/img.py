@@ -8,7 +8,7 @@ import numpy as n, utils, coord, pyfits, time
 deg2rad = n.pi / 180.
 rad2deg = 180. / n.pi
 
-def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
+def word_wrap(string, width=80,ind1=0,ind2=0,prefix=''):
     """ word wrapping function.
         string: the string to wrap
         width: the column number to wrap at
@@ -16,26 +16,26 @@ def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
         ind1: number of characters to indent the first line
         ind2: number of characters to indent the rest of the lines
     """
-    string = prefix + ind1*" " + string
-    newstring = ""
-    if len(string) > width:
-        while True:
-            # find position of nearest whitespace char to the left of "width"
-            marker = width-1
-            while not string[marker].isspace():
-                marker = marker - 1
-
-            # remove line from original string and add it to the new string
-            newline = string[0:marker] + "\n"
-            newstring = newstring + newline
-            string = prefix + ind2*" " + string[marker+1:]
-
-            # break out of loop when finished
-            if len(string) <= width:
-                break
+    awidth = min(width-2-len(prefix+ind1*' '),width-2-len(prefix+ind2*' '))
+    words = string.split(' ')
+    okwords = []
+    chunk = lambda v, l: [v[i*l:(i+1)*l] for i in range(int(n.ceil(len(v)/float(l))))]
+    for word in words:
+        for okword in chunk(word,awidth):
+            okwords.append(okword)
+    lines = []
+    l = prefix+ind1*' '
+    for i,w in enumerate(okwords):
+        print w,len(l+' '+w),width
+        if len(l+' ' + w)<width:
+            l += ' '+w
+        else:
+            lines.append(l)
+            l = prefix + ind2*' '+w
+    lines.append(l)
+    return '\n'.join(lines)+'\n'
     
-    return newstring + string
-
+    
 def recenter(a, c):
     """Slide the (0,0) point of matrix a to a new location tuple c.  This is
     useful for making an image centered on your screen after performing an
