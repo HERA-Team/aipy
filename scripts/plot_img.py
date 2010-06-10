@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 """
 This is a general-purpose script for plotting simple FITS images.
-
-Author: Aaron Parsons
 """
 
 import aipy as a, sys, optparse, os
@@ -99,8 +97,8 @@ for cnt, filename in enumerate(args):
         map.drawmeridians(n.arange(kwds['ra']-180,kwds['ra']+180,30))
         map.drawparallels(n.arange(-90,120,30))
         map.drawmapboundary()
-        map.imshow(d, vmin=min, vmax=max, cmap=cmap)
-    else: p.imshow(d, vmin=min, vmax=max, origin='lower', cmap=cmap)
+        map.imshow(d, vmin=min, vmax=max, cmap=cmap, interpolation='nearest')
+    else: p.imshow(d, vmin=min, vmax=max, origin='lower', cmap=cmap, interpolation='nearest')
     p.colorbar(shrink=.5, fraction=.05)
     p.title(filename)
 
@@ -114,17 +112,23 @@ for cnt, filename in enumerate(args):
 cnt = 1
 def click(event):
     global cnt
-    if event.button != 3: return
-    lon,lat = map(event.xdata, event.ydata, inverse=True)
-    lon = (180 + kwds['ra'] - lon) % 360
-    lon *= a.img.deg2rad; lat *= a.img.deg2rad
-    ra,dec = ephem.hours(lon), ephem.degrees(lat)
-    xpx = n.around(event.xdata / (kwds['d_ra'] * a.img.deg2rad))
-    ypx = n.around(event.ydata / (kwds['d_dec'] * a.img.deg2rad))
-    flx = d[ypx,xpx]
-    if opts.mode.startswith('log'): flx = 10**flx
-    print '#%d (RA,DEC): (%s, %s), PX: (%d,%d) Jy: %f' % \
-        (cnt, ra, dec, xpx, ypx, flx)
+    if not event.button in [2,3]: return
+    if not opts.nogrid:
+        lon,lat = map(event.xdata, event.ydata, inverse=True)
+        lon = (180 + kwds['ra'] - lon) % 360
+        lon *= a.img.deg2rad; lat *= a.img.deg2rad
+        ra,dec = ephem.hours(lon), ephem.degrees(lat)
+        xpx = n.around((event.xdata-1-dx1) / (dx2 - dx1) * d.shape[0] - .5)
+        ypx = n.around((event.ydata-1-dy1) / (dy2 - dy1) * d.shape[1] - .5)
+        flx = d[ypx,xpx]
+        if opts.mode.startswith('log'): flx = 10**flx
+        print '#%d (RA,DEC): (%s, %s), PX: (%d,%d) Jy: %f' % (cnt, ra, dec, xpx, ypx, flx)
+    else:
+        xpx = n.around(event.xdata)
+        ypx = n.around(event.ydata)
+        flx = d[ypx,xpx]
+        if opts.mode.startswith('log'): flx = 10**flx
+        print '#%d PX: (%d,%d) Jy: %f' % (cnt, xpx, ypx, flx)
     cnt += 1
 
 #register this function with the event handler
