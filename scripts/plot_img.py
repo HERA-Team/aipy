@@ -71,8 +71,8 @@ for cnt, filename in enumerate(args):
     if opts.fft:
         d = n.fft.fft2(d)
         d = a.img.recenter(d, (d.shape[0]/2, d.shape[1]/2))
-    if opts.mode.startswith('phs'): d = n.angle(d.filled(0))
-    elif opts.mode.startswith('lin'): d = n.ma.absolute(d)
+    if opts.mode.startswith('phs'): d = n.angle(d)
+    elif opts.mode.startswith('lin'): d = n.absolute(d)
     elif opts.mode.startswith('real'): d = d.real
     elif opts.mode.startswith('imag'): d = d.imag
     elif opts.mode.startswith('log'):
