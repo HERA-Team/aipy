@@ -26,7 +26,7 @@ def word_wrap(string, width=80,ind1=0,ind2=0,prefix=''):
     lines = []
     l = prefix+ind1*' '
     for i,w in enumerate(okwords):
-        print w,len(l+' '+w),width
+#        print w,len(l+' '+w),width
         if len(l+' ' + w)<width:
             l += ' '+w
         else:
