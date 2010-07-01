@@ -130,6 +130,12 @@ mask = x.mask
 if opts.osys == 'eq': lons = 360 - lons
 lats *= a.img.deg2rad; lons *= a.img.deg2rad
 #if opts.osys=='ga': lons *= -1
+def format_coord(x,y):
+    lon,lat = map(x, y, inverse=True)
+    if opts.osys == 'eq': lon = (360 - lon) % 360
+    lon *= a.img.deg2rad; lat *= a.img.deg2rad
+    ra,dec = ephem.hours(lon), ephem.degrees(lat)
+    return '(RA = %s, DEC=%s' % (ra, dec)
 
 m1 = n.sqrt(len(args))
 m2 = n.ceil(len(args)/m1)
@@ -214,9 +220,9 @@ for i,file in enumerate(args):
     data = data.clip(min, max)
     if not opts.projection in ['ortho','geos','spaeqd']: data = n.ma.array(data, mask=mask)
 
-    p.subplot(m1,m2,i+1)
+    ax = p.subplot(m1,m2,i+1)
     map.imshow(data, vmax=max, vmin=min, cmap=cmap)
-
+    ax.format_coord = format_coord
     # Plot src labels and markers on top of map image
     if not opts.src is None:
         sx, sy = map(slons,slats)
