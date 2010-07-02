@@ -130,9 +130,10 @@ mask = x.mask
 if opts.osys == 'eq': lons = 360 - lons
 lats *= a.img.deg2rad; lons *= a.img.deg2rad
 #if opts.osys=='ga': lons *= -1
+if opts.osys=='eq':lons *=-1
 def format_coord(x,y):
-    lon,lat = map(x, y, inverse=True)
-    if opts.osys == 'eq': lon = (360 - lon) % 360
+    lon,lat = map(x, y,inverse=True)
+    if opts.osys == 'eq': lon = lon % 360 #lon = (360 - lon) % 360
     lon *= a.img.deg2rad; lat *= a.img.deg2rad
     ra,dec = ephem.hours(lon), ephem.degrees(lat)
     return '(RA = %s, DEC=%s' % (ra, dec)
