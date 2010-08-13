@@ -67,6 +67,7 @@ def parse_ants(ant_str, nants):
                 else: ais = m[3].split(',')
                 if m[6] is None: ajs = [m[5]]
                 else: ajs = m[6].split(',')
+            include = None
             for i in ais:
                 for j in ajs:
                     if include is None:
