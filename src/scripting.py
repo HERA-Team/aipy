@@ -72,7 +72,7 @@ def parse_ants(ant_str, nants):
                     if type(i) == str and i.startswith('-'):
                          i = i[1:] #nibble the - off the string
                          include = 0 
-                    if type(j) == str and j.startswith('-'):
+                    elif type(j) == str and j.startswith('-'):
                         j = j[1:]
                         include = 0
                     else: include = 1
