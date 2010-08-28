@@ -199,7 +199,7 @@ class ImgW(Img):
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
-            print j, len(w)
+            #print j, len(w)
             avg_w = n.average(w[i:j])
             # Put all uv's down on plane for this gridded w point
             wgtsij = [wgt[i:j] for wgt in wgts]
