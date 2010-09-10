@@ -137,7 +137,12 @@ def format_coord(x,y):
     lon *= a.img.deg2rad; lat *= a.img.deg2rad
     ra,dec = ephem.hours(lon), ephem.degrees(lat)
     return '(RA = %s, DEC=%s' % (ra, dec)
-
+def xy2radec(x,y):
+    lon,lat = map(x, y,inverse=True)
+    if opts.osys == 'eq': lon = lon % 360 #lon = (360 - lon) % 360
+    lon *= a.img.deg2rad; lat *= a.img.deg2rad
+    ra,dec = ephem.hours(lon), ephem.degrees(lat)
+    return (ra, dec)
 m1 = n.sqrt(len(args))
 m2 = n.ceil(len(args)/m1)
 for i,file in enumerate(args):
@@ -200,7 +205,7 @@ for i,file in enumerate(args):
             scrds = [ephem.Ecliptic(s, epoch=opts.oepoch) for s in scrds]
         slats = n.array([float(s.get()[1]) for s in scrds]) * a.img.rad2deg
         slons = n.array([float(s.get()[0]) for s in scrds]) * a.img.rad2deg
-        if opts.osys == 'eq': slons = 360 - slons
+#        if opts.osys == 'eq': slons = 360 - slons
         slons = n.where(slons < -180, slons + 360, slons)
         slons = n.where(slons >= 180, slons - 360, slons)
         #if opts.osys=='ga':slons *= -1
@@ -253,19 +258,21 @@ else:
     def click(event):
         global cnt
         if event.button == 3: 
-            lon,lat = map(event.xdata, event.ydata, inverse=True)
-            if opts.osys == 'eq': lon = (360 - lon) % 360
-            lon *= a.img.deg2rad; lat *= a.img.deg2rad
-            ra,dec = ephem.hours(lon), ephem.degrees(lat)
+#            lon,lat = map(event.xdata, event.ydata, inverse=True)
+#            if opts.osys == 'eq': lon = (360 - lon) % 360
+#            lon *= a.img.deg2rad; lat *= a.img.deg2rad
+#            ra,dec = ephem.hours(lon), ephem.degrees(lat)
+            ra,dec = xy2radec(event.xdata,event.ydata)
             x,y,z = a.coord.radec2eq((ra,dec))
             flx = h[(x,y,z)]
             print '#%d (RA,DEC): (%s, %s), Jy: %f' % (cnt, ra, dec, flx)
             cnt += 1
         elif event.button==2:
-            lon,lat = map(event.xdata, event.ydata, inverse=True)
-            if opts.osys == 'eq': lon = (360 - lon) % 360
-            lon *= a.img.deg2rad; lat *= a.img.deg2rad
-            ra,dec = ephem.hours(lon), ephem.degrees(lat)
+#            lon,lat = map(event.xdata, event.ydata, inverse=True)
+#            if opts.osys == 'eq': lon = (360 - lon) % 360
+#            lon *= a.img.deg2rad; lat *= a.img.deg2rad
+#            ra,dec = ephem.hours(lon), ephem.degrees(lat)
+            ra,dec = xy2radec(event.xdata,event.ydata)
             x,y,z = a.coord.radec2eq((ra,dec))
             #flx = h[(x,y,z)]
             crd = [mk_arr(c, dtype=n.double) for c in (x,y,z)]
