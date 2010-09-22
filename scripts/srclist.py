@@ -62,14 +62,19 @@ if opts.centers != None:
 else: ccat = {}
     
 if opts.juldate is None: date = ephem.J2000
-else: date = a.phs.juldate2ephem(opts.juldate)
+else: 
+    date = a.phs.juldate2ephem(opts.juldate)
+    aa = a.scripting.get_null_aa()
+    aa.set_jultime(opts.juldate)
 
 for c in [cat, xcat, ccat]:
     for s in c.keys():
         try: ephem.FixedBody.compute(c[s], date)
         except(TypeError):
             if opts.juldate is None: del(c[s])
-            else: ephem.Body.compute(c[s], date)
+#            else: ephem.Body.compute(c[s], date)
+            else: c[s].compute(aa)
+            print c[s].ra,c[s].dec
 
 srcs = cat.keys()
 srcs = [s for s in srcs if s not in xcat]
