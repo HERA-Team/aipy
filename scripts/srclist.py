@@ -74,7 +74,6 @@ for c in [cat, xcat, ccat]:
             if opts.juldate is None: del(c[s])
 #            else: ephem.Body.compute(c[s], date)
             else: c[s].compute(aa)
-            print c[s].ra,c[s].dec
 
 srcs = cat.keys()
 srcs = [s for s in srcs if s not in xcat]
