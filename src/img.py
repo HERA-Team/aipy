@@ -285,7 +285,7 @@ default_fits_format_codes = {
 }
 
 def to_fits(filename, data, clobber=False,
-        axes=('dec--sin','ra---sin','freq','stokes'),
+        axes=('ra---sin','dec--sin','freq','stokes'),
         object='', telescope='', instrument='', observer='', origin='AIPY',
         obs_date=time.strftime('%D'), cur_date=time.strftime('%D'), 
         ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000., 
@@ -301,7 +301,7 @@ def to_fits(filename, data, clobber=False,
     self-explanitory/can be used however you want."""
     data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
     phdu = pyfits.PrimaryHDU(data)
-    phdu.data = data.transpose()
+#    phdu.data = data.transpose()
     phdu.update_header()
     phdu.header.update('OBJECT', object, comment='SOURCE NAME')
     phdu.header.update('TELESCOP', telescope)
@@ -322,7 +322,7 @@ def to_fits(filename, data, clobber=False,
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra'): val,delta = (ra, d_ra)
         elif ax.lower().startswith('dec'): val,delta = (dec, d_dec)
-        elif ax.lower().startswith('freq'): val,delta = (freq*1e9, d_freq*1e9)
+        elif ax.lower().startswith('freq'): val,delta = (freq, d_freq)
         elif ax.lower().startswith('stokes'): val,delta = (1, 1)
         else: val,delta = (0,0)
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
@@ -349,7 +349,7 @@ def from_fits(filename):
     to deduce each keyword listed in to_fits() from the FITS header, but is
     accepting of differences.  Returns values in "kwds" dictionary."""
     phdu = pyfits.open(filename)[0]
-    data = phdu.data.transpose()
+#    data = phdu.data.transpose()
     kwds = {}
     hitems = (('OBJECT','object'), ('TELESCOP','telescope'),
         ('INSTRUME','instrument'), ('OBSERVER','observer'),
