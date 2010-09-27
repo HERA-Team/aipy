@@ -299,6 +299,7 @@ def to_fits(filename, data, clobber=False,
     "freq" axis is specified, then "freq" is the frequency of the first entry 
     (in Hz), and "d_freq" is the width of the channel.  The rest are pretty 
     self-explanitory/can be used however you want."""
+    print data.shape
     data.shape =(1,) * (len(axes) - len(data.shape)) + data.shape 
     print data.shape
     phdu = pyfits.PrimaryHDU(data)
