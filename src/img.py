@@ -299,7 +299,7 @@ def to_fits(filename, data, clobber=False,
     "freq" axis is specified, then "freq" is the frequency of the first entry 
     (in Hz), and "d_freq" is the width of the channel.  The rest are pretty 
     self-explanitory/can be used however you want."""
-    data.shape =  (1,) * (len(axes) - len(data.shape))+data.shape
+    data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
     phdu = pyfits.PrimaryHDU(data)
 #    phdu.data = data.transpose()
     phdu.update_header()
@@ -334,6 +334,7 @@ def to_fits(filename, data, clobber=False,
         phdu.header.update('CRVAL%d' % (i+1), val)
         phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
+        phdu.header.update('NAXIS%d' % (i+1),phdu.data.shape[i])
     if history!='':
         history = history.split("\n")
         for line in history:
