@@ -285,7 +285,7 @@ default_fits_format_codes = {
 }
 
 def to_fits(filename, data, clobber=False,
-        axes=('ra---sin','dec---sin','freq','stokes'),
+        axes=('dec--sin','ra---sin','freq','stokes'),
         object='', telescope='', instrument='', observer='', origin='AIPY',
         obs_date=time.strftime('%D'), cur_date=time.strftime('%D'), 
         ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000., 
@@ -316,18 +316,19 @@ def to_fits(filename, data, clobber=False,
     phdu.header.update('BZERO  ', bzero)
     phdu.header.update('BUNIT  ', 'JY/BEAM ', comment='UNITS OF FLUX')
     phdu.header.update('EQUINOX', epoch, comment='EQUINOX OF RA DEC')
+    hdu.header.update('EPOCH',epoch,'Epoch of coordinate system')
     phdu.header.update('DATAMAX', data.max(), comment='MAX PIXEL VALUE')
     phdu.header.update('DATAMIN', data.min(), comment='MIN PIXEL VALUE')
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra'): val,delta = (ra, d_ra)
         elif ax.lower().startswith('dec'): val,delta = (dec, d_dec)
-        elif ax.lower().startswith('freq'): val,delta = (freq, d_freq)
+        elif ax.lower().startswith('freq'): val,delta = (freq*1e9, d_freq*1e9)
         elif ax.lower().startswith('stokes'): val,delta = (1, 1)
         else: val,delta = (0,0)
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
             phdu.header.update('CRPIX%d' % (i+1), 
-                    round(phdu.data.shape[-(i+1)]/2.))
+                    floor(phdu.data.shape[-(i+1)]/2.)) +1
         else:
             phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
         phdu.header.update('CRVAL%d' % (i+1), val)
