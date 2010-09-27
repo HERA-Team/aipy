@@ -300,6 +300,7 @@ def to_fits(filename, data, clobber=False,
     (in Hz), and "d_freq" is the width of the channel.  The rest are pretty 
     self-explanitory/can be used however you want."""
     data.shape =(1,) * (len(axes) - len(data.shape)) + data.shape 
+    print data.shape
     phdu = pyfits.PrimaryHDU(data)
 #    phdu.data = data.transpose()
     print phdu.data.shape
