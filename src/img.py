@@ -329,7 +329,7 @@ def to_fits(filename, data, clobber=False,
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
             phdu.header.update('CRPIX%d' % (i+1), 
-                    n.floor(phdu.data.shape[i]/2.)+1) 
+                    n.ceil(phdu.data.shape[i]/2.)+1) 
         else:
             phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[i])
         phdu.header.update('CRVAL%d' % (i+1), val)
