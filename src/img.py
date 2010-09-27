@@ -302,6 +302,7 @@ def to_fits(filename, data, clobber=False,
     data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
     phdu = pyfits.PrimaryHDU(data)
 #    phdu.data = data.transpose()
+    print phdu.data.shape
     phdu.update_header()
     phdu.header.update('OBJECT', object, comment='SOURCE NAME')
     phdu.header.update('TELESCOP', telescope)
