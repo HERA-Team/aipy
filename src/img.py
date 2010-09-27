@@ -316,7 +316,7 @@ def to_fits(filename, data, clobber=False,
     phdu.header.update('BZERO  ', bzero)
     phdu.header.update('BUNIT  ', 'JY/BEAM ', comment='UNITS OF FLUX')
     phdu.header.update('EQUINOX', epoch, comment='EQUINOX OF RA DEC')
-    hdu.header.update('EPOCH',epoch,'Epoch of coordinate system')
+    phdu.header.update('EPOCH',epoch,'Epoch of coordinate system')
     phdu.header.update('DATAMAX', data.max(), comment='MAX PIXEL VALUE')
     phdu.header.update('DATAMIN', data.min(), comment='MIN PIXEL VALUE')
     for i,ax in enumerate(axes):
