@@ -333,7 +333,10 @@ def to_fits(filename, data, clobber=False,
         else:
             phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[i])
         phdu.header.update('CRVAL%d' % (i+1), val)
-        phdu.header.update('CDELT%d' % (i+1), delta * -1**(ax.lower().startswith('ra')))
+        if ax.lower().startswith('ra'):
+            phdu.header.update('CDELT%d' % (i+1), delta*-1)
+        else:
+            phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
         phdu.header.update('NAXIS%d' % (i+1),phdu.data.shape[i])
     if history!='':
