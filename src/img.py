@@ -350,6 +350,7 @@ def from_fits(filename):
     accepting of differences.  Returns values in "kwds" dictionary."""
     phdu = pyfits.open(filename)[0]
 #    data = phdu.data.transpose()
+    data = phdu.data
     kwds = {}
     hitems = (('OBJECT','object'), ('TELESCOP','telescope'),
         ('INSTRUME','instrument'), ('OBSERVER','observer'),
