@@ -33,7 +33,7 @@ def word_wrap(string, width=80,ind1=0,ind2=0,prefix=''):
             lines.append(l)
             l = prefix + ind2*' '+w
     lines.append(l)
-    return '\n'.join(lines)+'\n'
+    return '\n'.join(lines)
     
     
 def recenter(a, c):
