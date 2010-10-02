@@ -341,6 +341,7 @@ def to_fits(filename, data, clobber=False,
             phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
         phdu.header.update('NAXIS%d' % (i+1),phdu.data.shape[i])
+    print '!',history
     if history!='':
         history = [h.strip() for h in history.split("\n")]
         for line in history:
