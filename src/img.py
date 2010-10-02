@@ -345,7 +345,7 @@ def to_fits(filename, data, clobber=False,
         history = history.split("\n")
         for line in history:
             if len(line)>1:
-                if line.startswith('#'):
+                if line.strip().startswith('#'):
                     for subline in word_wrap(line,80,0,0,'').split("\n"):
                         phdu.header.add_history(subline)
                 else:
