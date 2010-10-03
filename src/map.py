@@ -153,8 +153,8 @@ class Map(object):
                 if len(line)>1:
                     if line.startswith('#'):
                         for subline in img.word_wrap(line,80,0,0,'').split("\n"):
-                            phdu.header.add_history(subline)
+                            hdulist[0].header.add_history(subline)
                     else:
                         for subline in img.word_wrap(line,70,5,10,'#').split("\n"):
-                            phdu.header.add_history(subline)       
+                            hdulist[0].header.add_history(subline)       
         hdulist.writeto(filename, clobber=clobber)
