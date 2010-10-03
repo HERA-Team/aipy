@@ -147,14 +147,14 @@ class Map(object):
         tbhdu = pyfits.new_table(cols)
         self.map._set_fits_header(tbhdu.header)
         hdulist = pyfits.HDUList([hdu0, tbhdu])
-    if history!='':
-        history = [h.strip() for h in history.split("\n")]
-        for line in history:
-            if len(line)>1:
-                if line.startswith('#'):
-                    for subline in word_wrap(line,80,0,0,'').split("\n"):
-                        phdu.header.add_history(subline)
-                else:
-                    for subline in word_wrap(line,70,5,10,'#').split("\n"):
-                        phdu.header.add_history(subline)       
+        if history!='':
+            history = [h.strip() for h in history.split("\n")]
+            for line in history:
+                if len(line)>1:
+                    if line.startswith('#'):
+                        for subline in word_wrap(line,80,0,0,'').split("\n"):
+                            phdu.header.add_history(subline)
+                    else:
+                        for subline in word_wrap(line,70,5,10,'#').split("\n"):
+                            phdu.header.add_history(subline)       
         hdulist.writeto(filename, clobber=clobber)
