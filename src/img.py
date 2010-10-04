@@ -306,6 +306,7 @@ def to_fits(filename, data, clobber=False,
     phdu = pyfits.PrimaryHDU(data)
 #    phdu.data = data.transpose()
     phdu.update_header()
+    phdu.header.update('TRANSPOS',0,comment='Import code for old AIPY convention.')
     phdu.header.update('OBJECT', object, comment='SOURCE NAME')
     phdu.header.update('TELESCOP', telescope)
     phdu.header.update('INSTRUME', instrument)
@@ -360,8 +361,14 @@ def from_fits(filename):
     to deduce each keyword listed in to_fits() from the FITS header, but is
     accepting of differences.  Returns values in "kwds" dictionary."""
     phdu = pyfits.open(filename)[0]
-#    data = phdu.data.transpose()
-    data = phdu.data
+    try: 
+        if phdu.header['TRANSPOS']:
+            data = phdu.data.transpose() #for backwards compatibility
+        else:
+            data = phdu.data
+    except(KeyError):
+        data = phdu.data
+    
     kwds = {}
     hitems = (('OBJECT','object'), ('TELESCOP','telescope'),
         ('INSTRUME','instrument'), ('OBSERVER','observer'),
@@ -408,7 +415,13 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
         axes.append(phdu.header.get(type))
     print axes
     data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
-    phdu.data = data.transpose()
+    try: 
+        if phdu.header['TRANSPOS']:
+            data = phdu.data.transpose() #for backwards compatibility
+        else:
+            data = phdu.data
+    except(KeyError):
+        data = phdu.data
     phdu.update_header()
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra'):
