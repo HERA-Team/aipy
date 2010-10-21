@@ -26,7 +26,7 @@ def word_wrap(string, width=80,ind1=0,ind2=0,prefix=''):
     lines = []
     l = prefix+ind1*' '
     for i,w in enumerate(okwords):
-        print w,len(l+' '+w),width
+        #print w,len(l+' '+w),width
         if len(l+' ' + w)<width:
             l += ' '+w
         else:
@@ -57,7 +57,7 @@ def convolve2d(a, b):
 def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
     """Return a 2D gaussian.  Normalized to area under curve = 'amp'.  
     Down by 1/e at distance 'sigma' from 'center'."""
-    if type(shape) == type(0): shape = array([2, 2]) * sigma
+    if type(shape) == type(0): shape = n.array([2, 2]) * sigma
     def gaussian(x, y):
         nx = n.where(x > shape[0] / 2, x - shape[0], x)
         ny = n.where(y > shape[1] / 2, y - shape[1], y)
@@ -94,6 +94,17 @@ class Img:
         mask = n.where(L**2 + M**2 >= 1, 1, 0)
         L,M = n.ma.array(L, mask=mask), n.ma.array(M, mask=mask)
         return recenter(L, center), recenter(M, center)
+    def get_indices(self, u, v):
+        """Get the pixel indices corresponding to the provided uv coordinates."""
+        u = n.round(u / self.res).astype(n.int)
+        v = n.round(v / self.res).astype(n.int)
+        return n.array([-v,u],).transpose()
+    def get_uv(self):
+        """Return the u,v indices of the pixels in the uv matrix."""
+        u,v = n.indices(self.shape)
+        u = n.where(u < self.shape[0]/2, u, u - self.shape[0])
+        v = n.where(v < self.shape[1]/2, v, v - self.shape[1])
+        return u*self.res, v*self.res
     def put(self, (u,v,w), data, wgts=None, apply=True):
         """Grid uv data (w is ignored) onto a UV plane.  Data should already
         have the phase due to w removed.  Assumes the Hermitian conjugate
@@ -112,9 +123,7 @@ class Img:
         else:
             uv = n.zeros_like(self.uv)
             bm = [n.zeros_like(i) for i in self.bm]
-        u = n.round(u / self.res).astype(n.int)
-        v = n.round(v / self.res).astype(n.int)
-        inds = n.array([-v,u],).transpose()
+        inds = self.get_indices(u,v)
         ok = n.logical_and(n.abs(inds[:,0]) < self.shape[0],
             n.abs(inds[:,1]) < self.shape[1])
         data = data.compress(ok)
