@@ -104,9 +104,10 @@ for uvfile in args:
 
     if opts.drw != -1:
         print '    Performing delay-rate transform and cleaning...'
+    print '    Applying filter'
     for bl in phs_dat:
         d = n.array(phs_dat[bl])
-        if not src_up or opts.drw == -1:
+        if not src_up:
             phs_dat[bl] = d
             continue
         # create some padding data on either end to mitigate wrap-around
