@@ -307,32 +307,36 @@ class AntennaArray(ArrayLocation):
     def get_phs_offset(self, i, j):
         """Return the frequency-dependent phase offset of baseline i,j."""
         return self[j].phsoff - self[i].phsoff
-    def gen_uvw(self, i, j, src='z'):
+    def gen_uvw(self, i, j, src='z', w_only=False):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
-        or 'z' for zenith uvw coordinates."""
+        or 'z' for zenith uvw coordinates.  If w_only is True, only w (instead
+        of (u,v,w) will be returned)."""
         x,y,z = self.get_baseline(i,j, src=src)
         afreqs = self.get_afreqs()
         afreqs = n.reshape(afreqs, (1,afreqs.size))
-        if len(x.shape) == 0: return n.array([x*afreqs, y*afreqs, z*afreqs])
+        if len(x.shape) == 0:
+            if w_only: return z*afreqs
+            else: return n.array([x*afreqs, y*afreqs, z*afreqs])
         #afreqs = n.reshape(afreqs, (1,afreqs.size))
         x.shape += (1,); y.shape += (1,); z.shape += (1,)
-        return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
+        if w_only: return n.dot(z,afreqs)
+        else: return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
     def gen_phs(self, src, i, j, mfreq=.150, ionref=None, srcshape=None, 
             resolve_src=False):
         """Return phasing that is multiplied to data to point to src."""
-        u,v,w = self.gen_uvw(i,j,src=src)
         if ionref is None:
-            try: dw = self.refract(u, v, mfreq=mfreq, ionref=src.ionref)
-            except(AttributeError): dw = 0
-        else: dw = self.refract(u, v, mfreq=mfreq, ionref=ionref)
+            try: ionref = src.ionref
+            except(AttributeError): pass
+        if not ionref is None or resolve_src: u,v,w = self.gen_uvw(i,j,src=src)
+        else: w = self.gen_uvw(i,j,src=src, w_only=True)
+        if not ionref is None: w += self.refract(u, v, mfreq=mfreq, ionref=ionref)
+        o = self.get_phs_offset(i,j)
+        phs = n.exp(-1j*2*n.pi*(w + o))
         if resolve_src:
             if srcshape is None:
-                try: res = self.resolve_src(u, v, srcshape=src.srcshape)
-                except(AttributeError): res = 1
-            else: res = self.resolve_src(u, v, srcshape=srcshape)
-        else: res = 1
-        o = self.get_phs_offset(i,j)
-        phs = res * n.exp(-1j*2*n.pi*(w + dw + o))
+                try: srcshape = src.srcshape
+                except(AttributeError): pass
+            if not srcshape is None: phs *= self.resolve_src(u, v, srcshape=srcshape)
         return phs.squeeze()
     def resolve_src(self, u, v, srcshape=(0,0,0)):
         """Adjust amplitudes to reflect resolution effects for a uniform 
