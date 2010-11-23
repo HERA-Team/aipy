@@ -323,25 +323,29 @@ def to_fits(filename, data, clobber=False,
     phdu.header.update('EPOCH',epoch,'Epoch of coordinate system')
     phdu.header.update('DATAMAX', data.max(), comment='MAX PIXEL VALUE')
     phdu.header.update('DATAMIN', data.min(), comment='MIN PIXEL VALUE')
+    print phdu.data.shape
     for i,ax in enumerate(axes):
-        if ax.lower().startswith('ra'): val,delta = (ra, d_ra)
-        elif ax.lower().startswith('dec'): val,delta = (dec, d_dec)
+        if ax.lower().startswith('ra') or ax.lower().startswith('glon'): val,delta = (ra, d_ra)
+        elif ax.lower().startswith('dec') or ax.lower().startswith('glat'): val,delta = (dec, d_dec)
         elif ax.lower().startswith('freq'): val,delta = (freq, d_freq)
         elif ax.lower().startswith('stokes'): val,delta = (1, 1)
         else: val,delta = (0,0)
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
-        if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
+        if ax.lower().startswith('ra') or ax.lower().startswith('dec')\
+        or ax.lower().startswith('glon') or ax.lower().startswith('glat'):
             phdu.header.update('CRPIX%d' % (i+1), 
-                    n.ceil(phdu.data.shape[i]/2.)+1) 
+                    n.ceil(phdu.data.shape[-(i+1)]/2.)+1) 
         else:
-            phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[i])
+            phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
         phdu.header.update('CRVAL%d' % (i+1), val)
-        if ax.lower().startswith('ra') and delta>0:
+        if (ax.lower().startswith('ra') or ax.lower().startswith('glon'))\
+             and delta>0:
             phdu.header.update('CDELT%d' % (i+1), delta*-1)
         else:
             phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
-        phdu.header.update('NAXIS%d' % (i+1),phdu.data.shape[i])
+        print "NAXIS%d = %d"%(i+1,phdu.data.shape[-(i+1)])
+        phdu.header.update('NAXIS%d' % (i+1),phdu.data.shape[-(i+1)])
     if history!='':
         history = [h.strip() for h in history.split("\n")]
         for line in history:
