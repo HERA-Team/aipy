@@ -28,7 +28,7 @@ setup(name = 'aipy',
     author_email = 'aparsons@astron.berkeley.edu',
     url = 'http://setiathome.berkeley.edu/~aparsons/aipy/aipy.cgi',
     classifiers = [
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Topic :: Scientific/Engineering :: Astronomy',
