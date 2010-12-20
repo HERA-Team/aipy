@@ -65,10 +65,12 @@ data_types = {
 
 class UV(_miriad.UV):
     """Top-level interface to a Miriad UV data set."""
-    def __init__(self, filename, status='old'):
-        """Open a miriad file.  status can be ['old','new','append']."""
+    def __init__(self, filename, status='old', corrmode='r'):
+        """Open a miriad file.  status can be ('old','new','append').  
+        corrmode can be 'r' (float32 data storage) or 'j' (int16 with shared exponent).  Default is 'r'."""
         assert(status in ['old', 'new', 'append'])
-        _miriad.UV.__init__(self, filename, status)
+        assert(corrmode in ['r', 'j'])
+        _miriad.UV.__init__(self, filename, status, corrmode)
         self.status = status
         self.nchan = 4096
         if status == 'old':
