@@ -52,6 +52,7 @@ static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
         uvopen_c(&self->tno, name, status);
         // Statically set the preamble format
         uvset_c(self->tno,"preamble","uvw/time/baseline",0,0.,0.,0.);
+        uvset_c(self->tno,"corr","r",0,0.,0.,0.);
     } catch (MiriadError &e) {
         self->tno = -1;
         PyErr_Format(PyExc_RuntimeError, e.get_message());
