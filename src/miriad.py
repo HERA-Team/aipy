@@ -78,7 +78,7 @@ class UV(_miriad.UV):
             self.read(); self.rewind() # Update variables for the user
             try: self.nchan = self['nchan']
             except(KeyError): pass
-        else: self.vartable = {}
+        else: self.vartable = {'corr':corrmode}
     def _gen_vartable(self):
         """Generate table of variables and types from the vartable header."""
         vartable = {}
