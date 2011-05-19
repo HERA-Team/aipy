@@ -14,3 +14,4 @@ import phs, const, coord, deconv
 import ephem, fit, healpix, img 
 import interp, cal, map, miriad
 import optimize, rfi, amp, scripting, src, _src, utils
+import dsp

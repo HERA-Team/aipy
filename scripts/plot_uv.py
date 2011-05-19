@@ -45,6 +45,8 @@ o.add_option('--nolegend', dest='nolegend', action='store_true',
     help='Omit legend in last plot.')
 o.add_option('--share', dest='share', action='store_true',
     help='Share plots in a single frame.')
+o.add_option('--window', dest='window', default='kaiser3',
+    help='Windowing function to use in delay transform.  Default is kaiser3.  Options are: ' + ', '.join(a.dsp.WINDOW_FUNC.keys()))
 
 def convert_arg_range(arg):
     """Split apart command-line lists/ranges into a list of numbers."""
@@ -142,6 +144,7 @@ for uvfile in args:
         if not use_this_time: continue
         # Do delay transform if required
         if opts.delay:
+            w = a.dsp.gen_window(d.shape[-1], window=opts.window)
             if opts.unmask:
                 d = d.data
                 ker = n.zeros_like(d)
@@ -150,9 +153,9 @@ for uvfile in args:
             else:
                 flags = n.logical_not(d.mask).astype(n.float)
                 gain = n.sqrt(n.average(flags**2))
-                ker = n.fft.ifft(flags)
+                ker = n.fft.ifft(flags*w)
                 d = d.filled(0)
-            d = n.fft.ifft(d)
+            d = n.fft.ifft(d*w)
             if not opts.clean is None and not n.all(d == 0):
                 d, info = a.deconv.clean(d, ker, tol=opts.clean)
                 d += info['res'] / gain
@@ -319,5 +322,9 @@ if not opts.nolegend and (not is_time_range or not is_chan_range):
 
 # Save to a file or pop up a window
 if opts.out_file != '': p.savefig(opts.out_file)
-else: p.show()
+else:
+    def click(event):
+        print event.key
+    p.connect('key_press_event', click)
+    p.show()
 
