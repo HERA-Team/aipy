@@ -17,7 +17,7 @@ import numpy as n, sys, _deconv
 # Find smallest representable # > 0 for setting clip level
 lo_clip_lev = n.finfo(n.float).tiny 
 
-def clean(im, ker, mdl=None, gain=.1, maxiter=10000, tol=1e-3, 
+def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3, 
         stop_if_div=True, verbose=False):
     """This standard Hoegbom clean deconvolution algorithm operates on the 
     assumption that the image is composed of point sources.  This makes it a 
@@ -43,7 +43,12 @@ def clean(im, ker, mdl=None, gain=.1, maxiter=10000, tol=1e-3,
             res = im - n.fft.ifft2(n.fft.fft2(mdl) * \
                                    n.fft.fft2(ker)).astype(im.dtype)
         else: raise ValueError('Number of dimensions != 1 or 2')
-    iter = _deconv.clean(res, ker, mdl,
+    if area is None:
+        area = n.ones(im.shape, dtype=n.int)
+    else:
+        area = area.astype(n.int)
+        
+    iter = _deconv.clean(res, ker, mdl, area,
             gain=gain, maxiter=maxiter, tol=tol, 
             stop_if_div=int(stop_if_div), verbose=int(verbose))
     score = n.sqrt(n.average(n.abs(res)**2))
