@@ -1,0 +1,11 @@
+Description of the branches on Danny's aipy git tree
+
+dev is Danny's working branch
+live is Aaron's github branch (do git pull git://github.com/AaronParsons/aipy.git)
+master is the best effor to reconcile the two (not really used, see stage-patch)
+stage-patch is live + dev commits in a single patch (merge a range of commits from dev into a single stage-patch
+commit, test it, then submit to arp)
+
+stokes  not used (kept for historical purposes)
+catalog  not used (kept for historical purposes)
+
