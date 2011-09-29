@@ -38,7 +38,6 @@ else:
      logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('srclist')
 
-
 if opts.cal != None:
     cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
 else:
@@ -72,7 +71,6 @@ for c in [cat, xcat, ccat]:
         try: ephem.FixedBody.compute(c[s], date)
         except(TypeError):
             if opts.juldate is None: del(c[s])
-#            else: ephem.Body.compute(c[s], date)
             else: c[s].compute(aa)
 
 srcs = cat.keys()
@@ -129,4 +127,3 @@ else:
             if scount<snum-1:outstring += "),"
             else: outstring += ")"
         print outstring
-    

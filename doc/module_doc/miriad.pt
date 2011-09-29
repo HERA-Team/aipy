@@ -1,0 +1,280 @@
+\File{(stdin)}{Fri Sep 26 11:45:33 2008}
+
+\PythonNoMath
+
+\PythonDocBlock
+\verb""\\ 
+\verb"A package for interfacing to Miriad: the Multichannel Image Reconstruction"\\ 
+\verb"Image Analysis and Display package for reducing interferometric data for"\\ 
+\verb"radio telescopes."\\ 
+
+\PythonDocBlockEnd
+
+
+\I{11}{0}$\K{def}\ \F{echo}\,(\V{uv},p,d)\Y{:}\ \K{return}\ p,d$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{66}{0}$\K{class}\ \F{UV}\,(\V{\_miriad}.\V{UV})\Y{:}$
+\DS{67}{1}{%
+\verb"Top-level interface to a Miriad UV data set."}\vskip 5pt 
+\I{68}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{filename},\V{status}\Y{=}{}$
+\DS{69}{2}{%
+\verb"Open a miriad file.  status can be ['old','new','append']."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+\I{80}{1}$\K{def}\ \F{\_gen\_vartable}\,(\V{self})\Y{:}$
+\DS{81}{2}{%
+\verb"Generate table of variables and types from the vartable header."}\vskip 5pt 
+
+
+
+
+
+
+
+\I{89}{1}$\K{def}\ \F{vars}\,(\V{self})\Y{:}$
+\DS{90}{2}{%
+\verb"Return a list of available variables."}\vskip 5pt 
+
+\I{92}{1}$\K{def}\ \F{items}\,(\V{self})\Y{:}$
+\DS{93}{2}{%
+\verb"Return a list of available header items."}\vskip 5pt 
+
+
+
+
+
+
+
+\I{101}{1}$\K{def}\ \F{\_rdhd}\,(\V{self},\V{name})\Y{:}$
+\DS{102}{2}{%
+\verb"Provide read access to header items via low-level calls."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{128}{1}$\K{def}\ \F{\_wrhd}\,(\V{self},\V{name},\V{val})\Y{:}$
+\DS{129}{2}{%
+\verb"Provide write access to header items via low-level calls."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{143}{1}$\K{def}\ \F{\_rdhd\_special}\,(\V{self},\V{name})\Y{:}$
+\DS{144}{2}{%
+\verb"Provide read access to special header items of type '?' to _rdhd"}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{161}{1}$\K{def}\ \F{\_wrhd\_special}\,(\V{self},\V{name},\V{val})\Y{:}$
+\DS{162}{2}{%
+\verb"Provide write access to special header items of type '?' to _rdhd"}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+\I{173}{1}$\K{def}\ \F{\_\_getitem\_\_}\,(\V{self},\V{name})\Y{:}$
+\DS{174}{2}{%
+\verb"Allow access to variables and header items via uv[name]."}\vskip 5pt 
+
+
+
+
+
+
+\I{181}{1}$\K{def}\ \F{\_\_setitem\_\_}\,(\V{self},\V{name},\V{val})\Y{:}$
+\DS{182}{2}{%
+\verb"Allow setting variables and header items via uv[name] = val."}\vskip 5pt 
+
+
+
+
+
+\I{188}{1}$\K{def}\ \F{select}\,(\V{self},\V{name},\V{n1},\V{n2},\V{include}\Y{=}\NUM{1}{})\Y{:}$
+\DS{189}{2}{%
+\verb"Choose which data are returned by read().  "\\ 
+\verb"    name    This can be one of 'time','antennae','visibility',"\\ 
+\verb"            'uvrange','pointing','amplitude','window','or','dra',"\\ 
+\verb"            'ddec','uvnrange','increment','ra','dec','and', 'clear',"\\ 
+\verb"            'on','polarization','shadow','auto','dazim','delev'"\\ 
+\verb"    n1,n2   Generally this is the range of values to select. For"\\ 
+\verb"            'antennae', this is the two antennae pair to select"\\ 
+\verb"            (indexed from 0); a -1 indicates 'all antennae'."\\ 
+\verb"            For 'shadow', a zero indicates use 'antdiam' variable."\\ 
+\verb"            For 'on','window','polarization','increment','shadow' only"\\ 
+\verb"            p1 is used."\\ 
+\verb"            For 'and','or','clear','auto' p1 and p2 are ignored."\\ 
+\verb"    include If true, the data is selected. If false, the data is"\\ 
+\verb"            discarded. Ignored for 'and','or','clear'."}\vskip 5pt 
+
+
+
+\I{206}{1}$\K{def}\ \F{read}\,(\V{self},\V{raw}\Y{=}\V{False})\Y{:}$
+\DS{207}{2}{%
+\verb"Return the next data record.  Calling this function causes "\\ 
+\verb"vars to change to reflect the record which this function returns."\\ 
+\verb"'raw' causes data and flags to be returned seperately."}\vskip 5pt 
+
+
+
+
+
+\I{215}{1}$\K{def}\ \F{all}\,(\V{self},\V{raw}\Y{=}\V{False})\Y{:}$
+\DS{216}{2}{%
+\verb"Provide an iterator over preamble, data.  Allows constructs"\\ 
+\verb"like: for preamble, data in uv.all(): ..."}\vskip 5pt 
+
+
+
+\I{221}{1}$\K{def}\ \F{write}\,(\V{self},\V{preamble},\V{data},\V{flags}\Y{=}\V{None})\Y{:}$
+\DS{222}{2}{%
+\verb"Write the next data record.  data must be a complex, masked"\\ 
+\verb"array.  preamble must be (uvw, t, (i,j)), where uvw is an array of "\\ 
+\verb"u,v,w, t is the Julian date, and (i,j) is an antenna pair."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+\I{235}{1}$\K{def}\ \F{init\_from\_uv}\,(\V{self},\V{uv},\V{override}\Y{=}\{\},\V{exclude}\Y{=}\Y{[]})\Y{:}$
+\DS{236}{2}{%
+\verb"Initialize header items and variables from another UV.  Those in "\\ 
+\verb"override will be overwritten by override[k], and tracking will be "\\ 
+\verb"turned off (meaning they will not be updated in pipe()).  Those in"\\ 
+\verb"exclude are omitted completely."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{257}{1}$\K{def}\ \F{pipe}\,(\V{self},\V{uv},\V{mfunc}\Y{=}\V{echo},\V{append2hist}\Y{=}{}$
+\DS{258}{2}{%
+\verb"Pipe in data from another UV through the function"\\ 
+\verb"mfunc(uv,preamble,data), which should return (preamble,data).  If "\\ 
+\verb"mfunc is not provided, the dataset will just be cloned, and if the "\\ 
+\verb"returned data is None, it will be omitted.  The string 'append2hist' "\\ 
+\verb"will be appended to history."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+\I{275}{1}$\K{def}\ \F{add\_var}\,(\V{self},\V{name},\V{type})\Y{:}$
+\DS{276}{2}{%
+\verb"Add a variable of the specified type to a UV file."}\vskip 5pt 
+
+\I{279}{0}$\K{def}\ \F{bl2ij}\,(\V{bl})\Y{:}$
+
+
+\I{283}{0}$\K{def}\ \F{ij2bl}\,(i,j)\Y{:}$
+
+

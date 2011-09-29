@@ -12,7 +12,7 @@ o.set_description(__doc__)
 o.add_option('-d', '--deconv', dest='deconv', default='cln',
     help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).')
 o.add_option('-o', '--output', dest='output', default='bim',
-    help='Comma delimited list of data to generate FITS files for.  Can be: cim (clean image), rim (residual image), or bim (best image = clean + residuals). Default is bim.')
+    help='Comma delimited list of data to generate FITS files for.  Can be: cim (clean image), cimc (clean image, convolved with central lobe of dirty beam) rim (residual image), or bim (best image = clean + residuals). Default is bim.')
 o.add_option('--var', dest='var', type='float', default=.6,
     help='Starting guess for variance in maximum entropy fit (defaults to variance of dirty image.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
@@ -21,6 +21,8 @@ o.add_option('--div', dest='div', action='store_true',
     help='Allow clean to diverge (i.e. allow residual score to increase)')
 o.add_option('-r', '--rewgt', dest='rewgt',  default='natural',
     help='Reweighting to apply to dim/dbm data before cleaning.  Options are: natural, uniform(LEVEL), or radial, where LEVEL is the fractional cutoff for using uniform weighting (recommended range .01 to .1).  Default is natural')
+o.add_option('-g','--gain',dest='gain',default=0.1,type='float',help='Loop gain, default=0.1')
+o.add_option('--pos_def',dest='pos_def',action='store_true',help="Don't set any negative clean components.")
 o.add_option('--maxiter', dest='maxiter', type='int', default=200,
     help='Number of allowable iterations per deconvolve attempt.')
 opts, args = o.parse_args(sys.argv[1:])
@@ -53,8 +55,6 @@ for cnt, k in enumerate(keys):
     dbm = dbm.astype(n.float32)
     if n.all(dbm == 0):
         print 'No data in image, so skipping.'
-        for ftag in ['cim','rim','bim']:
-            if ftag in outputs: to_fits(k, ftag, dbm, kwds)
         continue
     print kwds
     dim,dbm = dim.squeeze(), dbm.squeeze()
@@ -88,17 +88,31 @@ for cnt, k in enumerate(keys):
         cim,info = a.deconv.lsq(dim, dbm, 
             maxiter=opts.maxiter, verbose=True, tol=opts.tol)
     elif opts.deconv == 'cln':
-        cim,info = a.deconv.clean(dim, dbm, 
+        cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
             maxiter=opts.maxiter, stop_if_div=not opts.div, 
-            verbose=True, tol=opts.tol)
+            verbose=True, tol=opts.tol,pos_def=not opts.pos_def)
     elif opts.deconv == 'ann':
         cim,info = a.deconv.anneal(dim, dbm, maxiter=opts.maxiter, 
             cooling=lambda i,x: opts.tol*(1-n.cos(i/50.))*(x**2), verbose=True)
     else:
         cim,info = n.zeros_like(dim), {'res':dim}
+    
+    #Fit a 2d Gaussian to the dirty beam and convolve that with the clean components.
+    dbm_fit = n.fft.fftshift(dbm)
+    DIM = dbm.shape[0]
+    lo,hi = (DIM-30)/2,(DIM+30)/2
+    dbm_fit = dbm_fit[lo:hi,lo:hi]
+    cbm = a.twodgauss.twodgaussian(a.twodgauss.moments(dbm_fit),shape=dbm.shape)
+    cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
+    cbm /= n.sum(cbm)
+
+    cimc = n.fft.fftshift(n.fft.ifft2(n.fft.fft2(cim)*n.fft.fft2(cbm))).real
+
     rim = info['res']
-    bim = rim / bm_gain + cim
-    for ftag in ['cim','rim','bim']:
+
+    bim = rim / bm_gain + cimc 
+    
+    for ftag in ['cim','rim','bim','cimc']:
         if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
     
 

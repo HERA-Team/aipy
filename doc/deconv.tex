@@ -1,0 +1,46 @@
+\section{Module: aipy.deconv}
+
+A module implementing various techniques for deconvolving an image by a
+kernel.  Currently implemented are Clean, Least-Squares, and Maximum Entropy.
+
+\subsection{Function: clean}
+
+This is an implementation of the standard H{\"o}gbom clean deconvolution
+algorithm \cite{hogbom1974}, which operates on the assumption that the image
+is composed of point sources.  This makes it a poor choice for images with
+distributed flux.  The algorithm works by iteratively constructing a model.
+Each iteration, a point is added to this model at the location of the maximum
+residual, with a fraction (specified by 'gain') of the magnitude.  The
+convolution of that point is removed from the residual, and the process
+repeats.  Termination happens after 'maxiter' iterations, or when the clean
+loops starts increasing the magnitude of the residual.
+
+\subsection{Function: lsq}
+
+Implements a simple least-square fitting procedure for deconvolving an image.
+However, to save computing, the gradient of the fit at each pixel with respect
+pixels in the image is approximated as being diagonal.  In essence, this
+assumes that the convolution kernel is a delta-function.  This assumption
+works for small kernels, but not so well for large ones
+\cite{cornwell_evans1985}.  This deconvolution algorithm, unlike maximum
+entropy, makes no promises about maximizing smoothness while fitting to the
+expected noise and flux levels.  That is, it can introduce structure for which
+there is no evidence in the original image.  Termination happens after
+'maxiter' iterations, or when the score is changing by a fraction less than
+'tol' between iterations.  This makes the assumption that the true optimum has
+a smooth approach.
+
+\subsection{Function: maxent}
+
+The maximum entropy deconvolution (MEM) \cite{cornwell_evans1985,sault1990} is
+similar to least-squares deconvolution, but instead of simply minimizing the
+fit, maximum entropy seeks to do so only to within the specified variance
+var0, and then attempts to maximize the "smoothness" of the model.  This has
+several desirable effects, including uniqueness of solution, independence from
+flux distribution (all image scales are equally weighted in the model), and
+absence of spurious structure in the model.  Similar approximations are made
+in this implementation as in the least-squares implementation.
+
+\subsection{Reference}
+
+\PythonSource*{module_doc/deconv.pt}

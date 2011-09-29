@@ -52,7 +52,7 @@ template<typename T> struct Clean {
     // Does a 2d real-valued clean
     static int clean_2d_r(PyArrayObject *res, PyArrayObject *ker,
             PyArrayObject *mdl, double gain, int maxiter, 
-            double tol, int stop_if_div, int verb) {
+            double tol, int stop_if_div, int verb, int pos_def) {
         T score=-1, nscore, best_score=-1; 
         T max=0, mmax, val, mval, step, q=0, mq=0;
         T firstscore=-1;
@@ -90,18 +90,27 @@ template<typename T> struct Clean {
                     val = IND2(res,wrap_n1,wrap_n2,T);
                     mval = val * val;
                     nscore += mval;
-                    if (mval > mmax) {
-                        nargmax1 = wrap_n1; nargmax2 = wrap_n2;
-                        max = val;
-                        mmax = mval;
+                    if (pos_def != 0) {
+                        if (mval > mmax) {
+                            nargmax1 = wrap_n1; nargmax2 = wrap_n2;
+                            max = val;
+                            mmax=mval;
+                        }
+                    }
+                    else {
+                        if (mval > mmax && val > 0) {
+                            nargmax1 = wrap_n1; nargmax2 = wrap_n2;
+                            max = val;
+                            mmax=mval;
+                        }
                     }
                 }
             }
             nscore = sqrt(nscore / (dim1 * dim2));
             if (firstscore < 0) firstscore = nscore;
             if (verb != 0)
-                printf("Iter %d: Max=(%d,%d), Score=%f, Prev=%f, Delta=%f\n", \
-                    i, nargmax1, nargmax2, (double) (nscore/firstscore), \
+                printf("Iter %d: Max=(%d,%d,%f), Score=%f, Prev=%f, Delta=%f\n", \
+                    i, nargmax1, nargmax2, max, (double) (nscore/firstscore), \
                     (double) (score/firstscore), 
                     (double) fabs(score - nscore) / firstscore);
             if (score > 0 && nscore > score) {
@@ -160,7 +169,7 @@ template<typename T> struct Clean {
     // Does a 1d real-valued clean
     static int clean_1d_r(PyArrayObject *res, PyArrayObject *ker, 
             PyArrayObject *mdl, double gain, int maxiter, double tol,
-            int stop_if_div, int verb) {
+            int stop_if_div, int verb, int pos_def) {
         T score=-1, nscore, best_score=-1;
         T max=0, mmax, val, mval, step, q=0, mq=0;
         T firstscore=-1;
@@ -253,7 +262,7 @@ template<typename T> struct Clean {
     // Does a 2d complex-valued clean
     static int clean_2d_c(PyArrayObject *res, PyArrayObject *ker,
             PyArrayObject *mdl, double gain, int maxiter, double tol,
-            int stop_if_div, int verb) {
+            int stop_if_div, int verb, int pos_def) {
         T maxr=0, maxi=0, valr, vali, stepr, stepi, qr=0, qi=0;
         T score=-1, nscore, best_score=-1;
         T mmax, mval, mq=0;
@@ -376,7 +385,7 @@ template<typename T> struct Clean {
     // Does a 1d complex-valued clean
     static int clean_1d_c(PyArrayObject *res, PyArrayObject *ker, 
             PyArrayObject *mdl, double gain, int maxiter, double tol,
-            int stop_if_div, int verb) {
+            int stop_if_div, int verb, int pos_def) {
         T maxr=0, maxi=0, valr, vali, stepr, stepi, qr=0, qi=0;
         T score=-1, nscore, best_score=-1;
         T mmax, mval, mq=0;
@@ -492,14 +501,14 @@ template<typename T> struct Clean {
 PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
     PyArrayObject *res, *ker, *mdl;
     double gain=.1, tol=.001;
-    int maxiter=200, rank=0, dim1, dim2, rv, stop_if_div=0, verb=0;
+    int maxiter=200, rank=0, dim1, dim2, rv, stop_if_div=0, verb=0, pos_def=0;
     static char *kwlist[] = {"res", "ker", "mdl", "gain", \
                              "maxiter", "tol", 
-                            "stop_if_div", "verbose", NULL};
+                            "stop_if_div", "verbose","pos_def", NULL};
     // Parse arguments and perform sanity check
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!O!O!|didii", kwlist, \
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!O!O!|didiii", kwlist, \
             &PyArray_Type, &res, &PyArray_Type, &ker, &PyArray_Type, &mdl, 
-            &gain, &maxiter, &tol, &stop_if_div, &verb)) 
+            &gain, &maxiter, &tol, &stop_if_div, &verb, &pos_def)) 
         return NULL;
     if (RANK(res) == 1) {
         rank = 1;
@@ -521,39 +530,39 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
     // Use template to implement data loops for all data types
     if (TYPE(res) == NPY_FLOAT) {
         if (rank == 1) {
-            rv = Clean<float>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<float>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<float>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<float>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_DOUBLE) {
         if (rank == 1) {
-            rv = Clean<double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_LONGDOUBLE) {
         if (rank == 1) {
-            rv = Clean<long double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<long double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<long double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<long double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_CFLOAT) {
         if (rank == 1) {
-            rv = Clean<float>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<float>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<float>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<float>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_CDOUBLE) {
         if (rank == 1) {
-            rv = Clean<double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_CLONGDOUBLE) {
         if (rank == 1) {
-            rv = Clean<long double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<long double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<long double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb);
+            rv = Clean<long double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else {
         PyErr_Format(PyExc_ValueError, "Unsupported data type.");
@@ -566,7 +575,7 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
 // Wrap function into module
 static PyMethodDef DeconvMethods[] = {
     {"clean", (PyCFunction)clean, METH_VARARGS|METH_KEYWORDS,
-        "clean(res,ker,mdl,gain=.1,maxiter=200,tol=.001,stop_if_div=0,verbose=0)\nPerform a 1 or 2 dimensional deconvolution using the CLEAN algorithm.."},
+        "clean(res,ker,mdl,gain=.1,maxiter=200,tol=.001,stop_if_div=0,verbose=0,pos_def=0)\nPerform a 1 or 2 dimensional deconvolution using the CLEAN algorithm.."},
     {NULL, NULL}
 };
 

@@ -1,0 +1,89 @@
+\relax 
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Acknowledgement}{2}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Installation}{3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Requirements}{3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Install As Root}{3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Install As User}{3}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Module: aipy.miriad}{4}}
+\newlabel{sec:intro}{{3}{4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Miriad's UV File Format}{4}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}Header Items}{4}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}Correlation Data and Variables}{4}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.3}The Preamble}{4}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.4}Flags}{5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Class: UV}{5}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Reading an Existing File}{5}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}Initializing and Piping From Another UV}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.3}Writing a UV File from Scratch}{8}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Miriad Data Types}}{8}}
+\newlabel{tbl:data_types}{{1}{8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Outputs of plot\_uv.py from \S  3.3\hbox {}. Upper-left is [1], upper-right is [2], lower-left is [3], and lower-right is [4].}}{9}}
+\newlabel{fig:plot_uv}{{1}{9}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Script: plot\_uv.py}{9}}
+\newlabel{sec:plot_uv}{{3.3}{9}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Under the Hood}{10}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Reference}{10}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Module: aipy.ant}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Class: RadioBody (RadioFixedBody, RadioSpecial)}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Class: SrcCatalog}{13}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Class: Beam}{13}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Class: Antenna}{13}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Class: AntennaArray (subclassing ArrayLocation)}{13}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The vertical axis is time, with test.uv plotted above test.uv.mod. The horizontal axis is frequency, and the color represents phase. Our filtering and phasing removed/flattened the dominant phase in test.uv. Note that the color blue wraps to red.}}{16}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Reference}{16}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Module: aipy.sim}{20}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Reference}{20}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Module: aipy.fit}{24}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Reference}{24}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Module: aipy.loc}{26}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Reference}{26}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Module: aipy.src}{27}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Reference}{27}}
+\citation{thompson_et_al2001}
+\citation{taylor_et_al1999}
+\@writefile{toc}{\contentsline {section}{\numberline {9}Module: aipy.img}{28}}
+\newlabel{sec:img}{{9}{28}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.1}A Brief Introduction}{28}}
+\newlabel{sec:img_intro}{{9.1}{28}}
+\newlabel{eq:meas_eq}{{1}{28}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}Class: Img}{28}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Plotted are the $\ell ,m$ coordinates for an Img with size=200, res=0.5. Note that $\ell $ measures +E -W, and $m$ measures +N -S. AIPY follows the convention that for images, coordinates increase right to left and bottom to top (assuming the origin is placed in the top-left corner). This presents a geocentric view of the sky.}}{29}}
+\newlabel{fig:img_lm}{{3}{29}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces On the top row are plotted topocentric coordinates for an Img in azimuth (angle clockwise from N) and altitude (angle from horizon). The second row shows right-ascension and declination coordinates in the current epoch for an observer at $45^\circ $ latitude with 0:00 right ascension overhead. Coordinate transformations are provided by the aipy.coord module.}}{29}}
+\newlabel{fig:img_crd}{{4}{29}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.1}A Little About Coordinates}{29}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.2}Gridding and Imaging}{30}}
+\citation{cornwell_et_al_2003}
+\citation{cornwell_et-al_2005_347}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces The upper plots illustrate matrices containing gridded visibility data (left) and gridded sample weights (right). Below them are the inverse Fourier transforms of these matrices, illustrating a dirty image of Virgo A (left) and the corresponding dirty beam (right).}}{31}}
+\newlabel{fig:img_vir}{{5}{31}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.3}Class: ImgW}{31}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces The upper plots are the dirty image (left) and dirty beam (right) generated by an Img phasing 1.5 hours ($22.5^\circ $) from Virgo A, and the lower plots illustrate the same using an ImgW. Notice that the Img fails to place flux at the actual location of the source, and that the ImgW does concentrate flux at the source location, but exhibits a point-source response which departs moderately from the dirty beam. The convolution inherent to W projection also helps reduce aliasing. }}{32}}
+\newlabel{fig:img_imgw}{{6}{32}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.4}Script: plot\_img}{32}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.5}Reference}{32}}
+\@writefile{toc}{\contentsline {section}{\numberline {10}Module: aipy.map}{35}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}Reference}{35}}
+\@writefile{toc}{\contentsline {section}{\numberline {11}Module: aipy.coord}{36}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}An Overview of Coordinate Systems}{36}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.2}Reference}{36}}
+\citation{hogbom1974}
+\citation{cornwell_evans1985}
+\citation{cornwell_evans1985}
+\citation{sault1990}
+\@writefile{toc}{\contentsline {section}{\numberline {12}Module: aipy.deconv}{38}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.1}Function: clean}{38}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.2}Function: lsq}{38}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.3}Function: maxent}{38}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.4}Reference}{38}}
+\citation{gorski1999}
+\citation{gorski2005}
+\@writefile{toc}{\contentsline {section}{\numberline {13}Module: aipy.healpix}{41}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {13.1}Reference}{41}}
+\@writefile{toc}{\contentsline {section}{\numberline {14}Module: aipy.scripting}{43}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.1}Reference}{43}}
+\@writefile{toc}{\contentsline {section}{\numberline {15}Module: aipy.scripting}{44}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {15.1}Reference}{44}}
+\bibstyle{plain}
+\bibdata{biblio}

@@ -1,0 +1,305 @@
+\File{(stdin)}{Fri Sep 26 11:45:32 2008}
+
+\PythonNoMath
+
+\PythonDocBlock
+\verb""\\ 
+\verb"Module for representing antenna array geometry and for generating"\\ 
+\verb"phasing information."\\ 
+
+\PythonDocBlockEnd
+
+\I{7}{0}$\K{class}\ \F{PointingError}\,(\V{Exception})\Y{:}$
+\DS{8}{1}{%
+\verb"An error to throw if a source is below the horizon."}\vskip 5pt 
+\I{9}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{value})\Y{:}\V{self}.\V{parameter}\Y{=}\V{value}$
+\I{10}{1}$\K{def}\ \F{\_\_str\_\_}\,(\V{self})\Y{:}\ \K{return}\ \F{repr}\,(\V{self}.\V{parameter})$
+\I{19}{0}$\K{def}\ \F{juldate2ephem}\,(\V{num})\Y{:}$
+\DS{20}{1}{%
+\verb"Convert Julian date to ephem date, measured from noon, Jan. 1, 1900."}\vskip 5pt 
+
+\I{23}{0}$\K{def}\ \F{ephem2juldate}\,(\V{num})\Y{:}$
+\DS{24}{1}{%
+\verb"Convert ephem date (measured from noon, Jan. 1, 1900) to Julian date."}\vskip 5pt 
+
+\I{34}{0}$\K{class}\ \V{RadioBody}\Y{:}$
+\DS{35}{1}{%
+\verb"The location of a celestial source."}\vskip 5pt 
+\I{36}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{name}\Y{=}{}$
+
+\I{38}{1}$\K{def}\ \F{compute}\,(\V{self},\V{observer})\Y{:}$
+\DS{39}{2}{%
+\verb"Update coordinates relative to the provided observer.  Must be"\\ 
+\verb"called at each time step before accessing information."}\vskip 5pt 
+
+
+
+\I{46}{1}$\K{def}\ \F{get\_crd}\,(\V{self},\V{crdsys},\V{ncrd}\Y{=}\NUM{3}{})\Y{:}$
+\DS{47}{2}{%
+\verb"Return the coordinates of this location in the desired coordinate"\\ 
+\verb"system ('eq','top') in the current epoch.  If ncrd=2, angular"\\ 
+\verb"coordinates (ra/dec or az/alt) are returned, and if ncrd=3,"\\ 
+\verb"xyz coordinates are returned."}\vskip 5pt 
+
+
+
+
+
+
+
+
+\I{67}{0}$\K{class}\ \F{RadioFixedBody}\,(\V{ephem}.\V{FixedBody},\V{RadioBody})\Y{:}$
+\DS{68}{1}{%
+\verb"A source at fixed RA,DEC.  Combines ephem.FixedBody with RadioBody."}\vskip 5pt 
+\I{69}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{ra},\V{dec},\V{name}\Y{=}{}$
+
+
+
+\I{73}{1}$\K{def}\ \F{compute}\,(\V{self},\V{observer})\Y{:}$
+
+
+\I{84}{0}$\K{class}\ \F{RadioSpecial}\,(\V{RadioBody},\V{object})\Y{:}$
+\DS{85}{1}{%
+\verb"A moving source (Sun,Moon,planets).  Combines ephem versions of these "\\ 
+\verb"objects with RadioBody."}\vskip 5pt 
+\I{87}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{name},\O{**}\V{kwargs})\Y{:}$
+\DS{88}{2}{%
+\verb"`name' is used to lookup appropriate ephem celestial object."}\vskip 5pt 
+
+
+\I{91}{1}$\K{def}\ \F{\_\_getattr\_\_}\,(\V{self},\V{nm})\Y{:}$
+\DS{92}{2}{%
+\verb"First try to access attribute from this class, but if that fails, "\\ 
+\verb"try to get it from the underlying ephem object."}\vskip 5pt 
+
+
+\I{96}{1}$\K{def}\ \F{\_\_setattr\_\_}\,(\V{self},\V{nm},\V{val})\Y{:}$
+\DS{97}{2}{%
+\verb"First try to set attribute for this class, buf if that fails, "\\ 
+\verb"try to set it for the underlying ephem object."}\vskip 5pt 
+
+
+\I{101}{1}$\K{def}\ \F{compute}\,(\V{self},\V{observer})\Y{:}$
+
+
+\I{112}{0}$\K{class}\ \F{SrcCatalog}\,(\V{dict})\Y{:}$
+\DS{113}{1}{%
+\verb"A catalog of celestial sources."}\vskip 5pt 
+\I{114}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{srcs},\O{**}\V{kwargs})\Y{:}$
+
+
+\I{117}{1}$\K{def}\ \F{add\_src}\,(\V{self},\V{src})\Y{:}$
+\DS{118}{2}{%
+\verb"Add provided src object (RadioFixedBody,RadioSpecial) to catalog."}\vskip 5pt 
+
+\I{120}{1}$\K{def}\ \F{get\_srcs}\,(\V{self},\Y{*}\V{args})\Y{:}$
+\DS{121}{2}{%
+\verb"Return list of all src objects in catalog."}\vskip 5pt 
+
+\I{123}{1}$\K{def}\ \F{compute}\,(\V{self},\V{observer})\Y{:}$
+\DS{124}{2}{%
+\verb"Call compute method of all objects in catalog."}\vskip 5pt 
+
+\I{126}{1}$\K{def}\ \F{get\_crds}\,(\V{self},\V{crdsys},\V{ncrd}\Y{=}\NUM{3}{},\V{srcs}\Y{=}\V{None})\Y{:}$
+\DS{127}{2}{%
+\verb"Return coordinates of all objects in catalog."}\vskip 5pt 
+
+
+
+\I{138}{0}$\K{class}\ \V{Beam}\Y{:}$
+\DS{139}{1}{%
+\verb"Template for representing antenna beam pattern.  Beams also hold"\\ 
+\verb"info about which frequencies are active (i.e. Antennas and AntennaArrays"\\ 
+\verb"access frequencies through Beam)."}\vskip 5pt 
+\I{142}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{freqs},\V{active\_chans}\Y{=}\V{None},\O{**}\V{kwargs})\Y{:}$
+\DS{143}{2}{%
+\verb"freqs = frequencies (in GHz) at bin centers across spectrum"\\ 
+\verb"active_chans = indices of channels to use for future calculations."}\vskip 5pt 
+
+
+\I{147}{1}$\K{def}\ \F{select\_chans}\,(\V{self},\V{active\_chans}\Y{=}\V{None})\Y{:}$
+\DS{148}{2}{%
+\verb"Select only enumerated channels to use for future calculations."}\vskip 5pt 
+
+
+
+\I{159}{0}$\K{class}\ \V{Antenna}\Y{:}$
+\DS{160}{1}{%
+\verb"Representation of physical attributes of individual antenna."}\vskip 5pt 
+\I{161}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},x,y,z,\V{beam},\V{delay}\Y{=}\NUM{0}{}.,\V{offset}\Y{=}\NUM{0}{}.,\O{**}\V{kwargs})\Y{:}$
+\DS{162}{2}{%
+\verb"x,y,z = antenna coordinates in equatorial (ns) coordinates"\\ 
+\verb"beam = Beam object"\\ 
+\verb"delay = signal delay (linear phase vs. frequency)"\\ 
+\verb"offset = signal phase offset (constant phase vs. frequency)"}\vskip 5pt 
+
+
+
+
+
+
+
+\I{174}{1}$\K{def}\ \F{select\_chans}\,(\V{self},\V{active\_chans}\Y{=}\V{None})\Y{:}$
+\DS{175}{2}{%
+\verb"Select only the specified channels for use in future calculations."}\vskip 5pt 
+
+
+
+
+
+\I{181}{1}$\K{def}\ \F{\_\_tuple\_\_}\,(\V{self})\Y{:}\ \K{return}\ (\V{self}.\V{pos}[\NUM{0}{}],\V{self}.\V{pos}[\NUM{1}{}],\V{self}.\V{pos}[\NUM{2}{}])$
+\I{182}{1}$\K{def}\ \F{\_\_list\_\_}\,(\V{self})\Y{:}\ \K{return}\ [\V{self}.\V{pos}[\NUM{0}{}],\V{self}.\V{pos}[\NUM{1}{}],\V{self}.\V{pos}[\NUM{2}{}]]$
+\I{183}{1}$\K{def}\ \F{\_\_add\_\_}\,(\V{self},a)\Y{:}\ \K{return}\ \V{self}.\V{pos}\Y{+}a.\V{pos}$
+
+\I{185}{1}$\K{def}\ \F{\_\_neg\_\_}\,(\V{self})\Y{:}\ \K{return}\ \Y{-}\V{self}.\V{pos}$
+\I{186}{1}$\K{def}\ \F{\_\_sub\_\_}\,(\V{self},a)\Y{:}\ \K{return}\ \V{self}.\V{pos}\Y{-}a.\V{pos}$
+\I{187}{1}$\K{def}\ \F{\_\_rsub\_\_}\,(\V{self},a)\Y{:}\ \K{return}\ a.\V{pos}\Y{-}\V{self}.\V{pos}$
+\I{196}{0}$\K{class}\ \F{ArrayLocation}\,(\V{ephem}.\V{Observer})\Y{:}$
+\DS{197}{1}{%
+\verb"The location and time of an observation."}\vskip 5pt 
+\I{198}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{location})\Y{:}$
+\DS{199}{2}{%
+\verb"location = (lat,long,[elev]) of array"}\vskip 5pt 
+
+
+
+\I{203}{1}$\K{def}\ \F{update\_location}\,(\V{self},\V{location})\Y{:}$
+\DS{204}{2}{%
+\verb"Initialize antenna array wth provided location.  May be (lat,long) "\\ 
+\verb"or (lat,long,elev)."}\vskip 5pt 
+
+
+\I{208}{1}$\K{def}\ \F{set\_jultime}\,(\V{self},t\Y{=}\V{None})\Y{:}$
+\DS{209}{2}{%
+\verb"Set current time as a Julian date."}\vskip 5pt 
+
+
+\I{212}{1}$\K{def}\ \F{set\_ephemtime}\,(\V{self},t\Y{=}\V{None})\Y{:}$
+\DS{213}{2}{%
+\verb"Set current time as derived from the ephem package."}\vskip 5pt 
+
+
+\I{224}{0}$\K{class}\ \F{AntennaArray}\,(\V{ArrayLocation})\Y{:}$
+\DS{225}{1}{%
+\verb"A collection of antennas, their spacings, and location/time of "\\ 
+\verb"observations."}\vskip 5pt 
+\I{227}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{location},\V{ants},\O{**}\V{kwargs})\Y{:}$
+\DS{228}{2}{%
+\verb" location = (lat,long,[elev]) of array"\\ 
+\verb"ants = list of Antenna objects."}\vskip 5pt 
+
+
+
+\I{233}{1}$\K{def}\ \F{update\_antennas}\,(\V{self},\V{ants})\Y{:}$
+\DS{234}{2}{%
+\verb"Update antenna array to use the provided list of Antenna objects."}\vskip 5pt 
+
+
+\I{237}{1}$\K{def}\ \F{update}\,(\V{self})\Y{:}$
+\DS{238}{2}{%
+\verb"Update variables derived from antenna parameters/active channels."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+\I{253}{1}$\K{def}\ \F{set\_ephemtime}\,(\V{self},t\Y{=}\V{None})\Y{:}$
+\DS{254}{2}{%
+\verb"Set current time as derived from the ephem package.  Recalculates"\\ 
+\verb"matrix for projecting baselines into current positions."}\vskip 5pt 
+
+
+
+\I{260}{1}$\K{def}\ \F{select\_chans}\,(\V{self},\V{active\_chans}\Y{=}\V{None})\Y{:}$
+\DS{261}{2}{%
+\verb"Select which channels are used in computations.  Default is all."}\vskip 5pt 
+
+
+\I{264}{1}$\K{def}\ \F{ij2bl}\,(\V{self},i,j)\Y{:}$
+\DS{265}{2}{%
+\verb"Convert baseline i,j (0 indexed) to Miriad's (i+1) << 8 | (j+1) "\\ 
+\verb"indexing scheme."}\vskip 5pt 
+
+\I{268}{1}$\K{def}\ \F{bl2ij}\,(\V{self},\V{bl})\Y{:}$
+\DS{269}{2}{%
+\verb"Convert Miriad's (i+1) << 8 | (j+1) baseline indexing scheme to "\\ 
+\verb"i,j (0 indexed)"}\vskip 5pt 
+
+
+\I{273}{1}$\K{def}\ \F{get\_baseline}\,(\V{self},i,j,\V{src}\Y{=}{}$
+\DS{274}{2}{%
+\verb"Return the baseline corresponding to i,j in various coordinate "\\ 
+\verb"projections: src='e' for current equatorial, 'z' for zenith "\\ 
+\verb"topocentric, 'r' for unrotated equatorial, or a RadioBody for"\\ 
+\verb"projection toward that source."}\vskip 5pt 
+
+
+
+
+
+
+
+
+\I{286}{1}$\K{def}\ \F{get\_delay}\,(\V{self},i,j)\Y{:}$
+\DS{287}{2}{%
+\verb"Return the delay corresponding to baseline i,j."}\vskip 5pt 
+
+\I{289}{1}$\K{def}\ \F{get\_offset}\,(\V{self},i,j)\Y{:}$
+\DS{290}{2}{%
+\verb"Return the delay corresponding to baseline i,j."}\vskip 5pt 
+
+\I{292}{1}$\K{def}\ \F{gen\_uvw}\,(\V{self},i,j,\V{src}\Y{=}{}$
+\DS{293}{2}{%
+\verb"Compute uvw coordinates of baseline relative to provided RadioBody, "\\ 
+\verb"or 'z' for zenith uvw coordinates."}\vskip 5pt 
+
+
+
+
+\I{299}{1}$\K{def}\ \F{gen\_phs}\,(\V{self},\V{src},i,j,\V{angsize}\Y{=}\V{None})\Y{:}$
+\DS{300}{2}{%
+\verb"Return phasing that is multiplied to data to point to src."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+\I{312}{1}$\K{def}\ \F{resolve\_src}\,(\V{self},\V{src},i,j,\V{angsize}\Y{=}\V{None})\Y{:}$
+\DS{313}{2}{%
+\verb"If angsize is provided, amplitudes will be adjusted to reflect "\\ 
+\verb"resolution effects for a uniform disc of the provided angular "\\ 
+\verb"radius (radians)."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{331}{1}$\K{def}\ \F{phs2src}\,(\V{self},\V{data},\V{src},i,j)\Y{:}$
+\DS{332}{2}{%
+\verb"Apply phasing to zenith-phased data to point to src."}\vskip 5pt 
+
+\I{334}{1}$\K{def}\ \F{unphs2src}\,(\V{self},\V{data},\V{src},i,j)\Y{:}$
+\DS{335}{2}{%
+\verb"Remove phasing from src-phased data to point to zenith."}\vskip 5pt 
+

@@ -1,0 +1,58 @@
+\contentsline {section}{\numberline {1}Introduction}{2}
+\contentsline {subsection}{\numberline {1.1}Acknowledgement}{2}
+\contentsline {section}{\numberline {2}Installation}{3}
+\contentsline {subsection}{\numberline {2.1}Requirements}{3}
+\contentsline {subsection}{\numberline {2.2}Install As Root}{3}
+\contentsline {subsection}{\numberline {2.3}Install As User}{3}
+\contentsline {section}{\numberline {3}Module: aipy.miriad}{4}
+\contentsline {subsection}{\numberline {3.1}Miriad's UV File Format}{4}
+\contentsline {subsubsection}{\numberline {3.1.1}Header Items}{4}
+\contentsline {subsubsection}{\numberline {3.1.2}Correlation Data and Variables}{4}
+\contentsline {subsubsection}{\numberline {3.1.3}The Preamble}{4}
+\contentsline {subsubsection}{\numberline {3.1.4}Flags}{5}
+\contentsline {subsection}{\numberline {3.2}Class: UV}{5}
+\contentsline {subsubsection}{\numberline {3.2.1}Reading an Existing File}{5}
+\contentsline {subsubsection}{\numberline {3.2.2}Initializing and Piping From Another UV}{7}
+\contentsline {subsubsection}{\numberline {3.2.3}Writing a UV File from Scratch}{8}
+\contentsline {subsection}{\numberline {3.3}Script: plot\_uv.py}{9}
+\contentsline {subsection}{\numberline {3.4}Under the Hood}{10}
+\contentsline {subsection}{\numberline {3.5}Reference}{10}
+\contentsline {section}{\numberline {4}Module: aipy.ant}{12}
+\contentsline {subsection}{\numberline {4.1}Class: RadioBody (RadioFixedBody, RadioSpecial)}{12}
+\contentsline {subsection}{\numberline {4.2}Class: SrcCatalog}{13}
+\contentsline {subsection}{\numberline {4.3}Class: Beam}{13}
+\contentsline {subsection}{\numberline {4.4}Class: Antenna}{13}
+\contentsline {subsection}{\numberline {4.5}Class: AntennaArray (subclassing ArrayLocation)}{13}
+\contentsline {subsection}{\numberline {4.6}Reference}{16}
+\contentsline {section}{\numberline {5}Module: aipy.sim}{20}
+\contentsline {subsection}{\numberline {5.1}Reference}{20}
+\contentsline {section}{\numberline {6}Module: aipy.fit}{24}
+\contentsline {subsection}{\numberline {6.1}Reference}{24}
+\contentsline {section}{\numberline {7}Module: aipy.loc}{26}
+\contentsline {subsection}{\numberline {7.1}Reference}{26}
+\contentsline {section}{\numberline {8}Module: aipy.src}{27}
+\contentsline {subsection}{\numberline {8.1}Reference}{27}
+\contentsline {section}{\numberline {9}Module: aipy.img}{28}
+\contentsline {subsection}{\numberline {9.1}A Brief Introduction}{28}
+\contentsline {subsection}{\numberline {9.2}Class: Img}{28}
+\contentsline {subsubsection}{\numberline {9.2.1}A Little About Coordinates}{29}
+\contentsline {subsubsection}{\numberline {9.2.2}Gridding and Imaging}{30}
+\contentsline {subsection}{\numberline {9.3}Class: ImgW}{31}
+\contentsline {subsection}{\numberline {9.4}Script: plot\_img}{32}
+\contentsline {subsection}{\numberline {9.5}Reference}{32}
+\contentsline {section}{\numberline {10}Module: aipy.map}{35}
+\contentsline {subsection}{\numberline {10.1}Reference}{35}
+\contentsline {section}{\numberline {11}Module: aipy.coord}{36}
+\contentsline {subsection}{\numberline {11.1}An Overview of Coordinate Systems}{36}
+\contentsline {subsection}{\numberline {11.2}Reference}{36}
+\contentsline {section}{\numberline {12}Module: aipy.deconv}{38}
+\contentsline {subsection}{\numberline {12.1}Function: clean}{38}
+\contentsline {subsection}{\numberline {12.2}Function: lsq}{38}
+\contentsline {subsection}{\numberline {12.3}Function: maxent}{38}
+\contentsline {subsection}{\numberline {12.4}Reference}{38}
+\contentsline {section}{\numberline {13}Module: aipy.healpix}{41}
+\contentsline {subsection}{\numberline {13.1}Reference}{41}
+\contentsline {section}{\numberline {14}Module: aipy.scripting}{43}
+\contentsline {subsection}{\numberline {14.1}Reference}{43}
+\contentsline {section}{\numberline {15}Module: aipy.scripting}{44}
+\contentsline {subsection}{\numberline {15.1}Reference}{44}

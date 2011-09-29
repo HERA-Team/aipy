@@ -1,0 +1,70 @@
+\File{(stdin)}{Fri Sep 26 11:45:33 2008}
+
+\PythonNoMath
+
+\PythonDocBlock
+\verb""\\ 
+\verb"Module for detecting and flaging RFI related effects."\\ 
+
+\PythonDocBlockEnd
+
+\I{7}{0}$\K{def}\ \F{gaussian}\,(\V{amp},\V{sig},\V{off},x)\Y{:}$
+\DS{8}{1}{%
+\verb"Generate gaussian value at x given amplitude, sigma, and x offset."}\vskip 5pt 
+
+\I{11}{0}$\K{def}\ \F{fit\_gaussian}\,(\V{xs},\V{ys})\Y{:}$
+\DS{12}{1}{%
+\verb"Fit a gaussian (returning amplitude, sigma, offset) to a set of x"\\ 
+\verb"values and their corresponding y values."}\vskip 5pt 
+\I{14}{1}$\K{def}\ \F{fitfunc}\,(\V{args})\Y{:}$
+
+
+
+
+\I{20}{0}$\K{def}\ \F{gen\_rfi\_thresh}\,(\V{data},\V{nsig}\Y{=}\NUM{2}{},\V{cnt\_per\_bin}\Y{=}\NUM{1000}{})\Y{:}$
+\DS{21}{1}{%
+\verb"Generate a threshold at nsig times the standard deviation (above,below)"\\ 
+\verb"the mean, outside of which data is considered rfi."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+\I{36}{0}$\K{def}\ \F{flag\_by\_int}\,(\V{preflagged\_auto},\V{nsig}\Y{=}\NUM{1}{})\Y{:}$
+\DS{37}{1}{%
+\verb"Flag rfi for an autocorrelation.  Iteratively removes outliers and"\\ 
+\verb"fits a smooth passband, then uses smooth passband to remove outliers"\\ 
+\verb"(both positive and negative)."}\vskip 5pt 
+
+
+
+
+
+
+
+\I{48}{0}$\K{def}\ \F{remove\_spikes}\,(\V{data},\V{mask}\Y{=}\V{None},\V{order}\Y{=}\NUM{6}{},\V{iter}\Y{=}\NUM{3}{},\V{return\_poly}\Y{=}\V{False})\Y{:}$
+\DS{49}{1}{%
+\verb"Iteratively fits a smooth function by removing outliers and fitting"\\ 
+\verb"a polynomial, then using the polynomial to remove other outliers."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
