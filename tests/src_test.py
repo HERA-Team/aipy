@@ -7,7 +7,7 @@ class TestSrc(unittest.TestCase):
         s = cat['J0535+220']
         self.assertEqual(s._jys, 1883.)
         self.assertEqual(s.index, -99.)
-        cat = src.get_catalog(srcs=['J0535+220'], cats=[])
+        cat = src.get_catalog(srcs=['J0535+220'], catalogs=[])
         self.assertEqual(len(cat.keys()), 0)
 
 if __name__ == '__main__':
