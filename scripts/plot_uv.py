@@ -135,7 +135,6 @@ for uvfile in args:
     # Read data from a single UV file
     for (uvw,t,(i,j)),d in uv.all():
         bl = '%d,%d' % (i,j)
-#        print bl
         # Implement Decimation
         if len(times) == 0 or times[-1] != t:
             times.append(t)

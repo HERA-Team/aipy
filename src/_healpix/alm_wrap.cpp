@@ -98,13 +98,11 @@ int get_option(char *options[], PyObject *choice) {
 // Python object that holds instance of Healpix_Base
 typedef struct {
     PyObject_HEAD
-    //Alm<xcomplex<double> > alm;
-    Alm<xcomplex<double> > *alm;
+    Alm<xcomplex<double> > alm;
 } AlmObject;
 
 // Deallocate memory when Python object is deleted
 static void AlmObject_dealloc(AlmObject* self) {
-    delete self->alm;
     self->ob_type->tp_free((PyObject*)self);
 }
 
@@ -123,8 +121,8 @@ static int AlmObject_init(AlmObject *self, PyObject *args, PyObject *kwds) {
         return -1;
     // Carefully try to create a new healpix_base
     try {
-        self->alm = new Alm<xcomplex<double> >(lmax, mmax);
-        self->alm->SetToZero();
+        self->alm = Alm<xcomplex<double> >(lmax, mmax);
+        self->alm.SetToZero();
     } catch (Message_error &e) {
         PyErr_Format(PyExc_RuntimeError, e.what());
         return -1;
@@ -141,7 +139,7 @@ static int AlmObject_init(AlmObject *self, PyObject *args, PyObject *kwds) {
 */
 // Get a coefficient
 static PyObject * AlmObject_get(AlmObject *self, PyObject *args) {
-    int l, m, lmax=self->alm->Lmax(), mmax=self->alm->Mmax();
+    int l, m, lmax=self->alm.Lmax(), mmax=self->alm.Mmax();
     xcomplex<double> c;
     if (!PyArg_ParseTuple(args, "ii", &l, &m)) return NULL;
     if (l < 0 || l > lmax || m < 0 || m > mmax || m > l) {
@@ -149,7 +147,7 @@ static PyObject * AlmObject_get(AlmObject *self, PyObject *args) {
         return NULL;
     }
     try {
-        c = (*self->alm)(l,m);
+        c = self->alm(l,m);
         return PyComplex_FromDoubles((double)c.real(), (double)c.imag());
     } catch (Message_error &e) {
         PyErr_Format(PyExc_RuntimeError, e.what());
@@ -159,7 +157,7 @@ static PyObject * AlmObject_get(AlmObject *self, PyObject *args) {
 
 // Set a coefficient
 static int AlmObject_set(AlmObject *self, PyObject *ind, PyObject *val) {
-    int l, m, lmax=self->alm->Lmax(), mmax=self->alm->Mmax();
+    int l, m, lmax=self->alm.Lmax(), mmax=self->alm.Mmax();
     xcomplex<double> c;
     if (!PyArg_ParseTuple(ind, "ii", &l, &m)) return -1;
     if (l < 0 || l > lmax || m < 0 || m > mmax || m > l) {
@@ -177,7 +175,7 @@ static int AlmObject_set(AlmObject *self, PyObject *ind, PyObject *val) {
         return -1;
     }
     try {
-        (*self->alm)(l,m) = c;
+        self->alm(l,m) = c;
         return 0;
     } catch (Message_error &e) {
         PyErr_Format(PyExc_RuntimeError, e.what());
@@ -187,17 +185,17 @@ static int AlmObject_set(AlmObject *self, PyObject *ind, PyObject *val) {
 
 // Get maximum L
 static PyObject * AlmObject_lmax(AlmObject *self) {
-    return PyInt_FromLong((long) self->alm->Lmax());
+    return PyInt_FromLong((long) self->alm.Lmax());
 }
 
 // Get maximum M
 static PyObject * AlmObject_mmax(AlmObject *self) {
-    return PyInt_FromLong((long) self->alm->Mmax());
+    return PyInt_FromLong((long) self->alm.Mmax());
 }
 
 // Clear all coefficients
 static PyObject * AlmObject_set_to_zero(AlmObject *self) {
-    self->alm->SetToZero();
+    self->alm.SetToZero();
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -218,7 +216,7 @@ static PyObject * AlmObject_to_map(AlmObject *self, PyObject *args) {
     }
     try {
         Healpix_Map<double> map(nside, scheme, SET_NSIDE);
-        alm2map<double>((*self->alm), map);
+        alm2map<double>(self->alm, map);
         // Transfer map contents into numpy array
         npix = map.Npix();
         rv = (PyArrayObject *) PyArray_SimpleNew(1, &npix, PyArray_DOUBLE);
@@ -274,7 +272,7 @@ static PyObject * AlmObject_from_map(AlmObject *self, PyObject *args) {
             PyErr_Format(PyExc_ValueError, "Unsupported data type");
             return NULL;
         }
-        map2alm_iter<double>(map, (*self->alm), iter);
+        map2alm_iter<double>(map, self->alm, iter);
         Py_INCREF(Py_None);
         return Py_None;
     } catch (Message_error &e) {
@@ -286,7 +284,7 @@ static PyObject * AlmObject_from_map(AlmObject *self, PyObject *args) {
 // Return the L,M indices of the data in an Alm
 static PyObject * AlmObject_lm_indices(AlmObject *self) {
     PyArrayObject *L, *M;
-    int lmax = self->alm->Lmax(), mmax = self->alm->Mmax();
+    int lmax = self->alm.Lmax(), mmax = self->alm.Mmax();
     npy_intp num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
     int cnt=0;
     L = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, PyArray_INT);
@@ -306,7 +304,7 @@ static PyObject * AlmObject_lm_indices(AlmObject *self) {
 // Return the coefficient data in an Alm
 static PyObject * AlmObject_get_data(AlmObject *self) {
     PyArrayObject *rv;
-    int lmax = self->alm->Lmax(), mmax = self->alm->Mmax();
+    int lmax = self->alm.Lmax(), mmax = self->alm.Mmax();
     npy_intp num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
     xcomplex<double> c;
     int cnt=0;
@@ -315,7 +313,7 @@ static PyObject * AlmObject_get_data(AlmObject *self) {
     for (int l=0; l<=lmax; ++l) {
         for (int m=0; m<=mmax; ++m) {
             if (m > l) break;
-            c = (*self->alm)(l,m);
+            c = self->alm(l,m);
             *((double *)(rv->data + cnt*rv->strides[0])) = (double) c.real();
             *((double *)(rv->data + cnt*rv->strides[0] + sizeof(double))) = (double) c.imag();
             cnt++;
@@ -327,7 +325,7 @@ static PyObject * AlmObject_get_data(AlmObject *self) {
 // Set the coefficient data in an Alm
 static PyObject * AlmObject_set_data(AlmObject *self, PyObject *args) {
     PyArrayObject *data;
-    int lmax = self->alm->Lmax(), mmax = self->alm->Mmax();
+    int lmax = self->alm.Lmax(), mmax = self->alm.Mmax();
     int num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
     int cnt=0;
     xcomplex<double> c;
@@ -342,7 +340,7 @@ static PyObject * AlmObject_set_data(AlmObject *self, PyObject *args) {
             if (m > l) break;
             c.Set(*((double *)(data->data + cnt*data->strides[0])),
              *((double *)(data->data + cnt*data->strides[0] + sizeof(double))));
-            (*self->alm)(l,m) = c;
+            self->alm(l,m) = c;
             cnt++;
         }
     }

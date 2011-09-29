@@ -1,0 +1,32 @@
+\File{(stdin)}{Fri Sep 26 11:45:33 2008}
+
+\PythonNoMath
+
+\PythonDocBlock
+\verb"Load an AntennaArray using the calibration information contained in the"\\ 
+\verb"specified location-specific module."
+\PythonDocBlockEnd
+
+\I{6}{0}$\K{def}\ \F{get\_freqs}\,(\V{sdf},\V{sfreq},\V{nchan})\Y{:}$
+
+\I{9}{0}$\K{def}\ \F{get\_aa}\,(\Y{*}\V{args})\Y{:}$
+\DS{10}{1}{%
+\verb'Return the AntennaArray specified by loc_key, which should be the'\\ 
+\verb'name of a module somewhere in Python''\verb's path that implements a '\\ 
+\verb'"get_aa(freqs)" function.  That function should return an AntennaArray '\\ 
+\verb'initialized with appropriate calibration parameters.  This function simply '\\ 
+\verb'attempts to import that function, and then performs a simple conversion '\\ 
+\verb'between sdf (channel width in GHz), sfreq (starting frequency), nchan (#'\\ 
+\verb'of channels) --> freqs (an array of channel centers).'}\vskip 5pt 
+
+
+
+
+
+
+
+\I{25}{0}$\K{def}\ \F{get\_src\_prms}\,(\V{loc\_key})\Y{:}$
+
+
+
+

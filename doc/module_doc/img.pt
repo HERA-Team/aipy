@@ -1,0 +1,214 @@
+\File{(stdin)}{Fri Sep 26 11:45:33 2008}
+
+\PythonNoMath
+
+\PythonDocBlock
+\verb""\\ 
+\verb"Module for gridding UVW data (including W projection), forming images,"\\ 
+\verb"and combining (mosaicing) images into spherical maps."\\ 
+
+\PythonDocBlockEnd
+
+
+
+\I{11}{0}$\K{def}\ \F{recenter}\,(a,c)\Y{:}$
+\DS{12}{1}{%
+\verb"Slide the (0,0) point of matrix a to a new location tuple c.  This is"\\ 
+\verb"useful for making an image centered on your screen after performing an"\\ 
+\verb"inverse fft of uv data."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+\I{25}{0}$\K{def}\ \F{convolve2d}\,(a,b)\Y{:}$
+\DS{26}{1}{%
+\verb"Convolve a and b by multiplying in Fourier domain.  Must be same size."}\vskip 5pt 
+
+\I{29}{0}$\K{def}\ \F{gaussian\_beam}\,(\V{sigma},\V{shape}\Y{=}\NUM{0}{},\V{amp}\Y{=}\NUM{1}{}.,\V{center}\Y{=}(\NUM{0}{},\NUM{0}{}))\Y{:}$
+\DS{30}{1}{%
+\verb"Return a 2D gaussian.  Normalized to area under curve = 'amp'.  "\\ 
+\verb"Down by 1/e at distance 'sigma' from 'center'."}\vskip 5pt 
+
+\I{33}{1}$\K{def}\ \F{gaussian}\,(x,y)\Y{:}$
+
+
+
+
+
+
+\I{41}{0}$\K{def}\ \F{beam\_gain}\,(\V{bm})\Y{:}$
+
+\I{44}{0}$\K{class}\ \V{Img}\Y{:}$
+\DS{45}{1}{%
+\verb"Class for gridding uv data, recording the synthesized beam profile,"\\ 
+\verb"and performing transforms into image domain."}\vskip 5pt 
+\I{47}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{size}\Y{=}\NUM{100}{},\V{res}\Y{=}\NUM{1}{},\V{mf\_order}\Y{=}\NUM{0}{})\Y{:}$
+\DS{48}{2}{%
+\verb"size = number of wavelengths which the UV matrix spans (this "\\ 
+\verb"determines the image resolution)."\\ 
+\verb"res = resolution of the UV matrix (determines image field of view)."}\vskip 5pt 
+
+
+
+
+
+
+
+
+\I{59}{1}$\K{def}\ \F{get\_LM}\,(\V{self},\V{center}\Y{=}(\NUM{0}{},\NUM{0}{}))\Y{:}$
+\DS{60}{2}{%
+\verb"Get the (l,m) image coordinates for an inverted UV matrix."}\vskip 5pt 
+
+
+
+
+
+
+
+\I{68}{1}$\K{def}\ \F{put}\,(\V{self},\V{uvw},\V{data},\V{wgts}\Y{=}\V{None},\V{apply}\Y{=}\V{True})\Y{:}$
+\DS{69}{2}{%
+\verb"Grid uv data (w is ignored) onto a UV plane.  Data should already"\\ 
+\verb"have the phase due to w removed.  Assumes the Hermitian conjugate"\\ 
+\verb"data is in uvw already (i.e. the conjugate points are not placed for"\\ 
+\verb"you).  If wgts are not supplied, default is 1 (normal weighting)."\\ 
+\verb"If apply is false, returns uv and bm data without applying it do"\\ 
+\verb"the internally stored matrices."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{96}{1}$\K{def}\ \F{append\_hermitian}\,(\V{self},\V{uvw},\V{data},\V{wgts}\Y{=}\V{None})\Y{:}$
+\DS{97}{2}{%
+\verb"Append to (uvw, data, [wgts]) the points (-uvw, conj(data), [wgts])."\\ 
+\verb"This is standard practice to get a real-valued image."}\vskip 5pt 
+
+
+
+
+
+
+
+\I{106}{1}$\K{def}\ \F{\_gen\_img}\,(\V{self},\V{data},\V{center}\Y{=}(\NUM{0}{},\NUM{0}{}))\Y{:}$
+\DS{107}{2}{%
+\verb"Return the inverse FFT of the provided data, with the 0,0 point "\\ 
+\verb"moved to 'center'.  Tranposes to put up=North, right=East."}\vskip 5pt 
+
+\I{110}{1}$\K{def}\ \F{image}\,(\V{self},\V{center}\Y{=}(\NUM{0}{},\NUM{0}{}))\Y{:}$
+\DS{111}{2}{%
+\verb"Return the inverse FFT of the UV matrix, with the 0,0 point moved"\\ 
+\verb"to 'center'.  Tranposes to put up=North, right=East."}\vskip 5pt 
+
+\I{114}{1}$\K{def}\ \F{bm\_image}\,(\V{self},\V{center}\Y{=}(\NUM{0}{},\NUM{0}{}),\V{term}\Y{=}\V{None})\Y{:}$
+\DS{115}{2}{%
+\verb"Return the inverse FFT of the sample weightings (for all mf_order"\\ 
+\verb"terms, or the specified term if supplied), with the 0,0 point"\\ 
+\verb"moved to 'center'.  Tranposes to put up=North, right=East."}\vskip 5pt 
+
+
+
+
+\I{122}{1}$\K{def}\ \F{uniform\_wgt}\,(\V{self},\V{thresh}\Y{=}.\NUM{1}{})\Y{:}$
+\DS{123}{2}{%
+\verb"Reweight data in the UV/BM to reflect uniform weighting above"\\ 
+\verb"the specified threshold (expressed as a fraction of the maximum"\\ 
+\verb"weight in the beam."}\vskip 5pt 
+
+
+
+
+
+\I{132}{1}$\K{def}\ \F{get\_top}\,(\V{self},\V{center}\Y{=}(\NUM{0}{},\NUM{0}{}))\Y{:}$
+\DS{133}{2}{%
+\verb"Return the topocentric coordinates of each pixel in the image."}\vskip 5pt 
+
+
+
+\I{137}{1}$\K{def}\ \F{get\_eq}\,(\V{self},\V{ra}\Y{=}\NUM{0}{},\V{dec}\Y{=}\NUM{0}{},\V{center}\Y{=}(\NUM{0}{},\NUM{0}{}))\Y{:}$
+\DS{138}{2}{%
+\verb"Return the equatorial coordinates of each pixel in the image, "\\ 
+\verb"assuming the image is centered on the provided ra, dec (in radians)."}\vskip 5pt 
+
+
+
+
+
+
+
+\I{148}{0}$\K{class}\ \F{ImgW}\,(\V{Img})\Y{:}$
+\DS{149}{1}{%
+\verb"A subclass of Img adding W projection functionality (see Cornwell"\\ 
+\verb"et al. 2005 ""\verb"Widefield Imaging Problems in Radio Astronomy""\verb")."}\vskip 5pt 
+\I{151}{1}$\K{def}\ \F{\_\_init\_\_}\,(\V{self},\V{size}\Y{=}\NUM{100}{},\V{res}\Y{=}\NUM{1}{},\V{wres}\Y{=}.\NUM{5}{},\V{mf\_order}\Y{=}\NUM{0}{})\Y{:}$
+\DS{152}{2}{%
+\verb"wres: the gridding resolution of sqrt(w) when projecting to w=0."}\vskip 5pt 
+
+
+\I{155}{1}$\K{def}\ \F{put}\,(\V{self},\V{uvw},\V{data},\V{wgts}\Y{=}\V{None},\V{invker2}\Y{=}\V{None})\Y{:}$
+\DS{156}{2}{%
+\verb"Same as Img.put, only now the w component is projected to the w=0"\\ 
+\verb"plane before applying the data to the UV matrix."}\vskip 5pt 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\I{190}{1}$\K{def}\ \F{conv\_invker}\,(\V{self},u,v,w)\Y{:}$
+\DS{191}{2}{%
+\verb"Generates the W projection kernel (a function of u,v) for the"\\ 
+\verb"supplied value of w.  See Cornwell et al. 2005 ""\verb"Widefield Imaging"\\ 
+\verb"Problems in Radio Astronomy""\verb" for discussion.  This implementation"\\ 
+\verb"uses a numerically evaluated Fresnel kernel, rather than the"\\ 
+\verb"small-angle approximated one given in the literature."}\vskip 5pt 
+
+
+
+
+
+
+
+\I{208}{0}

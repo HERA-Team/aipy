@@ -1,0 +1,3 @@
+pyephem>=3.7.3.2
+pyfits>=2.1
+numpy>=1.2

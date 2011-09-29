@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+# \par Py2tex, % -*-Python-*-
+# script to translate Python source to \LaTeX\ code.
+
+import getopt, os, sys
+ospath = os.path
+if not ospath.isabs(sys.argv[0]):
+        sys.path.insert(0, ospath.dirname(sys.argv[0]))
+from py2tex import Interpret
+
+# The \|-m| and \|-n| options affect the typographic treatment of the
+# tokens #=#, #==#, #<=#, #>=#, #!=#, #<>#, #<<#, #>>#, #in#,
+# #not in#, #is#, and~#is not#. When \|-n| is in effect these tokens
+# are printed as they appear in the Python source. When \|-m| (the
+# default) is in effect they are translated to mathematical symbols
+# that are designed for use in typeset documents.  (Please read
+# Chapter {\em Book Printing versus Ordinary Typing\/} from the
+# \TeX{}book before you use the \|-n| option.) The \|-o| option causes
+# the script to write the \LaTeX\ output to the specified file, rather
+# than standard output.
+#
+# The \|-d| option affects the way the script handles documentation
+# strings. The option \|-d none| treats documentation strings as
+# ordinary strings. The option \|-d plain| typesets the docstrings
+# like verbatim comments except with thick solid lines instead of thin
+# double lines. (OK, so that's not clear, try it and see.) Finally,
+# \|-d struct| typesets the docstrings as structured text as defined
+# by the doc-sig.
+#
+# The \|-i| and \|-v| options determine whether the comments will be
+# interpreted by (La)\TeX~(\|-i|) or typeset verbatim~(\|-v|).
+
+    # Default values.
+interpret = 1
+math = 1
+output = None
+docprocess = 'none'
+    # Parse options.
+optlist, args = getopt.getopt (sys.argv [1:], 'imno:vd:')
+for pair in optlist:
+    key = pair [0]
+    if pair [0] == '-m':
+        math = 1
+    if pair [0] == '-n':
+        math = 0
+    if pair [0] == '-o':
+        output = pair [1]
+    if pair [0] == '-d':
+        docprocess = pair[1]
+    if pair [0] == '-i':
+        interpret = 1
+    if pair [0] == '-v':
+        interpret = 0
+
+if args == []:
+    args = ['-']
+
+    # Open output file.
+if output == None:
+    outfile = sys.stdout
+else:
+    outfile = open (output, 'w')
+
+    # Translate source files.
+for name in args:
+    file = Interpret (name, math, interpret, docprocess)
+    outfile.write (file.translation () [0])
+    while file.translate () != None:
+        for scrap in file.translation ():
+            outfile.write (scrap)
+
+    # Close output file.
+outfile.close ()
