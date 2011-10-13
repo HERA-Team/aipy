@@ -98,6 +98,7 @@ def fit_func(prms, filelist, decimate, decphs):
             for sp in sprm:
                 prms[k2][sp] = prms[k][sp]
     if not opts.quiet: a.fit.print_params(prms)
+    print prms
     aa.set_params(prms)
     cat.set_params(prms)
     a1,a2,th = cat.get('srcshape')

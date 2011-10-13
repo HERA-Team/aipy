@@ -518,7 +518,7 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
         return NULL;
     }
     if (TYPE(area) != NPY_LONG) {
-        PyErr_Format(PyExc_ValueError, "area myst by of type 'int'");
+        PyErr_Format(PyExc_ValueError, "area must by of type 'int'");
         return NULL;
     }
     Py_INCREF(res); Py_INCREF(ker); Py_INCREF(mdl);

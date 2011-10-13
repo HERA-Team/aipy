@@ -39,6 +39,8 @@ o.add_option('--res', dest='res', type='float', default=0.5,
     help='Resolution of UV matrix.')
 o.add_option('--no_w', dest='no_w', action='store_true',
     help="Don't use W projection.")
+o.add_option('--wres', dest='wres', type='float', default=0.5,
+    help="W-Plane projection resolution.  Default 0.5")
 o.add_option('--altmin', dest='altmin', type='float', default=0,
     help="Minimum allowed altitude for pointing, in degrees.  When phase center is lower than this altitude, data is omitted.  Default is 0.")
 o.add_option('--minuv', dest='minuv', type='float', default=0,
@@ -59,8 +61,6 @@ cfreq = n.average(afreqs)
 aa.set_jultime(t)
 del(uv)
 outputs = opts.output.split(',')
-if opts.no_w: Img = a.img.Img
-else: Img = a.img.ImgW
 
 # Get all sources that will be used as phase centers.  If no sources are
 # specified, define phase centers for faceting a sphere.
@@ -88,7 +88,10 @@ if opts.list_facets:
 
 # Generate the image object that will be used.
 us,vs,ws,ds,wgts = [],[],[],[],[]
-im = Img(opts.size, opts.res, mf_order=0)
+if opts.no_w:
+    im = a.img.Img(opts.size, opts.res, mf_order=0)
+else:
+    im = a.img.ImgW(opts.size, opts.res, mf_order=0, wres=opts.wres)
 L,M = im.get_LM()
 DIM = int(opts.size/opts.res)
 n_ints = 0
@@ -186,7 +189,10 @@ for srccnt, s in enumerate(cat.values()):
                               if k in outputs: to_fits(k, eval(k), s,imgcnt,history=history)
                           imgcnt += 1
                       us,vs,ws,ds,wgts = [],[],[],[],[]
-                      im = Img(opts.size, opts.res, mf_order=0)
+                      if opts.no_w:
+                          im = a.img.Img(opts.size, opts.res, mf_order=0)
+                      else:
+                          im = a.img.ImgW(opts.size, opts.res, mf_order=0, wres=opts.wres)
                       if opts.src == 'zen':
                           s = a.phs.RadioFixedBody(aa.sidereal_time(), 
                               aa.lat, name='zen')
@@ -236,6 +242,9 @@ for srccnt, s in enumerate(cat.values()):
         if k in outputs: to_fits(k, eval(k), s, imgcnt,history=history)
     imgcnt += 1
     us,vs,ws,ds,wgts = [],[],[],[],[]
-    im = Img(opts.size, opts.res, mf_order=0)
+    if opts.no_w:
+        im = a.img.Img(opts.size, opts.res, mf_order=0)
+    else:
+        im = a.img.ImgW(opts.size, opts.res, mf_order=0, wres=opts.wres)
     
 

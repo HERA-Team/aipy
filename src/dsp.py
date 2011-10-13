@@ -1,5 +1,6 @@
 import numpy as n
 from aipy._cephes import i0
+from _dsp import *
 
 WINDOW_FUNC = {
     'blackman': lambda x,L: .42-.5*n.cos(2*n.pi*x/(L-1))+.08*n.cos(4*n.pi*x/(L-1)),

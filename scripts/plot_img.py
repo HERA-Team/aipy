@@ -5,7 +5,6 @@ This is a general-purpose script for plotting simple FITS images.
 
 import aipy as a, sys, optparse, os
 import numpy as n, pylab as p, ephem, math
-from mpl_toolkits.basemap import Basemap
 
 o = optparse.OptionParser()
 o.set_usage('plot_img.py [options] *.fits')
@@ -87,6 +86,7 @@ for cnt, filename in enumerate(args):
 
     p.subplot(m2, m1, cnt+1)
     if not opts.nogrid:
+        from mpl_toolkits.basemap import Basemap
         xpx,ypx = d.shape
         dx1 = -(xpx/2 + .5) * kwds['d_ra'] * a.img.deg2rad
         dx2 = (xpx/2 - .5) * kwds['d_ra'] * a.img.deg2rad
