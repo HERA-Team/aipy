@@ -17,7 +17,7 @@ import numpy as n, sys, _deconv
 # Find smallest representable # > 0 for setting clip level
 lo_clip_lev = n.finfo(n.float).tiny 
 
-def clean(im, ker, mdl=None, gain=.1, maxiter=10000, tol=1e-3, 
+def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3, 
         stop_if_div=True, verbose=False):
     """This standard Hoegbom clean deconvolution algorithm operates on the 
     assumption that the image is composed of point sources.  This makes it a 
@@ -32,7 +32,8 @@ def clean(im, ker, mdl=None, gain=.1, maxiter=10000, tol=1e-3,
         low, clean takes unnecessarily long.  If it is too high, clean does
         a poor job of deconvolving."""
     if mdl is None:
-        mdl = n.zeros_like(im)
+        #mdl = n.zeros_like(im)
+        mdl = n.zeros(im.shape, dtype=im.dtype)
         res = im.copy()
     else:
         mdl = mdl.copy()
@@ -43,7 +44,12 @@ def clean(im, ker, mdl=None, gain=.1, maxiter=10000, tol=1e-3,
             res = im - n.fft.ifft2(n.fft.fft2(mdl) * \
                                    n.fft.fft2(ker)).astype(im.dtype)
         else: raise ValueError('Number of dimensions != 1 or 2')
-    iter = _deconv.clean(res, ker, mdl,
+    if area is None:
+        area = n.ones(im.shape, dtype=n.int)
+    else:
+        area = area.astype(n.int)
+        
+    iter = _deconv.clean(res, ker, mdl, area,
             gain=gain, maxiter=maxiter, tol=tol, 
             stop_if_div=int(stop_if_div), verbose=int(verbose))
     score = n.sqrt(n.average(n.abs(res)**2))
@@ -136,7 +142,9 @@ def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=200,
     gain: The fraction of the step size (calculated from the gradient) taken
         in each iteration.  If this is too low, the fit takes unnecessarily 
         long.  If it is too high, the fit process can oscillate."""
-    if mdl is None: mdl = n.zeros_like(im)
+    if mdl is None:
+        #mdl = n.zeros_like(im)
+        mdl = n.zeros(im.shape, dtype=im.dtype)
     x = mdl.copy()
     # Estimate gain of the kernel
     q = n.sqrt((ker**2).sum())
@@ -190,7 +198,9 @@ def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200,
     q = n.sqrt((ker**2).sum())
     minus_two_q = -2*q
     two_q_sq = 2*q**2
-    if mdl is None: mdl = n.ones_like(im) * n.average(im) / ker.sum()
+    if mdl is None:
+         #mdl = n.ones_like(im) * n.average(im) / ker.sum() 
+         mdl = n.ones(im.shape, dtype=im.dtype) * n.average(im) / ker.sum() 
     #if mdl is None: mdl = n.ones_like(im) * n.average(im) / q
     Nvar0 = d_i.size * var0
     inv_ker = n.fft.fft2(ker)
@@ -253,6 +263,7 @@ def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
     else:
         if verbose: print 'Using specified var=', var
     while cl is None:
+        print cnt
         if cnt == -1: v = var
         else: v = var / (1.5**cnt)
         while cnt < 0 or v < var * (1.5**cnt):
