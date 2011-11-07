@@ -42,9 +42,9 @@ def phs(uv, p, d, f):
         if opts.setphs: d = aa.unphs2src(n.abs(d), src, i, j, pol=pol)
         elif src is None: d *= n.exp(-1j*n.pi*aa.get_phs_offset(i,j,pol=pol))
         else: d = aa.phs2src(d, src, i, j,pol=pol)
-        if opts.rot_uvw: 
-            uvw = aa.gen_uvw(i,j,src=src)
-            p = (uvw,t,(i,j))
+            if opts.rot_uvw: 
+                uvw = aa.gen_uvw(i,j,src=src)
+                p = (uvw,t,(i,j))
     except(a.phs.PointingError): d *= 0
     return p, d, f
 

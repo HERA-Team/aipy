@@ -26,6 +26,19 @@ class TestParseAnts(unittest.TestCase):
                 cases[ant_str])
         self.assertRaises(ValueError, a.scripting.parse_ants, '(0_1)_2', nants)
 
+class TestParseSrcs(unittest.TestCase):
+    'Tests aipy.scriptin.parse_srcs()'
+    def testsrc(self):
+        cat = 'misc,helm'
+        src_opt = 'cyg,cas,12_40,12:00_40:00,12:00:00.0_40:00:00.0,bug_man'
+        srclist,cutoff,catalogs = a.scripting.parse_srcs(src_opt, cat)
+        self.assertEqual(srclist[0], 'cyg')
+        self.assertEqual(srclist[1], 'cas')
+        self.assertEqual(srclist[2].src_name, '12_40')
+        self.assertEqual(srclist[3].src_name, '12:00_40:00')
+        self.assertEqual(srclist[4].src_name, '12:00:00.0_40:00:00.0')
+        self.assertEqual(srclist[5], 'bug_man')
+
 class TestParseChans(unittest.TestCase):
     'Tests aipy.scripting.parse_chans()'
     def setUp(self):
