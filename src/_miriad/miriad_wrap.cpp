@@ -38,20 +38,27 @@ void error_handler(void) {
 
 // Initialize object (__init__)
 static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
-    char *name=NULL, *status=NULL;
+    char *name=NULL, *status=NULL, *corrmode=NULL;
     self->tno = -1;
     self->decimate = 1;
     self->decphase = 0;
     self->intcnt = -1;
     self->curtime = -1;
     // Parse arguments and typecheck
-    if (!PyArg_ParseTuple(args, "ss", &name, &status)) return -1;
+    if (!PyArg_ParseTuple(args, "sss", &name, &status, &corrmode)) return -1;
+    switch (corrmode[0]) {
+        case 'r': case 'j': break;
+        default:
+            PyErr_Format(PyExc_ValueError, "UV corrmode must be 'r' or 'j' (got '%c')", corrmode[0]);
+            return -1;
+    }
     // Setup an error handler so MIRIAD doesn't just exit
     bugrecover_c(error_handler);
     try {
         uvopen_c(&self->tno, name, status);
         // Statically set the preamble format
         uvset_c(self->tno,"preamble","uvw/time/baseline",0,0.,0.,0.);
+        uvset_c(self->tno,"corr",corrmode,0,0.,0.,0.);
     } catch (MiriadError &e) {
         self->tno = -1;
         PyErr_Format(PyExc_RuntimeError, e.get_message());

@@ -1,3 +1,9 @@
+1.0.0
+* Added some performance enhancements
+* Miriad.UV files can now store data as both shorts and as float32 (avoiding dynamic range problems)
+* Various bugfixes
+* Because of stability of 0.X.X series, we've promoted this to a non-beta release!
+
 0.9.0
 * Made some major naming changes in preparation for an AIPY publication.  These include
   renaming aipy.ant to aipy.phs, aipy.sim to aipy.amp, aipy.loc to aipy.cal.

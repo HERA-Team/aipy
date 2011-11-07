@@ -68,7 +68,7 @@ template<typename T> struct Clean {
             for (int n2=0; n2 < dim2; n2++) {
                 val = IND2(ker,n1,n2,T);
                 mval = val * val;
-                if (mval > mq) {
+                if (mval > mq && IND2(area,n1,n2,int)) {
                     mq = mval;
                     q = val;
                 }
@@ -183,7 +183,7 @@ template<typename T> struct Clean {
         for (int n=0; n < dim; n++) {
             val = IND1(ker,n,T);
             mval = val * val;
-            if (mval > mq) {
+            if (mval > mq && IND1(area,n,int)) {
                 mq = mval;
                 q = val;
             }
@@ -202,7 +202,7 @@ template<typename T> struct Clean {
                 val = IND1(res,wrap_n,T);
                 mval = val * val;
                 nscore += mval;
-                if (mval > mmax) {
+                if (mval > mmax && IND1(area,n,int)) {
                     nargmax = wrap_n;
                     max = val;
                     mmax = mval;
@@ -280,7 +280,7 @@ template<typename T> struct Clean {
                 valr = CIND2R(ker,n1,n2,T);
                 vali = CIND2I(ker,n1,n2,T);
                 mval = valr * valr + vali * vali;
-                if (mval > mq) {
+                if (mval > mq && IND2(area,n1,n2,int)) {
                     mq = mval;
                     qr = valr; qi = vali;
                 }
@@ -309,7 +309,7 @@ template<typename T> struct Clean {
                     vali = CIND2I(res,wrap_n1,wrap_n2,T);
                     mval = valr * valr + vali * vali;
                     nscore += mval;
-                    if (mval > mmax) {
+                    if (mval > mmax && IND2(area,n1,n2,int)) {
                         nargmax1 = wrap_n1; nargmax2 = wrap_n2;
                         maxr = valr; maxi = vali;
                         mmax = mval;
@@ -401,7 +401,7 @@ template<typename T> struct Clean {
             valr = CIND1R(ker,n,T);
             vali = CIND1I(ker,n,T);
             mval = valr * valr + vali * vali;
-            if (mval > mq) {
+            if (mval > mq && IND1(area,n,int)) {
                 mq = mval;
                 qr = valr;
                 qi = vali;
@@ -428,7 +428,7 @@ template<typename T> struct Clean {
                 vali = CIND1I(res,wrap_n,T);
                 mval = valr * valr + vali * vali;
                 nscore += mval;
-                if (mval > mmax) {
+                if (mval > mmax && IND1(area,n,int)) {
                     nargmax = wrap_n;
                     maxr = valr;
                     maxi = vali;
@@ -499,7 +499,7 @@ template<typename T> struct Clean {
 
 // Clean wrapper that handles all different data types and dimensions
 PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
-    PyArrayObject *res, *ker, *mdl;
+    PyArrayObject *res, *ker, *mdl, *area;
     double gain=.1, tol=.001;
     int maxiter=200, rank=0, dim1, dim2, rv, stop_if_div=0, verb=0, pos_def=0;
     static char *kwlist[] = {"res", "ker", "mdl", "gain", \
@@ -512,18 +512,22 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
         return NULL;
     if (RANK(res) == 1) {
         rank = 1;
-        CHK_ARRAY_RANK(ker, 1); CHK_ARRAY_RANK(mdl, 1);
+        CHK_ARRAY_RANK(ker, 1); CHK_ARRAY_RANK(mdl, 1); CHK_ARRAY_RANK(area, 1);
         dim1 = DIM(res,0);
-        CHK_ARRAY_DIM(ker, 0, dim1); CHK_ARRAY_DIM(mdl, 0, dim1);
+        CHK_ARRAY_DIM(ker, 0, dim1); CHK_ARRAY_DIM(mdl, 0, dim1); CHK_ARRAY_DIM(area, 0, dim1);
     } else if (RANK(res) == 2) {
         rank = 2;
-        CHK_ARRAY_RANK(ker, 2); CHK_ARRAY_RANK(mdl, 2);
+        CHK_ARRAY_RANK(ker, 2); CHK_ARRAY_RANK(mdl, 2); CHK_ARRAY_RANK(area, 2);
         dim1 = DIM(res,0); dim2 = DIM(res,1);
-        CHK_ARRAY_DIM(ker, 0, dim1); CHK_ARRAY_DIM(mdl, 0, dim1);
-        CHK_ARRAY_DIM(ker, 1, dim2); CHK_ARRAY_DIM(mdl, 1, dim2);
+        CHK_ARRAY_DIM(ker, 0, dim1); CHK_ARRAY_DIM(mdl, 0, dim1); CHK_ARRAY_DIM(area, 0, dim1);
+        CHK_ARRAY_DIM(ker, 1, dim2); CHK_ARRAY_DIM(mdl, 1, dim2); CHK_ARRAY_DIM(area, 1, dim2);
     }
     if (TYPE(res) != TYPE(ker) || TYPE(res) != TYPE(mdl)) {
         PyErr_Format(PyExc_ValueError, "array types must match");
+        return NULL;
+    }
+    if (TYPE(area) != NPY_LONG) {
+        PyErr_Format(PyExc_ValueError, "area must by of type 'int'");
         return NULL;
     }
     Py_INCREF(res); Py_INCREF(ker); Py_INCREF(mdl);

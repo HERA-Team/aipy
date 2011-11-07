@@ -11,7 +11,7 @@ import numpy as n, aipy as a, optparse, os, sys, ephem
 o = optparse.OptionParser()
 o.set_usage('mdlvis.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, cal=True, src=True)
+a.scripting.add_standard_options(o, ant=True, cal=True, src=True)
 o.add_option('-m','--mode', dest='mode', default='sim',
     help='Operation mode.  Can be "sim" (output simulated data), "sub" (subtract from input data), or "add" (add to input data).  Default is "sim"')
 o.add_option('-f', '--flag', dest='flag', action='store_true',
@@ -148,6 +148,7 @@ if len(args) > 0:
             print 'File exists: skipping'
             continue
         uvi = a.miriad.UV(filename)
+        a.scripting.uv_selector(uvi, opts.ant)
         uvo = a.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
         uvo.pipe(uvi, mfunc=mdl, raw=True,
@@ -176,7 +177,7 @@ else:
     uv['antpos'] = antpos.transpose().flatten()
     uv.add_var('sfreq'   ,'d'); uv['sfreq'] = opts.sfreq
     uv.add_var('freq'    ,'d'); uv['freq'] = opts.sfreq
-    uv.add_var('restfreq','d'); uv['freq'] = opts.sfreq
+    uv.add_var('restfreq','d'); uv['restfreq'] = opts.sfreq
     uv.add_var('sdf'     ,'d'); uv['sdf'] = opts.sdf
     uv.add_var('nchan'   ,'i'); uv['nchan'] = opts.nchan
     uv.add_var('nschan'  ,'i'); uv['nschan'] = opts.nchan
