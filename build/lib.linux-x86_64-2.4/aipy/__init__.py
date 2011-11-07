@@ -15,3 +15,4 @@ import ephem, fit, healpix, img
 import interp, cal, map, miriad
 import optimize, rfi, amp, scripting, src, _src, utils
 import pol, twodgauss #added by dfm
+import dsp

@@ -51,7 +51,7 @@ template<typename T> struct Clean {
     //  \____|_|\___|\__,_|_| |_|_____\__,_|_|   
     // Does a 2d real-valued clean
     static int clean_2d_r(PyArrayObject *res, PyArrayObject *ker,
-            PyArrayObject *mdl, double gain, int maxiter, 
+            PyArrayObject *mdl, PyArrayObject *area, double gain, int maxiter, 
             double tol, int stop_if_div, int verb, int pos_def) {
         T score=-1, nscore, best_score=-1; 
         T max=0, mmax, val, mval, step, q=0, mq=0;
@@ -91,7 +91,7 @@ template<typename T> struct Clean {
                     mval = val * val;
                     nscore += mval;
                     if (pos_def != 0) {
-                        if (mval > mmax) {
+                        if (mval > mmax && IND2(area,n1,n2,int)) {
                             nargmax1 = wrap_n1; nargmax2 = wrap_n2;
                             max = val;
                             mmax=mval;
@@ -168,7 +168,7 @@ template<typename T> struct Clean {
     //  \____|_|\___|\__,_|_| |_|_|\__,_|_|   
     // Does a 1d real-valued clean
     static int clean_1d_r(PyArrayObject *res, PyArrayObject *ker, 
-            PyArrayObject *mdl, double gain, int maxiter, double tol,
+            PyArrayObject *mdl, PyArrayObject *area, double gain, int maxiter, double tol,
             int stop_if_div, int verb, int pos_def) {
         T score=-1, nscore, best_score=-1;
         T max=0, mmax, val, mval, step, q=0, mq=0;
@@ -261,7 +261,7 @@ template<typename T> struct Clean {
     //  \____|_|\___|\__,_|_| |_|_____\__,_|\___|
     // Does a 2d complex-valued clean
     static int clean_2d_c(PyArrayObject *res, PyArrayObject *ker,
-            PyArrayObject *mdl, double gain, int maxiter, double tol,
+            PyArrayObject *mdl, PyArrayObject *area, double gain, int maxiter, double tol,
             int stop_if_div, int verb, int pos_def) {
         T maxr=0, maxi=0, valr, vali, stepr, stepi, qr=0, qi=0;
         T score=-1, nscore, best_score=-1;
@@ -384,7 +384,7 @@ template<typename T> struct Clean {
     //  \____|_|\___|\__,_|_| |_|_|\__,_|\___|
     // Does a 1d complex-valued clean
     static int clean_1d_c(PyArrayObject *res, PyArrayObject *ker, 
-            PyArrayObject *mdl, double gain, int maxiter, double tol,
+            PyArrayObject *mdl, PyArrayObject *area, double gain, int maxiter, double tol,
             int stop_if_div, int verb, int pos_def) {
         T maxr=0, maxi=0, valr, vali, stepr, stepi, qr=0, qi=0;
         T score=-1, nscore, best_score=-1;
@@ -502,12 +502,12 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
     PyArrayObject *res, *ker, *mdl, *area;
     double gain=.1, tol=.001;
     int maxiter=200, rank=0, dim1, dim2, rv, stop_if_div=0, verb=0, pos_def=0;
-    static char *kwlist[] = {"res", "ker", "mdl", "gain", \
+    static char *kwlist[] = {"res", "ker", "mdl", "area", "gain", \
                              "maxiter", "tol", 
                             "stop_if_div", "verbose","pos_def", NULL};
     // Parse arguments and perform sanity check
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!O!O!|didiii", kwlist, \
-            &PyArray_Type, &res, &PyArray_Type, &ker, &PyArray_Type, &mdl, 
+            &PyArray_Type, &res, &PyArray_Type, &ker, &PyArray_Type, &area, &PyArray_Type, &mdl, 
             &gain, &maxiter, &tol, &stop_if_div, &verb, &pos_def)) 
         return NULL;
     if (RANK(res) == 1) {
@@ -534,39 +534,39 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
     // Use template to implement data loops for all data types
     if (TYPE(res) == NPY_FLOAT) {
         if (rank == 1) {
-            rv = Clean<float>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<float>::clean_1d_r(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<float>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<float>::clean_2d_r(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_DOUBLE) {
         if (rank == 1) {
-            rv = Clean<double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<double>::clean_1d_r(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<double>::clean_2d_r(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_LONGDOUBLE) {
         if (rank == 1) {
-            rv = Clean<long double>::clean_1d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<long double>::clean_1d_r(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<long double>::clean_2d_r(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<long double>::clean_2d_r(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_CFLOAT) {
         if (rank == 1) {
-            rv = Clean<float>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<float>::clean_1d_c(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<float>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<float>::clean_2d_c(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_CDOUBLE) {
         if (rank == 1) {
-            rv = Clean<double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<double>::clean_1d_c(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<double>::clean_2d_c(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else if (TYPE(res) == NPY_CLONGDOUBLE) {
         if (rank == 1) {
-            rv = Clean<long double>::clean_1d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<long double>::clean_1d_c(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         } else {
-            rv = Clean<long double>::clean_2d_c(res,ker,mdl,gain,maxiter,tol,stop_if_div,verb,pos_def);
+            rv = Clean<long double>::clean_2d_c(res,ker,mdl,area,gain,maxiter,tol,stop_if_div,verb,pos_def);
         }
     } else {
         PyErr_Format(PyExc_ValueError, "Unsupported data type.");

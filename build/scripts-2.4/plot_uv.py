@@ -45,6 +45,8 @@ o.add_option('--nolegend', dest='nolegend', action='store_true',
     help='Omit legend in last plot.')
 o.add_option('--share', dest='share', action='store_true',
     help='Share plots in a single frame.')
+o.add_option('--window', dest='window', default='kaiser3',
+    help='Windowing function to use in delay transform.  Default is kaiser3.  Options are: ' + ', '.join(a.dsp.WINDOW_FUNC.keys()))
 
 def convert_arg_range(arg):
     """Split apart command-line lists/ranges into a list of numbers."""
@@ -101,6 +103,20 @@ def gen_times(timeopt, uv, coords, decimate, is_fringe):
                 return False
     return time_selector, is_time_range
 
+def data_mode(data, mode='abs'):
+    if mode.startswith('phs'): data = n.angle(data.filled(0))
+    elif mode.startswith('lin'):
+        data = n.ma.absolute(data.filled(0))
+        data = n.ma.masked_less_equal(data, 0)
+    elif mode.startswith('real'): data = data.real
+    elif mode.startswith('imag'): data = data.imag
+    elif mode.startswith('log'):
+        data = n.ma.absolute(data.filled(0))
+        data = n.ma.masked_less_equal(data, 0)
+        data = n.ma.log10(data)
+    else: raise ValueError('Unrecognized plot mode.')
+    return data
+
 opts, args = o.parse_args(sys.argv[1:])
 
 # Parse command-line options
@@ -124,6 +140,10 @@ del(uv)
 plot_x = {}
 plot_t = {'jd':[], 'lst':[], 'cnt':[]}
 times = []
+
+# Hold plotting handles
+plots = {}
+plt_data = {}
 
 for uvfile in args:
     print 'Reading', uvfile
@@ -155,6 +175,7 @@ for uvfile in args:
                 d *= n.exp(-1j*n.pi*aa.get_phs_offset(i,j))
         # Do delay transform if required
         if opts.delay:
+            w = a.dsp.gen_window(d.shape[-1], window=opts.window)
             if opts.unmask:
                 d = d.data
                 ker = n.zeros_like(d)
@@ -163,9 +184,9 @@ for uvfile in args:
             else:
                 flags = n.logical_not(d.mask).astype(n.float)
                 gain = n.sqrt(n.average(flags**2))
-                ker = n.fft.ifft(flags)
+                ker = n.fft.ifft(flags*w)
                 d = d.filled(0)
-            d = n.fft.ifft(d)
+            d = n.fft.ifft(d*w)
             if not opts.clean is None and not n.all(d == 0):
                 d, info = a.deconv.clean(d, ker, tol=opts.clean)
                 d += info['res'] / gain
@@ -215,17 +236,8 @@ for cnt, bl in enumerate(bls):
     if opts.sum_chan:
         d = d.sum(axis=1)
         is_chan_range = False
-    if opts.mode.startswith('phs'): d = n.angle(d.filled(0))
-    elif opts.mode.startswith('lin'):
-        d = n.ma.absolute(d.filled(0))
-        d = n.ma.masked_less_equal(d, 0)
-    elif opts.mode.startswith('real'): d = d.real
-    elif opts.mode.startswith('imag'): d = d.imag
-    elif opts.mode.startswith('log'):
-        d = n.ma.absolute(d.filled(0))
-        d = n.ma.masked_less_equal(d, 0)
-        d = n.ma.log10(d)
-    else: raise ValueError('Unrecognized plot mode.')
+    plt_data[cnt+1] = d
+    d = data_mode(d, opts.mode)
     if not opts.share:
         p.subplot(m2, m1, cnt+1)
         dmin,dmax = None,None
@@ -275,9 +287,10 @@ for cnt, bl in enumerate(bls):
         if not opts.drng is None: dmin = dmax - opts.drng
         elif dmin is None: dmin = d.min()
         else: dmin = min(dmin,d.min())
-        p.imshow(d, extent=(c1,c2,t2,t1), aspect='auto', 
+        plots[cnt+1] = p.imshow(d, extent=(c1,c2,t2,t1), 
+            aspect='auto', interpolation='nearest', 
             vmax=dmax, vmin=dmin, cmap=cmap)
-        p.colorbar()
+        p.colorbar(shrink=0.5)
         p.xlabel(xlabel); p.ylabel(ylabel)
     elif is_chan_range and not is_time_range:
         if opts.delay:
@@ -337,5 +350,33 @@ if not opts.nolegend and (not is_time_range or not is_chan_range):
 
 # Save to a file or pop up a window
 if opts.out_file != '': p.savefig(opts.out_file)
-else: p.show()
-
+else:
+    def click(event):
+        print [event.key]
+        if event.key == 'm':
+            mode = raw_input('Enter new mode: ')
+            for k in plots:
+                try:
+                    d = data_mode(plt_data[k], mode)
+                    plots[k].set_data(d)
+                except(ValueError):
+                    print 'Unrecognized plot mode'
+            p.draw()
+        elif event.key == 'd':
+            max = raw_input('Enter new max: ')
+            try: max = float(max)
+            except(ValueError): max = None
+            drng = raw_input('Enter new drng: ')
+            try: drng = float(drng)
+            except(ValueError): drng = None
+            for k in plots:
+                _max,_drng = max, drng
+                if _max is None or _drng is None:
+                    d = plots[k].get_array()
+                    if _max is None: _max = d.max()
+                    if _drng is None: _drng = _max - d.min()
+                plots[k].set_clim(vmin=_max-_drng, vmax=_max)
+            print 'Replotting...'
+            p.draw()
+    p.connect('key_press_event', click)
+    p.show()

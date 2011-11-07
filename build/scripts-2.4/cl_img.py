@@ -19,6 +19,10 @@ o.add_option('--tol', dest='tol', type='float', default=1e-6,
     help='Tolerance for successful deconvolution.  For annealing, interpreted as cooling speed.')
 o.add_option('--div', dest='div', action='store_true',
     help='Allow clean to diverge (i.e. allow residual score to increase)')
+o.add_option('--minuv', dest='minuv', type='float', default=0.,
+    help='Minimum uv length to include (post-gridding)')
+o.add_option('--maxuv', dest='maxuv', type='float', default=-1,
+    help='Maximum uv length to include (post-gridding)')
 o.add_option('-r', '--rewgt', dest='rewgt',  default='natural',
     help='Reweighting to apply to dim/dbm data before cleaning.  Options are: natural, uniform(LEVEL), or radial, where LEVEL is the fractional cutoff for using uniform weighting (recommended range .01 to .1).  Default is natural')
 o.add_option('-g','--gain',dest='gain',default=0.1,type='float',help='Loop gain, default=0.1')
@@ -57,27 +61,46 @@ for cnt, k in enumerate(keys):
         print 'No data in image, so skipping.'
         continue
     print kwds
+    size = 1/(kwds['d_ra']*a.img.deg2rad)
+    res = size/dim.shape[0]
+    im = a.img.Img(size=size, res=res)
+    u,v = im.get_uv()
+    r = n.sqrt(u**2+v**2)
     dim,dbm = dim.squeeze(), dbm.squeeze()
     DIM = dim.shape[0]
+    uvs,bms = n.fft.fft2(dim), n.fft.fft2(dbm)
     if opts.rewgt.startswith('natural'): pass
     else:
-        uvs = n.fft.fft2(dim)
-        bms = n.fft.fft2(dbm)
         if opts.rewgt.startswith('uniform'): 
             level = float(opts.rewgt.split('(')[-1][:-1])
             abms = n.abs(bms)
             thresh = abms.max() * level
             divisor = abms.clip(thresh, n.Inf)
-            dim = n.fft.ifft2(uvs / divisor).real
-            dbm = n.fft.ifft2(bms / divisor).real
+            uvs /= divisor; bms /= divisor
         elif opts.rewgt.startswith('radial'):
+            #x,y = n.indices(dim.shape)
+            #x = a.img.recenter(x - DIM/2, (DIM/2,DIM/2))
+            #y = a.img.recenter(y - DIM/2, (DIM/2,DIM/2))
+            #r = n.sqrt(x**2 + y**2)
+            uvs *= r; bms *= r
+        elif opts.rewgt.startswith('midrange'):
             x,y = n.indices(dim.shape)
             x = a.img.recenter(x - DIM/2, (DIM/2,DIM/2))
             y = a.img.recenter(y - DIM/2, (DIM/2,DIM/2))
-            r = n.sqrt(x**2 + y**2)
-            dim = n.fft.ifft2(uvs * r).real
-            dbm = n.fft.ifft2(bms * r).real
+            wgt = x**2 + y**2
+            wgt = wgt.astype(n.float32) / (DIM/2)**2
+            wgt = wgt * (1-wgt)
+            wgt = n.where(wgt < 0, 0, wgt)
+            uvs *= wgt; bms *= wgt
         else: raise ValueError('Unrecognized rewgt: %s' % opts.rewgt)
+    #mask = n.where(r < opts.minuv, 0, 1)
+    #mask = n.where(r > opts.maxuv, 0, mask)
+    mask = 1
+    if opts.minuv > 0: mask *= 1 - n.exp(-r**2/opts.minuv**2)
+    if opts.maxuv > 0: mask *= n.exp(-r**2/opts.maxuv**2)
+    dim = n.fft.ifft2(uvs * mask).real
+    dbm = n.fft.ifft2(bms * mask).real
+    
     dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
     bm_gain = a.img.beam_gain(dbm)
     print 'Gain of dirty beam:', bm_gain

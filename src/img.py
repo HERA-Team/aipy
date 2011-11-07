@@ -3,69 +3,39 @@ Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
 """
 
-<<<<<<< HEAD
-import numpy as n, utils, coord, pyfits, time,os
-=======
 import numpy as n, utils, coord, pyfits, time
 USEDSP = True
 if USEDSP: import _dsp
->>>>>>> fdd9f0d6541659c434606f4a1fac61898d231c10
 
 deg2rad = n.pi / 180.
 rad2deg = 180. / n.pi
 
-<<<<<<< HEAD
-def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
-    """ 
-    word wrapping function.
-        string: the string to wrap
-        width: the column number to wrap at
-        prefix: prefix of each line with thie string (goes before any indentation)
-=======
 def word_wrap(string, width=80,ind1=0,ind2=0,prefix=''):
     """ word wrapping function.
         string: the string to wrap
         width: the column number to wrap at
         prefix: prefix each line with this string (goes before any indentation)
->>>>>>> fdd9f0d6541659c434606f4a1fac61898d231c10
         ind1: number of characters to indent the first line
         ind2: number of characters to indent the rest of the lines
     """
     awidth = min(width-2-len(prefix+ind1*' '),width-2-len(prefix+ind2*' '))
     words = string.split(' ')
     okwords = []
-<<<<<<< HEAD
     chunk = lambda v,l: [v[i*l:(i+1)*l] for i in range(int(n.ceil(len(v)/float(l))))]
-=======
-    chunk = lambda v, l: [v[i*l:(i+1)*l] for i in range(int(n.ceil(len(v)/float(l))))]
->>>>>>> fdd9f0d6541659c434606f4a1fac61898d231c10
     for word in words:
         for okword in chunk(word,awidth):
             okwords.append(okword)
     lines = []
     l = prefix+ind1*' '
     for i,w in enumerate(okwords):
-<<<<<<< HEAD
-        if i==0 and len(l) == 0:
-            l = w
-        elif len(l+' '+w)<width:
-=======
-        #print w,len(l+' '+w),width
         if len(l+' ' + w)<width:
->>>>>>> fdd9f0d6541659c434606f4a1fac61898d231c10
             l += ' '+w
         else:
             lines.append(l)
             l = prefix + ind2*' '+w
     lines.append(l)
-<<<<<<< HEAD
     return '\n'.join(lines)
-
-=======
-    return '\n'.join(lines)+'\n'
     
-    
->>>>>>> fdd9f0d6541659c434606f4a1fac61898d231c10
 def recenter(a, c):
     """Slide the (0,0) point of matrix a to a new location tuple c.  This is
     useful for making an image centered on your screen after performing an

@@ -3,17 +3,18 @@ Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
 """
 
-import numpy as n, utils, coord, pyfits, time,os
+import numpy as n, utils, coord, pyfits, time
+USEDSP = True
+if USEDSP: import _dsp
 
 deg2rad = n.pi / 180.
 rad2deg = 180. / n.pi
 
-def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
-    """ 
-    word wrapping function.
+def word_wrap(string, width=80,ind1=0,ind2=0,prefix=''):
+    """ word wrapping function.
         string: the string to wrap
         width: the column number to wrap at
-        prefix: prefix of each line with thie string (goes before any indentation)
+        prefix: prefix each line with this string (goes before any indentation)
         ind1: number of characters to indent the first line
         ind2: number of characters to indent the rest of the lines
     """
@@ -27,16 +28,14 @@ def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
     lines = []
     l = prefix+ind1*' '
     for i,w in enumerate(okwords):
-        if i==0 and len(l) == 0:
-            l = w
-        elif len(l+' '+w)<width:
+        if len(l+' ' + w)<width:
             l += ' '+w
         else:
             lines.append(l)
             l = prefix + ind2*' '+w
     lines.append(l)
     return '\n'.join(lines)
-
+    
 def recenter(a, c):
     """Slide the (0,0) point of matrix a to a new location tuple c.  This is
     useful for making an image centered on your screen after performing an
@@ -58,7 +57,7 @@ def convolve2d(a, b):
 def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
     """Return a 2D gaussian.  Normalized to area under curve = 'amp'.  
     Down by 1/e at distance 'sigma' from 'center'."""
-    if type(shape) == type(0): shape = array([2, 2]) * sigma
+    if type(shape) == type(0): shape = n.array([2, 2]) * sigma
     def gaussian(x, y):
         nx = n.where(x > shape[0] / 2, x - shape[0], x)
         ny = n.where(y > shape[1] / 2, y - shape[1], y)
@@ -90,10 +89,24 @@ class Img:
         dim = self.shape[0]
         M,L = n.indices(self.shape)
         L,M = n.where(L > dim/2, dim-L, -L), n.where(M > dim/2, M-dim, M)
-        L,M = L.astype(n.float)/dim/self.res, M.astype(n.float)/dim/self.res
+        L,M = L.astype(n.float32)/dim/self.res, M.astype(n.float32)/dim/self.res
         mask = n.where(L**2 + M**2 >= 1, 1, 0)
         L,M = n.ma.array(L, mask=mask), n.ma.array(M, mask=mask)
         return recenter(L, center), recenter(M, center)
+    def get_indices(self, u, v):
+        """Get the pixel indices corresponding to the provided uv coordinates."""
+        if not USEDSP:
+            u = n.round(u / self.res).astype(n.int)
+            v = n.round(v / self.res).astype(n.int)
+            return n.array([-v,u],).transpose()
+        else:
+            return (-v / self.res).astype(n.float32), (u / self.res).astype(n.float32)
+    def get_uv(self):
+        """Return the u,v indices of the pixels in the uv matrix."""
+        u,v = n.indices(self.shape)
+        u = n.where(u < self.shape[0]/2, u, u - self.shape[0])
+        v = n.where(v < self.shape[1]/2, v, v - self.shape[1])
+        return u*self.res, v*self.res
     def put(self, (u,v,w), data, wgts=None, apply=True):
         """Grid uv data (w is ignored) onto a UV plane.  Data should already
         have the phase due to w removed.  Assumes the Hermitian conjugate
@@ -112,18 +125,46 @@ class Img:
         else:
             uv = n.zeros_like(self.uv)
             bm = [n.zeros_like(i) for i in self.bm]
-        u = n.round(u / self.res).astype(n.int)
-        v = n.round(v / self.res).astype(n.int)
-        inds = n.array([-v,u],).transpose()
-        ok = n.logical_and(n.abs(inds[:,0]) < self.shape[0],
-            n.abs(inds[:,1]) < self.shape[1])
-        data = data.compress(ok)
-        inds = inds.compress(ok, axis=0)
-        utils.add2array(uv, inds, data.astype(uv.dtype))
+        if not USEDSP:
+            inds = self.get_indices(u,v)
+            
+            ok = n.logical_and(n.abs(inds[:,0]) < self.shape[0],
+                n.abs(inds[:,1]) < self.shape[1])
+            data = data.compress(ok)
+            inds = inds.compress(ok, axis=0)
+            utils.add2array(uv, inds, data.astype(uv.dtype))
+        else:
+            u,v = self.get_indices(u,v)
+            _dsp.grid2D_c(uv, u, v, data.astype(uv.dtype))
+        
         for i,wgt in enumerate(wgts):
-            wgt = wgt.compress(ok)
-            utils.add2array(bm[i], inds, wgt.astype(bm[0].dtype))
+            if not USEDSP:
+                wgt = wgt.compress(ok)
+                utils.add2array(bm[i], inds, wgt.astype(bm[0].dtype))
+            else:
+                _dsp.grid2D_c(bm[i], u, v, wgt.astype(bm[0].dtype))
         if not apply: return uv, bm
+    def get(self, (u,v,w), uv=None, bm=None):
+        """Generate data as would be observed at the provided (u,v,w) based on
+        this Img's current uv data.  Phase due to 'w' will be applied to data
+        before returning."""
+        u,v = u.flatten(), v.flatten()
+        if uv is None: uv,bm = self.uv, self.bm[0]
+        if not USEDSP:
+            # Currently: no interpolation
+            inds = self.get_indices(u,v)
+            data = self.uv[inds[:,0],inds[:,1]] / self.bm[0][inds[:,0],inds[:,1]]
+            data = data.squeeze()
+        else:
+            u,v = self.get_indices(-u,v)
+            u,v = -v,u # XXX necessary, but probably because of axis ordering in FITS files...
+            uvdat = n.zeros(u.shape, dtype=n.complex64)
+            bmdat = n.zeros(u.shape, dtype=n.complex64)
+            _dsp.degrid2D_c(uv, u, v, uvdat)
+            _dsp.degrid2D_c(bm, u, v, bmdat)
+            #data = uvdat.sum() / bmdat.sum()
+            data = uvdat / bmdat
+        return data
     def append_hermitian(self, (u,v,w), data, wgts=None):
         """Append to (uvw, data, [wgts]) the points (-uvw, conj(data), [wgts]).
         This is standard practice to get a real-valued image."""
@@ -176,6 +217,7 @@ class ImgW(Img):
         """wres: the gridding resolution of sqrt(w) when projecting to w=0."""
         Img.__init__(self, size=size, res=res, mf_order=mf_order)
         self.wres = wres
+        self.wcache = {}
     def put(self, (u,v,w), data, wgts=None, invker2=None):
         """Same as Img.put, only now the w component is projected to the w=0
         plane before applying the data to the UV matrix."""
@@ -214,6 +256,35 @@ class ImgW(Img):
                 self.bm[b] += n.fft.ifft2(n.fft.fft2(bm[b]) * invker)
             if j >= len(w): break
             i = j
+    def get(self, (u,v,w)):
+        order = n.argsort(w.flat)
+        u_,v_,w_ = u.take(order).squeeze(), v.take(order).squeeze(), w.take(order).squeeze()
+        sqrt_w = n.sqrt(n.abs(w_)) * n.sign(w_)
+        i, d_ = 0, []
+        while True:
+            # Grab a chunk of uvw's that grid w to same point.
+            j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
+            #print j, len(sqrt_w)
+            id = n.round(n.average(sqrt_w[i:j]) / self.wres) * self.wres
+            if not self.wcache.has_key(id):
+                avg_w = n.average(w_[i:j])
+                print 'Caching W plane ID=', id
+                projker = n.fromfunction(lambda us,vs: self.conv_invker(us,vs,-avg_w), 
+                    self.uv.shape).astype(n.complex64)
+                uv_wproj = n.fft.ifft2(n.fft.fft2(self.uv) * projker).astype(n.complex64)
+                bm_wproj = n.fft.ifft2(n.fft.fft2(self.bm[0]) * projker).astype(n.complex64) # is this right to convolve?
+                self.wcache[id] = (uv_wproj, bm_wproj)
+                print '%d W planes cached' % (len(self.wcache))
+            # Put all uv's down on plane for this gridded w point
+            uv_wproj, bm_wproj = self.wcache[id]
+            # Could think about improving this by interpolating between w planes.
+            d_.append(Img.get(self, (u_[i:j],v_[i:j],w_[i:j]), uv_wproj, bm_wproj))
+            if j >= len(sqrt_w): break
+            i = j
+        d_ = n.concatenate(d_)
+        # Put back into original order
+        deorder = n.argsort(order)
+        return d_.take(deorder)
     def conv_invker(self, u, v, w):
         """Generates the W projection kernel (a function of u,v) for the
         supplied value of w.  See Cornwell et al. 2005 "Widefield Imaging
@@ -222,7 +293,7 @@ class ImgW(Img):
         small-angle approximated one given in the literature."""
         L,M = self.get_LM()
         # This is the exactly evaluated kernel (works better)
-        sqrt = n.sqrt(1 - L**2 - M**2)
+        sqrt = n.sqrt(1 - L**2 - M**2).astype(n.complex64)
         G = n.exp(-2*n.pi*1j*w*(sqrt - 1))
         # This is the kernel described by Cornwell using the small angle approx.
         #G = n.exp(n.pi*1j*w*(l**2 + m**2))
@@ -348,7 +419,7 @@ def find_axis(phdu,name):
         if k[0].lower().startswith('ctype'):
             if k[1].lower().startswith(name):
                 return int(k[1][5])
-
+    
 def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     """
     Create a fits file in outfile with data using header from infile using
