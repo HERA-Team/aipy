@@ -229,7 +229,7 @@ class UV(_miriad.UV):
         if not flags is None: flags = n.logical_not(flags)
         elif len(data.mask.shape) == 0:
             flags = n.ones(data.shape)
-            data = data.unmask()
+            data.mask = n.ma.nomask#data.unmask()
         else:
             flags = n.logical_not(data.mask)
             #data = data.filled(0)
