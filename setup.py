@@ -12,9 +12,11 @@ open('src/__version__.py','w').write('__version__="%s"'%__version__)
 
 #read the latest git status out to an installed file
 try:
-    gitbranch = subprocess.check_output('git symbolic-ref -q HEAD',shell=True, cwd='.').strip().split('/')[-1]
+#    gitbranch = subprocess.check_output('git symbolic-ref -q HEAD',shell=True, cwd='.').strip().split('/')[-1]
+    gitbranch = os.popen('git symbolic-ref -q HEAD').read().strip()
     print "Generating src/__branch__.py"
-    gitlog = subprocess.check_output('git log -n1 --pretty="%h%n%s%n--%n%an%n%ae%n%ai"',shell=True, cwd='.').strip()
+#    gitlog = subprocess.check_output('git log -n1 --pretty="%h%n%s%n--%n%an%n%ae%n%ai"',shell=True, cwd='.').strip()
+    gitlog = os.popen('git log -n1 --pretty="%h%n%s%n--%n%an%n%ae%n%ai"').read().strip()
     print "Generating src/__gitlog__.py."
     print gitlog
 except:
