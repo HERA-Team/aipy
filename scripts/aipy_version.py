@@ -11,17 +11,17 @@ import aipy
 print "AIPY base version in use:",
 try:
     print aipy.__version__
-except(NameError):
+except(AttributeError):
     print "Version number not Found"
 print "Install location:",aipy.__file__
 print "Last Git commit log:"
 try:
     print aipy.__gitlog__
-except(NameError):
+except(AttributeError):
     print "     Gitlog not found"
 print "Branch:",
 try:
     print aipy.__branch__
-except(NameError):
+except(AttributeError):
     print "Branch Unknown"
 
