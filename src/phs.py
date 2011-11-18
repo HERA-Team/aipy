@@ -258,7 +258,11 @@ class AntennaArray(ArrayLocation):
         ArrayLocation.__init__(self, location=location)
         self.ants = ants
     def __iter__(self): return self.ants.__iter__()
-    def __getitem__(self, *args): return self.ants.__getitem__(*args)
+    def __getitem__(self, item): 
+        if type(item) is str:
+            return self.ants.__getitem__(self.get_ant_list()[item])
+        else:
+            return self.ants.__getitem__(item)
     def __setitem__(self, *args): return self.ants.__setitem__(*args)
     def __len__(self): return self.ants.__len__()
     def get_ant_list(self):
@@ -266,7 +270,7 @@ class AntennaArray(ArrayLocation):
         their corresponding indices."""
         try: 
             ants = {}
-            for i,ant in enumerate(self.ants):
+            for i,ant in enumerate(self):
                 ants[str(ant.num)+str(ant.pol)] = i
             return ants
         except(NameError): return [str(i) for i in self.ants]
@@ -323,7 +327,7 @@ class AntennaArray(ArrayLocation):
     def get_phs_offset(self, i, j,pol):
         """Return the frequency-dependent phase offset of baseline i,j."""
         ants = self.get_ant_list()
-        return self[ants[str(j)+pol[1]]].phsoff - self[ants[str(i)+pol[0]]].phsoff
+        return self[str(j)+pol[1]].phsoff - self[str(i)+pol[0]].phsoff
     def gen_uvw(self, i, j, src='z'):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates."""
