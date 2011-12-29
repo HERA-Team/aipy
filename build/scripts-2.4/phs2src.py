@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/python
 """
 Rotate zenith UV data to a particular source.  Can specify 'zen' to phase data
 to zenith, or nothing at all to just remove delay/offset phase components.

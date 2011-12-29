@@ -394,9 +394,9 @@ class AntennaArray(ArrayLocation):
         return (dra*u_sf + ddec*v_sf) * mfreq**2 / f2
     def phs2src(self, data, src, i, j, pol='xx', mfreq=.150, ionref=None, srcshape=None):
         """Apply phasing to zenith-phased data to point to src."""
-        return data * self.gen_phs(src, i, j, pol, 
+        return data * self.gen_phs(src, i, j, pol=pol, 
             mfreq=mfreq, ionref=ionref, srcshape=srcshape, resolve_src=False)
     def unphs2src(self,data,src, i, j, pol='xx', mfreq=.150, ionref=None, srcshape=None):
         """Remove phasing from src-phased data to point to zenith."""
-        return data / self.gen_phs(src, i, j, pol,
+        return data / self.gen_phs(src, i, j, pol=pol,
             mfreq=mfreq, ionref=ionref, srcshape=srcshape, resolve_src=False)

@@ -5,7 +5,7 @@ class TestRadioBody(unittest.TestCase):
     def setUp(self):
         self.fqs = n.arange(.1,.2,.01)
         bm = amp.Beam(self.fqs)
-        ant0 = amp.Antenna(0,0,0,bm)
+        ant0 = amp.Antenna(0,0,0,0,'x',bm)
         self.aa = amp.AntennaArray(('0','0'), [ant0])
     def test_attributes(self):
         s = amp.RadioFixedBody('0:00', '0:00',
@@ -56,7 +56,7 @@ class TestAntenna(unittest.TestCase):
     def setUp(self):
         self.fqs = n.arange(.1,.2,.01)
         bm = amp.Beam2DGaussian(self.fqs, .05, .025)
-        self.ant = amp.Antenna(0,0,0, beam=bm)
+        self.ant = amp.Antenna(0,0,0,0,'x', beam=bm)
     def test_passband(self):
         pb = self.ant.passband()
         self.assertTrue(n.all(pb == n.ones_like(self.fqs)))
