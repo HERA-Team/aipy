@@ -216,17 +216,19 @@ class BeamAlm(phs.Beam):
 class Antenna(phs.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array."""
-    def __init__(self, x, y, z, num, pol, beam, phsoff=[0.,0.], bp_r=n.array([1]),
+    def __init__(self, x, y, z, beam, num=0, pol='x', phsoff=[0.,0.], bp_r=n.array([1]),
             bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
         """x,y z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object (implements response() function)
         phsoff = polynomial phase vs. frequency.  Phs term that is linear
                  with freq is often called 'delay'.
+        num = unique antenna number
+        pol = polarization [x]|y
         bp_r = polynomial (in freq) modeling real component of passband
         bp_i = polynomial (in freq) modeling imaginary component of passband
         amp = overall multiplicative scaling of gain
         pointing = antenna pointing (az,alt).  Default is zenith."""
-        phs.Antenna.__init__(self, x,y,z, num, pol, beam=beam, phsoff=phsoff)
+        phs.Antenna.__init__(self, x,y,z, beam=beam, num=0, pol='x', phsoff=phsoff)
         self.set_pointing(*pointing)
         self.bp_r = bp_r
         self.bp_i = bp_i

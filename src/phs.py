@@ -182,7 +182,7 @@ class Beam:
 
 class Antenna:
     """Representation of physical attributes of individual antenna."""
-    def __init__(self, x, y, z, num, pol, beam, phsoff=[0.,0.], **kwargs):
+    def __init__(self, x, y, z, beam, pol='xx', num=0, phsoff=[0.,0.], **kwargs):
         """x,y,z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object
         phsoff = polynomial phase vs. frequency.  Phs term that is linear
