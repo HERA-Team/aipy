@@ -216,7 +216,7 @@ class BeamAlm(phs.Beam):
 class Antenna(phs.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array."""
-    def __init__(self, x, y, z, beam, num=0, pol='x', phsoff=[0.,0.], bp_r=n.array([1]),
+    def __init__(self, x, y, z, beam, num=-1, pol='x', phsoff=[0.,0.], bp_r=n.array([1]),
             bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
         """x,y z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object (implements response() function)

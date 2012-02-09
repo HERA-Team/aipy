@@ -182,7 +182,7 @@ class Beam:
 
 class Antenna:
     """Representation of physical attributes of individual antenna."""
-    def __init__(self, x, y, z, beam, pol='xx', num=0, phsoff=[0.,0.], **kwargs):
+    def __init__(self, x, y, z, beam, pol='x', num=-1, phsoff=[0.,0.], **kwargs):
         """x,y,z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object
         phsoff = polynomial phase vs. frequency.  Phs term that is linear
@@ -327,7 +327,10 @@ class AntennaArray(ArrayLocation):
     def get_phs_offset(self, i, j,pol):
         """Return the frequency-dependent phase offset of baseline i,j."""
         ants = self.get_ant_list()
-        return self[str(j)+pol[1]].phsoff - self[str(i)+pol[0]].phsoff
+        try: #if we have pol info, use it
+            return self[str(j)+pol[1]].phsoff - self[str(i)+pol[0]].phsoff
+        except(KeyError):
+            return self[j].phsoff - self[i].phsoff
     def gen_uvw(self, i, j, src='z'):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates."""
