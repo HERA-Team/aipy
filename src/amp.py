@@ -280,7 +280,8 @@ class AntennaArray(phs.AntennaArray):
         self._cache = None
     def passband(self, i, j,*args):
         """Return the passband response of baseline i,j."""
-        if len(args)>0: pol = args[0]
+        if len(args)>0: 
+            pol = args[0]
             ants = self.get_ant_list()
             return self[ants[str(i)+pol[0]]].passband() * self[ants[str(j)+pol[1]]].passband(conj=True)
         else:return self[i].passband() * self[j].passband()
