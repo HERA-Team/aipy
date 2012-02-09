@@ -278,10 +278,12 @@ class AntennaArray(phs.AntennaArray):
         phs.AntennaArray.set_jultime(self, t=t)
         self.eq2top_m = coord.eq2top_m(-self.sidereal_time(), self.lat)
         self._cache = None
-    def passband(self, i, j,pol):
+    def passband(self, i, j,*args):
         """Return the passband response of baseline i,j."""
-        ants = self.get_ant_list()
-        return self[ants[str(i)+pol[0]]].passband() * self[ants[str(j)+pol[1]]].passband(conj=True)
+        if len(args)>0: pol = args[0]
+            ants = self.get_ant_list()
+            return self[ants[str(i)+pol[0]]].passband() * self[ants[str(j)+pol[1]]].passband(conj=True)
+        else:return self[i].passband() * self[j].passband()
     def bm_response(self, i, j, pol='xx'):
         """Return the beam response towards the cached source positions
         for baseline i,j with the specified polarization."""
