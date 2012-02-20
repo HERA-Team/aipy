@@ -310,7 +310,7 @@ default_fits_format_codes = {
 }
 
 def to_fits(filename, data, clobber=False,
-        axes=('ra--sin','dec--sin','freq','stokes'),
+        axes=('ra--sin','dec--sin'),
         object='', telescope='', instrument='', observer='', origin='AIPY',
         obs_date=time.strftime('%D'), cur_date=time.strftime('%D'), 
         ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000., 
@@ -325,7 +325,9 @@ def to_fits(filename, data, clobber=False,
     (in Hz), and "d_freq" is the width of the channel.  The rest are pretty 
     self-explanitory/can be used however you want."""
     data = data.squeeze()
-    data.shape = (1,) * (len(axes) - len(data.shape)) + data.shape
+#    data.shape = (1,) * (len(axes) - len(data.shape)) + data.shape
+    if len(data.shape) != len(axes):
+        raise TypeError('to_fits: axes dimension list does not match data shape')
     phdu = pyfits.PrimaryHDU(data)
     phdu.update_header()
     phdu.header.update('TRANSPOS',0,comment='Import code for old AIPY convention.')
@@ -430,18 +432,19 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
 
     phdu = pyfits.open(infile)[0]
     axes = []
-    for i in range(1,phdu.header.get('naxis')):
+    for i in range(1,phdu.header.get('naxis')+1):
         type = "CTYPE"+str(i)
         axes.append(phdu.header.get(type))
     print axes
-    data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
-    try: 
-        if phdu.header['TRANSPOS']:
-            data = phdu.data.transpose() #for backwards compatibility
-        else:
-            data = phdu.data
-    except(KeyError):
-        data = phdu.data
+    data.shape = data.shape #+ (1,) * (len(axes) - len(data.shape))
+#    try: 
+#        if phdu.header['TRANSPOS']:
+#            data = phdu.data.transpose() #for backwards compatibility
+#            phdu.header.update('TRANSPOS',0)
+#        else:
+#            data = phdu.data
+#    except(KeyError):
+#        data = phdu.data
     phdu.update_header()
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra'):
@@ -463,9 +466,10 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
             phdu.header.update('CRPIX%d' % (i+1), 
-                    round(phdu.data.shape[-(i+1)]/2.))
+                    round(data.shape[-(i+1)]/2.))
         else:
             phdu.header.update('CRPIX%d' % (i+1), 1)
+        print ax,round(data.shape[-(i+1)]/2.)
         if not val is None: phdu.header.update('CRVAL%d' % (i+1), val);
         if not delta is None: phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
@@ -481,4 +485,4 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
         if len(line)>1:
             for subline in word_wrap(line,70,5,10,'#').split("\n"):
                 phdu.header.add_history(subline)
-    pyfits.writeto(outfile, phdu.data, phdu.header, clobber=True)
+    pyfits.writeto(outfile, data, phdu.header, clobber=True)

@@ -96,11 +96,25 @@ L,M = im.get_LM()
 DIM = int(opts.size/opts.res)
 n_ints = 0
 
+#print 'Calculating image of primary beam'
+#top = im.get_eq(0, aa.lat)
+#mask = top[0].mask
+#m = a.coord.eq2top_m(0, aa.lat)
+#top = top.transpose([1,0,2])
+#x,y,z = n.dot(m, top)
+#aa.select_chans([120])
+#d = aa.ants[0].bm_response((x.flatten(),y.flatten(),z.flatten()), pol='y')[0]**2
+#aa.select_chans(chans)
+#d.shape = (DIM,DIM)
+#bm_im = n.where(mask, 0, d)
+#print 'done'
+
 # Define a quick function writing an image to a FITS file
 def fname(ftag, cnt): return '%s.%s.fits' % (opts.fmt % cnt, ftag)
 def to_fits(ftag,i,src,cnt,history=''):
     filename = fname(ftag,cnt)
     print 'Saving data to', filename
+    while len(i.shape) < 4: i.shape = i.shape + (1,)
     cen = ephem.Equatorial(src.ra, src.dec, epoch=aa.epoch)
     # We precess the coordinates of the center of the image here to
     # J2000, just to have a well-defined epoch for them.  For image coords to
@@ -118,7 +132,8 @@ def to_fits(ftag,i,src,cnt,history=''):
         freq=n.average(aa[0].beam.afreqs),history=history)
 
 def grid_it(im,us,vs,ws,ds,wgts):
-    sys.stdout.write('Gridding a chunk of data. \n'); sys.stdout.flush()
+    #print 'Gridding %d integrations' % n_ints
+    sys.stdout.write('|'); sys.stdout.flush()
     if len(ds) == 0: raise ValueError('No data to use.')
     ds,wgts = n.concatenate(ds), n.concatenate(wgts).flatten()
     us,vs,ws = n.concatenate(us), n.concatenate(vs), n.concatenate(ws)
@@ -129,6 +144,7 @@ def grid_it(im,us,vs,ws,ds,wgts):
 
 def img_it(im):
     global n_ints
+    #print 'Imaging with %d integrations' % n_ints
     n_ints = 0
     # Form dirty images/beams
     uvs = a.img.recenter(n.abs(im.uv).astype(n.float), (DIM/2,DIM/2))
@@ -149,7 +165,7 @@ for srccnt, s in enumerate(cat.values()):
     snapcnt,curtime = 0, None
     # Read each file
     for filename in args:
-      sys.stdout.write('Working on file %s \n' % filename); sys.stdout.flush()
+      sys.stdout.write('.'); sys.stdout.flush()
       uv = a.miriad.UV(filename)
       a.scripting.uv_selector(uv, opts.ant, opts.pol)
       uv.select('decimate', opts.decimate, opts.decphs)
@@ -157,7 +173,7 @@ for srccnt, s in enumerate(cat.values()):
       for (crd,t,(i,j)),d,f in uv.all(raw=True):
           pol = a.miriad.pol2str[uv['pol']]
           history = uv['history']
-          history = history + sys.argv[0].split('/')[-1].strip()+' '+' '.join(sys.argv[1:])
+          history = history +  sys.argv[0].split('/')[-1].strip()+' ' + ' '.join(sys.argv[1:])
           if curtime != t:
               # Make snapshot images (if specified)
               if opts.snap > 0:
@@ -171,7 +187,7 @@ for srccnt, s in enumerate(cat.values()):
                               uvs = n.abs(im.uv)
                               bms,dim,dbm = uvs,uvs,uvs
                           for k in ['uvs','bms','dim','dbm']:
-                              if k in outputs: to_fits(k, eval(k), s, imgcnt, history=history)
+                              if k in outputs: to_fits(k, eval(k), s,imgcnt,history=history)
                           imgcnt += 1
                       us,vs,ws,ds,wgts = [],[],[],[],[]
                       if opts.no_w:
@@ -192,7 +208,7 @@ for srccnt, s in enumerate(cat.values()):
           d,f = d.take(chans), f.take(chans)
           if not opts.skip_amp: d /= aa.passband(i,j,pol=pol)
           # Throws PointingError if not up:
-          if not opts.skip_phs: d = aa.phs2src(d, s, i, j, pol=pol)
+          if not opts.skip_phs: d = aa.phs2src(d, s, i, j,pol=pol)
           u,v,w = aa.gen_uvw(i,j,src=s)
           longenough = n.where(n.sqrt(u**2+v**2) < opts.minuv, 0, 1).squeeze()
           if not opts.skip_bm:
@@ -224,7 +240,7 @@ for srccnt, s in enumerate(cat.values()):
         print 'No data: skipping output file.'
         continue
     for k in ['uvs','bms','dim','dbm']:
-        if k in outputs: to_fits(k, eval(k), s, imgcnt, history=history)
+        if k in outputs: to_fits(k, eval(k), s, imgcnt,history=history)
     imgcnt += 1
     us,vs,ws,ds,wgts = [],[],[],[],[]
     if opts.no_w:
