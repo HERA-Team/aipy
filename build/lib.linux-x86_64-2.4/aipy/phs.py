@@ -200,7 +200,6 @@ class Antenna:
     def _update_phsoff(self):
         self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
     def update(self):
-        self.beam.update()
         self._update_phsoff()
     def __iter__(self): return self.pos.__iter__()
     def __add__(self, a): return self.pos + a.pos
@@ -325,7 +324,9 @@ class AntennaArray(ArrayLocation):
             ra,dec = coord.eq2radec(src)
             m = coord.eq2top_m(self.sidereal_time() - ra, dec)
         return n.dot(m, bl).transpose()
-    def get_phs_offset(self, i, j,pol):
+    def get_phs_offset(self, i, j,*args):
+        if len(args)>0: 
+            pol = args[0]
         """Return the frequency-dependent phase offset of baseline i,j."""
         ants = self.get_ant_list()
         try: #if we have pol info, use it
@@ -359,9 +360,12 @@ class AntennaArray(ArrayLocation):
         phs = n.exp(-1j*2*n.pi*(w + o))
         if resolve_src:
             if srcshape is None:
-                try: srcshape = src.srcshape
-                except(AttributeError): pass
-            if not srcshape is None: phs *= self.resolve_src(u, v, srcshape=srcshape)
+                try: res = self.resolve_src(u, v, srcshape=src.srcshape)
+                except(AttributeError): res = 1
+            else: res = self.resolve_src(u, v, srcshape=srcshape)
+        else: res = 1
+        o = self.get_phs_offset(i,j,pol)
+        phs = res * n.exp(-1j*2*n.pi*(w + dw + o))
         return phs.squeeze()
     def resolve_src(self, u, v, srcshape=(0,0,0)):
         """Adjust amplitudes to reflect resolution effects for a uniform 

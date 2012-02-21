@@ -1,6 +1,6 @@
-__gitlog__ = """2b4b0e8
-Removed obsolete "Calibration Functions" from src/pol.py added function ParAng
+__gitlog__ = """f5e1917
+Made ParAng function in src/pol.py accept topocentric x,y,z instead of l,m
 --
 David Moore
 damo@sas.upenn.edu
-2012-02-20 11:55:59 -0500"""
+2012-02-21 15:03:29 -0500"""

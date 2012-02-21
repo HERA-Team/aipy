@@ -37,14 +37,13 @@ xy2s_m = np.array([[1.,   0.,  0.,  1.],
 
 s2xy_m = np.linalg.inv(xy2s_m)
 
-def ParAng(l,m,ha,lat):
+def ParAng(top,ha,lat):
     """
     For any l,m in an image, calculate the paralactic angle at that point.
     """
     #deal with coordinates
-    z = np.sqrt(1-(l**2)-(m**2))
     rot_m = coord.top2eq_m(ha,lat)
-    eq = np.dot(rot_m,(l,m,z))
+    eq = np.dot(rot_m,top)
     ra,dec = coord.eq2radec(eq)
     #do the calculation...
     tanX = (np.cos(lat)*np.cos(ra))/((np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ra)))
