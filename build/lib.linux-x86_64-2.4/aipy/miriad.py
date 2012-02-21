@@ -280,8 +280,7 @@ class UV(_miriad.UV):
     def add_var(self, name, type):
         """Add a variable of the specified type to a UV file."""
         self.vartable[name] = type
-
-    return (bl>>8)-1, (bl&255) - 1
+        return (bl>>8)-1, (bl&255) - 1
 
 def ij2bl(i, j):
     if i > j: i,j = j,i

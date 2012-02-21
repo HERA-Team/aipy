@@ -200,6 +200,7 @@ class Antenna:
     def _update_phsoff(self):
         self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
     def update(self):
+        self.beam.update()
         self._update_phsoff()
     def __iter__(self): return self.pos.__iter__()
     def __add__(self, a): return self.pos + a.pos

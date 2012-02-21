@@ -2,7 +2,7 @@
 Module for adding polarization information to models.
 """
 
-import fit,miriad
+from aipy import coord,fit,miriad
 import numpy as np
 
 #  _   ___     __
@@ -36,6 +36,19 @@ xy2s_m = np.array([[1.,   0.,  0.,  1.],
                    [0., -1.j, 1.j,  0.]])
 
 s2xy_m = np.linalg.inv(xy2s_m)
+
+def ParAng(l,m,ha,lat):
+    """
+    For any l,m in an image, calculate the paralactic angle at that point.
+    """
+    #deal with coordinates
+    z = np.sqrt(1-(l**2)-(m**2))
+    rot_m = coord.top2eq_m(ha,lat)
+    eq = np.dot(rot_m,(l,m,z))
+    ra,dec = coord.eq2radec(eq)
+    #do the calculation...
+    tanX = (np.cos(lat)*np.cos(ra))/((np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ra)))
+    return np.arctan(tanX)
 
 def stokes2xy(V_s):
     """Rotate a Stokes visibility to an XY visibility."""
@@ -85,53 +98,6 @@ def normalizeI(V):
     for prm in V:
         V[prm] /= I
     return V
-#   ___       _ _ _                _   _               ______                 _   _
-#  / __| __ _| (_) |__  _ __  __ _| |_(_) ___  _ __   |  ____|   _ _ __   ___| |_(_) ___  _ __  ___
-# | |   / _' | | | '_ \| '__|/ _' |  _| |/ _ \| '_ \  | |__ | | | | '_ \ / __| __| |/ _ \| '_ \/ __|
-# | |__| (_| | | | |_) | |  | (_| | |_| | (_) | | | | |  __|| |_| | | | | (__| |_| | (_) | | | \__ \
-#  \___|\__,_|_|_|_,__/|_|   \__,_|\__|_|\___/|_| |_| |_|    \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
-
-gg_m = np.array([[1., 1., 1., 1.],
-                 [1.,-1., 1.,-1.],
-                 [1., 1.,-1.,-1.],
-                 [1.,-1.,-1., 1.]])
-
-def dg2gamma(gerrs):
-    """Useful for calibrating. Input gamma++,+-,-+,--, as defined in TMS. Output fractional gain errors. This also works for deltas and leakage terms."""
-    gammas = {}
-    for i in dg.keys():
-        for j in dg.keys():
-            if i >= j: continue
-            bl = (i,j)
-            g_arr = np.array([dg[i]['x'],dg[i]['y'],\
-                np.conjugate(dg[j]['x']),np.conjugate(dg[j]['y'])])
-            gammas[bl] = np.dot(gg_m,g_arr)
-    return gammas
-
-def gamma2dg(gammas):
-    """Inverse of dg2gamma."""
-    gg_inv = np.linalg.inv(gg_m)
-    gerrs = {}
-    for (i,j) in gammas:
-        gerrs_arr = np.dot(gg_inv, gammas[(i,j)])
-        if not i in gerrs: gerrs[i] = {'x':[],'y':[]}
-        if not j in gerrs: gerrs[j] = {'x':[],'y':[]}
-        gerrs[i]['x'].append(gerrs_arr[0])
-        gerrs[i]['y'].append(gerrs_arr[1])
-        gerrs[j]['x'].append(np.conjugate(gerrs_arr[2]))
-        gerrs[j]['y'].append(np.conjugate(gerrs_arr[3]))
-    for i in gerrs:
-        for pi in ('x','y'):
-            gerrs[i][pi] = np.mean(np.array(gerrs[i][pi]))
-    return gerrs
-
-def ds_m(gamma,delta):
-    """Input the HBS gamma and delta, output the gain error matrix therefrom."""
-    ds = -0.5*np.array([[      gamma[0],     gamma[1],      delta[1], -1.j*delta[2]],
-                        [      gamma[1],     gamma[0],      delta[0], -1.j*delta[3]],
-                        [      delta[1], -1.*delta[0],      gamma[0],  1.j*gamma[3]],
-                        [ -1.j*delta[2], 1.j*delta[3], -i.j*gamma[3],      gamma[0]]])
-    return ds
 
 #  ____
 # | __ )  ___  __ _ _ ___ ___
