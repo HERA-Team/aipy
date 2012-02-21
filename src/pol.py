@@ -163,21 +163,15 @@ class Antenna(fit.Antenna):
 #                                                                 |___/ 
 
 class AntennaArray(fit.AntennaArray):
-    def get_phs_offset(self,i,j,*args):
-        if len(args)>0: 
-            pol = args[0]
+    def get_phs_offset(self,i,j,pol):
         """This assumes you've run apply_cal.py before callihg this function."""
         if pol in ('xx','xy','yx','yy'): return fit.AntennaArray.get_phs_offset(self,i,j,pol)
         if pol in ('I','Q','U','V'): return np.zeros_like(self.get_afreqs()) 
-    def passband(self,i,j,*args):
-        if len(args)>0: 
-            pol = args[0]
+    def passband(self,i,j,pol):
         """This assumes you've run apply_cal.py before calling this function."""
         if pol in ('xx','xy','yx','yy'): return fit.AntennaArray.passband(self,i,j,pol)
         if pol in ('I','Q','U','V'): return np.ones_like(self.get_afreqs()) 
-    def bm_response(self,i,j,*args):
-        if len(args)>0: 
-            pol = args[0]
+    def bm_response(self,i,j,pol):
         """Introduce Stokes' parameters into the definition of the beam."""
         try: return fit.AntennaArray.bm_response(self,i,j,pol)
         except(AssertionError):
