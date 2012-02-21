@@ -345,9 +345,7 @@ class AntennaArray(ArrayLocation):
         return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
     def gen_phs(self, src, i, j, pol='xx', mfreq=.150, ionref=None, srcshape=None, 
             resolve_src=False):
-        if len(args)>0: 
-            pol = args[0]
-        """Return phasing that is multiplied to data to point to src."""
+         """Return phasing that is multiplied to data to point to src."""
         u,v,w = self.gen_uvw(i,j,src=src)
         if ionref is None:
             try: dw = self.refract(u, v, mfreq=mfreq, ionref=src.ionref)
