@@ -38,6 +38,7 @@ xy2s_m = np.array([[1.,   0.,  0.,  1.],
 s2xy_m = np.linalg.inv(xy2s_m)
 
 def ParAng(ra,dec,lat):
+    lat *= np.pi/180.
     """
     For any l,m in an image, calculate the paralactic angle at that point.
     """
