@@ -343,7 +343,7 @@ class AntennaArray(ArrayLocation):
         #afreqs = n.reshape(afreqs, (1,afreqs.size))
         x.shape += (1,); y.shape += (1,); z.shape += (1,)
         return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
-    def gen_phs(self, src, i, j, *args, mfreq=.150, ionref=None, srcshape=None, 
+    def gen_phs(self, src, i, j, pol='xx', mfreq=.150, ionref=None, srcshape=None, 
             resolve_src=False):
         if len(args)>0: 
             pol = args[0]
