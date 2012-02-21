@@ -37,14 +37,13 @@ xy2s_m = np.array([[1.,   0.,  0.,  1.],
 
 s2xy_m = np.linalg.inv(xy2s_m)
 
-def ParAng(l,m,ha,lat):
+def ParAng(top,ha,lat):
     """
     For any l,m in an image, calculate the paralactic angle at that point.
     """
     #deal with coordinates
-    z = np.sqrt(1-(l**2)-(m**2))
     rot_m = coord.top2eq_m(ha,lat)
-    eq = np.dot(rot_m,(l,m,z))
+    eq = np.dot(rot_m,top)
     ra,dec = coord.eq2radec(eq)
     #do the calculation...
     tanX = (np.cos(lat)*np.cos(ra))/((np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ra)))
@@ -129,27 +128,15 @@ class Antenna(fit.Antenna):
 #                                                                 |___/ 
 
 class AntennaArray(fit.AntennaArray):
-    def get_phs_offset(self,i,j,*args):
-        if len(args)>0:
-            pol = args[0]
-        else:
-            fit.AntennaArray.get_phs_offset(self,i,j)
+    def get_phs_offset(self,i,j,pol):
         """This assumes you've run apply_cal.py before callihg this function."""
         if pol in ('xx','xy','yx','yy'): return fit.AntennaArray.get_phs_offset(self,i,j,pol)
         if pol in ('I','Q','U','V'): return np.zeros_like(self.get_afreqs()) 
-    def passband(self,i,j,*args):
-        if len(args)>0:
-            pol = args[0]
-        else:
-            return fit.AntennaArray.passband(self,i,j)
+    def passband(self,i,j,pol):
         """This assumes you've run apply_cal.py before calling this function."""
         if pol in ('xx','xy','yx','yy'): return fit.AntennaArray.passband(self,i,j,pol)
         if pol in ('I','Q','U','V'): return np.ones_like(self.get_afreqs()) 
-    def bm_response(self,i,j,*args):
-        if len(args)>0:
-            pol = args[0]
-        else:
-            return fit.AntennaArray.passband(self,i,j)
+    def bm_response(self,i,j,pol):
         """Introduce Stokes' parameters into the definition of the beam."""
         try: return fit.AntennaArray.bm_response(self,i,j,pol)
         except(AssertionError):
