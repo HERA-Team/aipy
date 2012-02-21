@@ -324,7 +324,9 @@ class AntennaArray(ArrayLocation):
             ra,dec = coord.eq2radec(src)
             m = coord.eq2top_m(self.sidereal_time() - ra, dec)
         return n.dot(m, bl).transpose()
-    def get_phs_offset(self, i, j,pol):
+    def get_phs_offset(self, i, j,*args):
+        if len(args)>0: 
+            pol = args[0]
         """Return the frequency-dependent phase offset of baseline i,j."""
         ants = self.get_ant_list()
         try: #if we have pol info, use it
@@ -341,8 +343,10 @@ class AntennaArray(ArrayLocation):
         #afreqs = n.reshape(afreqs, (1,afreqs.size))
         x.shape += (1,); y.shape += (1,); z.shape += (1,)
         return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
-    def gen_phs(self, src, i, j, pol, mfreq=.150, ionref=None, srcshape=None, 
+    def gen_phs(self, src, i, j, *args, mfreq=.150, ionref=None, srcshape=None, 
             resolve_src=False):
+        if len(args)>0: 
+            pol = args[0]
         """Return phasing that is multiplied to data to point to src."""
         u,v,w = self.gen_uvw(i,j,src=src)
         if ionref is None:
@@ -355,7 +359,7 @@ class AntennaArray(ArrayLocation):
                 except(AttributeError): res = 1
             else: res = self.resolve_src(u, v, srcshape=srcshape)
         else: res = 1
-        o = self.get_phs_offset(i,j,pol=pol)
+        o = self.get_phs_offset(i,j,pol)
         phs = res * n.exp(-1j*2*n.pi*(w + dw + o))
         return phs.squeeze()
     def resolve_src(self, u, v, srcshape=(0,0,0)):
