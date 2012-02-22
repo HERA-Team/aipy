@@ -42,7 +42,6 @@ def ParAng(ha,dec,lat):
     For any hour angle, declenation in an image, calculate the paralactic angle at that point. Remember to multiply this by 2 when you're
     doing anything with it...
     """
-    tanX = (np.cos(lat)*np.sin(ha))/((np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ha)))
     up = (np.cos(lat)*np.sin(ha))
     down = (np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ha))
     return np.arctan2(up,down)
