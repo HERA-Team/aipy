@@ -37,13 +37,15 @@ xy2s_m = np.array([[1.,   0.,  0.,  1.],
 
 s2xy_m = np.linalg.inv(xy2s_m)
 
-def ParAng(ra,dec,lat):
-    lat *= np.pi/180.
+def ParAng(ha,dec,lat):
     """
-    For any l,m in an image, calculate the paralactic angle at that point.
+    For any hour angle, declenation in an image, calculate the paralactic angle at that point. Remember to multiply this by 2 when you're
+    doing anything with it...
     """
-    tanX = (np.cos(lat)*np.cos(ra))/((np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ra)))
-    return np.arctan(tanX)
+    tanX = (np.cos(lat)*np.sin(ha))/((np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ha)))
+    up = (np.cos(lat)*np.sin(ha))
+    down = (np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ha))
+    return np.arctan2(up,down)
 
 def stokes2xy(V_s):
     """Rotate a Stokes visibility to an XY visibility."""
