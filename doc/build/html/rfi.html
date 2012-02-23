@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>RFI Detection and Flagging &mdash; AIPY v1.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AIPY v1.0.1 documentation" href="index.html" />
+    <link rel="next" title="Gridding and Imaging" href="img.html" />
+    <link rel="prev" title="Simulation Fitting" href="fit.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="img.html" title="Gridding and Imaging"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="fit.html" title="Simulation Fitting"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-aipy.rfi">
+<h1>RFI Detection and Flagging<a class="headerlink" href="#module-aipy.rfi" title="Permalink to this headline">¶</a></h1>
+<p>Module for detecting and flaging RFI related effects.</p>
+<dl class="function">
+<dt id="aipy.rfi.fit_gaussian">
+<tt class="descclassname">aipy.rfi.</tt><tt class="descname">fit_gaussian</tt><big>(</big><em>xs</em>, <em>ys</em><big>)</big><a class="headerlink" href="#aipy.rfi.fit_gaussian" title="Permalink to this definition">¶</a></dt>
+<dd>Fit a gaussian (returning amplitude, sigma, offset) to a set of x
+values and their corresponding y values.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.rfi.flag_by_int">
+<tt class="descclassname">aipy.rfi.</tt><tt class="descname">flag_by_int</tt><big>(</big><em>preflagged_auto</em>, <em>nsig=1</em>, <em>raw=False</em><big>)</big><a class="headerlink" href="#aipy.rfi.flag_by_int" title="Permalink to this definition">¶</a></dt>
+<dd>Flag RFI for an autocorrelation.  Iteratively removes outliers and
+fits a smooth passband, then uses smooth passband to remove outliers
+(both positive and negative).  If &#8216;raw&#8217; is specified, no smooth function
+is removed.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.rfi.gaussian">
+<tt class="descclassname">aipy.rfi.</tt><tt class="descname">gaussian</tt><big>(</big><em>amp</em>, <em>sig</em>, <em>off</em>, <em>x</em><big>)</big><a class="headerlink" href="#aipy.rfi.gaussian" title="Permalink to this definition">¶</a></dt>
+<dd>Generate gaussian value at x given amplitude (<em>amp</em>), sigma (<em>sig</em>), and 
+x offset.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.rfi.gen_rfi_thresh">
+<tt class="descclassname">aipy.rfi.</tt><tt class="descname">gen_rfi_thresh</tt><big>(</big><em>data</em>, <em>nsig=2</em>, <em>cnt_per_bin=1000</em><big>)</big><a class="headerlink" href="#aipy.rfi.gen_rfi_thresh" title="Permalink to this definition">¶</a></dt>
+<dd>Generate a threshold at <em>nsig</em> times the standard deviation (above and below)
+the mean, outside of which data are considered RFI.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.rfi.remove_spikes">
+<tt class="descclassname">aipy.rfi.</tt><tt class="descname">remove_spikes</tt><big>(</big><em>data</em>, <em>mask=None</em>, <em>order=6</em>, <em>iter=3</em>, <em>return_poly=False</em><big>)</big><a class="headerlink" href="#aipy.rfi.remove_spikes" title="Permalink to this definition">¶</a></dt>
+<dd>Iteratively fits a smooth function by removing outliers and fitting
+a polynomial, then using the polynomial to remove other outliers.</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="fit.html"
+                                  title="previous chapter">Simulation Fitting</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="img.html"
+                                  title="next chapter">Gridding and Imaging</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/rfi.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="img.html" title="Gridding and Imaging"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="fit.html" title="Simulation Fitting"
+             >previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2011, Aaron Parsons.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.6.
+    </div>
+  </body>
+</html>

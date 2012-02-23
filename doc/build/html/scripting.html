@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Scripting Support &mdash; AIPY v1.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AIPY v1.0.1 documentation" href="index.html" />
+    <link rel="prev" title="HEALpix Support" href="healpix.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="healpix.html" title="HEALpix Support"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-aipy.scripting">
+<h1>Scripting Support<a class="headerlink" href="#module-aipy.scripting" title="Permalink to this headline">¶</a></h1>
+<p>Module containing utilities (like parsing of certain command-line arguments) 
+for writing scripts.</p>
+<dl class="function">
+<dt id="aipy.scripting.add_standard_options">
+<tt class="descclassname">aipy.scripting.</tt><tt class="descname">add_standard_options</tt><big>(</big><em>optparser</em>, <em>ant=False</em>, <em>pol=False</em>, <em>chan=False</em>, <em>cal=False</em>, <em>src=False</em>, <em>prms=False</em>, <em>dec=False</em>, <em>cmap=False</em>, <em>max=False</em>, <em>drng=False</em><big>)</big><a class="headerlink" href="#aipy.scripting.add_standard_options" title="Permalink to this definition">¶</a></dt>
+<dd>Add standard command-line options to an optparse.OptionParser() on an 
+opt in basis (i.e. specify =True for each option to be added).</dd></dl>
+
+<dl class="function">
+<dt id="aipy.scripting.parse_ants">
+<tt class="descclassname">aipy.scripting.</tt><tt class="descname">parse_ants</tt><big>(</big><em>ant_str</em>, <em>nants</em><big>)</big><a class="headerlink" href="#aipy.scripting.parse_ants" title="Permalink to this definition">¶</a></dt>
+<dd>Generate list of (baseline, inlude) tuples based on parsing of the
+string associated with the &#8216;ants&#8217; command-line option.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.scripting.parse_chans">
+<tt class="descclassname">aipy.scripting.</tt><tt class="descname">parse_chans</tt><big>(</big><em>chan_str</em>, <em>nchan</em>, <em>concat=True</em><big>)</big><a class="headerlink" href="#aipy.scripting.parse_chans" title="Permalink to this definition">¶</a></dt>
+<dd>Return array of active channels based on number of channels and
+string argument for chans (all, 20_30, or 55,56,57, or 20_30,31,32).
+Channel ranges include endpoints (i.e. 20_30 includes both 20 and 30).</dd></dl>
+
+<dl class="function">
+<dt id="aipy.scripting.parse_prms">
+<tt class="descclassname">aipy.scripting.</tt><tt class="descname">parse_prms</tt><big>(</big><em>prm_str</em><big>)</big><a class="headerlink" href="#aipy.scripting.parse_prms" title="Permalink to this definition">¶</a></dt>
+<dd>Return a dict of the form: {&#8216;obj&#8217;: {&#8216;prm&#8217;:(val,sig),...}...} where
+val is a starting value and sig is a known error associated with that 
+start value.  Both default to None if a value is not provided.  The
+string to be parsed can be: &#8220;obj=prm&#8221;, &#8220;obj=prm/val&#8221;, 
+&#8220;obj=prm/val/sig&#8221;, &#8220;(obj1/obj2)=prm/(val1/val2)/sig&#8221;, 
+&#8220;obj=(prm1/prm2)/val/(sig1/sig2)&#8221;, comma separated versions of the above,
+and so on.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.scripting.parse_srcs">
+<tt class="descclassname">aipy.scripting.</tt><tt class="descname">parse_srcs</tt><big>(</big><em>src_str</em>, <em>cat_str</em><big>)</big><a class="headerlink" href="#aipy.scripting.parse_srcs" title="Permalink to this definition">¶</a></dt>
+<dd>Return (src_list,flux_cutoff,catalogs) based on string argument for src and
+cat.  Can be &#8220;all&#8221;, &#8220;&lt;src_name1&gt;,...&#8221;, &#8220;&lt;ra XX[:XX:xx]&gt;_&lt;dec XX[:XX:xx]&gt;&#8221;, or
+&#8220;val/freq&#8221; (sources with Jy flux density above val at freq in GHz).</dd></dl>
+
+<dl class="function">
+<dt id="aipy.scripting.uv_selector">
+<tt class="descclassname">aipy.scripting.</tt><tt class="descname">uv_selector</tt><big>(</big><em>uv</em>, <em>ants=-1</em>, <em>pol_str=-1</em><big>)</big><a class="headerlink" href="#aipy.scripting.uv_selector" title="Permalink to this definition">¶</a></dt>
+<dd>Call uv.select with appropriate options based on string argument for
+antennas (can be &#8216;all&#8217;, &#8216;auto&#8217;, &#8216;cross&#8217;, &#8216;0,1,2&#8217;, or &#8216;0_1,0_2&#8217;) and
+string for polarization (&#8216;xx&#8217;,&#8217;yy&#8217;,&#8217;xy&#8217;,&#8217;yx&#8217;).</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="healpix.html"
+                                  title="previous chapter">HEALpix Support</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/scripting.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="healpix.html" title="HEALpix Support"
+             >previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2011, Aaron Parsons.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.6.
+    </div>
+  </body>
+</html>

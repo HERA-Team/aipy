@@ -1,0 +1,253 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Gridding and Imaging &mdash; AIPY v1.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AIPY v1.0.1 documentation" href="index.html" />
+    <link rel="next" title="Deconvolution" href="deconv.html" />
+    <link rel="prev" title="RFI Detection and Flagging" href="rfi.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="deconv.html" title="Deconvolution"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="rfi.html" title="RFI Detection and Flagging"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-aipy.img">
+<h1>Gridding and Imaging<a class="headerlink" href="#module-aipy.img" title="Permalink to this headline">¶</a></h1>
+<p>Module for gridding UVW data (including W projection), forming images,
+and combining (mosaicing) images into spherical maps.</p>
+<dl class="class">
+<dt id="aipy.img.Img">
+<em class="property">class </em><tt class="descclassname">aipy.img.</tt><tt class="descname">Img</tt><big>(</big><em>size=100</em>, <em>res=1</em>, <em>mf_order=0</em><big>)</big><a class="headerlink" href="#aipy.img.Img" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for gridding uv data, recording the synthesized beam profile,
+and performing transforms into image domain.</p>
+<dl class="method">
+<dt id="aipy.img.Img.append_hermitian">
+<tt class="descname">append_hermitian</tt><big>(</big><em>(u</em>, <em>v</em>, <em>w)</em>, <em>data</em>, <em>wgts=None</em><big>)</big><a class="headerlink" href="#aipy.img.Img.append_hermitian" title="Permalink to this definition">¶</a></dt>
+<dd>Append to (uvw, data, [wgts]) the points (-uvw, conj(data), [wgts]).
+This is standard practice to get a real-valued image.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.img.Img.bm_image">
+<tt class="descname">bm_image</tt><big>(</big><em>center=(0</em>, <em>0)</em>, <em>term=None</em><big>)</big><a class="headerlink" href="#aipy.img.Img.bm_image" title="Permalink to this definition">¶</a></dt>
+<dd>Return the inverse FFT of the sample weightings (for all mf_order
+terms, or the specified term if supplied), with the 0,0 point
+moved to &#8216;center&#8217;.  Tranposes to put up=North, right=East.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.img.Img.get_LM">
+<tt class="descname">get_LM</tt><big>(</big><em>center=(0</em>, <em>0)</em><big>)</big><a class="headerlink" href="#aipy.img.Img.get_LM" title="Permalink to this definition">¶</a></dt>
+<dd>Get the (l,m) image coordinates for an inverted UV matrix.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.img.Img.get_eq">
+<tt class="descname">get_eq</tt><big>(</big><em>ra=0</em>, <em>dec=0</em>, <em>center=(0</em>, <em>0)</em><big>)</big><a class="headerlink" href="#aipy.img.Img.get_eq" title="Permalink to this definition">¶</a></dt>
+<dd>Return the equatorial coordinates of each pixel in the image, 
+assuming the image is centered on the provided ra, dec (in radians).</dd></dl>
+
+<dl class="method">
+<dt id="aipy.img.Img.get_indices">
+<tt class="descname">get_indices</tt><big>(</big><em>u</em>, <em>v</em><big>)</big><a class="headerlink" href="#aipy.img.Img.get_indices" title="Permalink to this definition">¶</a></dt>
+<dd>Get the pixel indices corresponding to the provided uv coordinates.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.img.Img.get_top">
+<tt class="descname">get_top</tt><big>(</big><em>center=(0</em>, <em>0)</em><big>)</big><a class="headerlink" href="#aipy.img.Img.get_top" title="Permalink to this definition">¶</a></dt>
+<dd>Return the topocentric coordinates of each pixel in the image.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.img.Img.get_uv">
+<tt class="descname">get_uv</tt><big>(</big><big>)</big><a class="headerlink" href="#aipy.img.Img.get_uv" title="Permalink to this definition">¶</a></dt>
+<dd>Return the u,v indices of the pixels in the uv matrix.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.img.Img.image">
+<tt class="descname">image</tt><big>(</big><em>center=(0</em>, <em>0)</em><big>)</big><a class="headerlink" href="#aipy.img.Img.image" title="Permalink to this definition">¶</a></dt>
+<dd>Return the inverse FFT of the UV matrix, with the 0,0 point moved
+to &#8216;center&#8217;.  Tranposes to put up=North, right=East.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.img.Img.put">
+<tt class="descname">put</tt><big>(</big><em>(u</em>, <em>v</em>, <em>w)</em>, <em>data</em>, <em>wgts=None</em>, <em>apply=True</em><big>)</big><a class="headerlink" href="#aipy.img.Img.put" title="Permalink to this definition">¶</a></dt>
+<dd>Grid uv data (w is ignored) onto a UV plane.  Data should already
+have the phase due to w removed.  Assumes the Hermitian conjugate
+data is in uvw already (i.e. the conjugate points are not placed for
+you).  If wgts are not supplied, default is 1 (normal weighting).
+If apply is false, returns uv and bm data without applying it do
+the internally stored matrices.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.img.ImgW">
+<em class="property">class </em><tt class="descclassname">aipy.img.</tt><tt class="descname">ImgW</tt><big>(</big><em>size=100</em>, <em>res=1</em>, <em>wres=0.5</em>, <em>mf_order=0</em><big>)</big><a class="headerlink" href="#aipy.img.ImgW" title="Permalink to this definition">¶</a></dt>
+<dd><p>A subclass of Img adding W projection functionality (see Cornwell
+et al. 2005 &#8220;Widefield Imaging Problems in Radio Astronomy&#8221;).</p>
+<dl class="method">
+<dt id="aipy.img.ImgW.conv_invker">
+<tt class="descname">conv_invker</tt><big>(</big><em>u</em>, <em>v</em>, <em>w</em><big>)</big><a class="headerlink" href="#aipy.img.ImgW.conv_invker" title="Permalink to this definition">¶</a></dt>
+<dd>Generates the W projection kernel (a function of u,v) for the
+supplied value of w.  See Cornwell et al. 2005 &#8220;Widefield Imaging
+Problems in Radio Astronomy&#8221; for discussion.  This implementation
+uses a numerically evaluated Fresnel kernel, rather than the
+small-angle approximated one given in the literature.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.img.ImgW.put">
+<tt class="descname">put</tt><big>(</big><em>(u</em>, <em>v</em>, <em>w)</em>, <em>data</em>, <em>wgts=None</em>, <em>invker2=None</em>, <em>verbose=True</em><big>)</big><a class="headerlink" href="#aipy.img.ImgW.put" title="Permalink to this definition">¶</a></dt>
+<dd>Same as Img.put, only now the w component is projected to the w=0
+plane before applying the data to the UV matrix.</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="aipy.img.convolve2d">
+<tt class="descclassname">aipy.img.</tt><tt class="descname">convolve2d</tt><big>(</big><em>a</em>, <em>b</em><big>)</big><a class="headerlink" href="#aipy.img.convolve2d" title="Permalink to this definition">¶</a></dt>
+<dd>Convolve a and b by multiplying in Fourier domain.  Must be same size.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.img.from_fits">
+<tt class="descclassname">aipy.img.</tt><tt class="descname">from_fits</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#aipy.img.from_fits" title="Permalink to this definition">¶</a></dt>
+<dd>Read (data,kwds) from a FITS file.  Matches to_fits() above.  Attempts
+to deduce each keyword listed in to_fits() from the FITS header, but is
+accepting of differences.  Returns values in &#8220;kwds&#8221; dictionary.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.img.from_fits_to_fits">
+<tt class="descclassname">aipy.img.</tt><tt class="descname">from_fits_to_fits</tt><big>(</big><em>infile</em>, <em>outfile</em>, <em>data</em>, <em>kwds</em>, <em>history=None</em>, <em>verbose=True</em><big>)</big><a class="headerlink" href="#aipy.img.from_fits_to_fits" title="Permalink to this definition">¶</a></dt>
+<dd>Create a fits file in outfile with data using header from infile using
+kwds to override values in the header.
+See img.to_fits for typical header variables.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.img.gaussian_beam">
+<tt class="descclassname">aipy.img.</tt><tt class="descname">gaussian_beam</tt><big>(</big><em>sigma</em>, <em>shape=0</em>, <em>amp=1.0</em>, <em>center=(0</em>, <em>0)</em><big>)</big><a class="headerlink" href="#aipy.img.gaussian_beam" title="Permalink to this definition">¶</a></dt>
+<dd>Return a 2D gaussian.  Normalized to area under curve = &#8216;amp&#8217;.  
+Down by 1/e at distance &#8216;sigma&#8217; from &#8216;center&#8217;.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.img.recenter">
+<tt class="descclassname">aipy.img.</tt><tt class="descname">recenter</tt><big>(</big><em>a</em>, <em>c</em><big>)</big><a class="headerlink" href="#aipy.img.recenter" title="Permalink to this definition">¶</a></dt>
+<dd>Slide the (0,0) point of matrix a to a new location tuple c.  This is
+useful for making an image centered on your screen after performing an
+inverse fft of uv data.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.img.to_fits">
+<tt class="descclassname">aipy.img.</tt><tt class="descname">to_fits</tt><big>(</big><em>filename</em>, <em>data</em>, <em>clobber=False</em>, <em>axes=('ra---sin'</em>, <em>'dec---sin'</em>, <em>'freq'</em>, <em>'stokes')</em>, <em>object=''</em>, <em>telescope=''</em>, <em>instrument=''</em>, <em>observer=''</em>, <em>origin='AIPY'</em>, <em>obs_date='03/21/11'</em>, <em>cur_date='03/21/11'</em>, <em>ra=0</em>, <em>dec=0</em>, <em>d_ra=0</em>, <em>d_dec=0</em>, <em>epoch=2000.0</em>, <em>freq=0</em>, <em>d_freq=0</em>, <em>bscale=0</em>, <em>bzero=0</em>, <em>history=''</em><big>)</big><a class="headerlink" href="#aipy.img.to_fits" title="Permalink to this definition">¶</a></dt>
+<dd>Write image data to a FITS file.  Follows convention of VLA image
+headers.  &#8220;axes&#8221; describes dimensions of &#8220;data&#8221; provided.  (ra,dec) are
+the degree coordinates of image center in the specified &#8220;epoch&#8221;. 
+(d_ra,d_dec) are approximate pixel-deltas for ra,dec (approximate because 
+if sine projections of these coordinates are specified&#8211;e.g. 
+&#8220;ra&#8212;sin&#8221;&#8211;then the deltas change away from the image center).  If a 
+&#8220;freq&#8221; axis is specified, then &#8220;freq&#8221; is the frequency of the first entry 
+(in Hz), and &#8220;d_freq&#8221; is the width of the channel.  The rest are pretty 
+self-explanitory/can be used however you want.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.img.word_wrap">
+<tt class="descclassname">aipy.img.</tt><tt class="descname">word_wrap</tt><big>(</big><em>string</em>, <em>width=80</em>, <em>ind1=0</em>, <em>ind2=0</em>, <em>prefix=''</em><big>)</big><a class="headerlink" href="#aipy.img.word_wrap" title="Permalink to this definition">¶</a></dt>
+<dd>word wrapping function.
+string: the string to wrap
+width: the column number to wrap at
+prefix: prefix each line with this string (goes before any indentation)
+ind1: number of characters to indent the first line
+ind2: number of characters to indent the rest of the lines</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="rfi.html"
+                                  title="previous chapter">RFI Detection and Flagging</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="deconv.html"
+                                  title="next chapter">Deconvolution</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/img.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="deconv.html" title="Deconvolution"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="rfi.html" title="RFI Detection and Flagging"
+             >previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2011, Aaron Parsons.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.6.
+    </div>
+  </body>
+</html>

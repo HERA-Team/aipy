@@ -1,0 +1,359 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Array Geometry and Phasing &mdash; AIPY v1.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AIPY v1.0.1 documentation" href="index.html" />
+    <link rel="next" title="Simulation Support" href="amp.html" />
+    <link rel="prev" title="Source Catalogs" href="src.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="amp.html" title="Simulation Support"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="src.html" title="Source Catalogs"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-aipy.phs">
+<h1>Array Geometry and Phasing<a class="headerlink" href="#module-aipy.phs" title="Permalink to this headline">¶</a></h1>
+<p>Module for representing antenna array geometry and for generating
+phasing information.</p>
+<dl class="class">
+<dt id="aipy.phs.Antenna">
+<em class="property">class </em><tt class="descclassname">aipy.phs.</tt><tt class="descname">Antenna</tt><big>(</big><em>x</em>, <em>y</em>, <em>z</em>, <em>beam</em>, <em>phsoff=</em><span class="optional">[</span>, <em>0.0</em>, <em>0.0</em><span class="optional">]</span>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.phs.Antenna" title="Permalink to this definition">¶</a></dt>
+<dd><p>Representation of physical attributes (location, beam, phase offset) of an 
+individual antenna.</p>
+<dl class="method">
+<dt id="aipy.phs.Antenna.select_chans">
+<tt class="descname">select_chans</tt><big>(</big><em>active_chans=None</em><big>)</big><a class="headerlink" href="#aipy.phs.Antenna.select_chans" title="Permalink to this definition">¶</a></dt>
+<dd>Select only the specified channels for use in future calculations.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.phs.AntennaArray">
+<em class="property">class </em><tt class="descclassname">aipy.phs.</tt><tt class="descname">AntennaArray</tt><big>(</big><em>location</em>, <em>ants</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>A collection of antennas, their spacings, and location/time of 
+observations.</p>
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.bl2ij">
+<tt class="descname">bl2ij</tt><big>(</big><em>bl</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.bl2ij" title="Permalink to this definition">¶</a></dt>
+<dd>Convert Miriad&#8217;s (i+1) &lt;&lt; 8 | (j+1) baseline indexing scheme to 
+i,j (0 indexed)</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.bl_indices">
+<tt class="descname">bl_indices</tt><big>(</big><em>auto=True</em>, <em>cross=True</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.bl_indices" title="Permalink to this definition">¶</a></dt>
+<dd>Return bl indices for baselines in the array.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.gen_phs">
+<tt class="descname">gen_phs</tt><big>(</big><em>src</em>, <em>i</em>, <em>j</em>, <em>mfreq=0.14999999999999999</em>, <em>ionref=None</em>, <em>srcshape=None</em>, <em>resolve_src=False</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.gen_phs" title="Permalink to this definition">¶</a></dt>
+<dd>Return phasing that is multiplied to data to point to src.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.gen_uvw">
+<tt class="descname">gen_uvw</tt><big>(</big><em>i</em>, <em>j</em>, <em>src='z'</em>, <em>w_only=False</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.gen_uvw" title="Permalink to this definition">¶</a></dt>
+<dd>Compute uvw coordinates of baseline relative to provided RadioBody, 
+or &#8216;z&#8217; for zenith uvw coordinates.  If w_only is True, only w (instead
+of (u,v,w) will be returned).</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.get_afreqs">
+<tt class="descname">get_afreqs</tt><big>(</big><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.get_afreqs" title="Permalink to this definition">¶</a></dt>
+<dd>Return array of frequencies that are active for simulation.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.get_baseline">
+<tt class="descname">get_baseline</tt><big>(</big><em>i</em>, <em>j</em>, <em>src='z'</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.get_baseline" title="Permalink to this definition">¶</a></dt>
+<dd>Return the baseline corresponding to i,j in various coordinate 
+projections: src=&#8217;e&#8217; for current equatorial, &#8216;z&#8217; for zenith 
+topocentric, &#8216;r&#8217; for unrotated equatorial, or a RadioBody for
+projection toward that source.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.get_phs_offset">
+<tt class="descname">get_phs_offset</tt><big>(</big><em>i</em>, <em>j</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.get_phs_offset" title="Permalink to this definition">¶</a></dt>
+<dd>Return the frequency-dependent phase offset of baseline i,j.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.ij2bl">
+<tt class="descname">ij2bl</tt><big>(</big><em>i</em>, <em>j</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.ij2bl" title="Permalink to this definition">¶</a></dt>
+<dd>Convert baseline i,j (0 indexed) to Miriad&#8217;s (i+1) &lt;&lt; 8 | (j+1) 
+indexing scheme.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.phs2src">
+<tt class="descname">phs2src</tt><big>(</big><em>data</em>, <em>src</em>, <em>i</em>, <em>j</em>, <em>mfreq=0.14999999999999999</em>, <em>ionref=None</em>, <em>srcshape=None</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.phs2src" title="Permalink to this definition">¶</a></dt>
+<dd>Apply phasing to zenith-phased data to point to src.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.refract">
+<tt class="descname">refract</tt><big>(</big><em>u_sf</em>, <em>v_sf</em>, <em>mfreq=0.14999999999999999</em>, <em>ionref=(0.0</em>, <em>0.0)</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.refract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calibrate a frequency-dependent source offset by scaling measured
+offsets at a given frequency.  Generates dw, a change in the
+projection of a baseline towards that source, which can be used to
+fix the computed phase of that source.
+ionref = (dra, ddec) where dra, ddec are angle offsets (in radians)</p>
+<blockquote>
+of sources along ra/dec axes at the specified mfreq.</blockquote>
+<dl class="docutils">
+<dt>u_sf,v_sf = u,v components of baseline, used to compute the</dt>
+<dd>change in w given angle offsets and the small angle approx.  Should
+be numpy arrays with sources (s) along the 1st axis and
+freqs (f) along the 2nd.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.resolve_src">
+<tt class="descname">resolve_src</tt><big>(</big><em>u</em>, <em>v</em>, <em>srcshape=(0</em>, <em>0</em>, <em>0)</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.resolve_src" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adjust amplitudes to reflect resolution effects for a uniform 
+elliptical disk characterized by srcshape:
+srcshape = (a1,a2,th) where a1,a2 are angular sizes along the</p>
+<blockquote>
+semimajor, semiminor axes, and th is the angle (in radians) of
+the semimajor axis from E.</blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.select_chans">
+<tt class="descname">select_chans</tt><big>(</big><em>active_chans=None</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.select_chans" title="Permalink to this definition">¶</a></dt>
+<dd>Select which channels are used in computations.  Default is all.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.AntennaArray.unphs2src">
+<tt class="descname">unphs2src</tt><big>(</big><em>data</em>, <em>src</em>, <em>i</em>, <em>j</em>, <em>mfreq=0.14999999999999999</em>, <em>ionref=None</em>, <em>srcshape=None</em><big>)</big><a class="headerlink" href="#aipy.phs.AntennaArray.unphs2src" title="Permalink to this definition">¶</a></dt>
+<dd>Remove phasing from src-phased data to point to zenith.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.phs.ArrayLocation">
+<em class="property">class </em><tt class="descclassname">aipy.phs.</tt><tt class="descname">ArrayLocation</tt><big>(</big><em>location</em><big>)</big><a class="headerlink" href="#aipy.phs.ArrayLocation" title="Permalink to this definition">¶</a></dt>
+<dd><p>The location and time of an observation.</p>
+<dl class="method">
+<dt id="aipy.phs.ArrayLocation.get_jultime">
+<tt class="descname">get_jultime</tt><big>(</big><big>)</big><a class="headerlink" href="#aipy.phs.ArrayLocation.get_jultime" title="Permalink to this definition">¶</a></dt>
+<dd>Get current time as a Julian date.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.ArrayLocation.set_ephemtime">
+<tt class="descname">set_ephemtime</tt><big>(</big><em>t=None</em><big>)</big><a class="headerlink" href="#aipy.phs.ArrayLocation.set_ephemtime" title="Permalink to this definition">¶</a></dt>
+<dd>Set current time as derived from the ephem package.  Recalculates
+matrix for projecting baselines into current positions.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.ArrayLocation.set_jultime">
+<tt class="descname">set_jultime</tt><big>(</big><em>t=None</em><big>)</big><a class="headerlink" href="#aipy.phs.ArrayLocation.set_jultime" title="Permalink to this definition">¶</a></dt>
+<dd>Set current time as a Julian date.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.phs.Beam">
+<em class="property">class </em><tt class="descclassname">aipy.phs.</tt><tt class="descname">Beam</tt><big>(</big><em>freqs</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.phs.Beam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Template for representing antenna beam pattern.  Beams also hold info 
+about which frequencies are active (i.e. <tt class="xref docutils literal"><span class="pre">aipy.phs.Antennas</span></tt> and 
+<tt class="xref docutils literal"><span class="pre">aipy.phs.AntennaArrays</span></tt> access frequencies through Beam).</p>
+<dl class="method">
+<dt id="aipy.phs.Beam.select_chans">
+<tt class="descname">select_chans</tt><big>(</big><em>active_chans=None</em><big>)</big><a class="headerlink" href="#aipy.phs.Beam.select_chans" title="Permalink to this definition">¶</a></dt>
+<dd>Select only enumerated channels to use for future calculations.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.Beam.update">
+<tt class="descname">update</tt><big>(</big><big>)</big><a class="headerlink" href="#aipy.phs.Beam.update" title="Permalink to this definition">¶</a></dt>
+<dd>Update frequencies for the channels selected by self_chans.</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="aipy.phs.PointingError">
+<em class="property">exception </em><tt class="descclassname">aipy.phs.</tt><tt class="descname">PointingError</tt><big>(</big><em>value</em><big>)</big><a class="headerlink" href="#aipy.phs.PointingError" title="Permalink to this definition">¶</a></dt>
+<dd>An error to throw if a source is below the horizon.</dd></dl>
+
+<dl class="class">
+<dt id="aipy.phs.RadioBody">
+<em class="property">class </em><tt class="descclassname">aipy.phs.</tt><tt class="descname">RadioBody</tt><big>(</big><em>name</em>, <em>mfreq</em>, <em>ionref</em>, <em>srcshape</em><big>)</big><a class="headerlink" href="#aipy.phs.RadioBody" title="Permalink to this definition">¶</a></dt>
+<dd><p>The location of a celestial source.</p>
+<dl class="method">
+<dt id="aipy.phs.RadioBody.compute">
+<tt class="descname">compute</tt><big>(</big><em>observer</em><big>)</big><a class="headerlink" href="#aipy.phs.RadioBody.compute" title="Permalink to this definition">¶</a></dt>
+<dd>Update coordinates relative to the provided observer.  Must be
+called at each time step before accessing information.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.RadioBody.get_crds">
+<tt class="descname">get_crds</tt><big>(</big><em>crdsys</em>, <em>ncrd=3</em><big>)</big><a class="headerlink" href="#aipy.phs.RadioBody.get_crds" title="Permalink to this definition">¶</a></dt>
+<dd>Return the coordinates of this location in the desired coordinate
+system (&#8216;eq&#8217;,&#8217;top&#8217;) in the current epoch.  If ncrd=2, angular
+coordinates (ra/dec or az/alt) are returned, and if ncrd=3,
+xyz coordinates are returned.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.phs.RadioFixedBody">
+<em class="property">class </em><tt class="descclassname">aipy.phs.</tt><tt class="descname">RadioFixedBody</tt><big>(</big><em>ra</em>, <em>dec</em>, <em>mfreq=0.14999999999999999</em>, <em>name=''</em>, <em>epoch=36525.0</em>, <em>ionref=(0.0</em>, <em>0.0)</em>, <em>srcshape=(0.0</em>, <em>0.0</em>, <em>0.0)</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.phs.RadioFixedBody" title="Permalink to this definition">¶</a></dt>
+<dd><p>A source at fixed RA,DEC.  Combines ephem.FixedBody with 
+<tt class="xref docutils literal"><span class="pre">aipy.phs.RadioBody</span></tt>.</p>
+<dl class="method">
+<dt id="aipy.phs.RadioFixedBody.compute">
+<tt class="descname">compute</tt><big>(</big><em>observer</em><big>)</big><a class="headerlink" href="#aipy.phs.RadioFixedBody.compute" title="Permalink to this definition">¶</a></dt>
+<dd>Update coordinates relative to the provided observer.  Must be
+called at each time step before accessing information.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.phs.RadioSpecial">
+<em class="property">class </em><tt class="descclassname">aipy.phs.</tt><tt class="descname">RadioSpecial</tt><big>(</big><em>name</em>, <em>mfreq=0.14999999999999999</em>, <em>ionref=(0.0</em>, <em>0.0)</em>, <em>srcshape=(0.0</em>, <em>0.0</em>, <em>0.0)</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.phs.RadioSpecial" title="Permalink to this definition">¶</a></dt>
+<dd><p>A moving source (Sun,Moon,planets).  Combines ephem versions of these 
+objects with <tt class="xref docutils literal"><span class="pre">aipy.phs.RadioBody</span></tt>.</p>
+<dl class="method">
+<dt id="aipy.phs.RadioSpecial.compute">
+<tt class="descname">compute</tt><big>(</big><em>observer</em><big>)</big><a class="headerlink" href="#aipy.phs.RadioSpecial.compute" title="Permalink to this definition">¶</a></dt>
+<dd>Update coordinates relative to the provided observer.  Must be
+called at each time step before accessing information.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.phs.SrcCatalog">
+<em class="property">class </em><tt class="descclassname">aipy.phs.</tt><tt class="descname">SrcCatalog</tt><big>(</big><em>*srcs</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.phs.SrcCatalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>A catalog of celestial sources.  Can be initialized with a list
+of src objects, of as an empty catalog.</p>
+<dl class="method">
+<dt id="aipy.phs.SrcCatalog.add_srcs">
+<tt class="descname">add_srcs</tt><big>(</big><em>*srcs</em><big>)</big><a class="headerlink" href="#aipy.phs.SrcCatalog.add_srcs" title="Permalink to this definition">¶</a></dt>
+<dd>Add src object(s) (RadioFixedBody,RadioSpecial) to catalog.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.SrcCatalog.compute">
+<tt class="descname">compute</tt><big>(</big><em>observer</em><big>)</big><a class="headerlink" href="#aipy.phs.SrcCatalog.compute" title="Permalink to this definition">¶</a></dt>
+<dd>Call compute method of all objects in catalog.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.SrcCatalog.get">
+<tt class="descname">get</tt><big>(</big><em>attribute</em>, <em>srcs=None</em><big>)</big><a class="headerlink" href="#aipy.phs.SrcCatalog.get" title="Permalink to this definition">¶</a></dt>
+<dd>Return the specified source attribute (e.g. &#8220;mfreq&#8221; for src.mfreq)
+in an array for all src names in &#8216;srcs&#8217;.  If not provided, defaults to 
+all srcs in catalog.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.SrcCatalog.get_crds">
+<tt class="descname">get_crds</tt><big>(</big><em>crdsys</em>, <em>ncrd=3</em>, <em>srcs=None</em><big>)</big><a class="headerlink" href="#aipy.phs.SrcCatalog.get_crds" title="Permalink to this definition">¶</a></dt>
+<dd>Return coordinates of all objects in catalog.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.phs.SrcCatalog.get_srcs">
+<tt class="descname">get_srcs</tt><big>(</big><em>*srcs</em><big>)</big><a class="headerlink" href="#aipy.phs.SrcCatalog.get_srcs" title="Permalink to this definition">¶</a></dt>
+<dd>Return list of all src objects in catalog.</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="aipy.phs.ephem2juldate">
+<tt class="descclassname">aipy.phs.</tt><tt class="descname">ephem2juldate</tt><big>(</big><em>num</em><big>)</big><a class="headerlink" href="#aipy.phs.ephem2juldate" title="Permalink to this definition">¶</a></dt>
+<dd>Convert ephem date (measured from noon, Dec. 31, 1899) to Julian date.</dd></dl>
+
+<dl class="function">
+<dt id="aipy.phs.juldate2ephem">
+<tt class="descclassname">aipy.phs.</tt><tt class="descname">juldate2ephem</tt><big>(</big><em>num</em><big>)</big><a class="headerlink" href="#aipy.phs.juldate2ephem" title="Permalink to this definition">¶</a></dt>
+<dd>Convert Julian date to ephem date, measured from noon, Dec. 31, 1899.</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="src.html"
+                                  title="previous chapter">Source Catalogs</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="amp.html"
+                                  title="next chapter">Simulation Support</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/phs.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="amp.html" title="Simulation Support"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="src.html" title="Source Catalogs"
+             >previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2011, Aaron Parsons.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+Simulation Support
+==================
+.. automodule:: aipy.amp
+   :members:

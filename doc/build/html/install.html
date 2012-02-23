@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Requirements &mdash; AIPY v1.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AIPY v1.0.1 documentation" href="index.html" />
+    <link rel="next" title="Physical Constants" href="const.html" />
+    <link rel="prev" title="Welcome to AIPY’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="const.html" title="Physical Constants"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to AIPY’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="requirements">
+<h1>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>The requirements for AIPY are:</dt>
+<dd><ul class="first last simple">
+<li>numpy &gt;= 1.2</li>
+<li>pyephem &gt;= 3.7.2.3</li>
+<li>pyfits &gt;= 1.1</li>
+<li>matplotlib &gt;= 0.98 <a class="footnote-reference" href="#id3" id="id1">[1]</a></li>
+<li>matplotlib-basemap &gt;= 0.99 <a class="footnote-reference" href="#id3" id="id2">[1]</a></li>
+</ul>
+</dd>
+</dl>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[1]</td><td><em>(<a class="fn-backref" href="#id1">1</a>, <a class="fn-backref" href="#id2">2</a>)</em> Required for some fo the included scripts</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="installing">
+<h1>Installing<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h1>
+<p>Install AIPY by running:</p>
+<div class="highlight-python"><pre>python setup.py install [--prefix=&lt;prefix&gt;|--user]</pre>
+</div>
+<p>If the &#8216;&#8211;prefix&#8217; option is not provided, then the installation tree root
+directory is the same as for the python interpreter used to run setup.py.
+For instance, if the python interpreter is in &#8216;/usr/local/bin/python&#8217;,
+then &lt;prefix&gt; will be set to &#8216;/usr/local&#8217;.  Otherwise, the explicit &lt;prefix&gt;
+value is taken from the command line option.  The package will install
+files in the following locations:</p>
+<blockquote>
+<ul class="simple">
+<li>&lt;prefix&gt;/bin</li>
+<li>&lt;prefix&gt;/lib/python2.6/site-packages</li>
+<li>&lt;prefix&gt;/share/doc</li>
+<li>&lt;prefix&gt;/share/install</li>
+</ul>
+</blockquote>
+<p>If an alternate &lt;prefix&gt; value is provided, you should set the PATH
+environment to include directory &#8216;&lt;prefix&gt;/bin&#8217; and the PYTHONPATH
+environment to include directory &#8216;&lt;prefix&gt;/lib/python2.6/site-packages&#8217;.</p>
+<p>If the &#8216;&#8211;user&#8217; option is provided, then then installation tree root
+directory will be in the current user&#8217;s home directory.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Requirements</a></li>
+<li><a class="reference external" href="#installing">Installing</a></li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="index.html"
+                                  title="previous chapter">Welcome to AIPY&#8217;s documentation!</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="const.html"
+                                  title="next chapter">Physical Constants</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/install.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="const.html" title="Physical Constants"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to AIPY’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2011, Aaron Parsons.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.6.
+    </div>
+  </body>
+</html>

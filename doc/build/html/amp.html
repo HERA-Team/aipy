@@ -1,0 +1,320 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Simulation Support &mdash; AIPY v1.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.1',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AIPY v1.0.1 documentation" href="index.html" />
+    <link rel="next" title="Simulation Fitting" href="fit.html" />
+    <link rel="prev" title="Array Geometry and Phasing" href="phs.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="fit.html" title="Simulation Fitting"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="phs.html" title="Array Geometry and Phasing"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-aipy.amp">
+<h1>Simulation Support<a class="headerlink" href="#module-aipy.amp" title="Permalink to this headline">¶</a></h1>
+<p>Module adding simulation support to RadioBodys and AntennaArrays.
+Mostly, this means adding gain/amplitude information vs. frequency.</p>
+<dl class="docutils">
+<dt>In particular, several new sub-classes are defined:</dt>
+<dd><ul class="first last simple">
+<li>Beam
+- Beam2DGaussian - 2D Gaussian antenna response
+- BeamPolynomial - Gaussian antenna response that varies with frequency
+- BeamAlm - Spherical harmonic antenna response that varies with frequency</li>
+<li>Antenna</li>
+<li>AntennaArray</li>
+</ul>
+</dd>
+</dl>
+<dl class="class">
+<dt id="aipy.amp.Antenna">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">Antenna</tt><big>(</big><em>x</em>, <em>y</em>, <em>z</em>, <em>beam</em>, <em>phsoff=</em><span class="optional">[</span>, <em>0.0</em>, <em>0.0</em><span class="optional">]</span>, <em>bp_r=array(</em><span class="optional">[</span>, <em>1</em><span class="optional">]</span>, <em>)</em>, <em>bp_i=array(</em><span class="optional">[</span>, <em>0</em><span class="optional">]</span>, <em>)</em>, <em>amp=1</em>, <em>pointing=(0.0</em>, <em>1.5707963267948966</em>, <em>0)</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.amp.Antenna" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sub-class of <tt class="xref docutils literal"><span class="pre">aipy.phs.Antenna</span></tt> that adds suport for representing the 
+physical location and beam pattern of an individual antenna in an array.</p>
+<dl class="method">
+<dt id="aipy.amp.Antenna.bm_response">
+<tt class="descname">bm_response</tt><big>(</big><em>top</em>, <em>pol='x'</em><big>)</big><a class="headerlink" href="#aipy.amp.Antenna.bm_response" title="Permalink to this definition">¶</a></dt>
+<dd>Return response of beam for specified polarization.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.amp.Antenna.set_pointing">
+<tt class="descname">set_pointing</tt><big>(</big><em>az=0</em>, <em>alt=1.5707963267948966</em>, <em>twist=0</em><big>)</big><a class="headerlink" href="#aipy.amp.Antenna.set_pointing" title="Permalink to this definition">¶</a></dt>
+<dd>Set the antenna beam to point at (az, alt) with specified
+right-hand twist to polarizations.  Polarization y is assumed
+to be +pi/2 azimuth from pol x.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.amp.AntennaArray">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">AntennaArray</tt><big>(</big><em>location</em>, <em>ants</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.amp.AntennaArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sub-class of <tt class="xref docutils literal"><span class="pre">aipy.phs.AntennaArray</span></tt> that adds support for representing 
+the array location, time of observation, and response of the the individual array 
+antennas as function of pointing and frequency.</p>
+<p>Also included is a functional attribute to compute the visibility data for a 
+particular baseline in the array for a collection of sources.</p>
+<dl class="method">
+<dt id="aipy.amp.AntennaArray.bm_response">
+<tt class="descname">bm_response</tt><big>(</big><em>i</em>, <em>j</em>, <em>pol='xx'</em><big>)</big><a class="headerlink" href="#aipy.amp.AntennaArray.bm_response" title="Permalink to this definition">¶</a></dt>
+<dd>Return the beam response towards the cached source positions
+for baseline i,j with the specified polarization.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.amp.AntennaArray.passband">
+<tt class="descname">passband</tt><big>(</big><em>i</em>, <em>j</em><big>)</big><a class="headerlink" href="#aipy.amp.AntennaArray.passband" title="Permalink to this definition">¶</a></dt>
+<dd>Return the passband response of baseline i,j.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.amp.AntennaArray.set_jultime">
+<tt class="descname">set_jultime</tt><big>(</big><em>t=None</em><big>)</big><a class="headerlink" href="#aipy.amp.AntennaArray.set_jultime" title="Permalink to this definition">¶</a></dt>
+<dd>Set current time as a Julian date.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.amp.AntennaArray.sim">
+<tt class="descname">sim</tt><big>(</big><em>i</em>, <em>j</em>, <em>pol='xx'</em><big>)</big><a class="headerlink" href="#aipy.amp.AntennaArray.sim" title="Permalink to this definition">¶</a></dt>
+<dd>Simulate visibilites for the specified (i,j) baseline and 
+polarization.  sim_cache() must be called at each time step before 
+this will return valid results.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.amp.AntennaArray.sim_cache">
+<tt class="descname">sim_cache</tt><big>(</big><em>s_eqs</em>, <em>jys=array(</em><span class="optional">[</span>, <em>1.</em><span class="optional">]</span>, <em>)</em>, <em>mfreqs=0.14999999999999999</em>, <em>ionrefs=(0.0</em>, <em>0.0)</em>, <em>srcshapes=(0</em>, <em>0</em>, <em>0)</em><big>)</big><a class="headerlink" href="#aipy.amp.AntennaArray.sim_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cache intermediate computations given catalog information to speed
+simulation for multiple baselines.  For efficiency, should only be 
+called once per time setting.  MUST be called before sim().
+s_eqs = array of equatorial vectors for all celestial sources
+jys = array of janskies vs. freq for all celestial sources
+mfreqs = array of frequencies where ionrefs were measured
+ionrefs = (dra,ddec), angular offsets in radians for ra/dec at the</p>
+<blockquote>
+frequency <em>mfreq</em>.</blockquote>
+<dl class="docutils">
+<dt>srcshapes = (a1,a2,th) where a1,a2 are angular sizes along the </dt>
+<dd>semimajor, semiminor axes, and th is the angle (in radians) of
+the semimajor axis from E.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.amp.Beam">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">Beam</tt><big>(</big><em>freqs</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.amp.Beam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Representation of a flat (gain=1) antenna beam pattern.  This is a sub-
+class of <tt class="xref docutils literal"><span class="pre">aipy.phs.Beam</span></tt> and adds support for returning the beam 
+response as a function of topocentric coordinate.</p>
+<dl class="method">
+<dt id="aipy.amp.Beam.response">
+<tt class="descname">response</tt><big>(</big><em>xyz</em><big>)</big><a class="headerlink" href="#aipy.amp.Beam.response" title="Permalink to this definition">¶</a></dt>
+<dd>Return the (unity) beam response as a function of position.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.amp.Beam2DGaussian">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">Beam2DGaussian</tt><big>(</big><em>freqs</em>, <em>xwidth=inf</em>, <em>ywidth=inf</em><big>)</big><a class="headerlink" href="#aipy.amp.Beam2DGaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sub-class of <tt class="xref docutils literal"><span class="pre">aipy.phs.Beam</span></tt> that represents the beam response as a 2D 
+Gaussian beam pattern, with default setting for a flat beam.</p>
+<dl class="method">
+<dt id="aipy.amp.Beam2DGaussian.response">
+<tt class="descname">response</tt><big>(</big><em>xyz</em><big>)</big><a class="headerlink" href="#aipy.amp.Beam2DGaussian.response" title="Permalink to this definition">¶</a></dt>
+<dd>Return beam response across active band for specified topocentric 
+coordinates: (x=E,y=N,z=UP). x,y,z may be arrays of multiple 
+coordinates.  Returns &#8216;x&#8217; linear polarization (rotate pi/2 for &#8216;y&#8217;).</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.amp.BeamAlm">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">BeamAlm</tt><big>(</big><em>freqs</em>, <em>lmax=8</em>, <em>mmax=8</em>, <em>deg=7</em>, <em>nside=64</em>, <em>coeffs={}</em><big>)</big><a class="headerlink" href="#aipy.amp.BeamAlm" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#8220;Sub-class of <tt class="xref docutils literal"><span class="pre">aipy.phs.Beam</span></tt> that models the beam response as a set of
+spherical harmornics that vary with frequencyc.  Each pointing has a response
+defined as a polynomial in frequency, and the spatial distributions of these 
+coefficients decomposed into spherical harmonics.</p>
+<dl class="method">
+<dt id="aipy.amp.BeamAlm.response">
+<tt class="descname">response</tt><big>(</big><em>top</em><big>)</big><a class="headerlink" href="#aipy.amp.BeamAlm.response" title="Permalink to this definition">¶</a></dt>
+<dd>Return beam response across active band for specified topocentric 
+coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  
+Returns &#8216;x&#8217; pol (rotate pi/2 for &#8216;y&#8217;).</dd></dl>
+
+<dl class="method">
+<dt id="aipy.amp.BeamAlm.update">
+<tt class="descname">update</tt><big>(</big><big>)</big><a class="headerlink" href="#aipy.amp.BeamAlm.update" title="Permalink to this definition">¶</a></dt>
+<dd>Update beam model using new set of coefficients.
+coeffs = dictionary of polynomial term (integer) and corresponding Alm 
+coefficients (see healpix.py doc).</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.amp.BeamPolynomial">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">BeamPolynomial</tt><big>(</big><em>freqs</em>, <em>poly_azfreq=array(</em><span class="optional">[</span><span class="optional">[</span>, <em>0.5</em><span class="optional">]</span><span class="optional">]</span>, <em>)</em><big>)</big><a class="headerlink" href="#aipy.amp.BeamPolynomial" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#8220;Sub-class of <tt class="xref docutils literal"><span class="pre">aipy.phs.Beam</span></tt> that represents the beam response as a 
+Gaussian beam model whose width varies with azimuth angle and with frequency.</p>
+<dl class="method">
+<dt id="aipy.amp.BeamPolynomial.response">
+<tt class="descname">response</tt><big>(</big><em>top</em><big>)</big><a class="headerlink" href="#aipy.amp.BeamPolynomial.response" title="Permalink to this definition">¶</a></dt>
+<dd>Return beam response across active band for specified topocentric 
+coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  
+Returns &#8216;x&#8217; pol (rotate pi/2 for &#8216;y&#8217;).</dd></dl>
+
+<dl class="method">
+<dt id="aipy.amp.BeamPolynomial.select_chans">
+<tt class="descname">select_chans</tt><big>(</big><em>active_chans</em><big>)</big><a class="headerlink" href="#aipy.amp.BeamPolynomial.select_chans" title="Permalink to this definition">¶</a></dt>
+<dd>Select only enumerated channels to use for future calculations.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.amp.RadioBody">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">RadioBody</tt><big>(</big><em>jys</em>, <em>index</em><big>)</big><a class="headerlink" href="#aipy.amp.RadioBody" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class defining flux and spectral index of a celestial source.</p>
+<dl class="method">
+<dt id="aipy.amp.RadioBody.get_jys">
+<tt class="descname">get_jys</tt><big>(</big><big>)</big><a class="headerlink" href="#aipy.amp.RadioBody.get_jys" title="Permalink to this definition">¶</a></dt>
+<dd>Return the fluxes vs. freq that should be used for simulation.</dd></dl>
+
+<dl class="method">
+<dt id="aipy.amp.RadioBody.update_jys">
+<tt class="descname">update_jys</tt><big>(</big><em>afreqs</em><big>)</big><a class="headerlink" href="#aipy.amp.RadioBody.update_jys" title="Permalink to this definition">¶</a></dt>
+<dd>Update fluxes relative to the provided observer.  Must be
+called at each time step before accessing information.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.amp.RadioFixedBody">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">RadioFixedBody</tt><big>(</big><em>ra</em>, <em>dec</em>, <em>name=''</em>, <em>epoch=36525.0</em>, <em>jys=0.0</em>, <em>index=-1</em>, <em>mfreq=0.14999999999999999</em>, <em>ionref=(0.0</em>, <em>0.0)</em>, <em>srcshape=(0.0</em>, <em>0.0</em>, <em>0.0)</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.amp.RadioFixedBody" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class representing a source at fixed RA,DEC.  Adds flux information to
+<tt class="xref docutils literal"><span class="pre">aipy.phs.RadioFixedBody</span></tt>.</p>
+<dl class="method">
+<dt id="aipy.amp.RadioFixedBody.compute">
+<tt class="descname">compute</tt><big>(</big><em>observer</em><big>)</big><a class="headerlink" href="#aipy.amp.RadioFixedBody.compute" title="Permalink to this definition">¶</a></dt>
+<dd>Update coordinates relative to the provided observer.  Must be
+called at each time step before accessing information.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.amp.RadioSpecial">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">RadioSpecial</tt><big>(</big><em>name</em>, <em>jys=0.0</em>, <em>index=-1.0</em>, <em>mfreq=0.14999999999999999</em>, <em>ionref=(0.0</em>, <em>0.0)</em>, <em>srcshape=(0.0</em>, <em>0.0</em>, <em>0.0)</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.amp.RadioSpecial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class representing moving sources (Sun,Moon,planets).  Adds flux
+information to <tt class="xref docutils literal"><span class="pre">aipy.phs.RadioSpecial</span></tt>.</p>
+<dl class="method">
+<dt id="aipy.amp.RadioSpecial.compute">
+<tt class="descname">compute</tt><big>(</big><em>observer</em><big>)</big><a class="headerlink" href="#aipy.amp.RadioSpecial.compute" title="Permalink to this definition">¶</a></dt>
+<dd>Update coordinates relative to the provided observer.  Must be
+called at each time step before accessing information.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="aipy.amp.SrcCatalog">
+<em class="property">class </em><tt class="descclassname">aipy.amp.</tt><tt class="descname">SrcCatalog</tt><big>(</big><em>*srcs</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#aipy.amp.SrcCatalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for holding a catalog of celestial sources.</p>
+<dl class="method">
+<dt id="aipy.amp.SrcCatalog.get_jys">
+<tt class="descname">get_jys</tt><big>(</big><em>srcs=None</em><big>)</big><a class="headerlink" href="#aipy.amp.SrcCatalog.get_jys" title="Permalink to this definition">¶</a></dt>
+<dd>Return list of fluxes of all src objects in catalog.</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="phs.html"
+                                  title="previous chapter">Array Geometry and Phasing</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="fit.html"
+                                  title="next chapter">Simulation Fitting</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/amp.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="fit.html" title="Simulation Fitting"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="phs.html" title="Array Geometry and Phasing"
+             >previous</a> |</li>
+        <li><a href="index.html">AIPY v1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2011, Aaron Parsons.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.6.
+    </div>
+  </body>
+</html>

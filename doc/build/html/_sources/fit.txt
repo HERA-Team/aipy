@@ -1,0 +1,4 @@
+Simulation Fitting
+==================
+.. automodule:: aipy.fit
+   :members:
