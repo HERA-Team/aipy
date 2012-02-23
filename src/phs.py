@@ -182,7 +182,7 @@ class Beam:
 
 class Antenna:
     """Representation of physical attributes of individual antenna."""
-    def __init__(self, x, y, z, beam, pol='x', num=-1, phsoff=[0.,0.], **kwargs):
+    def __init__(self, x, y, z, beam, phsoff=[0.,0.], **kwargs):
         """x,y,z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object
         phsoff = polynomial phase vs. frequency.  Phs term that is linear
@@ -190,8 +190,6 @@ class Antenna:
         self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
         self.beam = beam
         self._phsoff = phsoff
-        self.pol = pol
-        self.num = num
         self._update_phsoff()
     def select_chans(self, active_chans=None):
         """Select only the specified channels for use in future calculations."""
@@ -258,22 +256,9 @@ class AntennaArray(ArrayLocation):
         ArrayLocation.__init__(self, location=location)
         self.ants = ants
     def __iter__(self): return self.ants.__iter__()
-    def __getitem__(self, item): 
-        if type(item) is str:
-            return self.ants.__getitem__(self.get_ant_list()[item])
-        else:
-            return self.ants.__getitem__(item)
+    def __getitem__(self, *args): return self.ants.__getitem__(*args)
     def __setitem__(self, *args): return self.ants.__setitem__(*args)
     def __len__(self): return self.ants.__len__()
-    def get_ant_list(self):
-        """Define a consistent numbering system for dual-pol antenna array. Return a dictionary of antenna names and
-        their corresponding indices."""
-        try: 
-            ants = {}
-            for i,ant in enumerate(self):
-                ants[str(ant.num)+str(ant.pol)] = i
-            return ants
-        except(NameError): return [str(i) for i in self.ants]
     def update(self):
         ArrayLocation.update(self)
         for a in self: a.update()
@@ -324,18 +309,10 @@ class AntennaArray(ArrayLocation):
             ra,dec = coord.eq2radec(src)
             m = coord.eq2top_m(self.sidereal_time() - ra, dec)
         return n.dot(m, bl).transpose()
-    def get_phs_offset(self, i, j,*args):
-        if len(args)>0: 
-            pol = args[0]
+    def get_phs_offset(self, i, j):
         """Return the frequency-dependent phase offset of baseline i,j."""
-        ants = self.get_ant_list()
-        try: #if we have pol info, use it
-            return self[str(j)+pol[1]].phsoff - self[str(i)+pol[0]].phsoff
-        except(KeyError):
-            return self[j].phsoff - self[i].phsoff
-        except(UnboundLocalError):
-            return self[j].phsoff - self[i].phsoff
-    def gen_uvw(self, i, j, src='z'):
+        return self[j].phsoff - self[i].phsoff
+    def gen_uvw(self, i, j, src='z', w_only=False):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates.  If w_only is True, only w (instead
         of (u,v,w) will be returned)."""
@@ -349,7 +326,7 @@ class AntennaArray(ArrayLocation):
         x.shape += (1,); y.shape += (1,); z.shape += (1,)
         if w_only: return n.dot(z,afreqs)
         else: return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
-    def gen_phs(self, src, i, j, pol, mfreq=.150, ionref=None, srcshape=None, 
+    def gen_phs(self, src, i, j, mfreq=.150, ionref=None, srcshape=None, 
             resolve_src=False):
         """Return phasing that is multiplied to data to point to src."""
         if ionref is None:
@@ -358,16 +335,13 @@ class AntennaArray(ArrayLocation):
         if not ionref is None or resolve_src: u,v,w = self.gen_uvw(i,j,src=src)
         else: w = self.gen_uvw(i,j,src=src, w_only=True)
         if not ionref is None: w += self.refract(u, v, mfreq=mfreq, ionref=ionref)
-        o = self.get_phs_offset(i,j,pol)
+        o = self.get_phs_offset(i,j)
         phs = n.exp(-1j*2*n.pi*(w + o))
         if resolve_src:
             if srcshape is None:
-                try: res = self.resolve_src(u, v, srcshape=src.srcshape)
-                except(AttributeError): res = 1
-            else: res = self.resolve_src(u, v, srcshape=srcshape)
-        else: res = 1
-        o = self.get_phs_offset(i,j,pol)
-        phs = res * n.exp(-1j*2*n.pi*(w + dw + o))
+                try: srcshape = src.srcshape
+                except(AttributeError): pass
+            if not srcshape is None: phs *= self.resolve_src(u, v, srcshape=srcshape)
         return phs.squeeze()
     def resolve_src(self, u, v, srcshape=(0,0,0)):
         """Adjust amplitudes to reflect resolution effects for a uniform 
@@ -406,11 +380,11 @@ class AntennaArray(ArrayLocation):
         except(AttributeError): pass
         f2 = self.get_afreqs()**2 ; f2.shape = (1, f)
         return (dra*u_sf + ddec*v_sf) * mfreq**2 / f2
-    def phs2src(self, data, src, i, j, pol='xx', mfreq=.150, ionref=None, srcshape=None):
+    def phs2src(self, data, src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Apply phasing to zenith-phased data to point to src."""
-        return data * self.gen_phs(src, i, j, pol, 
+        return data * self.gen_phs(src, i, j, 
             mfreq=mfreq, ionref=ionref, srcshape=srcshape, resolve_src=False)
-    def unphs2src(self,data,src, i, j, pol='xx', mfreq=.150, ionref=None, srcshape=None):
+    def unphs2src(self,data,src, i, j, mfreq=.150, ionref=None, srcshape=None):
         """Remove phasing from src-phased data to point to zenith."""
-        return data / self.gen_phs(src, i, j, pol,
+        return data / self.gen_phs(src, i, j,
             mfreq=mfreq, ionref=ionref, srcshape=srcshape, resolve_src=False)
