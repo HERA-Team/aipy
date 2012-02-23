@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest, ephem, random
 import aipy as a, numpy as n
 
@@ -5,8 +6,10 @@ class TestPointingError(unittest.TestCase):
     def setUp(self):
         self.pnterr = a.phs.PointingError('Error String')
     def teststring(self):
+        """Test setting a PointingError message string"""
         self.assertEqual(str(self.pnterr), 'Error String')
     def testraise(self):
+        """Test raising a PointingError"""
         def raise_pnterr(): raise self.pnterr
         self.assertRaises(a.phs.PointingError, raise_pnterr)
 
@@ -15,9 +18,11 @@ class TestJulDates(unittest.TestCase):
         self.ephemzero = ephem.date('1899/12/31 12:00')
         self.jdzero = 2415020.
     def testephemzero(self):
+        """Test converting between ephem dates and JD - zero point"""
         self.assertEqual(a.phs.juldate2ephem(self.jdzero), self.ephemzero)
         self.assertEqual(a.phs.ephem2juldate(self.ephemzero), self.jdzero)
     def testrandom(self):
+        """Test converting between ephem dates and JD - various"""
         for i in range(10):
             d1 = random.random() * ephem.now()
             d2 = a.phs.juldate2ephem(a.phs.ephem2juldate(d1))
@@ -25,6 +30,7 @@ class TestJulDates(unittest.TestCase):
 
 class TestRadioBody(unittest.TestCase):
     def test_attributes(self):
+        """Test aipy.phs.RadioFixedBody attributes"""
         epoch = ephem.B1950
         s = a.phs.RadioFixedBody('0:00', '0:00', mfreq=.200, name='src1',
             epoch=epoch, ionref=(.0,.0), srcshape=(.003, .005, .6))
@@ -47,6 +53,7 @@ class TestRadioBody(unittest.TestCase):
         self.assertEqual(len(s.get_crds('top', ncrd=3)), 3)
         self.assertEqual(s.map.shape, (3,3))
     def testephem(self):
+        """Test the aipy.phs.RadioFixedBody ephem interface"""
         o = a.phs.ArrayLocation(('0:00','0:00'))
         for epoch in [ephem.B1900, ephem.B1950, ephem.J2000]:
           for ra in n.arange(1*n.pi/8, 2*n.pi, n.pi/8):
@@ -57,6 +64,7 @@ class TestRadioBody(unittest.TestCase):
                 self.assertAlmostEqual(s.a_ra, s._ra, 9)
                 self.assertAlmostEqual(s.a_dec, s._dec, 9)
     def test_compute(self):
+        """Test the aipy.phs.RadioFixedBody ephem calculations"""
         epoch = ephem.J2000
         o = a.phs.ArrayLocation(('0:00','0:00'))
         o.set_ephemtime(epoch)
@@ -69,6 +77,7 @@ class TestRadioBody(unittest.TestCase):
             err = n.abs(diagonal  - n.dot(m, s.map)).sum()
             self.assertAlmostEqual(err, 0, 10)
     def test_get_crds(self):
+        """Test the aipy.phs.RadioFixedBody calculated coordinates"""
         epoch = ephem.J2000
         o = a.phs.ArrayLocation(('0:00','0:00'))
         o.set_ephemtime(epoch)
@@ -97,6 +106,7 @@ class TestSrcCatalog(unittest.TestCase):
         self.srcs = [src1, src2, src3]
         self.cat = a.phs.SrcCatalog(self.srcs)
     def test_add_srcs(self):
+        """Test adding sources to a aipy.phs.SrcCatalog() catalog"""
         cat = a.phs.SrcCatalog()
         src1b = a.phs.RadioFixedBody('0:00', '0:00', name='src1')
         src4 = a.phs.RadioFixedBody('4:00', '4:00', name='src4')
@@ -110,16 +120,19 @@ class TestSrcCatalog(unittest.TestCase):
         for name, src in zip([s.src_name for s in srclist], srclist):
             self.assertEqual(src, cat[name])
     def test_get_srcs(self):
+        """Test retrieving sources from a aipy.phs.SrcCatalog() catalog"""
         self.assertEqual(self.cat.get_srcs('src1','src2','src3'), self.srcs)
         self.assertEqual(self.cat.get_srcs(['src1','src2']), self.srcs[:2])
         self.assertRaises(KeyError, lambda: self.cat.get_srcs('bad'))
     def test_compute(self):
+        """Test the ephem interfaces for a aipy.phs.SrcCatalog() catalog"""
         o = ephem.Observer()
         self.cat.compute(o)
         for src in self.cat.values():
             self.assertNotEqual(src.ra, None)
             self.assertNotEqual(src.dec, None)
     def test_get_crds(self):
+        """Test coordinates calculated from a aipy.phs.SrcCatalog() catalog"""
         o = ephem.Observer()
         self.cat.compute(o)
         crd1 = self.cat.get_crds('eq', srcs=['src1'])
@@ -128,6 +141,7 @@ class TestSrcCatalog(unittest.TestCase):
         crd2 = self.cat.get_crds('top', srcs=['src1','src2'])
         self.assertEqual(crd2.shape, (3,2))
     def test_get(self):
+        """Test retrieving source attributes from a aipy.phs.SrcCatalog() catalog"""
         mfreq = self.cat.get('mfreq',srcs=['src1'])
         self.assertEqual(mfreq.shape, (1,))
         mfreq = self.cat.get('mfreq',srcs=['src1','src2'])
@@ -142,10 +156,12 @@ class TestBeam(unittest.TestCase):
         self.fq = n.arange(0,1,.1)
         self.bm = a.phs.Beam(self.fq)
     def test_attributes(self):
+        """Test accessing aipy.phs.Beam attributes"""
         self.assertTrue(n.all(self.bm.freqs == self.fq))
         self.assertTrue(n.all(self.bm.chans == n.arange(self.fq.size)))
         self.assertTrue(n.all(self.bm.afreqs == self.fq))
     def test_select_chans(self):
+        """Test selecting various aipy.phs.Beam channels"""
         chans = n.array([1,2,3])
         self.bm.select_chans(chans)
         self.assertTrue(n.all(self.bm.chans == chans))
@@ -157,6 +173,7 @@ class TestAntenna(unittest.TestCase):
         self.bm = a.phs.Beam(fq)
         self.ant = a.phs.Antenna(1, 2, 3, self.bm, phsoff=[0,1])
     def test_attributes(self):
+        """Test accessing aipy.phs.Antenna attributes"""
         self.assertEqual(self.ant.beam, self.bm)
         pos = n.array([1,2,3], n.float64)
         self.assertTrue(n.all(self.ant.pos == pos))
@@ -168,6 +185,7 @@ class TestAntenna(unittest.TestCase):
         self.assertTrue(n.all(self.ant - self.ant == 0))
         self.assertTrue(n.all(-self.ant == -pos))
     def test_select_chans(self):
+        """Test selecting various aipy.phs.Antenna channels"""
         chans = n.array([1,2,3])
         self.ant.select_chans(chans)
         self.assertTrue(n.all(self.bm.chans == chans))
@@ -346,6 +364,22 @@ class TestAntennaArray(unittest.TestCase):
         src.compute(self.aa)
         self.assertTrue(n.all(
             self.aa.unphs2src(self.aa.gen_phs(src,0,1),src,0,1) == 1.))
+
+class TestSuite(unittest.TestSuite):
+    """A unittest.TestSuite class which contains all of the aipy.phs unit tests."""
+
+    def __init__(self):
+        unittest.TestSuite.__init__(self)
+
+        loader = unittest.TestLoader()
+        self.addTests(loader.loadTestsFromTestCase(TestPointingError))
+        self.addTests(loader.loadTestsFromTestCase(TestJulDates))
+        self.addTests(loader.loadTestsFromTestCase(TestRadioBody))
+        self.addTests(loader.loadTestsFromTestCase(TestSrcCatalog))
+        self.addTests(loader.loadTestsFromTestCase(TestBeam))
+        self.addTests(loader.loadTestsFromTestCase(TestAntenna))
+        self.addTests(loader.loadTestsFromTestCase(TestArrayLocation))
+        self.addTests(loader.loadTestsFromTestCase(TestAntennaArray))
 
 if __name__ == '__main__':
     unittest.main()

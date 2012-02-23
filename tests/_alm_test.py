@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 import unittest, aipy._alm as a, numpy as n
 
 class TestAlm(unittest.TestCase):
     def test_init(self):
+        """Test initializing a aipy._alm object"""
         alm = a.Alm(10, 5)
         self.assertEqual(alm.lmax(), 10)
         self.assertEqual(alm.mmax(), 5)
@@ -23,6 +25,16 @@ if False:
     def test_alm_set_data(self):
         c = self.alm.get_data()
         while True: self.alm.set_data(c)
+
+class TestSuite(unittest.TestSuite):
+    """A unittest.TestSuite class which contains all of the aipy._alm unit tests."""
+
+    def __init__(self):
+        unittest.TestSuite.__init__(self)
+
+        loader = unittest.TestLoader()
+        self.addTests(loader.loadTestsFromTestCase(TestAlm))
+        #self.addTests(loader.loadTestsFromTestCase(TestMemLeaks))
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,12 +1,13 @@
+# -*- coding: utf-8 -*-
+import tempfile
 import unittest, numpy as np, os
 import aipy.miriad as m, aipy._miriad as _m
 
 class TestMiriadUV(unittest.TestCase):
     def setUp(self):
-        self.filename1 = '/tmp/test1.uv'
-        self.filename2 = '/tmp/test2.uv'
-        if os.path.exists(self.filename1): os.system('rm -rf %s' % self.filename1)
-        if os.path.exists(self.filename2): os.system('rm -rf %s' % self.filename2)
+        self.tmppath = tempfile.mkdtemp(prefix='miriad-test-', suffix='.tmp')
+        self.filename1 = os.path.join(self.tmppath, 'test1.uv')
+        self.filename2 = os.path.join(self.tmppath, 'test2.uv')
         uv = m.UV(self.filename1, status='new', corrmode='r')
         uv['history'] = 'Made this file from scratch.\n'
         uv.add_var('nchan', 'i')
@@ -20,14 +21,17 @@ class TestMiriadUV(unittest.TestCase):
         uv['pol'] = -6
         uv.write(preamble,self.data)
     def test_immediate_corr(self):
+        """Test immediate corr of a Miriad UV file"""
         uv = m.UV(self.filename2, 'new')
         self.assertEqual(uv.vartable['corr'], 'r')
     def test_vartable(self):
+        """Test accesing vartable data in a Miriad UV file"""
         uv = m.UV(self.filename1)
         self.assertEqual(uv.vartable['corr'], 'r')
         self.assertEqual(uv.vartable['nchan'], 'i')
         self.assertEqual(uv.vartable['pol'], 'i')
     def test_data(self):
+        """Test writing data from a Miriad UV file"""
         uv = m.UV(self.filename1)
         self.assertEqual(uv['history'], 'Made this file from scratch.\n')
         (uvw,t,bl),d = uv.read()
@@ -45,8 +49,16 @@ class TestMiriadUV(unittest.TestCase):
         self.assertTrue(np.all(uvw == np.array([1,2,3], dtype=np.double)))
         self.assertTrue(np.all(d == self.data))
     def tearDown(self):
-        os.system('rm -rf %s' % self.filename1)
-        os.system('rm -rf %s' % self.filename2)
+        os.system("rm -rf %s" % self.tmppath)
+
+class TestSuite(unittest.TestSuite):
+    """A unittest.TestSuite class which contains all of the aipy.miriad unit tests."""
+
+    def __init__(self):
+        unittest.TestSuite.__init__(self)
+
+        loader = unittest.TestLoader()
+        self.addTests(loader.loadTestsFromTestCase(TestMiriadUV))
 
 if __name__ == '__main__':
     unittest.main()
