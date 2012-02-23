@@ -7,7 +7,7 @@ ker = n.array([3,2,0,0,0,0,0,0,0,0,0,2], dtype=n.float)
 print 'REAL TEST:'
 print 'img', img
 print 'ker', ker
-cln, info = a.deconv.clean1d(img, ker)
+cln, info = a.deconv.clean(img, ker)
 print 'cln', cln
 print info
 print '-----------------------------------------------------------------'
@@ -18,7 +18,7 @@ ker = n.array([3,2,0,0,0,0,0,0,0,0,0,2], dtype=n.complex)
 print 'CMPLX TEST:'
 print 'img', img
 print 'ker', ker
-mdl, info = a.deconv.clean1d(img, ker)
+mdl, info = a.deconv.clean(img, ker)
 print 'cln', cln
 print info
 print '-----------------------------------------------------------------'
@@ -35,7 +35,7 @@ d1d = n.fft.ifft(n.fft.fft(img) * n.fft.fft(ker))
 print 'TEST:'
 print 'img', d1d
 print 'ker', ker
-cln, info = a.deconv.clean1d(d1d, ker, maxiter=200)
+cln, info = a.deconv.clean(d1d, ker, maxiter=200)
 print 'cln', cln
 print info
 

@@ -7,7 +7,8 @@ class TestAlm(unittest.TestCase):
         self.assertEqual(alm.mmax(), 5)
         self.assertRaises(RuntimeError, a.Alm, 5, 10)
 
-class TestMemLeaks(unittest.TestCase):
+if False:
+  class TestMemLeaks(unittest.TestCase):
     def setUp(self):
         self.alm = a.Alm(10,10)
     def test_alm_create(self):
