@@ -45,7 +45,7 @@ if opts.reprocess:
             print xfile, 'does not exist.  Skipping...'
             continue
         xtalk = n.load(xfile)
-        for bl in xtalk:
+        for bl in xtalk.files:
             dat = n.array(xtalk[bl])
             adat = n.ma.masked_equal(n.abs(dat), 0)
             if not gain.has_key(bl): gain[bl] = []
