@@ -16,7 +16,7 @@ import aipy as a, numpy as n, pylab as p, math, sys, optparse
 o = optparse.OptionParser()
 o.set_usage('plot_uv.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, ant=True, pol=True, chan=True, dec=True,
+a.scripting.add_standard_options(o, cal=True, ant=True, pol=True, chan=True, dec=True,
     cmap=True, max=True, drng=True)
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plot mode can be log (logrithmic), lin (linear), phs (phase), real, or imag.')
@@ -142,6 +142,12 @@ times = []
 plots = {}
 plt_data = {}
 
+if opts.cal != None:
+    uv = a.miriad.UV(args[0])
+    aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
+    del(uv)
+else: aa = None
+
 for uvfile in args:
     print 'Reading', uvfile
     uv = a.miriad.UV(uvfile)
@@ -156,7 +162,11 @@ for uvfile in args:
             use_this_time = ((len(times) - 1) % opts.decimate) == 0
             use_this_time &= time_sel(t, (len(times)-1) / opts.decimate)
             if use_this_time:
-                plot_t['lst'].append(uv['lst'])
+                if aa == None: lst = uv['lst']
+                else:
+                    aa.set_jultime(t)
+                    lst = aa.sidereal_time()
+                plot_t['lst'].append(lst)
                 plot_t['jd'].append(t)
                 plot_t['cnt'].append((len(times)-1) / opts.decimate)
         if not use_this_time: continue
