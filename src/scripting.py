@@ -3,7 +3,7 @@ Module containing utilities (like parsing of certain command-line arguments)
 for writing scripts.
 """
 
-import miriad, fit, src, numpy as n, re
+import miriad, fit, src, numpy as n, re,phs
 
 def add_standard_options(optparser, ant=False, pol=False, chan=False, 
         cal=False, src=False, prms=False, dec=False, cmap=False, 
@@ -11,7 +11,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
     """Add standard command-line options to an optparse.OptionParser() on an 
     opt in basis (i.e. specify =True for each option to be added)."""
     if ant: optparser.add_option ('-a', '--ant', dest='ant', default='cross',
-         help='Select ants/baselines to include.  Examples: all (all baselines) auto (of active baselines, only i=j) cross (only i!=j) 0,1,2 (any baseline involving listed ants) 0_2,0_3 (only listed baselines) "(0,1)_(2,3)" (same as 0_2,0_3,1_2,1_3. Quotes help bash deal with parentheses) "(-0,1)_(2,-3)" (exclude 0_2,0_3,1_3 include 1_2).  Default is "cross".')
+         help='Select ant_pol/baselines to include.  Examples: all (all baselines) auto (of active baselines, only i=j) cross (only i!=j) 0,1,2 (any baseline involving listed ants) 0_2,0_3 (only listed baselines) "(0,1)_(2,3)" (same as 0_2,0_3,1_2,2_3. Quotes help bash deal with parentheses) "(-0,1)_(2,-3)" (exclude 0_2,0_3,1_3 include 1_2).  Default is "cross". Select pol by adding appropriate x or y eg 5x_6y.')
     if pol: optparser.add_option('-p', '--pol', dest='pol', 
         help='Choose polarization (xx, yy, xy, yx) to include.')
     if chan: optparser.add_option('-c', '--chan', dest='chan', default='all',
@@ -40,7 +40,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
         optparser.add_option('--drng', dest='drng', type='float', default=None,
     help="Dynamic range in color of image, in units matching plotting mode.  Default max(data)-min(data).")
 
-ant_re = r'(\(((-?\d+,?)+)\)|-?\d+)'
+ant_re = r'(\(((-?\d+[xy]?,?)+)\)|-?\d+[xy]?)'
 bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
 def parse_ants(ant_str, nants):
     """Generate list of (baseline, inlude) tuples based on parsing of the
@@ -50,8 +50,8 @@ def parse_ants(ant_str, nants):
         m = re.search(bl_re, ant_str[cnt:])
         if m is None:
             if ant_str[cnt:].startswith('all'): rv = []
-            elif ant_str[cnt:].startswith('auto'): rv.append(('auto',1))
-            elif ant_str[cnt:].startswith('cross'): rv.append(('auto',0))
+            elif ant_str[cnt:].startswith('auto'): rv.append(('auto',1,-1))
+            elif ant_str[cnt:].startswith('cross'): rv.append(('auto',0,-1))
             else: raise ValueError('Unparsible ant argument "%s"' % ant_str)
             c = ant_str[cnt:].find(',')
             if c >= 0: cnt += c + 1
@@ -67,14 +67,38 @@ def parse_ants(ant_str, nants):
                 else: ais = m[3].split(',')
                 if m[6] is None: ajs = [m[5]]
                 else: ajs = m[6].split(',')
+            include = None
             for i in ais:
                 for j in ajs:
-                    if type(i) == str and i.startswith('-') or \
-                            type(j) == str and j.startswith('-'):
+                    if type(i) == str and i.startswith('-'):
+                         i = i[1:] #nibble the - off the string
+                         include = 0 
+                    if type(j) == str and j.startswith('-'):
+                        j = j[1:]
                         include = 0
+                    elif include==0:pass
                     else: include = 1
-                    bl = miriad.ij2bl(abs(int(i)),abs(int(j)))
-                    rv.append((bl,include))
+                    pol = None
+                    i,j = str(i),str(j)
+                    if not i.isdigit():
+                        ai = re.search(r'(/d+)([x,y])',i).groups()
+                    if not j.isdigit():
+                        aj = re.search(r'(/d+)([x,y])',j).groups()
+                    if i.isdigit() and not j.isdigit():
+                        pol = ['x'+aj[1],'y'+aj[1]]
+                        ai = [i,'']
+                    elif not i.isdigit() and j.isdigit():
+                        pol = [ai[1]+'x',ai[1]+'y']
+                        aj = [j,'']
+                    elif not i.isdigit() and not j.isdigit():
+                        pol = [ai[1]+aj[1]]
+                    if not pol is None:
+                        bl = miriad.ij2bl(abs(int(ai[0])),abs(int(aj[0])))
+                        for p in pol:
+                            rv.append((bl,include,p))
+                    else: 
+                        bl = miriad.ij2bl(abs(int(i)),abs(int(j)))
+                        rv.append((bl,include,-1))
     return rv
 
 def uv_selector(uv, ants=-1, pol_str=-1):
@@ -83,15 +107,21 @@ def uv_selector(uv, ants=-1, pol_str=-1):
     string for polarization ('xx','yy','xy','yx')."""
     if ants != -1:
         if type(ants) == str: ants = parse_ants(ants, uv['nants'])
-        for bl,include in ants:
+        for bl,include,pol in ants:
             if bl == 'auto': uv.select('auto', 0, 0, include=include)
             else:
                 i,j = miriad.bl2ij(bl)
                 uv.select('antennae', i, j, include=include)
+            if pol!=-1 and pol_str==-1:
+                pol_str = pol
+            elif pol!=-1:
+                pol_str = ','.join([pol_str,pol])
     if pol_str != -1:
-        try: polopt = miriad.str2pol[pol_str]
-        except(KeyError): raise ValueError('--pol argument invalid or absent')
-        uv.select('polarization', polopt, 0)
+        try:
+            for pol in pol_str.split(','):
+                polopt = miriad.str2pol[pol]
+                uv.select('polarization', polopt, 0)
+        except(NameError,KeyError): raise ValueError('--pol=%s argument invalid or absent'%(pol_str))
 
 def parse_chans(chan_str, nchan, concat=True):
     """Return array of active channels based on number of channels and
@@ -183,3 +213,6 @@ def parse_prms(prm_str):
                 prms[o][p] = (i,s)
     return prms
 
+def get_null_aa():
+   return phs.AntennaArray([0,0],
+       [phs.Antenna(0,0,0,phs.Beam(n.array([0.15])))])

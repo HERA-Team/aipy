@@ -171,6 +171,7 @@ for srccnt, s in enumerate(cat.values()):
       uv.select('decimate', opts.decimate, opts.decphs)
       # Read all data from each file
       for (crd,t,(i,j)),d,f in uv.all(raw=True):
+          pol = a.miriad.pol2str[uv['pol']]
           history = uv['history']
           history = history +  sys.argv[0].split('/')[-1].strip()+' ' + ' '.join(sys.argv[1:])
           if curtime != t:
@@ -205,9 +206,9 @@ for srccnt, s in enumerate(cat.values()):
               aa.sim_cache(s_eq)
           if s.alt < opts.altmin * a.img.deg2rad: continue
           d,f = d.take(chans), f.take(chans)
-          if not opts.skip_amp: d /= aa.passband(i,j)
+          if not opts.skip_amp: d /= aa.passband(i,j,pol=pol)
           # Throws PointingError if not up:
-          if not opts.skip_phs: d = aa.phs2src(d, s, i, j)
+          if not opts.skip_phs: d = aa.phs2src(d, s, i, j,pol=pol)
           u,v,w = aa.gen_uvw(i,j,src=s)
           longenough = n.where(n.sqrt(u**2+v**2) < opts.minuv, 0, 1).squeeze()
           if not opts.skip_bm:

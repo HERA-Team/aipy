@@ -101,6 +101,7 @@ curtime = None
 def mdl(uv, p, d, f):
     global curtime, eqs
     uvw, t, (i,j) = p
+    pol = a.miriad.pol2str[uv['pol']]
     if i == j: return p, d, f
     if curtime != t:
         curtime = t
@@ -120,7 +121,7 @@ def mdl(uv, p, d, f):
         #ind = n.concatenate(ind)
         aa.sim_cache(eqs, flx, mfreqs=mfq, 
             ionrefs=(dras,ddecs), srcshapes=(a1s,a2s,ths))
-    sd = aa.sim(i, j, pol=a.miriad.pol2str[uv['pol']])
+    sd = aa.sim(i, j, pol=pol)
     if opts.mode.startswith('sim'):
         d = sd
         if not opts.flag: f = no_flags
@@ -135,7 +136,7 @@ def mdl(uv, p, d, f):
         noise_amp = n.random.random(d.shape) * opts.noiselev
         noise_phs = n.random.random(d.shape) * 2*n.pi * 1j
         noise = noise_amp * n.exp(noise_phs)
-        d += noise * aa.passband(i, j)
+        d += noise * aa.passband(i, j, pol=pol)
     return p, n.where(f, 0, d), f
 
 if len(args) > 0:
@@ -151,14 +152,14 @@ if len(args) > 0:
         uvo = a.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
         uvo.pipe(uvi, mfunc=mdl, raw=True,
-            append2hist="MDLVIS: srcs=%s mode=%s flag=%s noise=%f\n" % \
-                (opts.src, opts.mode, opts.flag, opts.noiselev))
+            append2hist="MDLVIS: srcs=%s cat=%s mode=%s flag=%s noise=%f\n" % \
+                (opts.src, opts.cat, opts.mode, opts.flag, opts.noiselev))
 else:
     # Initialize a new UV file
     pols = opts.pol.split(',')
     uv = a.miriad.UV('new.uv', status='new')
     uv._wrhd('obstype','mixed-auto-cross')
-    uv._wrhd('history','MDLVIS: created file.\nMDLVIS: srcs=%s mode=%s flag=%s noise=%f\n' % (opts.src, opts.mode, opts.flag, opts.noiselev))
+    uv._wrhd('history','MDLVIS: created file.\nMDLVIS: srcs=%s cat=%s mode=%s flag=%s noise=%f\n' % (opts.src, opts.cat, opts.mode, opts.flag, opts.noiselev))
     uv.add_var('telescop','a'); uv['telescop'] = 'AIPY'
     uv.add_var('operator','a'); uv['operator'] = 'AIPY'
     uv.add_var('version' ,'a'); uv['version'] = '0.0.1'
@@ -205,6 +206,8 @@ else:
         uv['obsra'] = aa.sidereal_time()
         for i,ai in enumerate(aa):
             for j,aj in enumerate(aa):
+                if ai.pol+aj.pol not in pols: continue
+                i,j = ai.num,aj.num
                 if j < i: continue
                 crd = ai.pos - aj.pos
                 preamble = (crd, t, (i,j))

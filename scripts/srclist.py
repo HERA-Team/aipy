@@ -3,7 +3,7 @@
 A script for listing sources (and optionally source parameters) from
 catalogs.
 """
-import aipy as a, ephem, sys, optparse
+import aipy as a, ephem, sys, optparse,logging
 
 o = optparse.OptionParser()
 o.set_usage('srclist.py [options]')
@@ -25,9 +25,18 @@ o.add_option('--sep',dest='sep', type='float',
     help='Include areas within the specified angular separation (in degrees) of any sources listed in --src.')
 o.add_option('--divstr', dest='divstr', default=' ',
     help='Divider string to use between source names when printing.  Default is " ".')
+o.add_option('-v',dest='verb',action='store_true',
+    help="Print more")
+o.add_option('--fitprms',action='store_true',
+    help="Print as prm inputs for fitmdl")
 opts,args = o.parse_args(sys.argv[1:])
 
 srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+if opts.verb:
+    logging.basicConfig(level=logging.DEBUG)
+else:
+     logging.basicConfig(level=logging.WARNING)
+log = logging.getLogger('srclist')
 
 if opts.cal != None:
     cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
@@ -52,14 +61,17 @@ if opts.centers != None:
 else: ccat = {}
     
 if opts.juldate is None: date = ephem.J2000
-else: date = a.phs.juldate2ephem(opts.juldate)
+else: 
+    date = a.phs.juldate2ephem(opts.juldate)
+    aa = a.scripting.get_null_aa()
+    aa.set_jultime(opts.juldate)
 
 for c in [cat, xcat, ccat]:
     for s in c.keys():
         try: ephem.FixedBody.compute(c[s], date)
         except(TypeError):
             if opts.juldate is None: del(c[s])
-            else: ephem.Body.compute(c[s], date)
+            else: c[s].compute(aa)
 
 srcs = cat.keys()
 srcs = [s for s in srcs if s not in xcat]
@@ -92,9 +104,26 @@ srcs.sort()
 if opts.prms == None:
     print opts.divstr.join(srcs)
 else:
-    prms = opts.prms.split(',')
-    for s in srcs:
-        p = cat.get_params({s:prms})
-        if p[s].has_key('ra'):  p[s]['ra'] = ephem.hours(p[s]['ra'])
-        if p[s].has_key('dec'): p[s]['dec'] = ephem.degrees(p[s]['dec'])
-        a.fit.print_params(p)
+    if not opts.fitprms:
+        prms = opts.prms.split(',')
+        for s in srcs:
+            p = cat.get_params({s:prms})
+            if p[s].has_key('ra'):  p[s]['ra'] = ephem.hours(p[s]['ra'])
+            if p[s].has_key('dec'): p[s]['dec'] = ephem.degrees(p[s]['dec'])
+            a.fit.print_params(p)
+    else:
+        prms = opts.prms.split(',')
+        outstring = ''
+        scount =0
+        snum = len(srcs)
+        for s in srcs:
+            scount +=1
+            outstring += s+"=("
+            p = cat.get_params({s:prms})
+            pcnt = len(p[s].keys())
+            for i,prm in enumerate(p[s].keys()):
+                if i<pcnt-1: outstring += prm+"/"
+                else: outstring += prm
+            if scount<snum-1:outstring += "),"
+            else: outstring += ")"
+        print outstring

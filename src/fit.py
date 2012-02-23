@@ -101,6 +101,7 @@ class RadioFixedBody(amp.RadioFixedBody):
             'th':       float(self.srcshape[2]),
             'dra':      float(self.ionref[0]),
             'ddec':     float(self.ionref[1]),
+            'mfreq':    float(self.mfreq),
         }
         prms = {}
         for p in prm_list:

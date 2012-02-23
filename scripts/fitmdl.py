@@ -1,4 +1,4 @@
-#!/usr/global/paper/bin/python
+#!/usr/bin/env python
 """
 A script for fitting parameters of a measurement equation given 
 starting parameters in a cal file and a list of sources.  The fitter used
@@ -34,6 +34,7 @@ o.add_option('--master', dest='master',
     help='Operate in master mode, employing daemon-mode servers to do the work and collecting the results.  Should be a comma delimited list of host:daemonid pairs to contact.  Daemon ID will be added to baseport to determine actual port used for TCP transactions.')
 o.add_option('--sim_autos', dest='sim_autos', action='store_true',
     help='Use auto-correlations in fitting.  Default is to use only cross-correlations.')
+o.add_option('--minuv',dest='minuv',default=20.,type='float',help='Minimum baseline lenght to consider')
 
 opts, args = o.parse_args(sys.argv[1:])
 
@@ -85,6 +86,8 @@ first_fit = None    # Used to normalize fit values to the starting fit
 mfq = cat.get('mfreq')
 dbuf = None
 
+def uvlen(A): return n.sqrt(n.dot(A,A))
+
 # The function to be optimized
 def fit_func(prms, filelist, decimate, decphs):
     global first_fit, dbuf
@@ -115,6 +118,7 @@ def fit_func(prms, filelist, decimate, decphs):
             for (uvw,t,(i,j)),d,f in uv.all(raw=True):
                 if not dbuf.has_key(t): dbuf[t] = {}
                 if not opts.sim_autos and i == j: continue
+                if uvlen(aa.get_baseline(i,j))*0.15 <= opts.minuv: continue
                 bl = a.miriad.ij2bl(i,j)
                 d = d.take(chans)
                 f = f.take(chans)
@@ -145,7 +149,7 @@ def fit_func(prms, filelist, decimate, decphs):
         for bl in dbuf[t]:
             i,j = a.miriad.bl2ij(bl)
             d,f,nsamp,pol = dbuf[t][bl]
-            sim_d = aa.sim(i, j, pol=pol)
+            sim_d = aa.sim(i, j, pol=pol,resolve_src=False)
             difsq = n.abs(d - sim_d)**2
             difsq = n.where(f, 0, difsq)
             score += difsq.sum()

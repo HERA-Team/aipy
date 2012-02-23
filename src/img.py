@@ -10,34 +10,33 @@ if USEDSP: import _dsp
 deg2rad = n.pi / 180.
 rad2deg = 180. / n.pi
 
-def word_wrap(string, width=80,ind1=0,ind2=0,prefix=''):
-    """ word wrapping function.
+def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
+    """ 
+    word wrapping function.
         string: the string to wrap
         width: the column number to wrap at
-        prefix: prefix each line with this string (goes before any indentation)
+        prefix: prefix of each line with thie string (goes before any indentation)
         ind1: number of characters to indent the first line
         ind2: number of characters to indent the rest of the lines
     """
     awidth = min(width-2-len(prefix+ind1*' '),width-2-len(prefix+ind2*' '))
     words = string.split(' ')
     okwords = []
-    chunk = lambda v, l: [v[i*l:(i+1)*l] for i in range(int(n.ceil(len(v)/float(l))))]
+    chunk = lambda v,l: [v[i*l:(i+1)*l] for i in range(int(n.ceil(len(v)/float(l))))]
     for word in words:
         for okword in chunk(word,awidth):
             okwords.append(okword)
     lines = []
     l = prefix+ind1*' '
     for i,w in enumerate(okwords):
-        #print w,len(l+' '+w),width
         if len(l+' ' + w)<width:
             l += ' '+w
         else:
             lines.append(l)
             l = prefix + ind2*' '+w
     lines.append(l)
-    return '\n'.join(lines)+'\n'
-    
-    
+    return '\n'.join(lines)
+
 def recenter(a, c):
     """Slide the (0,0) point of matrix a to a new location tuple c.  This is
     useful for making an image centered on your screen after performing an
@@ -69,7 +68,6 @@ def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
     return recenter(g, center)
 
 def beam_gain(bm):
-    #return n.sqrt((n.abs(bm)**2).sum())
     return n.abs(bm).max()
 
 class Img:
@@ -244,7 +242,7 @@ class ImgW(Img):
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
-            print j, len(w)
+            print '%d/%d datums' % (j, len(w))
             avg_w = n.average(w[i:j])
             # Put all uv's down on plane for this gridded w point
             wgtsij = [wgt[i:j] for wgt in wgts]
@@ -306,60 +304,13 @@ class ImgW(Img):
         G[:,1:] = n.fliplr(G[:,1:]).copy()
         return G / G.size
 
-'''
-class ImgBW(ImgW):
-    """A subclass of ImgW adding better weighting for the primary beam."""
-    def __init__(self, size=100, res=1, wres=.5, tres=.2):
-        """wres: the gridding resolution of sqrt(w) when projecting to w=0."""
-        ImgW.__init__(self, size=size, res=res, wres=wres)
-        self.tres = tres
-    def put(self, uvw, data, wgts, has, odec, sdec, bm_response):
-        """Same as Img.put, only now the w component is projected to the w=0
-        plane before applying the data to the UV matrix."""
-        if len(uvw) == 0: return
-        order = n.argsort(has)
-        # Sort uvw in order of time
-        uvw = uvw.take(order, axis=0)
-        data = data.take(order)
-        wgts = wgts.take(order)
-        i = 0
-        while True:
-            # Grab a chunk of uvw's that have same time
-            j = has.searchsorted(has[i]+self.tres)
-            ha = n.average(has[i:j])
-            eqs = self.get_eq(ra=-ha, dec=sdec)
-            mask = eqs[0].mask; eqs = eqs.filled(0)
-            eqs.shape = (3, eqs.size / 3)
-            m = coord.eq2top_m(0, odec)
-            top = n.dot(m, eqs)
-            z = top[-1]; z.shape = self.uv.shape
-            mask = n.logical_or(mask, z < 0)
-            resp = bm_response(top); resp.shape = self.uv.shape
-            resp = n.where(mask, 0, resp)
-            if resp[0,0] <= 0:
-                if j >= len(has): break
-                i = j
-                continue
-            resp = resp[0,0] / resp.clip(min(resp[0,0], resp.max()/4),n.Inf)
-            #resp = n.where(mask, 0, resp)
-            # Transpose here to match transposition in image() and bm_image()
-            resp = resp.transpose()
-            # Unscramble difference between fft(fft(resp)) and resp
-            resp[1:] = n.flipud(resp[1:]).copy()
-            resp[:,1:] = n.fliplr(resp[:,1:]).copy()
-            resp /= resp.size
-            # Put all uv's down on plane for this time
-            ImgW.put(self, uvw[i:j,:],data[i:j],wgts[i:j],invker2=resp)
-            if j >= len(has): break
-            i = j
-'''
 default_fits_format_codes = {
     n.bool_:'L', n.uint8:'B', n.int16:'I', n.int32:'J', n.int64:'K',
     n.float32:'E', n.float64:'D', n.complex64:'C', n.complex128:'M'
 }
 
 def to_fits(filename, data, clobber=False,
-        axes=('ra---sin','dec---sin','freq','stokes'),
+        axes=('ra--sin','dec--sin'),
         object='', telescope='', instrument='', observer='', origin='AIPY',
         obs_date=time.strftime('%D'), cur_date=time.strftime('%D'), 
         ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000., 
@@ -373,56 +324,74 @@ def to_fits(filename, data, clobber=False,
     "freq" axis is specified, then "freq" is the frequency of the first entry 
     (in Hz), and "d_freq" is the width of the channel.  The rest are pretty 
     self-explanitory/can be used however you want."""
-    data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
+    data = data.squeeze()
+#    data.shape = (1,) * (len(axes) - len(data.shape)) + data.shape
+    if len(data.shape) != len(axes):
+        raise TypeError('to_fits: axes dimension list does not match data shape')
     phdu = pyfits.PrimaryHDU(data)
-    phdu.data = data.transpose()
     phdu.update_header()
+    phdu.header.update('TRANSPOS',0,comment='Import code for old AIPY convention.')
     phdu.header.update('OBJECT', object, comment='SOURCE NAME')
     phdu.header.update('TELESCOP', telescope)
     phdu.header.update('INSTRUME', instrument)
     phdu.header.update('OBSERVER', observer)
     phdu.header.update('DATE-OBS', obs_date, 
         comment='OBSERVATION START DATE DD/MM/YY')
-    #phdu.header.update('DATE-MAP', '', 
-    #    comment='DATE OF LAST PROCESSING DD/MM/YY')
     phdu.header.update('BSCALE ', bscale,
         comment='REAL = FITS_VALUE * BSCALE + BZERO')
     phdu.header.update('BZERO  ', bzero)
     phdu.header.update('BUNIT  ', 'JY/BEAM ', comment='UNITS OF FLUX')
     phdu.header.update('EQUINOX', epoch, comment='EQUINOX OF RA DEC')
+    phdu.header.update('EPOCH',epoch,'Epoch of coordinate system')
     phdu.header.update('DATAMAX', data.max(), comment='MAX PIXEL VALUE')
     phdu.header.update('DATAMIN', data.min(), comment='MIN PIXEL VALUE')
     for i,ax in enumerate(axes):
-        if ax.lower().startswith('ra'): val,delta = (ra, d_ra)
-        elif ax.lower().startswith('dec'): val,delta = (dec, d_dec)
+        if ax.lower().startswith('ra') or ax.lower().startswith('glon'): val,delta = (ra, d_ra)
+        elif ax.lower().startswith('dec') or ax.lower().startswith('glat'): val,delta = (dec, d_dec)
         elif ax.lower().startswith('freq'): val,delta = (freq, d_freq)
         elif ax.lower().startswith('stokes'): val,delta = (1, 1)
         else: val,delta = (0,0)
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
-        if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
-            phdu.header.update('CRPIX%d' % (i+1), 
-                    round(phdu.data.shape[-(i+1)]/2.))
+        if ax.lower().startswith('ra') or ax.lower().startswith('dec')\
+        or ax.lower().startswith('glon') or ax.lower().startswith('glat'):
+            phdu.header.update('CRPIX%d' % (i+1), n.ceil(phdu.data.shape[-(i+1)]/2.))
         else:
-            phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
+            phdu.header.update('CRPIX%d' % (i+1), n.ceil(phdu.data.shape[-(i+1)]/2.))
         phdu.header.update('CRVAL%d' % (i+1), val)
-        phdu.header.update('CDELT%d' % (i+1), delta)
+        if (ax.lower().startswith('ra') or ax.lower().startswith('glon')) and delta>0:
+            phdu.header.update('CDELT%d' % (i+1), delta*-1)
+        else:
+            phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
+        phdu.header.update('NAXIS%d' % (i+1),phdu.data.shape[i])
     if history!='':
-        history = history.split("\n")
+        history = [h.strip() for h in history.split("\n")]
         for line in history:
             if len(line)>1:
-                for subline in word_wrap(line,70,5,10,'#').split("\n"):
-                    phdu.header.add_history(subline)
+                if line.startswith('#'):
+                    for subline in word_wrap(line,80,1,1,'').split("\n"):
+                        phdu.header.add_history(subline)
+                else:
+                    for subline in word_wrap(line,70,5,10,'#').split("\n"):
+                        phdu.header.add_history(subline)
     phdu.header.update('ORIGIN', origin)
     phdu.header.update('DATE', cur_date, comment='FILE WRITTEN ON DD/MM/YY')
-    pyfits.writeto(filename, phdu.data, phdu.header, clobber=True)
+    pyfits.writeto(filename,phdu.data,phdu.header,clobber=True)
 
 def from_fits(filename):
     """Read (data,kwds) from a FITS file.  Matches to_fits() above.  Attempts
     to deduce each keyword listed in to_fits() from the FITS header, but is
     accepting of differences.  Returns values in "kwds" dictionary."""
     phdu = pyfits.open(filename)[0]
-    data = phdu.data.transpose()
+   
+    try:
+        if phdu.header['TRANSPOS']:
+            data = phdu.data.transpose()
+        else:
+            data = phdu.data
+    except(KeyError):
+        data = phdu.data
+
     kwds = {}
     hitems = (('OBJECT','object'), ('TELESCOP','telescope'),
         ('INSTRUME','instrument'), ('OBSERVER','observer'),
@@ -446,14 +415,13 @@ def from_fits(filename):
         except(KeyError): pass
     kwds['axes'] = axes
     return data, kwds
-    
+
 def find_axis(phdu,name):
-    #find the axis number for RA
+    """Find the axis number for RA"""
     for k in phdu.header.items():
         if k[0].lower().startswith('ctype'):
-            if k[1].lower().startswith(name):            
+            if k[1].lower().startswith(name):
                 return int(k[1][5])
-
 
 def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     """
@@ -464,12 +432,20 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
 
     phdu = pyfits.open(infile)[0]
     axes = []
-    for i in range(1,phdu.header.get('naxis')):
+    for i in range(1,phdu.header.get('naxis')+1):
         type = "CTYPE"+str(i)
         axes.append(phdu.header.get(type))
     print axes
-    data.shape = data.shape + (1,) * (len(axes) - len(data.shape))
-    phdu.data = data.transpose()
+    data.shape = data.shape #+ (1,) * (len(axes) - len(data.shape))
+#    try: 
+#        if phdu.header['TRANSPOS']:
+#            data = phdu.data.transpose() #for backwards compatibility
+#            phdu.header.update('TRANSPOS',0)
+#        else:
+#            data = phdu.data
+#    except(KeyError):
+#        data = phdu.data
+    phdu.update_header()
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra'):
              if kwds.has_key('ra'): val=kwds['ra']
@@ -487,25 +463,20 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
              if kwds.has_key('d_freq'):delta = kwds['d_freq']
              else: delta=None
         else: val,delta = None,None
-#        elif ax.lower().startswith('dec') and kwds.has_key: val,delta = (dec, d_dec)
-#        elif ax.lower().startswith('freq'): val,delta = (freq, d_freq)
-#        elif ax.lower().startswith('stokes'): val,delta = (1, 1)
-#        else: val,delta = (0,0)
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
             phdu.header.update('CRPIX%d' % (i+1), 
-                    round(phdu.data.shape[-(i+1)]/2.))
+                    round(data.shape[-(i+1)]/2.))
         else:
-            phdu.header.update('CRPIX%d' % (i+1), phdu.data.shape[-(i+1)])
+            phdu.header.update('CRPIX%d' % (i+1), 1)
+        print ax,round(data.shape[-(i+1)]/2.)
         if not val is None: phdu.header.update('CRVAL%d' % (i+1), val);
         if not delta is None: phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
     for k,v in kwds.iteritems():
         try:
             phdu.header.update(k,v)
-            print "updated %s with %s"%(k,str(v))
         except(ValueError): 
-            print "error on %s "%(k,)
             continue
     if history is None:history = "from_fits_to_fits: from %s to %s"%(infile,
                 outfile)
@@ -514,7 +485,4 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
         if len(line)>1:
             for subline in word_wrap(line,70,5,10,'#').split("\n"):
                 phdu.header.add_history(subline)
-    print phdu.header
-    pyfits.writeto(outfile, phdu.data, phdu.header, clobber=True)
-
-    
+    pyfits.writeto(outfile, data, phdu.header, clobber=True)

@@ -145,7 +145,7 @@ class HealpixMap(HealpixBase):
         hdr.update('INDXSCHM', 'IMPLICIT', "Indexing: IMPLICIT or EXPLICIT")
     def get_dtype(self):
         return self.map.dtype
-    def to_fits(self, filename, format=None):
+    def to_fits(self, filename, format=None, clobber=True):
         """Write a HealpixMap to a fits file in the fits format specified by
         'format'.  Default uses mapping of numpy types to fits format types
         stored in default_fits_format_codes."""
@@ -157,5 +157,5 @@ class HealpixMap(HealpixBase):
         tbhdu = pyfits.new_table(cols)
         self._set_fits_header(tbhdu.header)
         hdulist = pyfits.HDUList([hdu0, tbhdu])
-        hdulist.writeto(filename)
+        hdulist.writeto(filename,clobber=clobber)
 

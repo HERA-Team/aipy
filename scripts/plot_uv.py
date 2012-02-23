@@ -16,8 +16,8 @@ import aipy as a, numpy as n, pylab as p, math, sys, optparse
 o = optparse.OptionParser()
 o.set_usage('plot_uv.py [options] *.uv')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, cal=True, ant=True, pol=True, chan=True, dec=True,
-    cmap=True, max=True, drng=True)
+a.scripting.add_standard_options(o, src=True,ant=True, pol=True, chan=True, dec=True,
+    cmap=True, max=True, drng=True, cal=True)
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plot mode can be log (logrithmic), lin (linear), phs (phase), real, or imag.')
 o.add_option('--sum_chan', dest='sum_chan', action='store_true',
@@ -131,6 +131,9 @@ delays = delays.take(chans)
 time_sel, is_time_range = gen_times(opts.time, uv, opts.time_axis, 
     opts.decimate, opts.fringe)
 inttime = uv['inttime'] * opts.decimate
+if not opts.src is None:
+    srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+    src = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs).values()[0]
 del(uv)
 
 # Loop through UV files collecting relevant data
@@ -151,6 +154,8 @@ else: aa = None
 for uvfile in args:
     print 'Reading', uvfile
     uv = a.miriad.UV(uvfile)
+    if not opts.cal is None:
+        aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
     # Only select data that is needed to plot
     a.scripting.uv_selector(uv, opts.ant, opts.pol)
     # Read data from a single UV file
@@ -170,6 +175,14 @@ for uvfile in args:
                 plot_t['jd'].append(t)
                 plot_t['cnt'].append((len(times)-1) / opts.decimate)
         if not use_this_time: continue
+        #apply cal phases
+        if not opts.cal is None:
+            aa.set_jultime(t)
+            if not opts.src is None:
+                src.compute(aa)
+                d = aa.phs2src(d, src, i, j)
+            else:
+                d *= n.exp(-1j*n.pi*aa.get_phs_offset(i,j))
         # Do delay transform if required
         if opts.delay:
             w = a.dsp.gen_window(d.shape[-1], window=opts.window)
@@ -213,6 +226,8 @@ m1 = int(math.ceil(float(len(bls)) / m2))
 
 # Generate all the plots
 dmin,dmax = None, None
+fig = p.figure()
+if not opts.src is None:fig.suptitle(opts.src)
 for cnt, bl in enumerate(bls):
     d = n.ma.concatenate(plot_x[bl], axis=0)
     if opts.df: d = d[:,:-2]/2 + d[:,2:]/2 - d[:,1:-1]
@@ -256,6 +271,9 @@ for cnt, bl in enumerate(bls):
             if opts.time_axis == 'index':
                 t1,t2 = plot_t['cnt'][0], plot_t['cnt'][-1]
                 ylabel = 'Time (integrations)'
+            elif opts.time_axis=='lst':
+                t1,t2 = plot_t['lst'][0]*12/n.pi, plot_t['lst'][-1]*12/n.pi
+                ylabel = 'Local Sideral time (hrs)'
             else:
                 t1,t2 = plot_t['jd'][0], plot_t['jd'][-1]
                 ylabel = 'Time (Julian Date)'

@@ -1,11 +1,30 @@
 from distutils.core import setup, Extension
 
-import os, glob, numpy, sys
+import os, glob, numpy, sys,subprocess
 if 'upload' in sys.argv or 'register' in sys.argv:
     from ez_setup import use_setuptools; use_setuptools()
     from setuptools import setup, Extension
 
+print "Generating src/__version__.py: ",
 __version__ = open('VERSION').read().strip()
+print __version__
+open('src/__version__.py','w').write('__version__="%s"'%__version__)
+
+#read the latest git status out to an installed file
+try:
+#    gitbranch = subprocess.check_output('git symbolic-ref -q HEAD',shell=True, cwd='.').strip().split('/')[-1]
+    gitbranch = os.popen('git symbolic-ref -q HEAD').read().strip()
+    print "Generating src/__branch__.py"
+#    gitlog = subprocess.check_output('git log -n1 --pretty="%h%n%s%n--%n%an%n%ae%n%ai"',shell=True, cwd='.').strip()
+    gitlog = os.popen('git log -n1 --pretty="%h%n%s%n--%n%an%n%ae%n%ai"').read().strip()
+    print "Generating src/__gitlog__.py."
+    print gitlog
+except:
+    gitbranch = "unknown branch"
+    gitlog = "git log not found"
+open('src/__branch__.py','w').write('__branch__ = \"%s\"'%gitbranch)
+open('src/__gitlog__.py','w').write('__gitlog__ = \"\"\"%s\"\"\"'%gitlog)
+
 
 def get_description():
     lines = [L.strip() for L in open('README').readlines()]

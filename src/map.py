@@ -2,7 +2,7 @@
 Module for mapping and modeling the entire sky.
 """
 
-import numpy as n, healpix, pyfits, coord, random
+import numpy as n, healpix, pyfits, coord, random,img
 
 # Set a fixed random seed to make scrambling deterministic
 random.seed(1)
@@ -135,7 +135,7 @@ class Map(object):
             h = healpix.HealpixMap(*self.args, **self.kwargs)
             h.from_fits(filename, hdunum=hdunum, colnum=2+i)
             self.ind.append(h)
-    def to_fits(self, filename, format=None, clobber=False):
+    def to_fits(self, filename, format=None, clobber=False,history=''):
         if format is None:
             format = healpix.default_fits_format_codes[self.get_dtype().type]
         hdu0 = pyfits.PrimaryHDU()
@@ -147,4 +147,14 @@ class Map(object):
         tbhdu = pyfits.new_table(cols)
         self.map._set_fits_header(tbhdu.header)
         hdulist = pyfits.HDUList([hdu0, tbhdu])
+        if history!='':
+            history = [h.strip() for h in history.split("\n")]
+            for line in history:
+                if len(line)>1:
+                    if line.startswith('#'):
+                        for subline in img.word_wrap(line,80,0,0,'').split("\n"):
+                            hdulist[0].header.add_history(subline)
+                    else:
+                        for subline in img.word_wrap(line,70,5,10,'#').split("\n"):
+                            hdulist[0].header.add_history(subline)       
         hdulist.writeto(filename, clobber=clobber)
