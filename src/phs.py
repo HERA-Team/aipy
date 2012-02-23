@@ -333,6 +333,8 @@ class AntennaArray(ArrayLocation):
             return self[str(j)+pol[1]].phsoff - self[str(i)+pol[0]].phsoff
         except(KeyError):
             return self[j].phsoff - self[i].phsoff
+        except(UnboundLocalError):
+            return self[j].phsoff - self[i].phsoff
     def gen_uvw(self, i, j, src='z'):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates."""
