@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 import unittest, ephem as e, random
 import aipy as a, numpy as n
 
 class TestConvert(unittest.TestCase):
     def testtypecheck(self):
+        """Test coordinate conversion types"""
         crd2, crd3 = (0, 0), (1, 0, 0)
         for sys in a.coord.sys_dict:
             ans2 = a.coord.convert(crd2, sys, sys)
@@ -13,6 +15,7 @@ class TestConvert(unittest.TestCase):
             self.assertEqual(crd2[1], ans3[1])
         self.assertRaises(KeyError, a.coord.convert, crd2, 'bad','bad')
     def testprecession(self):
+        """Test coordinate precessions for accuracy"""
         crdpairs = [[('0:00','0:00'), ('00:02:33.77','00:16:42.1')],
             [('6:00','0:00'), ('06:02:33.75','-00:00:05.6')],
             [('0:00','89:00'), ('00:03:03.75','+89:16:41.7')]]
@@ -26,6 +29,7 @@ class TestConvert(unittest.TestCase):
             self.assertAlmostEqual(c2[0], c2_ck[0], 4)
             self.assertAlmostEqual(c2[1], c2_ck[1], 4)
     def testcrdsys(self):
+        """Test coordinate conversions for accuracy"""
         eq_ec_ga = [
             [   ('19:59:28.3566','40:44:02.096'),
                 ('317.7054323','59.3254895'),
@@ -61,6 +65,7 @@ class TestConvert(unittest.TestCase):
 
 class TestConvert_m(unittest.TestCase):
     def testshape(self):
+        """Test conversion matrices for shape preservation"""
         for c1 in a.coord.sys_dict:
             for c2 in a.coord.sys_dict:
                 m = a.coord.convert_m(c1,c2)
@@ -68,6 +73,7 @@ class TestConvert_m(unittest.TestCase):
                 self.assertEqual(m.shape[0], 3)
                 self.assertEqual(m.shape[1], 3)
     def testdiagonal(self):
+        """Test conversion matrices for normalcy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         for c1 in a.coord.sys_dict:
             for c2 in a.coord.sys_dict:
@@ -78,6 +84,7 @@ class TestConvert_m(unittest.TestCase):
 
 class TestRot_m(unittest.TestCase):
     def testshape(self):
+        """Test rotation matrices for shape preservation"""
         m = a.coord.rot_m(0, n.array([1.,0,0]))
         self.assertEqual(len(m.shape), 2)
         self.assertEqual(m.shape[0], 3)
@@ -88,6 +95,7 @@ class TestRot_m(unittest.TestCase):
         self.assertEqual(m.shape[1], 3)
         self.assertEqual(m.shape[2], 3)
     def testaccuracy(self):
+        """Test rotation matricies for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = n.round(a.coord.rot_m(2*n.pi, n.array([1.,0,0])), 10)
@@ -101,6 +109,7 @@ class TestRot_m(unittest.TestCase):
         
 class TestXyz2thphi(unittest.TestCase):
     def testshape(self):
+        """Test the x,y,z to theta,phi conversion for shape preservation"""
         m = a.coord.xyz2thphi((0,0,1))
         self.assertEqual(len(m.shape), 1)
         self.assertEqual(m.shape[0], 2)
@@ -110,6 +119,7 @@ class TestXyz2thphi(unittest.TestCase):
         self.assertEqual(m.shape[0], 2)
         self.assertEqual(m.shape[1], 3)
     def testaccuracy(self):
+        """Test the x,y,z to theta,phi conversion for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = n.round(a.coord.xyz2thphi(e3), 10)
@@ -121,6 +131,7 @@ class TestXyz2thphi(unittest.TestCase):
         
 class TestThphi2xyz(unittest.TestCase):
     def testshape(self):
+        """Test the theta,phi to x,y,z conversion for shape preservation"""
         m = a.coord.thphi2xyz((0,0))
         self.assertEqual(len(m.shape), 1)
         self.assertEqual(m.shape[0], 3)
@@ -129,6 +140,7 @@ class TestThphi2xyz(unittest.TestCase):
         self.assertEqual(m.shape[0], 3)
         self.assertEqual(m.shape[1], 2)
     def testaccuracy(self):
+        """Test the theta,phi to x,y,z conversion for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = n.round(a.coord.thphi2xyz((0,0)), 10)
@@ -140,6 +152,7 @@ class TestThphi2xyz(unittest.TestCase):
         
 class TestEq2radec(unittest.TestCase):
     def testshape(self):
+        """Test the equatorial to ra,dec conversion for shape preservation"""
         m = a.coord.eq2radec((0,0,1))
         self.assertEqual(len(m.shape), 1)
         self.assertEqual(m.shape[0], 2)
@@ -149,6 +162,7 @@ class TestEq2radec(unittest.TestCase):
         self.assertEqual(m.shape[0], 2)
         self.assertEqual(m.shape[1], 3)
     def testaccuracy(self):
+        """Test the equatorial to ra,dec conversion for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = n.round(a.coord.eq2radec(e3), 10)
@@ -160,6 +174,7 @@ class TestEq2radec(unittest.TestCase):
 
 class TestRadec2eq(unittest.TestCase):
     def testshape(self):
+        """Test the ra,dec to equatorial conversion for shape preservation"""
         m = a.coord.radec2eq((0,0))
         self.assertEqual(len(m.shape), 1)
         self.assertEqual(m.shape[0], 3)
@@ -168,6 +183,7 @@ class TestRadec2eq(unittest.TestCase):
         self.assertEqual(m.shape[0], 3)
         self.assertEqual(m.shape[1], 2)
     def testaccuracy(self):
+        """Test the ra,dec to equatorial conversion for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = n.round(a.coord.radec2eq((0,0)), 10)
@@ -179,6 +195,7 @@ class TestRadec2eq(unittest.TestCase):
 
 class TestLatlong2xyz(unittest.TestCase):
     def testshape(self):
+        """Test the lat,long to x,y,z conversion for shape preservation"""
         m = a.coord.latlong2xyz((0,0))
         self.assertEqual(len(m.shape), 1)
         self.assertEqual(m.shape[0], 3)
@@ -187,6 +204,7 @@ class TestLatlong2xyz(unittest.TestCase):
         self.assertEqual(m.shape[0], 3)
         self.assertEqual(m.shape[1], 2)
     def testaccuracy(self):
+        """Test the lat,long to x,y,z conversion for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = n.round(a.coord.latlong2xyz((0,0)), 10)
@@ -198,6 +216,7 @@ class TestLatlong2xyz(unittest.TestCase):
 
 class TestTop2azalt(unittest.TestCase):
     def testshape(self):
+        """Test the x,y,z to az,alt conversion for shape preservation"""
         m = a.coord.top2azalt((0,0,1))
         self.assertEqual(len(m.shape), 1)
         self.assertEqual(m.shape[0], 2)
@@ -207,6 +226,7 @@ class TestTop2azalt(unittest.TestCase):
         self.assertEqual(m.shape[0], 2)
         self.assertEqual(m.shape[1], 3)
     def testaccuracy(self):
+        """Test the x,y,z to az,alt conversion for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = a.coord.top2azalt(e3)
@@ -218,6 +238,7 @@ class TestTop2azalt(unittest.TestCase):
 
 class TestAzalt2top(unittest.TestCase):
     def testshape(self):
+        """Test the az,alt to x,y,z conversion for shape preservation"""
         m = a.coord.azalt2top((0,0))
         self.assertEqual(len(m.shape), 1)
         self.assertEqual(m.shape[0], 3)
@@ -226,6 +247,7 @@ class TestAzalt2top(unittest.TestCase):
         self.assertEqual(m.shape[0], 3)
         self.assertEqual(m.shape[1], 2)
     def testaccuracy(self):
+        """Test the az,alt to x,y,z conversion for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = n.round(a.coord.azalt2top((0,0)), 10)
@@ -237,6 +259,7 @@ class TestAzalt2top(unittest.TestCase):
 
 class TestEq2top_m(unittest.TestCase):
     def testshape(self):
+        """Test the equatorial/x,y,z rotation matrix for shape preservation"""
         m = a.coord.eq2top_m(0, 0)
         self.assertEqual(len(m.shape), 2)
         self.assertEqual(m.shape[0], 3)
@@ -247,6 +270,7 @@ class TestEq2top_m(unittest.TestCase):
         self.assertEqual(m.shape[1], 3)
         self.assertEqual(m.shape[2], 3)
     def testaccuracy(self):
+        """Test the equatorial/x,y,z rotation matrix for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = n.round(a.coord.eq2top_m(0, 0), 10)
@@ -258,6 +282,7 @@ class TestEq2top_m(unittest.TestCase):
         
 class TestTop2eq_m(unittest.TestCase):
     def testshape(self):
+        """Test the x,y,z/equatorial rotation matrix for shape preservation"""
         m = a.coord.top2eq_m(0, 0)
         self.assertEqual(len(m.shape), 2)
         self.assertEqual(m.shape[0], 3)
@@ -268,6 +293,7 @@ class TestTop2eq_m(unittest.TestCase):
         self.assertEqual(m.shape[1], 3)
         self.assertEqual(m.shape[2], 3)
     def testaccuracy(self):
+        """Test the x,y,z/equatorial rotation matrix for accuracy"""
         diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
         e1,e2,e3 = diag
         m = n.round(a.coord.top2eq_m(0, 0), 10)
@@ -276,6 +302,26 @@ class TestTop2eq_m(unittest.TestCase):
         self.assertTrue(n.all(m == n.array([-e1,e3,e2])))
         m = n.round(a.coord.top2eq_m(0, n.pi/2), 10)
         self.assertTrue(n.all(m == n.array([-e2,e1,e3])))
+
+class TestSuite(unittest.TestSuite):
+    """A unittest.TestSuite class which contains all of the aipy.coord unit tests."""
+
+    def __init__(self):
+        unittest.TestSuite.__init__(self)
+
+        loader = unittest.TestLoader()
+        self.addTests(loader.loadTestsFromTestCase(TestConvert))
+        self.addTests(loader.loadTestsFromTestCase(TestConvert_m))
+        self.addTests(loader.loadTestsFromTestCase(TestRot_m))
+        self.addTests(loader.loadTestsFromTestCase(TestXyz2thphi))
+        self.addTests(loader.loadTestsFromTestCase(TestThphi2xyz))
+        self.addTests(loader.loadTestsFromTestCase(TestEq2radec))
+        self.addTests(loader.loadTestsFromTestCase(TestRadec2eq))
+        self.addTests(loader.loadTestsFromTestCase(TestLatlong2xyz))
+        self.addTests(loader.loadTestsFromTestCase(TestTop2azalt))
+        self.addTests(loader.loadTestsFromTestCase(TestAzalt2top))
+        self.addTests(loader.loadTestsFromTestCase(TestEq2top_m))
+        self.addTests(loader.loadTestsFromTestCase(TestTop2eq_m))
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,7 @@
 #! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
+import unittest
 import aipy.healpix as h, numpy as n
 
 hpm = h.HealpixMap(32, 'RING')
