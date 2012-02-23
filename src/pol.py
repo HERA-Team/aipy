@@ -235,4 +235,24 @@ class AntennaArray(fit.AntennaArray):
         GBIE_sf = Gij_sf * Bij_sf * I_sf * E_sf
         Vij_f = GBIE_sf.sum(axis=0)
         return Vij_f
+    def get_params(self, ant_prms={'*':'*'}):
+        """Return all fitable parameters in a dictionary."""
+        prms = {}
+        for k in ant_prms:
+            ants = self.get_ant_list()
+            if k.startswith('*'): ants = self.get_ant_list()
+            else: ants = {k:ants[k]}
+            prm_list = ant_prms[k]
+            if type(prm_list) is str: prm_list = [prm_list]
+            for ant,i in ants.iteritems():
+                try: prms[ant] = self.ants[i].get_params(prm_list)
+                except(ValueError): pass
+        return prms
+    def set_params(self, prms):
+        """Set all parameters from a dictionary."""
+        ants = self.get_ant_list()
+        for ant,i in ants.iteritems():
+            try: self.ants[i].set_params(prms[ant])
+            except(KeyError): pass
+        self.update()
 
