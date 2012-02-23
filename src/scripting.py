@@ -81,9 +81,9 @@ def parse_ants(ant_str, nants):
                     pol = None
                     i,j = str(i),str(j)
                     if not i.isdigit():
-                        ai = re.search(r'(\d+)([x,y])',i).groups()
+                        ai = re.search(r'(/d+)([x,y])',i).groups()
                     if not j.isdigit():
-                        aj = re.search(r'(\d+)([x,y])',j).groups()
+                        aj = re.search(r'(/d+)([x,y])',j).groups()
                     if i.isdigit() and not j.isdigit():
                         pol = ['x'+aj[1],'y'+aj[1]]
                         ai = [i,'']
