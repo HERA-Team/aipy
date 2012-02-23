@@ -69,6 +69,8 @@ o.add_option('-p', '--projection', dest='projection', default='moll',
     help='Map projection to use: moll (default), mill, cyl, robin, sinu.')
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plotting mode, can be log (default), lin.')
+o.add_option('--interpolation', dest='interpolation', default='nearest',
+    help='Sub-pixel interpolation.  Can be "nearest" or "bicubic".  Default nearest.')
 o.add_option('-c', '--cen', dest='cen', type='float', 
     help="Center longitude/right ascension (in degrees) of map.  Default is 0 for galactic coordinate output, 180 for equatorial.")
 o.add_option('-j', '--juldate', dest='juldate', type='float', 
@@ -121,7 +123,7 @@ if not opts.nside is None:
     nh = a.healpix.HealpixMap(nside=opts.nside)
     nh.from_hpm(h)
     h = nh
-h.set_interpol(True)
+h.set_interpol(opts.interpolation != 'nearest')
 
 crd = a.coord.radec2eq(n.array([lons.flatten(), lats.flatten()]))
 m = a.coord.convert_m(opts.osys, opts.isys, 
@@ -191,7 +193,7 @@ if opts.drng is None:
 else: min = max - opts.drng
 data = data.clip(min, max)
 data = n.ma.array(data, mask=mask)
-map.imshow(data, vmax=max, vmin=min, cmap=cmap)
+map.imshow(data, vmax=max, vmin=min, cmap=cmap, interpolation=opts.interpolation)
 
 # Plot src labels and markers on top of map image
 if not opts.src is None:
