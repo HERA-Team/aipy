@@ -1,6 +1,5 @@
-#! /usr/bin/env python
-
 import aipy as a, numpy as n, pylab as p
+import unittest
 
 SIZE = 100
 NOISE = .001

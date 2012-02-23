@@ -90,7 +90,7 @@ template<typename T> struct Clean {
                     val = IND2(res,wrap_n1,wrap_n2,T);
                     mval = val * val;
                     nscore += mval;
-                    if (mval > mmax && IND2(area,n1,n2,int)) {
+                    if (mval > mmax && IND2(area,wrap_n1,wrap_n2,int)) {
                         nargmax1 = wrap_n1; nargmax2 = wrap_n2;
                         max = val;
                         mmax = mval;
@@ -193,7 +193,7 @@ template<typename T> struct Clean {
                 val = IND1(res,wrap_n,T);
                 mval = val * val;
                 nscore += mval;
-                if (mval > mmax && IND1(area,n,int)) {
+                if (mval > mmax && IND1(area,wrap_n,int)) {
                     nargmax = wrap_n;
                     max = val;
                     mmax = mval;
@@ -300,7 +300,7 @@ template<typename T> struct Clean {
                     vali = CIND2I(res,wrap_n1,wrap_n2,T);
                     mval = valr * valr + vali * vali;
                     nscore += mval;
-                    if (mval > mmax && IND2(area,n1,n2,int)) {
+                    if (mval > mmax && IND2(area,wrap_n1,wrap_n2,int)) {
                         nargmax1 = wrap_n1; nargmax2 = wrap_n2;
                         maxr = valr; maxi = vali;
                         mmax = mval;
@@ -419,7 +419,7 @@ template<typename T> struct Clean {
                 vali = CIND1I(res,wrap_n,T);
                 mval = valr * valr + vali * vali;
                 nscore += mval;
-                if (mval > mmax && IND1(area,n,int)) {
+                if (mval > mmax && IND1(area,wrap_n,int)) {
                     nargmax = wrap_n;
                     maxr = valr;
                     maxi = vali;

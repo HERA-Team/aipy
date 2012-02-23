@@ -54,6 +54,7 @@ class TestClean(unittest.TestCase):
         area[:4] = 1
         rv = a._deconv.clean(res,ker,mdl,area,tol=1e-8)
         self.assertAlmostEqual(res[0], 0, 3)
+        self.assertEqual(res[5], 1)
     
 
 if __name__ == '__main__':
