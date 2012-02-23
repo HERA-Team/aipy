@@ -50,6 +50,15 @@ INSTALLATION
         Unless you installed as user, these will be in /usr/bin.  For more info
         use the "-h" option with any of these commands:
 
+DOCUMENTATION
+    If you want to build html documentation, you'll first need sphinx on 
+    your system:
+        > easy_install -U sphinx
+    Then you should be able to cd into the doc directory and run:
+        > make html
+    The results will appear in doc/build/html.  There are plenty of other 
+    build options, too.  Many thanks to Jayce Dowell for his work on this.
+
 Enjoy,
 Aaron Parsons
 
