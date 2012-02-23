@@ -1,21 +1,27 @@
+# -*- coding: utf-8 -*-
 import unittest, aipy._healpix as h, numpy as n
 
 class TestHealpix(unittest.TestCase):
     def setUp(self):
         self.hpb = h.HealpixBase()
     def test_order(self):
-        self.assertEqual(self.hpb.order(), 0)
+        """Test HEALpix order funtional attribute"""
+        self.assertEqual(self.hpb.order(), -1)
     def test_nside(self):
+        """Test HEALpix nside funtional attribute"""
         self.assertEqual(self.hpb.nside(), 0)
     def test_npix(self):
+        """Test HEALpix npix funtional attribute"""
         self.assertEqual(self.hpb.npix(), 12*self.hpb.nside()**2)
     def test_scheme(self):
+        """Test HEALpix scheme funtional attribute"""
         self.assertEqual(self.hpb.scheme(), 'RING')
     def test_npix2nside(self):
+        """Test HEALpix npix2nside funtional attribute"""
         self.assertEqual(self.hpb.npix2nside(12*2**12), 2**6)
-    
 
-class TestMemLeaks(unittest.TestCase):
+if False:
+  class TestMemLeaks(unittest.TestCase):
     def setUp(self):
         self.hpb = h.HealpixBase(nside=256)
     def test_create(self):
@@ -26,6 +32,16 @@ class TestMemLeaks(unittest.TestCase):
         y = n.zeros_like(x)
         z = n.sqrt(1 - x**2 - y**2)
         while True: crds = self.hpb.crd2px(x, y, z)
+
+class TestSuite(unittest.TestSuite):
+    """A unittest.TestSuite class which contains all of the aipy._healpix unit tests."""
+
+    def __init__(self):
+        unittest.TestSuite.__init__(self)
+
+        loader = unittest.TestLoader()
+        self.addTests(loader.loadTestsFromTestCase(TestHealpix))
+        #self.addTests(loader.loadTestsFromTestCase(TestMemLeaks))
 
 if __name__ == '__main__':
     unittest.main()
