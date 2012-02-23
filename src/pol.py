@@ -108,7 +108,8 @@ def normalizeI(V):
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
 
 class Antenna(fit.Antenna):
-    def __init__(self, x, y, z, beam, pol='x', num=-1, **kwargs):
+    def __init__(self, x, y, z, beam, pol='x', num=-1, bp_r=n.array([1]),
+             bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
         fit.Antenna.__init__(self, x, y, z, beam, **kwargs)
         self.pol = pol
         self.num = num
@@ -192,11 +193,12 @@ class AntennaArray(fit.AntennaArray):
     def passband(self,i,j,*args):
         if len(args)>0:
             pol = args[0]
-        else: 
-            return fit.AntennaArray.passband(self,i,j)
-        """This assumes you've run apply_cal.py before calling this function."""
-        if pol in ('xx','xy','yx','yy'): return fit.AntennaArray.passband(self,i,j,pol)
-        if pol in ('I','Q','U','V'): return np.ones_like(self.get_afreqs()) 
+            ants = self.get_ant_list()
+            if pol in ('xx','xy','yx','yy'):
+                return self[ants[str(i)+pol[0]]].passband() * self[ants[str(j)+pol[1]]].passband(conj=True)
+            #This assumes you've run apply_cal.py before calling this function for IQUV.
+            elif pol in ('I','Q','U','V'): return np.ones_like(self.get_afreqs())
+        else: return a.fit.AntennaArray.passband(self, i, j)
     def bm_response(self,i,j,*args):
         if len(args)>0:
             pol = args[0]
@@ -208,4 +210,29 @@ class AntennaArray(fit.AntennaArray):
             assert(pol in ('I','Q','U','V'))
             if pol in ('I','Q'): return fit.AntennaArray.bm_response(self,i,j,'xx')+fit.AntennaArray.bm_response(self,i,j,'yy')
             if pol in ('U','V'): return 2.* fit.AntennaArray.bm_response(self,i,j,'xy')
+    def sim(self, i, j, pol='xx',resolve_src=True):
+        """Simulate visibilites for the specified (i,j) baseline and 
+        polarization.  sim_cache() must be called at each time step before 
+        this will return valid results."""
+        assert(pol in ('xx','yy','xy','yx'))
+        if self._cache is None:
+            raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')
+        elif self._cache == {}:
+            return n.zeros_like(self.passband(i,j,pol))
+        s_eqs = self._cache['s_eqs']
+        u,v,w = self.gen_uvw(i, j, src=s_eqs)
+        I_sf = self._cache['jys']
+        Gij_sf = self.passband(i,j,pol)
+        Bij_sf = self.bm_response(i,j,pol=pol)
+        if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
+        # Get the phase of each src vs. freq, also does resolution effects
+        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, pol, mfreq=self._cache['mfreq'],
+            srcshape=self._cache['s_shp'], ionref=self._cache['i_ref'],
+            resolve_src=resolve_src))
+        try: E_sf.shape = I_sf.shape
+        except(AttributeError): pass
+        # Combine and sum over sources
+        GBIE_sf = Gij_sf * Bij_sf * I_sf * E_sf
+        Vij_f = GBIE_sf.sum(axis=0)
+        return Vij_f
 

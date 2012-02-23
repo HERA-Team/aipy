@@ -216,19 +216,17 @@ class BeamAlm(phs.Beam):
 class Antenna(phs.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array."""
-    def __init__(self, x, y, z, beam, num=-1, pol='x', phsoff=[0.,0.], bp_r=n.array([1]),
+    def __init__(self, x, y, z, beam, phsoff=[0.,0.], bp_r=n.array([1]),
             bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
         """x,y z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object (implements response() function)
         phsoff = polynomial phase vs. frequency.  Phs term that is linear
                  with freq is often called 'delay'.
-        num = unique antenna number
-        pol = polarization [x]|y
         bp_r = polynomial (in freq) modeling real component of passband
         bp_i = polynomial (in freq) modeling imaginary component of passband
         amp = overall multiplicative scaling of gain
         pointing = antenna pointing (az,alt).  Default is zenith."""
-        phs.Antenna.__init__(self, x,y,z, beam=beam, num=-1, pol='x', phsoff=phsoff)
+        phs.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff)
         self.set_pointing(*pointing)
         self.bp_r = bp_r
         self.bp_i = bp_i
@@ -278,13 +276,9 @@ class AntennaArray(phs.AntennaArray):
         phs.AntennaArray.set_jultime(self, t=t)
         self.eq2top_m = coord.eq2top_m(-self.sidereal_time(), self.lat)
         self._cache = None
-    def passband(self, i, j,*args):
+    def passband(self, i, j):
         """Return the passband response of baseline i,j."""
-        if len(args)>0: 
-            pol = args[0]
-            ants = self.get_ant_list()
-            return self[ants[str(i)+pol[0]]].passband() * self[ants[str(j)+pol[1]]].passband(conj=True)
-        else:return self[i].passband() * self[j].passband()
+        return self[i].passband() * self[j].passband(conj=True)
     def bm_response(self, i, j, pol='xx'):
         """Return the beam response towards the cached source positions
         for baseline i,j with the specified polarization."""
@@ -344,7 +338,7 @@ class AntennaArray(phs.AntennaArray):
                 's_shp': (a1,a2,th),
                 'i_ref': (dra,ddec),
             }
-    def sim(self, i, j, pol='xx',resolve_src=True):
+    def sim(self, i, j, pol='xx'):
         """Simulate visibilites for the specified (i,j) baseline and 
         polarization.  sim_cache() must be called at each time step before 
         this will return valid results."""
@@ -352,17 +346,17 @@ class AntennaArray(phs.AntennaArray):
         if self._cache is None:
             raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')
         elif self._cache == {}:
-            return n.zeros_like(self.passband(i,j,pol))
+            return n.zeros_like(self.passband(i,j))
         s_eqs = self._cache['s_eqs']
         u,v,w = self.gen_uvw(i, j, src=s_eqs)
         I_sf = self._cache['jys']
-        Gij_sf = self.passband(i,j,pol)
+        Gij_sf = self.passband(i,j)
         Bij_sf = self.bm_response(i,j,pol=pol)
         if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
         # Get the phase of each src vs. freq, also does resolution effects
-        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, pol, mfreq=self._cache['mfreq'],
+        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],
             srcshape=self._cache['s_shp'], ionref=self._cache['i_ref'],
-            resolve_src=resolve_src))
+            resolve_src=True))
         try: E_sf.shape = I_sf.shape
         except(AttributeError): pass
         # Combine and sum over sources
