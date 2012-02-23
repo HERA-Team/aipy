@@ -228,7 +228,7 @@ class Antenna(phs.Antenna):
         bp_i = polynomial (in freq) modeling imaginary component of passband
         amp = overall multiplicative scaling of gain
         pointing = antenna pointing (az,alt).  Default is zenith."""
-        phs.Antenna.__init__(self, x,y,z, beam=beam, num=0, pol='x', phsoff=phsoff)
+        phs.Antenna.__init__(self, x,y,z, beam=beam, num=-1, pol='x', phsoff=phsoff)
         self.set_pointing(*pointing)
         self.bp_r = bp_r
         self.bp_i = bp_i
