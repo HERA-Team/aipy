@@ -206,9 +206,14 @@ for srccnt, s in enumerate(cat.values()):
               aa.sim_cache(s_eq)
           if s.alt < opts.altmin * a.img.deg2rad: continue
           d,f = d.take(chans), f.take(chans)
-          if not opts.skip_amp: d /= aa.passband(i,j,pol=pol)
-          # Throws PointingError if not up:
-          if not opts.skip_phs: d = aa.phs2src(d, s, i, j,pol=pol)
+          if hasattr(aa[0],'pol'):
+              if not opts.skip_amp: d /= aa.passband(i,j,pol=pol)
+              # Throws PointingError if not up:
+              if not opts.skip_phs: d = aa.phs2src(d, s, i, j,pol=pol)
+          else:
+              if not opts.skip_amp: d /= aa.passband(i,j)
+              # Throws PointingError if not up:
+              if not opts.skip_phs: d = aa.phs2src(d, s, i, j)
           u,v,w = aa.gen_uvw(i,j,src=s)
           longenough = n.where(n.sqrt(u**2+v**2) < opts.minuv, 0, 1).squeeze()
           if not opts.skip_bm:

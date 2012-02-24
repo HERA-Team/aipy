@@ -204,10 +204,13 @@ else:
         uv['lst'] = aa.sidereal_time()
         uv['ra'] = aa.sidereal_time()
         uv['obsra'] = aa.sidereal_time()
+        # XXX should really honor opts.ants for which antennas to simulate here.
         for i,ai in enumerate(aa):
             for j,aj in enumerate(aa):
-                if ai.pol+aj.pol not in pols: continue
-                i,j = ai.num,aj.num
+                try:
+                    if ai.pol+aj.pol not in pols: continue
+                    i,j = ai.num,aj.num
+                except(AttributeError): pass
                 if j < i: continue
                 crd = ai.pos - aj.pos
                 preamble = (crd, t, (i,j))

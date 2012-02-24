@@ -7,7 +7,7 @@ will filter/extract in absolute terms.
 
 import aipy as a, numpy as n, os, sys, optparse, math
 
-def gen_skypass_delay(aa, sdf, nchan, pol, max_bl_frac=1.5):
+def gen_skypass_delay(aa, sdf, nchan, pol=None, max_bl_frac=1.5):
     bin_dly = 1. / (sdf * nchan)
     filters = {}
     for i in range(len(aa.ants)):
@@ -16,7 +16,8 @@ def gen_skypass_delay(aa, sdf, nchan, pol, max_bl_frac=1.5):
         bl = aa.ij2bl(i,j)
         max_bl = aa.get_baseline(i,j)
         max_bl = max_bl_frac * n.sqrt(n.dot(max_bl, max_bl))
-        dly,off = aa.get_phs_offset(i,j,pol)[-2:]
+        if hasattr(aa[0],'pol'): dly,off = aa.get_phs_offset(i,j,pol)[-2:]
+        else: dly,off = aa.get_phs_offset(i,j)[-2:]
         uthresh, lthresh = (dly + max_bl)/bin_dly + 1, (dly - max_bl)/bin_dly
         uthresh, lthresh = int(n.round(uthresh)), int(n.round(lthresh))
         filters[bl] = (uthresh,lthresh)
@@ -83,10 +84,16 @@ for uvfile in args:
         try:
             flags = n.logical_not(f).astype(n.float)
             # Check first if source is up
-            if not src is None:
-                d = aa.phs2src(d, src, i, j,pol)
-            # Put passband into kernel, where it gets divided out of the data
-            if opts.passband: flags *= aa.passband(i,j,pol)
+            if hasattr(aa[0], 'pol'):
+                if not src is None:
+                    d = aa.phs2src(d, src, i, j,pol)
+                # Put passband into kernel, where it gets divided out of the data
+                if opts.passband: flags *= aa.passband(i,j,pol)
+            else:
+                if not src is None:
+                    d = aa.phs2src(d, src, i, j)
+                # Put passband into kernel, where it gets divided out of the data
+                if opts.passband: flags *= aa.passband(i,j)
             gain = n.sqrt(n.average(flags**2))
             ker = n.fft.ifft(flags)
             d = n.where(f, 0, d)
@@ -153,10 +160,13 @@ for uvfile in args:
                 aa.set_jultime(t)
                 cat.compute(aa)
             try:
-                data = aa.unphs2src(data, src, i, j,pol)
+                if hasattr(aa[0], 'pol'): data = aa.unphs2src(data, src, i, j,pol)
+                else: data = aa.unphs2src(data, src, i, j)
             except(a.phs.PointingError): data *= 0
         # Remultiply by passband b/c the kernel divided it out
-        if opts.passband: data *= aa.passband(i,j,pol)
+        if opts.passband:
+            if hasattr(aa[0],'pol'): data *= aa.passband(i,j,pol)
+            else: data *= aa.passband(i,j)
         cnt[pol][bl] += 1
         if opts.extract: return p, n.ma.array(data, mask=d.mask)
         else: return p, d - data
