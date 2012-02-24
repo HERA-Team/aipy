@@ -3,7 +3,7 @@ Module for adding polarization information to models.
 """
 
 from aipy import coord,fit,miriad
-import numpy as np
+import numpy as n
 
 #  _   ___     __
 # | | | \ \   / /
@@ -30,28 +30,28 @@ class UV(miriad.UV):
 #  \___/ \__|_|_|_|\__|\__, | |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
 #                      |___/        
 
-xy2s_m = np.array([[1.,   0.,  0.,  1.],
+xy2s_m = n.array([[1.,   0.,  0.,  1.],
                    [1.,   0.,  0., -1.],
                    [0.,   1.,  1.,  0.],
                    [0., -1.j, 1.j,  0.]])
 
-s2xy_m = np.linalg.inv(xy2s_m)
+s2xy_m = n.linalg.inv(xy2s_m)
 
 def ParAng(ha,dec,lat):
     """
     For any hour angle, declenation in an image, calculate the paralactic angle at that point. Remember to multiply this by 2 when you're
     doing anything with it...
     """
-    up = (np.cos(lat)*np.sin(ha))
-    down = (np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ha))
-    return np.arctan2(up,down)
+    up = (n.cos(lat)*n.sin(ha))
+    down = (n.sin(lat)*n.cos(dec))-(n.cos(lat)*n.sin(dec)*n.cos(ha))
+    return n.arctan2(up,down)
 
 def stokes2xy(V_s):
     """Rotate a Stokes visibility to an XY visibility."""
     if type(V_s) == dict:
         try:
-            V_s = np.array([V_s['I'],V_s['Q'],V_s['U'],V_s['V']])
-            V_xy_arr = np.dot(s2xy_m,V_s)
+            V_s = n.array([V_s['I'],V_s['Q'],V_s['U'],V_s['V']])
+            V_xy_arr = n.dot(s2xy_m,V_s)
             V_xy = {}
             for i,prm in enumerate(('xx','xy','yx','yy')):
                 V_xy[prm] = V_xy_arr[i]
@@ -59,14 +59,14 @@ def stokes2xy(V_s):
         except(KeyError):
             print 'Label your data array differently!',V_s.keys()
             return None
-    else: return np.dot(s2xy_m,V_xy)
+    else: return n.dot(s2xy_m,V_xy)
 
 def xy2stokes(V_xy):
     """Rotate an XY visibility into a Stokes' visibility."""
     if type(V_xy) == dict:
         try:
-            V_xy = np.array([V_xy['xx'],V_xy['xy'],V_xy['yx'],V_xy['yy']])
-            V_s_arr = np.dot(xy2s_m,V_xy)
+            V_xy = n.array([V_xy['xx'],V_xy['xy'],V_xy['yx'],V_xy['yy']])
+            V_s_arr = n.dot(xy2s_m,V_xy)
             V_s = {}
             for i,prm in enumerate(('I','Q','U','V')):
                 V_s[prm] = V_s_arr[i]
@@ -74,15 +74,15 @@ def xy2stokes(V_xy):
         except(KeyError):
             print 'Label your data array differently!',V_xy.keys()
             return None
-    else: return np.dot(xy2s_m,V_xy)
+    else: return n.dot(xy2s_m,V_xy)
 
 def QU2p(V):
     """If you can't get an absolute polarization calibration, p = \sqrt{Q^2+U^2}/I may be useful. Do that transformation. Make sure input visibility is stored as a dictionary!!!"""
     V = normalizeI(V)
-    try: V['p'] = np.sqrt(np.abs(V['Q'])**2 + np.abs(V['U'])**2)
+    try: V['p'] = n.sqrt(n.abs(V['Q'])**2 + n.abs(V['U'])**2)
     except(KeyError):
         V = xy2stokes(V)
-        V['p'] = np.sqrt(np.abs(V['Q'])**2 + np.abs(V['U'])**2)
+        V['p'] = n.sqrt(n.abs(V['Q'])**2 + n.abs(V['U'])**2)
     return V
 
 def normalizeI(V):
@@ -119,8 +119,8 @@ class Antenna(fit.Antenna):
             return fit.Antenna.bm_response(self,top,pol)
         else:
             assert(pol in ('I','Q','U','V'))
-            if pol in ('I','Q'): return np.sqrt(fit.Antenna.bm_response(self,top,pol='x')**2+fit.Antenna.bm_response(self,top,pol='y')**2)
-            if pol in ('U','V'): return np.sqrt(2.*fit.Antenna.bm_response(self,top,pol='x')*fit.Antenna.bm_response(self,top,pol='y'))
+            if pol in ('I','Q'): return n.sqrt(fit.Antenna.bm_response(self,top,pol='x')**2+fit.Antenna.bm_response(self,top,pol='y')**2)
+            if pol in ('U','V'): return n.sqrt(2.*fit.Antenna.bm_response(self,top,pol='x')*fit.Antenna.bm_response(self,top,pol='y'))
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -161,7 +161,7 @@ class AntennaArray(fit.AntennaArray):
                 return self[j].phsoff - self[i].phsoff
             except(UnboundLocalError):
                 return self[j].phsoff - self[i].phsoff
-        elif pol in ('I','Q','U','V'): return np.zeros_like(self.get_afreqs()) 
+        elif pol in ('I','Q','U','V'): return n.zeros_like(self.get_afreqs()) 
     def gen_phs(self, src, i, j, pol, mfreq=.150, ionref=None, srcshape=None, 
              resolve_src=False):
         """Return phasing that is multiplied to data to point to src."""
@@ -197,7 +197,7 @@ class AntennaArray(fit.AntennaArray):
             if pol in ('xx','xy','yx','yy'):
                 return self[ants[str(i)+pol[0]]].passband() * self[ants[str(j)+pol[1]]].passband(conj=True)
             #This assumes you've run apply_cal.py before calling this function for IQUV.
-            elif pol in ('I','Q','U','V'): return np.ones_like(self.get_afreqs())
+            elif pol in ('I','Q','U','V'): return n.ones_like(self.get_afreqs())
         else: return a.fit.AntennaArray.passband(self, i, j)
     def bm_response(self,i,j,*args):
         if len(args)>0:
