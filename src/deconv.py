@@ -18,7 +18,7 @@ import numpy as n, sys, _deconv
 lo_clip_lev = n.finfo(n.float).tiny 
 
 def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3, 
-        stop_if_div=True, verbose=False, pos_def=True):
+        stop_if_div=True, verbose=False, pos_def=False):
     """This standard Hoegbom clean deconvolution algorithm operates on the 
     assumption that the image is composed of point sources.  This makes it a 
     poor choice for images with distributed flux.  In each iteration, a point 

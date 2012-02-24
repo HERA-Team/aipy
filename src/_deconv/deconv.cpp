@@ -494,11 +494,10 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
     double gain=.1, tol=.001;
     int maxiter=200, rank=0, dim1, dim2, rv, stop_if_div=0, verb=0, pos_def=0;
     static char *kwlist[] = {"res", "ker", "mdl", "area", "gain", \
-                             "maxiter", "tol", 
-                            "stop_if_div", "verbose","pos_def", NULL};
+                             "maxiter", "tol", "stop_if_div", "verbose","pos_def", NULL};
     // Parse arguments and perform sanity check
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!O!O!|didiii", kwlist, \
-            &PyArray_Type, &res, &PyArray_Type, &ker, &PyArray_Type, &area, &PyArray_Type, &mdl, 
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!O!O!O!|didiii", kwlist, \
+            &PyArray_Type, &res, &PyArray_Type, &ker, &PyArray_Type, &mdl, &PyArray_Type, &area, 
             &gain, &maxiter, &tol, &stop_if_div, &verb, &pos_def)) 
         return NULL;
     if (RANK(res) == 1) {
