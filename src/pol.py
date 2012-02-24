@@ -180,7 +180,7 @@ class AntennaArray(fit.AntennaArray):
             else: res = self.resolve_src(u, v, srcshape=srcshape)
         else: res = 1
         o = self.get_phs_offset(i,j,pol)
-        phs = res * n.exp(-1j*2*n.pi*(w + dw + o))
+        phs = res * n.exp(-1j*2*n.pi*(w + o))
         return phs.squeeze()
     def phs2src(self, data, src, i, j, pol='xx', mfreq=.150, ionref=None, srcshape=None):
         """Apply phasing to zenith-phased data to point to src."""
@@ -199,13 +199,9 @@ class AntennaArray(fit.AntennaArray):
             #This assumes you've run apply_cal.py before calling this function for IQUV.
             elif pol in ('I','Q','U','V'): return n.ones_like(self.get_afreqs())
         else: return a.fit.AntennaArray.passband(self, i, j)
-    def bm_response(self,i,j,*args):
-        if len(args)>0:
-            pol = args[0]
-        else: 
-            return fit.AntennaArray.bm_response(self,i,j)
+    def bm_response(self,i,j,pol='xx'):
         """Introduce Stokes' parameters into the definition of the beam."""
-        try: return fit.AntennaArray.bm_response(self,i,j,pol)
+        try: return fit.AntennaArray.bm_response(self,i,j,pol=pol)
         except(AssertionError):
             assert(pol in ('I','Q','U','V'))
             if pol in ('I','Q'): return fit.AntennaArray.bm_response(self,i,j,'xx')+fit.AntennaArray.bm_response(self,i,j,'yy')
@@ -223,7 +219,7 @@ class AntennaArray(fit.AntennaArray):
         u,v,w = self.gen_uvw(i, j, src=s_eqs)
         I_sf = self._cache['jys']
         Gij_sf = self.passband(i,j,pol)
-        Bij_sf = self.bm_response(i,j,pol=pol)
+        Bij_sf = self.bm_response(i,j,pol)
         if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
         # Get the phase of each src vs. freq, also does resolution effects
         E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, pol, mfreq=self._cache['mfreq'],
