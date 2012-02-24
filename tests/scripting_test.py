@@ -23,6 +23,10 @@ class TestParseAnts(unittest.TestCase):
         for i in range(nants):
             cases[str(i)] = map(lambda x: (ij2bl(x,i),1), range(nants))
             cases['-'+str(i)] = map(lambda x: (ij2bl(x,i),0), range(nants))
+        # inelegantly paste on the new pol parsing flag on the above tests
+        # XXX really should add some new tests for the new pol parsing
+        for k in cases:
+            cases[k] = [v+(-1,) for v in cases[k]]
         for ant_str in cases:
             self.assertEqual(a.scripting.parse_ants(ant_str, nants), 
                 cases[ant_str])

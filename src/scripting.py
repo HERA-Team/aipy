@@ -43,7 +43,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
 ant_re = r'(\(((-?\d+[xy]?,?)+)\)|-?\d+[xy]?)'
 bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
 def parse_ants(ant_str, nants):
-    """Generate list of (baseline, inlude) tuples based on parsing of the
+    """Generate list of (baseline, include) tuples based on parsing of the
     string associated with the 'ants' command-line option."""
     rv,cnt = [], 0
     while cnt < len(ant_str):
