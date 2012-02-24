@@ -65,10 +65,12 @@ data_types = {
 
 class UV(_miriad.UV):
     """Top-level interface to a Miriad UV data set."""
-    def __init__(self, filename, status='old'):
-        """Open a miriad file.  status can be ['old','new','append']."""
+    def __init__(self, filename, status='old', corrmode='r'):
+        """Open a miriad file.  status can be ('old','new','append').  
+        corrmode can be 'r' (float32 data storage) or 'j' (int16 with shared exponent).  Default is 'r'."""
         assert(status in ['old', 'new', 'append'])
-        _miriad.UV.__init__(self, filename, status)
+        assert(corrmode in ['r', 'j'])
+        _miriad.UV.__init__(self, filename, status, corrmode)
         self.status = status
         self.nchan = 4096
         if status == 'old':
@@ -76,7 +78,7 @@ class UV(_miriad.UV):
             self.read(); self.rewind() # Update variables for the user
             try: self.nchan = self['nchan']
             except(KeyError): pass
-        else: self.vartable = {}
+        else: self.vartable = {'corr':corrmode}
     def _gen_vartable(self):
         """Generate table of variables and types from the vartable header."""
         vartable = {}
@@ -121,8 +123,6 @@ class UV(_miriad.UV):
             for t in itype:
                 v, o = _miread.hread(h, offset, t)
                 rv.append(v); offset += o
-        _miriad.hdaccess(h)
-        if len(rv) == 1: return rv[0]
         _miriad.hdaccess(h)
         if len(rv) == 1: return rv[0]
         elif type(rv) == str: return rv
@@ -231,7 +231,7 @@ class UV(_miriad.UV):
         if not flags is None: flags = n.logical_not(flags)
         elif len(data.mask.shape) == 0:
             flags = n.ones(data.shape)
-            data.mask = n.ma.nomask#data.unmask()
+            data = data.unmask()
         else:
             flags = n.logical_not(data.mask)
             #data = data.filled(0)
@@ -280,7 +280,10 @@ class UV(_miriad.UV):
     def add_var(self, name, type):
         """Add a variable of the specified type to a UV file."""
         self.vartable[name] = type
-        return (bl>>8)-1, (bl&255) - 1
+
+def bl2ij(bl):
+    bl = int(bl)
+    return (bl>>8)-1, (bl&255) - 1
 
 def ij2bl(i, j):
     if i > j: i,j = j,i
