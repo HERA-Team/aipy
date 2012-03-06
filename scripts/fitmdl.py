@@ -100,8 +100,9 @@ def fit_func(prms, filelist, decimate, decphs):
             if not prms.has_key(k2): prms[k2] = {}
             for sp in sprm:
                 prms[k2][sp] = prms[k][sp]
-    if not opts.quiet: a.fit.print_params(prms)
-    print prms
+    if not opts.quiet:
+        a.fit.print_params(prms)
+        print prms
     aa.set_params(prms)
     cat.set_params(prms)
     a1,a2,th = cat.get('srcshape')
@@ -282,6 +283,7 @@ else:
             prms,score = rv[:2]
             prms = a.fit.reconstruct_prms(prms, key_list)
             print
+            print prms
             a.fit.print_params(prms)
             print 'Score:', score * first_fit, 
             print '(%2.2f%% of %f)' % (100 * score, first_fit)
