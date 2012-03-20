@@ -3,6 +3,7 @@ import aipy as a, numpy as n
 import optparse, sys, os
 
 o = optparse.OptionParser()
+a.scripting.add_standard_options(o, ant=True)
 o.set_usage('xrfi_simple.py [options] *.uv')
 o.set_description(__doc__)
 o.add_option('-c', '--chan', dest='chan',
@@ -36,7 +37,7 @@ for uvfile in args:
         print uvofile, 'exists, skipping.'
         continue
     uvi = a.miriad.UV(uvfile)
-    #uvi.select('auto', -1, -1, include=False)
+    a.scripting.uv_selector(uvi, opts.ant)
     # Gather all data and each time step
     data,mask,times = {}, {}, []
     for (uvw,t,(i,j)), d, f in uvi.all(raw=True):
@@ -98,7 +99,8 @@ for uvfile in args:
     def rfi_mfunc(uv, preamble, data, flags):
         uvw, t, (i,j) = preamble
         bl = a.miriad.ij2bl(i,j)
-        m = mask[uv['pol']][bl][t]
+        if opts.combine: m = mask.values()[0].values()[0][t]
+        else: m = mask[uv['pol']][bl][t]
         return preamble, n.where(m, 0, data), m
 
     del(uvi)
