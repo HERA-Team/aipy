@@ -20,8 +20,6 @@ a.scripting.add_standard_options(o, src=True,ant=True, pol=True, chan=True, dec=
     cmap=True, max=True, drng=True, cal=True)
 o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plot mode can be log (logrithmic), lin (linear), phs (phase), real, or imag.')
-o.add_option('--sum_chan', dest='sum_chan', action='store_true',
-    help='Sum active channels together.')
 o.add_option('-t', '--time', dest='time', default='all', help='Select which time sample to plot. Options are: "all" (default), "<time1 #>_<time2 #>" (a range of times to plot), or "<time1 #>,<time2 #>" (a list of times to plot). If "all" or a range are selected, a 2-d image will be plotted. If a list of times is selected an xy plot will be generated.')
 o.add_option('-u', '--unmask', dest='unmask', action='store_true',
     help='Plot masked data, too.')
@@ -244,9 +242,6 @@ for cnt, bl in enumerate(bls):
                 d[:,chan],info = a.deconv.clean(d[:,chan],ker,tol=opts.clean)
                 d[:,chan] += info['res'] / gain
         d = n.ma.concatenate([d[d.shape[0]/2:], d[:d.shape[0]/2]], axis=0)
-    if opts.sum_chan:
-        d = d.sum(axis=1)
-        is_chan_range = False
     plt_data[cnt+1] = d
     d = data_mode(d, opts.mode)
     if not opts.share:
@@ -339,14 +334,12 @@ for cnt, bl in enumerate(bls):
         elif opts.time_axis == 'physical': plot_times = plot_t['jd']
         elif opts.time_axis == 'lst': plot_times = plot_t['lst']
         else: raise ValueError('Unrecognized time axis type.')
-        if opts.sum_chan: p.plot(plot_times, d, '-', label=label+'(+)')
+        if opts.chan_axis == 'index': label += '#%d'
         else:
-            if opts.chan_axis == 'index': label += '#%d'
-            else:
-                chans = freqs
-                label += '%f GHz'
-            for c, chan in enumerate(chans):
-                p.plot(plot_times, d[:,c], '-', label=label % chan)
+            chans = freqs
+            label += '%f GHz'
+        for c, chan in enumerate(chans):
+            p.plot(plot_times, d[:,c], '-', label=label % chan)
         if not opts.max is None: dmax = opts.max
         elif dmax is None: dmax = d.max()
         else: dmax = max(dmax,d.max())
