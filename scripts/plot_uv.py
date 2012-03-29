@@ -158,14 +158,14 @@ for uvfile in args:
         aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
     # Only select data that is needed to plot
     a.scripting.uv_selector(uv, opts.ant, opts.pol)
+    uv.select('decimate', opts.decimate, opts.decphs)
     # Read data from a single UV file
     for (uvw,t,(i,j)),d in uv.all():
         bl = '%d,%d' % (i,j)
         # Implement Decimation
         if len(times) == 0 or times[-1] != t:
             times.append(t)
-            use_this_time = ((len(times) - 1) % opts.decimate) == 0
-            use_this_time &= time_sel(t, (len(times)-1) / opts.decimate)
+            use_this_time = time_sel(t, (len(times)-1) / opts.decimate)
             if use_this_time:
                 if aa == None: lst = uv['lst']
                 else:
@@ -173,8 +173,9 @@ for uvfile in args:
                     lst = aa.sidereal_time()
                 plot_t['lst'].append(lst)
                 plot_t['jd'].append(t)
-                plot_t['cnt'].append((len(times)-1) / opts.decimate)
+                plot_t['cnt'].append(len(times)-1)
         if not use_this_time: continue
+
         #apply cal phases
         if not opts.cal is None:
             aa.set_jultime(t)
