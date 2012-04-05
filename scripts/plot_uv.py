@@ -144,7 +144,7 @@ for uvfile in args:
     uv.select('decimate', opts.decimate, opts.decphs)
     # Read data from a single UV file
     for (uvw,t,(i,j)),d in uv.all():
-        bl = '%d,%d' % (i,j)
+        bl = '%d,%d,%d' % (i,j,uv['pol'])
         if len(times) == 0 or times[-1] != t:
             times.append(t)
             # Implement time selection
@@ -192,9 +192,9 @@ for uvfile in args:
 
 bls = plot_x.keys()
 def sort_func(a, b):
-    ai,aj = map(int, a.split(','))
-    bi,bj = map(int, b.split(','))
-    if bi > ai or (bi == ai and bj > aj): return -1
+    ai,aj,pa = map(int, a.split(','))
+    bi,bj,pb = map(int, b.split(','))
+    if bi > ai or (bi == ai and bj > aj) or (bi == ai and bj == aj and pb < pa): return -1
     return 1
 bls.sort(cmp=sort_func)
 if len(bls) == 0:
@@ -229,7 +229,10 @@ for cnt, bl in enumerate(bls):
         p.subplot(m2, m1, cnt+1)
         dmin,dmax = None,None
         label = ''
-    else: label = bl + ' '
+    else:
+        i,j,pol = map(int,bl.split(','))
+        pol = a.miriad.pol2str[pol]
+        label = '%d%s,%d%s ' % (i,pol[0],j,pol[1]) 
     if is_chan_range and is_time_range:
         if opts.fringe:
             if opts.time_axis == 'index':
@@ -348,7 +351,11 @@ for cnt, bl in enumerate(bls):
         if not opts.ylim == None: p.ylim(*opts.ylim)
         else: p.ylim(dmin,dmax)
     else: raise ValueError('Either time or chan needs to be a range.')
-    if not opts.share: p.title(bl)
+    if not opts.share:
+        i,j,pol = map(int,bl.split(','))
+        pol = a.miriad.pol2str[pol]
+        title = '%d%s,%d%s ' % (i,pol[0],j,pol[1]) 
+        p.title(title)
 if not opts.nolegend and (not is_time_range or not is_chan_range): 
     p.legend(loc='best')
 
