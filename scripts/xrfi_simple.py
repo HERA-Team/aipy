@@ -90,7 +90,7 @@ for uvfile in args:
             for t in mask[pol][bl]:
                 new_mask[t] = new_mask.get(t,0)+mask[pol][bl][t].astype(n.int)
         for t in new_mask:
-            m = n.where(new_mask[t] > opts.thresh, 1, 0)
+            m = n.where(new_mask[t] >= opts.thresh, 1, 0)
             for pol in mask:
               for bl in mask[pol]:
                 mask[pol][bl][t] = m
