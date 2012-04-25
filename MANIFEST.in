@@ -19,6 +19,8 @@ include src/_cephes/*
 include src/_cephes/cephes/*
 include src/_cephes/c_misc/*
 include src/_deconv/*
+include src/_dsp/*
+include src/_dsp/grid/*
 include src/_healpix/*
 include src/_healpix/cxx/COPYING
 include src/_healpix/cxx/cxxsupport/*.h
