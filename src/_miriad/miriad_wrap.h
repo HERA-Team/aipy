@@ -15,9 +15,15 @@
 #define PREAMBLE_SIZE 5
 #define MAXVAR 256
 #define MAX_LINE_LEN 80
-#define GETI(bl) (((int) bl >> 8) - 1)
-#define GETJ(bl) (((int) bl & 255) - 1)
-#define MKBL(i,j) ((float) (((i+1)<<8) | (j+1)))
+
+//AAR: (use the other Miriad BL convention to accommodate more baselines)
+#define GETI(bl) ( (int) (bl) > 65536 ? (((int) bl-65536)/2048 - 1) : (((int) bl >> 8) - 1) )
+#define GETJ(bl) ( (int) (bl) > 65536 ? (((int) bl-65536)%2048 - 1 ) : (((int) bl & 255) - 1) )
+#define MKBL(i,j) ((float) (((i+1)*2048) + (j+1+65536)))
+//#define GETI(bl) (((int) bl >> 8) - 1)
+//#define GETJ(bl) (((int) bl & 255) - 1)
+//#define MKBL(i,j) ((float) (((i+1)<<8) | (j+1)))
+
 #define CHK_IO(i) \
     if (i != 0) { \
         PyErr_Format(PyExc_IOError, "IO failed"); \
