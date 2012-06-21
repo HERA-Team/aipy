@@ -6,13 +6,13 @@
 #define         MIRTEL          "carma"
 #define		MAXDIM		65536
 #define		MAXDIM2		8192
-#define         MAXIANT         256
-#define		MAXANT		64
+#define         MAXIANT         2048
+#define		MAXANT		2048
 #define		MAXANT2		28
 #if 0
 #define         MAXBASE         ((MAXANT * (MAXANT + 1)) / 2) */
 #else
-#define		MAXBASE		500
+#define		MAXBASE		524800
 #endif
 #define		MAXBASE2	500
 #define		MAXCHAN		4096
