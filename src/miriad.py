@@ -283,9 +283,14 @@ class UV(_miriad.UV):
 
 def bl2ij(bl):
     bl = int(bl)
-    return (bl>>8)-1, (bl&255) - 1
+    if bl > 65536:
+        bl -= 65536
+        return (bl/2048)-1, (bl%2048)-1
+    else:
+        return (bl/256)-1, (bl%256)-1
 
 def ij2bl(i, j):
     if i > j: i,j = j,i
-    return (i+1)<<8 | (j+1)
+    if j >= 255: return 2048*(i+1) + (j+1) + 65536
+    else: return 256*(i+1) + (j+1)
 
