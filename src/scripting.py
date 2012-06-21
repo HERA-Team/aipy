@@ -12,7 +12,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
     opt in basis (i.e. specify =True for each option to be added)."""
     if ant: optparser.add_option ('-a', '--ant', dest='ant', default='cross',
          help='Select ant_pol/baselines to include.  Examples: all (all baselines) auto (of active baselines, only i=j) cross (only i!=j) 0,1,2 (any baseline involving listed ants) 0_2,0_3 (only listed baselines) "(0,1)_(2,3)" (same as 0_2,0_3,1_2,2_3. Quotes help bash deal with parentheses) "(-0,1)_(2,-3)" (exclude 0_2,0_3,1_3 include 1_2).  Default is "cross". Select pol by adding appropriate x or y eg 5x_6y.')
-    if pol: optparser.add_option('-p', '--pol', dest='pol', 
+    if pol: optparser.add_option('-p', '--pol', dest='pol', default=-1,
         help='Choose polarization (xx, yy, xy, yx) to include.')
     if chan: optparser.add_option('-c', '--chan', dest='chan', default='all',
         help='Select channels (after any delay/delay-rate transforms) to include.  Examples: all (all channels), 0_10 (channels from 0 to 10, including 0 and 10) 0_10_2 (channels from 0 to 10, counting by 2), 0,10,20_30 (mix of individual channels and ranges).  Default is "all".')
@@ -43,7 +43,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
 ant_re = r'(\(((-?\d+[xy]?,?)+)\)|-?\d+[xy]?)'
 bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
 def parse_ants(ant_str, nants):
-    """Generate list of (baseline, include) tuples based on parsing of the
+    """Generate list of (baseline, include, pol) tuples based on parsing of the
     string associated with the 'ants' command-line option."""
     rv,cnt = [], 0
     while cnt < len(ant_str):
@@ -81,9 +81,9 @@ def parse_ants(ant_str, nants):
                     pol = None
                     i,j = str(i),str(j)
                     if not i.isdigit():
-                        ai = re.search(r'(/d+)([x,y])',i).groups()
+                        ai = re.search(r'(\d+)([x,y])',i).groups()
                     if not j.isdigit():
-                        aj = re.search(r'(/d+)([x,y])',j).groups()
+                        aj = re.search(r'(\d+)([x,y])',j).groups()
                     if i.isdigit() and not j.isdigit():
                         pol = ['x'+aj[1],'y'+aj[1]]
                         ai = [i,'']
@@ -107,21 +107,17 @@ def uv_selector(uv, ants=-1, pol_str=-1):
     string for polarization ('xx','yy','xy','yx')."""
     if ants != -1:
         if type(ants) == str: ants = parse_ants(ants, uv['nants'])
-        for bl,include,pol in ants:
+        for cnt,(bl,include,pol) in enumerate(ants):
+            if cnt > 0: uv.select('or',-1,-1)
+            if pol == -1: pol = pol_str # default to explicit pol parameter
             if bl == 'auto': uv.select('auto', 0, 0, include=include)
             else:
                 i,j = miriad.bl2ij(bl)
                 uv.select('antennae', i, j, include=include)
-            if pol!=-1 and pol_str==-1:
-                pol_str = pol
-            elif pol!=-1:
-                pol_str = ','.join([pol_str,pol])
-    if pol_str != -1:
-        try:
-            for pol in pol_str.split(','):
-                polopt = miriad.str2pol[pol]
-                uv.select('polarization', polopt, 0)
-        except(NameError,KeyError): raise ValueError('--pol=%s argument invalid or absent'%(pol_str))
+            if pol != -1:
+                for p in pol.split(','):
+                    polopt = miriad.str2pol[p]
+                    uv.select('polarization', polopt, 0)
 
 def parse_chans(chan_str, nchan, concat=True):
     """Return array of active channels based on number of channels and

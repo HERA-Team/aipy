@@ -13,6 +13,8 @@ class TestParseAnts(unittest.TestCase):
             'cross': [('auto',0)],
             '0_1': [(ij2bl(0,1),1)],
             '0_1,1_2': [(ij2bl(0,1),1), (ij2bl(1,2),1)],
+            '0x_1x': [(ij2bl(0,1),1,'xx')],
+            '(0x,0y)_1x': [(ij2bl(0,1),1,'xx'), (ij2bl(0,1),1,'yx')],
             '(0,1)_2': [(ij2bl(0,2),1), (ij2bl(1,2),1)],
             '0_(1,2)': [(ij2bl(0,1),1), (ij2bl(0,2),1)],
             '(0,1)_(2,3)': [(ij2bl(0,2),1), (ij2bl(0,3),1),
@@ -26,7 +28,7 @@ class TestParseAnts(unittest.TestCase):
         # inelegantly paste on the new pol parsing flag on the above tests
         # XXX really should add some new tests for the new pol parsing
         for k in cases:
-            cases[k] = [v+(-1,) for v in cases[k]]
+            cases[k] = [(v+(-1,))[:3] for v in cases[k]]
         for ant_str in cases:
             self.assertEqual(a.scripting.parse_ants(ant_str, nants), 
                 cases[ant_str])
