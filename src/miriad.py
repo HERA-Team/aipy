@@ -293,6 +293,6 @@ def bl2ij(bl):
 
 def ij2bl(i, j):
     if i > j: i,j = j,i
-#AAR    return (i+1)<<8 | (j+1)
-    return 2048*(i+1) + (j+1) + 65536
+    if j + 1 < 256: return 256*(i+1) + (j+1)
+    else: return 2048*(i+1) + (j+1) + 65536
 

@@ -3,6 +3,7 @@ Module for representing antenna array geometry and for generating
 phasing information.
 """
 import ephem, math, numpy as n, coord, const, _cephes
+from miriad import ij2bl, bl2ij
 
 class PointingError(Exception):
     """An error to throw if a source is below the horizon."""
@@ -269,20 +270,12 @@ class AntennaArray(ArrayLocation):
     def ij2bl(self, i, j):
         """Convert baseline i,j (0 indexed) to Miriad's (i+1) << 8 | (j+1) 
         indexing scheme."""
-#AAR:        return (int(i)+1) << 8 | (int(j)+1)
-        return 2048*(int(i)+1) + (int(j)+1) + 65536
+        return ij2bl(i,j)
     
     def bl2ij(self, bl):
         """Convert Miriad's (i+1) << 8 | (j+1) baseline indexing scheme to 
         i,j (0 indexed)"""
-        bl = int(bl)
-        if (bl > 65536):
-            bl -= 65536
-            mant = 2048
-        else:
-            mant = 256
-#AAR:        return ((bl >> 8) & 255) - 1, (bl & 255) - 1
-        return bl/mant - 1, bl%mant - 1 
+        return bl2ij(bl)
 
     def bl_indices(self, auto=True, cross=True):
         """Return bl indices for baselines in the array."""

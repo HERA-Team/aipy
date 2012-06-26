@@ -19,10 +19,7 @@
 //AAR: (use the other Miriad BL convention to accommodate more baselines)
 #define GETI(bl) ( (int) (bl) > 65536 ? (((int) bl-65536)/2048 - 1) : (((int) bl >> 8) - 1) )
 #define GETJ(bl) ( (int) (bl) > 65536 ? (((int) bl-65536)%2048 - 1 ) : (((int) bl & 255) - 1) )
-#define MKBL(i,j) ((float) (((i+1)*2048) + (j+1+65536)))
-//#define GETI(bl) (((int) bl >> 8) - 1)
-//#define GETJ(bl) (((int) bl & 255) - 1)
-//#define MKBL(i,j) ((float) (((i+1)<<8) | (j+1)))
+#define MKBL(i,j) ( i+1 < 256 && j+1 < 256 ? ((float) (((i+1)<<8) | (j+1))) : ((float) (((i+1)*2048) + (j+1+65536))))
 
 #define CHK_IO(i) \
     if (i != 0) { \
