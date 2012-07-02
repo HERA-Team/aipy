@@ -213,14 +213,16 @@ for cnt, bl in enumerate(bls):
     if opts.dt: d = d[:-2]/2 + d[2:]/2 - d[1:-1]
     if opts.fringe:
         d = d.filled(0)
-        flags = n.where(d[:,0] != 0, 1., 0.)
-        gain = n.sqrt(n.average(flags**2))
-        ker = n.fft.ifft(flags)
-        d = n.fft.ifft(d, axis=0)
+        w = a.dsp.gen_window(d.shape[0], window=opts.window); w.shape += (1,)
+        wgts = n.where(d != 0, 1., 0.) * w
+        gain = n.sqrt(n.average(wgts**2, axis=0))
+        ker = n.fft.ifft(wgts, axis=0) # w already put in 2 lines above
+        d = n.fft.ifft(d*w, axis=0)
         if not opts.clean is None:
             for chan in range(d.shape[1]):
-                d[:,chan],info = a.deconv.clean(d[:,chan],ker,tol=opts.clean)
-                d[:,chan] += info['res'] / gain
+                if gain[chan] == 0: continue
+                d[:,chan],info = a.deconv.clean(d[:,chan],ker[:,chan],tol=opts.clean)
+                d[:,chan] += info['res'] / gain[chan]
         d = n.fft.fftshift(d, axes=0)
         d = n.ma.array(d)
     plt_data[cnt+1] = d
