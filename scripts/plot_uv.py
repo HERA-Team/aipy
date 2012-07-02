@@ -237,35 +237,44 @@ for cnt, bl in enumerate(bls):
         if opts.fringe:
             if opts.time_axis == 'index':
                 drates = n.fft.fftfreq(len(plot_t['cnt']), 1./len(plot_t['cnt']))
+                step = drates[1] - drates[0]
                 ylabel = 'Delay-Rate (bins)'
             else:
                 drates = n.fft.fftfreq(len(plot_t['cnt']), inttime) * 1e3 # mHz
+                step = drates[1] - drates[0]
                 ylabel = 'Delay-Rate (milliHz)'
             drates = n.fft.fftshift(drates)
-            t1,t2 = drates[0],drates[-1]
+            t1,t2 = drates[0]-0.5*step,drates[-1]+0.5*step
         else:
             if opts.time_axis == 'index':
-                t1,t2 = plot_t['cnt'][0], plot_t['cnt'][-1]
+                step = 1.
+                t1,t2 = plot_t['cnt'][0]-0.5*step, plot_t['cnt'][-1]+0.5*step
                 ylabel = 'Time (integrations)'
             elif opts.time_axis=='lst':
-                t1,t2 = plot_t['lst'][0]*12/n.pi, plot_t['lst'][-1]*12/n.pi
+                step = plot_t['lst'][1] - plot_t['lst'][0]
+                t1,t2 = (plot_t['lst'][0]-0.5*step)*12/n.pi, (plot_t['lst'][-1]+0.5*step)*12/n.pi
                 ylabel = 'Local Sideral time (hrs)'
             else:
-                t1,t2 = plot_t['jd'][0], plot_t['jd'][-1]
+                step = plot_t['jd'][1] - plot_t['jd'][0]
+                t1,t2 = plot_t['jd'][0]-0.5*step, plot_t['jd'][-1]+0.5*step
                 ylabel = 'Time (Julian Date)'
         if opts.delay:
             if opts.chan_axis == 'index':
-                c1,c2 = len(chans)/2 - len(chans), len(chans)/2
+                step = 1
+                c1,c2 = len(chans)/2 - len(chans)-0.5*step, len(chans)/2-0.5*step
                 xlabel = 'Delay (bins)'
             else:
-                c1,c2 = delays[0], delays[-1]
+                step = delays[1] - delays[0]
+                c1,c2 = delays[0]-0.5*step, delays[-1]+0.5*step
                 xlabel = 'Delay (ns)'
         else:
             if opts.chan_axis == 'index':
-                c1,c2 = 0, len(chans) - 1
+                step = 1
+                c1,c2 = 0-0.5*step, len(chans)-0.5*step
                 xlabel = 'Frequency (chan)'
             else:
-                c1,c2 = freqs[0], freqs[-1]
+                step = freqs[1] - freqs[0]
+                c1,c2 = freqs[0]-0.5*step, freqs[-1]+0.5*step
                 xlabel = 'Frequency (GHz)'
         if not opts.max is None: dmax = opts.max
         elif dmax is None: dmax = d.max()
