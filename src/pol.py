@@ -12,6 +12,14 @@ import numpy as n
 #  \___/   \_/
 #
 
+def ijp2blp(i,j,pol):
+    return miriad.ij2bl(i,j) * 16 + (pol + 9)
+
+def blp2ijp(blp):
+    bl,pol = int(blp) / 16, (blp % 16) - 9
+    i,j = miriad.bl2ij(bl)
+    return i,j,pol
+
 class UV(miriad.UV):
     def read_pol(self):
         """ Reliably read polarization metadata."""
