@@ -83,7 +83,7 @@ for filename in args:
     else:
         guess, cnt, xtalk = {}, {}, {}
         for (uvw,t,(i,j)),d,f in uv.all(raw=True):
-            bl = str(a.miriad.ij2bl(i,j))
+            bl = str(a.pol.ijp2blp(i,j,uv['pol']))
             if not guess.has_key(bl): guess[bl], cnt[bl] = 0, 0
             guess[bl] += n.where(f, 0, d)
             cnt[bl] += n.logical_not(f)
@@ -96,7 +96,7 @@ for filename in args:
     else:
         def mfunc(uv, p, d, f):
             uvw,t,(i,j) = p
-            bl = str(a.miriad.ij2bl(i,j))
+            bl = str(a.pol.ijp2blp(i,j,uv['pol']))
             try: return p, d - xtalk[bl], f
             except(KeyError): return p, d, f
         uvi = a.miriad.UV(filename)
