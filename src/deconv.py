@@ -72,7 +72,7 @@ def recenter(a, c):
     a2 = n.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
     return a2
 
-def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=200, 
+def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200, 
         lower=lo_clip_lev, upper=n.Inf, verbose=False):
     """This simple least-square fitting procedure for deconvolving an image 
     saves computing by assuming a diagonal pixel-pixel gradient of the fit.
@@ -91,16 +91,20 @@ def lsq(im, ker, mdl=None, gain=.1, tol=1e-3, maxiter=200,
         #mdl = n.zeros_like(im)
         mdl = n.zeros(im.shape, dtype=im.dtype)
     x = mdl.copy()
+    if area is None:
+        area = n.ones(im.shape, dtype=n.int)
+    else:
+        area = area.astype(n.int)
     # Estimate gain of the kernel
-    q = n.sqrt((ker**2).sum())
+    q = n.sqrt((n.abs(ker)**2).sum())
     ker_i = n.fft.fft2(ker)
     info = {'success':True, 'term':'maxiter', 'tol':tol}
     # Function to calculate chi-square and gradient
     def f(x):
         x_conv_ker = n.fft.ifft2(n.fft.fft2(x) * ker_i).real
-        diff = im - x_conv_ker
+        diff = (im - x_conv_ker) * area
         g_chi2 = -2*q*(diff)
-        chi2 = diff**2
+        chi2 = n.abs(diff)**2
         return chi2, g_chi2
     score = 0
     # Start the fit loop
