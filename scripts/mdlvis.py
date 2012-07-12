@@ -121,7 +121,8 @@ def mdl(uv, p, d, f):
         #ind = n.concatenate(ind)
         aa.sim_cache(eqs, flx, mfreqs=mfq, 
             ionrefs=(dras,ddecs), srcshapes=(a1s,a2s,ths))
-    sd = aa.sim(i, j, pol=pol)
+    aa.set_active_pol(pol)
+    sd = aa.sim(i, j)
     if opts.mode.startswith('sim'):
         d = sd
         if not opts.flag: f = no_flags
@@ -136,8 +137,7 @@ def mdl(uv, p, d, f):
         noise_amp = n.random.random(d.shape) * opts.noiselev
         noise_phs = n.random.random(d.shape) * 2*n.pi * 1j
         noise = noise_amp * n.exp(noise_phs)
-        if hasattr(aa[0],'pol'): d += noise * aa.passband(i,j,pol)
-        else: d += noise * aa.passband(i,j)
+        d += noise * aa.passband(i,j)
     return p, n.where(f, 0, d), f
 
 if len(args) > 0:

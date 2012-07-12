@@ -271,6 +271,15 @@ class Antenna(phs.Antenna):
 class AntennaArray(phs.AntennaArray):
     """Representation of location and time of observation, and response of
     array of antennas as function of pointing and frequency."""
+    def __init__(self, *args, **kwargs):
+        phs.AntennaArray.__init__(self, *args, **kwargs)
+        self.active_pol = None
+    def set_active_pol(self, pol):
+        assert(pol in ('xx','yy','xy','yx')) # the only pols supported natively, for now
+        self.active_pol = pol
+    def get_active_pol(self):
+        if self.active_pol is None: raise RuntimeError('No active polarization set (use AntennaArray.set_active_pol)')
+        return self.active_pol
     def set_jultime(self, t=None):
         """Set current time as a Julian date."""
         phs.AntennaArray.set_jultime(self, t=t)
@@ -279,11 +288,11 @@ class AntennaArray(phs.AntennaArray):
     def passband(self, i, j):
         """Return the passband response of baseline i,j."""
         return self[j].passband() * self[i].passband(conj=True)
-    def bm_response(self, i, j, pol='xx'):
+    def bm_response(self, i, j):
         """Return the beam response towards the cached source positions
         for baseline i,j with the specified polarization."""
-        assert(pol in ('xx','yy','xy','yx'))
-        p1, p2 = pol
+        pol = self.get_active_pol()
+        p1, p2 = pol[0], pol[-1]
         # Check that we have cached results needed.  If not, cache them.
         for c,p in zip([i,j], [p1,p2]):
             if not self._cache.has_key(c): self._cache[c] = {}
@@ -338,11 +347,10 @@ class AntennaArray(phs.AntennaArray):
                 's_shp': (a1,a2,th),
                 'i_ref': (dra,ddec),
             }
-    def sim(self, i, j, pol='xx'):
+    def sim(self, i, j):
         """Simulate visibilites for the specified (i,j) baseline and 
-        polarization.  sim_cache() must be called at each time step before 
-        this will return valid results."""
-        assert(pol in ('xx','yy','xy','yx'))
+        polarization (set with AntennaArray.set_active_pol).  sim_cache() 
+        must be called at each time step before this returns valid results."""
         if self._cache is None:
             raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')
         elif self._cache == {}:
@@ -351,7 +359,7 @@ class AntennaArray(phs.AntennaArray):
         u,v,w = self.gen_uvw(i, j, src=s_eqs)
         I_sf = self._cache['jys']
         Gij_sf = self.passband(i,j)
-        Bij_sf = self.bm_response(i,j,pol=pol)
+        Bij_sf = self.bm_response(i,j)
         if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
         # Get the phase of each src vs. freq, also does resolution effects
         E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],

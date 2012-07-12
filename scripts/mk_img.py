@@ -56,6 +56,7 @@ chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
 a.scripting.uv_selector(uv, opts.ant, opts.pol)
 aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 aa.select_chans(chans)
+aa.set_active_pol(opts.pol)
 afreqs = aa[0].beam.afreqs
 cfreq = n.average(afreqs)
 aa.set_jultime(t)
@@ -205,20 +206,16 @@ for srccnt, s in enumerate(cat.values()):
               s_eq = src.get_crds('eq', ncrd=3)
               aa.sim_cache(s_eq)
           if s.alt < opts.altmin * a.img.deg2rad: continue
+          aa.set_active_pol(pol)
           d,f = d.take(chans), f.take(chans)
-          if hasattr(aa[0],'pol'):
-              if not opts.skip_amp: d /= aa.passband(i,j,pol=pol)
-              # Throws PointingError if not up:
-              if not opts.skip_phs: d = aa.phs2src(d, s, i, j,pol=pol)
-          else:
-              if not opts.skip_amp: d /= aa.passband(i,j)
-              # Throws PointingError if not up:
-              if not opts.skip_phs: d = aa.phs2src(d, s, i, j)
+          if not opts.skip_amp: d /= aa.passband(i,j)
+          # Throws PointingError if not up:
+          if not opts.skip_phs: d = aa.phs2src(d, s, i, j)
           u,v,w = aa.gen_uvw(i,j,src=s)
           longenough = n.where(n.sqrt(u**2+v**2) < opts.minuv, 0, 1).squeeze()
           if not opts.skip_bm:
               # Calculate beam strength for weighting purposes
-              wgt = aa.bm_response(i,j,pol=opts.pol).squeeze()
+              wgt = aa.bm_response(i,j).squeeze()
               # Optimal SNR: down-weight beam-attenuated data 
               # by another factor of the beam response.
               d *= wgt; wgt *= wgt

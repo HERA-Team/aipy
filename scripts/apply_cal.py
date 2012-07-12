@@ -19,9 +19,10 @@ del(uv)
 def mfunc(uv,p,d):
     uvw,t,(i,j) = p
     pol = a.miriad.pol2str[uv['pol']]
-    G_ij = 1./aa.passband(i,j,pol)
+    aa.set_active_pol(pol)
+    G_ij = 1./aa.passband(i,j)
     if i != j:
-        E_ij = np.exp(-1j*2*np.pi*aa.get_phs_offset(i,j,pol))
+        E_ij = np.exp(-1j*2*np.pi*aa.get_phs_offset(i,j))
     else:
         E_ij = np.ones_like(d)
     d_fix = d * G_ij * E_ij

@@ -150,7 +150,8 @@ def fit_func(prms, filelist, decimate, decphs):
         for bl in dbuf[t]:
             i,j = a.miriad.bl2ij(bl)
             d,f,nsamp,pol = dbuf[t][bl]
-            sim_d = aa.sim(i, j, pol=pol)
+            aa.set_active_pol(pol)
+            sim_d = aa.sim(i, j)
             difsq = n.abs(d - sim_d)**2
             difsq = n.where(f, 0, difsq)
             score += difsq.sum()
