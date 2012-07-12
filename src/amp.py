@@ -278,7 +278,7 @@ class AntennaArray(phs.AntennaArray):
         self._cache = None
     def passband(self, i, j):
         """Return the passband response of baseline i,j."""
-        return self[i].passband() * self[j].passband(conj=True)
+        return self[j].passband() * self[i].passband(conj=True)
     def bm_response(self, i, j, pol='xx'):
         """Return the beam response towards the cached source positions
         for baseline i,j with the specified polarization."""
@@ -291,7 +291,7 @@ class AntennaArray(phs.AntennaArray):
                 x,y,z = self._cache['s_top']
                 resp = self[c].bm_response((x,y,z), pol=p).transpose()
                 self._cache[c][p] = resp
-        return self._cache[i][p1] * n.conjugate(self._cache[j][p2])
+        return self._cache[j][p1] * n.conjugate(self._cache[i][p2])
     def sim_cache(self, s_eqs, jys=n.array([1.]), mfreqs=0.150,
             ionrefs=(0.,0.), srcshapes=(0,0,0)):
         """Cache intermediate computations given catalog information to speed
