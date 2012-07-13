@@ -121,7 +121,9 @@ for uvfile in args:
         def rfi_mfunc(uv, preamble, data, flags):
             uvw, t, (i,j) = preamble
             bl = a.miriad.ij2bl(i,j)
-            if opts.combine: m = mask.values()[0].values()[0][t]
+            if opts.combine:
+                try: m = mask.values()[0].values()[0][t]
+                except(KeyError): m = n.ones_like(flags) # default to flagging
             else: m = mask[uv['pol']][bl][t]
             return preamble, n.where(m, 0, data), m
 
