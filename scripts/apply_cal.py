@@ -4,29 +4,25 @@ Apply calibration parameters to a data set.
 """
 
 import aipy as a
-import numpy as np
-import optparse,sys,os
+import optparse, sys, os
 
 o = optparse.OptionParser()
-a.scripting.add_standard_options(o,cal=True)
+a.scripting.add_standard_options(o, cal=True)
+o.add_option('--no_gain', action='store_true', help='Do not change the gain (i.e. no flux cal).')
+o.add_option('--no_phs', action='store_true', help='Do not change the phase (i.e. no phase cal).')
 opts,args = o.parse_args(sys.argv[1:])
 
 uv = a.miriad.UV(args[0])
-freqs = np.linspace(uv['sfreq'],uv['sfreq']+uv['nchan']*uv['sdf'],uv['nchan'])
-aa = a.cal.get_aa(opts.cal,freqs)
+aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 del(uv)
 
-def mfunc(uv,p,d):
+def mfunc(uv, p, d, f):
     uvw,t,(i,j) = p
     pol = a.miriad.pol2str[uv['pol']]
     aa.set_active_pol(pol)
-    G_ij = 1./aa.passband(i,j)
-    if i != j:
-        E_ij = np.exp(-1j*2*np.pi*aa.get_phs_offset(i,j))
-    else:
-        E_ij = np.ones_like(d)
-    d_fix = d * G_ij * E_ij
-    return p,d_fix
+    if not opts.no_gain: d /= aa.passband(i, j)
+    if not opts.no_phs: d = aa.phs2src(d, 'z', i, j)
+    return p, d, f
 
 for infile in args:
     outfile = infile+'C'
@@ -36,6 +32,6 @@ for infile in args:
         continue 
 
     uvi = a.miriad.UV(infile)
-    uvo = a.miriad.UV(outfile,status='new')
+    uvo = a.miriad.UV(outfile, status='new')
     uvo.init_from_uv(uvi)
-    uvo.pipe(uvi,mfunc,append2hist='APPLY_CAL: Applied calibration information from %s' % opts.cal)
+    uvo.pipe(uvi, mfunc, raw=True, append2hist='APPLY_CAL: ' + ' '.join(sys.argv) + '\n')
