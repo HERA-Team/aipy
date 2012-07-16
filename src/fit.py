@@ -301,42 +301,52 @@ class BeamAlm(amp.BeamAlm):
 class Antenna(amp.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array.  Adds get_params() and set_params() to amp.Antenna."""
-    def get_params(self, prm_list=['*']):
+    def get_params(self, pol, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
         x,y,z = self.pos
-        aprms = {'x':x, 'y':y, 'z':z, 'dly':self._phsoff[-2], 
-            'off':self._phsoff[-1], 'phsoff':self._phsoff}
-        aprms['bp_r'] = list(self.bp_r)
-        aprms['bp_i'] = list(self.bp_i)
-        aprms['amp'] = self.amp
-        aprms.update(self.beam.get_params(prm_list))
+        if self.dp:
+            pi = {'x':0,'y':1}[pol]
+            aprms = {'x':x, 'y':y, 'z':z, 'dly':self._phsoff[pi][-2], 
+                'off':self._phsoff[pi][-1], 'phsoff':self._phsoff[pi]}
+            aprms['bp_r'] = list(self.bp_r[pi])
+            aprms['bp_i'] = list(self.bp_i[pi])
+            aprms['amp'] = self.amp[pi]
+
+        else:
+            aprms = {'x':x, 'y':y, 'z':z, 'dly':self._phsoff[-2], 
+                'off':self._phsoff[-1], 'phsoff':self._phsoff}
+            aprms['bp_r'] = list(self.bp_r)
+            aprms['bp_i'] = list(self.bp_i)
+            aprms['amp'] = self.amp
+        aprms.update(self.beam.get_params(prm_list)) 
         prms = {}
         for p in prm_list:
             if p.startswith('*'): return aprms
             try: prms[p] = aprms[p]
             except(KeyError): pass
         return prms
-    def set_params(self, prms):
+    def set_params(self, pol, prms):
         """Set all parameters from a dictionary."""
         changed = False
         self.beam.set_params(prms)
+        pi = {'x':0,'y':1}[pol]
         try: self.pos[0], changed = prms['x'], True
         except(KeyError): pass
         try: self.pos[1], changed = prms['y'], True
         except(KeyError): pass
         try: self.pos[2], changed = prms['z'], True
         except(KeyError): pass
-        try: self._phsoff[-2], changed = prms['dly'], True
+        try: self._phsoff[pi][-2], changed = prms['dly'], True
         except(KeyError): pass
-        try: self._phsoff[-1], changed = prms['off'], True
+        try: self._phsoff[pi][-1], changed = prms['off'], True
         except(KeyError): pass
-        try: self._phsoff, changed = prms['phsoff'], True
+        try: self._phsoff[pi], changed = prms['phsoff'], True
         except(KeyError): pass
-        try: self.bp_r, changed = prms['bp_r'], True
+        try: self.bp_r[pi], changed = prms['bp_r'], True
         except(KeyError): pass
-        try: self.bp_i, changed = prms['bp_i'], True
+        try: self.bp_i[pi], changed = prms['bp_i'], True
         except(KeyError): pass
-        try: self.amp, changed = prms['amp'], True
+        try: self.amp[pi], changed = prms['amp'], True
         except(KeyError): pass
         if changed: self.update()
         return changed
@@ -355,20 +365,21 @@ class AntennaArray(amp.AntennaArray):
     def get_params(self, ant_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
         prms = {}
+        pol = self.get_active_pol()
         for k in ant_prms:
             if k.startswith('*'): ants = map(str, range(len(self)))
             else: ants = [k]
             prm_list = ant_prms[k]
             if type(prm_list) is str: prm_list = [prm_list]
             for a in ants:
-                try: prms[a] = self.ants[int(a)].get_params(prm_list)
+                try: prms[a] = self.ants[int(a)].get_params(pol[0],prm_list)
                 except(ValueError): pass
         return prms
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
         changed = False
         for i, a in enumerate(self):
-            try: changed |= a.set_params(prms[str(i)])
+            try: changed |= a.set_params(pol[0],prms[str(i)])
             except(KeyError): pass
         if changed: self.update()
         return changed
