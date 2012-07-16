@@ -216,7 +216,7 @@ class BeamAlm(phs.Beam):
 class Antenna(phs.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array."""
-    def __init__(self, x, y, z, beam, phsoff=[0.,0.], bp_r=n.array([1]),
+    def __init__(self, x, y, z, beam, phsoff=[0.,0.], dp=False, bp_r=n.array([1]),
             bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
         """x,y z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object (implements response() function)
@@ -226,16 +226,21 @@ class Antenna(phs.Antenna):
         bp_i = polynomial (in freq) modeling imaginary component of passband
         amp = overall multiplicative scaling of gain
         pointing = antenna pointing (az,alt).  Default is zenith."""
-        phs.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff)
+        phs.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff,dp=dp)
         self.set_pointing(*pointing)
         self.bp_r = bp_r
         self.bp_i = bp_i
         self.amp = amp
         self._update_gain()
     def _update_gain(self):
-        bp = n.polyval(self.bp_r, self.beam.afreqs) + \
-             1j*n.polyval(self.bp_i, self.beam.afreqs)
-        self._gain = self.amp * bp
+        if self.dp: 
+            bpx = n.polyval(self.bp_r[0],self.beam.afreqs)+1.j*n.polyval(self.bp_i[0],self.beam.afreqs)
+            bpy = n.polyval(self.bp_r[1],self.beam.afreqs)+1.j*n.polyval(self.bp_i[1],self.beam.afreqs)
+            self._gain = (bpx,bpy) 
+        else:
+            bp = n.polyval(self.bp_r, self.beam.afreqs) + \
+                 1j*n.polyval(self.bp_i, self.beam.afreqs)
+            self._gain = self.amp * bp
     def update(self):
         phs.Antenna.update(self)
         self._update_gain()
@@ -273,13 +278,6 @@ class AntennaArray(phs.AntennaArray):
     array of antennas as function of pointing and frequency."""
     def __init__(self, *args, **kwargs):
         phs.AntennaArray.__init__(self, *args, **kwargs)
-        self.active_pol = None
-    def set_active_pol(self, pol):
-        assert(pol in ('xx','yy','xy','yx')) # the only pols supported natively, for now
-        self.active_pol = pol
-    def get_active_pol(self):
-        if self.active_pol is None: raise RuntimeError('No active polarization set (use AntennaArray.set_active_pol)')
-        return self.active_pol
     def set_jultime(self, t=None):
         """Set current time as a Julian date."""
         phs.AntennaArray.set_jultime(self, t=t)
@@ -287,7 +285,12 @@ class AntennaArray(phs.AntennaArray):
         self._cache = None
     def passband(self, i, j):
         """Return the passband response of baseline i,j."""
-        return self[j].passband() * self[i].passband(conj=True)
+        if self[i].dp:
+            pi,pj = pindices(self.get_active_pol)
+            pbi = self[i].passband(conj=True)
+            pbj = self[j].passband()
+            return pbi[pi]*pbj[pj]
+        else: return self[j].passband() * self[i].passband(conj=True)
     def bm_response(self, i, j):
         """Return the beam response towards the cached source positions
         for baseline i,j with the specified polarization."""
@@ -301,6 +304,7 @@ class AntennaArray(phs.AntennaArray):
                 resp = self[c].bm_response((x,y,z), pol=p).transpose()
                 self._cache[c][p] = resp
         return self._cache[j][p1] * n.conjugate(self._cache[i][p2])
+    
     def sim_cache(self, s_eqs, jys=n.array([1.]), mfreqs=0.150,
             ionrefs=(0.,0.), srcshapes=(0,0,0)):
         """Cache intermediate computations given catalog information to speed
