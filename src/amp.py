@@ -228,15 +228,20 @@ class Antenna(phs.Antenna):
         pointing = antenna pointing (az,alt).  Default is zenith."""
         phs.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff,dp=dp)
         self.set_pointing(*pointing)
-        self.bp_r = bp_r
-        self.bp_i = bp_i
-        self.amp = amp
+        if self.dp:
+            if len(n.array(bp_r).shape) != 2: self.bp_r = [bp_r,bp_r]
+            if len(n.array(bp_i).shape) != 2: self.bp_i = [bp_i,bp_i]
+            if len(n.array(amp).shape) != 2: self.amp = [amp,amp]
+        else:
+            self.bp_r = bp_r
+            self.bp_i = bp_i
+            self.amp = amp
         self._update_gain()
     def _update_gain(self):
         if self.dp: 
             bpx = n.polyval(self.bp_r[0],self.beam.afreqs)+1.j*n.polyval(self.bp_i[0],self.beam.afreqs)
             bpy = n.polyval(self.bp_r[1],self.beam.afreqs)+1.j*n.polyval(self.bp_i[1],self.beam.afreqs)
-            self._gain = (bpx,bpy) 
+            self._gain = [bpx,bpy] 
         else:
             bp = n.polyval(self.bp_r, self.beam.afreqs) + \
                  1j*n.polyval(self.bp_i, self.beam.afreqs)
@@ -286,7 +291,7 @@ class AntennaArray(phs.AntennaArray):
     def passband(self, i, j):
         """Return the passband response of baseline i,j."""
         if self[i].dp:
-            pi,pj = pindices(self.get_active_pol)
+            pi,pj = self.pindices(self.get_active_pol())
             pbi = self[i].passband(conj=True)
             pbj = self[j].passband()
             return pbi[pi]*pbj[pj]

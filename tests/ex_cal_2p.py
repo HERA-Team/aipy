@@ -9,17 +9,12 @@ def get_aa(freqs):
     # Make a list of antennas with requisite nanosecond locations, 
     # primary beams, and any other calibration parameters you wish to provide.
     ants = [
-        a.pol.Antenna(  0,   0,  0, beam, num=0, pol='x'),
-        a.pol.Antenna(  0, 100,  0, beam, num=0, pol='y'),
-        a.pol.Antenna(100,   0,  0, beam, num=1, pol='x'),
-        a.pol.Antenna(100, 100,  0, beam, num=1, pol='y'),
-        a.pol.Antenna(  0,   0,  0, beam, num=2, pol='x'),
-        a.pol.Antenna(  0, 100,  0, beam, num=2, pol='y'),
-        a.pol.Antenna(100,   0,  0, beam, num=3, pol='x'),
-        a.pol.Antenna(100, 100,  0, beam, num=3, pol='y'),
+        a.fit.Antenna(  0,   0,  0, beam, dp=True),
+        a.fit.Antenna(100,   0,  0, beam, dp=True),
+        a.fit.Antenna(100, 100,  0, beam, dp=True),
     ]
     # Create an AntennaArray at the specified location with the listed antennas
-    aa = a.pol.AntennaArray((lat,lon), ants)
+    aa = a.fit.AntennaArray((lat,lon), ants)
     return aa
 
 def get_catalog(srcs=None, cutoff=None, catalogs=[]):

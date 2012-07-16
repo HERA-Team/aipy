@@ -191,7 +191,9 @@ class Antenna:
         self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
         self.dp = dp
         self.beam = beam
-        self._phsoff = phsoff
+        if self.dp and len(n.array(phsoff).shape) != 2:
+            self._phsoff = [phsoff,phsoff]
+        else: self._phsoff = phsoff
         self._update_phsoff()
     def select_chans(self, active_chans=None):
         """Select only the specified channels for use in future calculations."""
@@ -201,7 +203,7 @@ class Antenna:
         if self.dp:
             px = n.polyval(self._phsoff[0], self.beam.afreqs)
             py = n.polyval(self._phsoff[1], self.beam.afreqs)
-            self.phsoff = (px,py)
+            self.phsoff = [px,py]
         else: self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
     def update(self):
         self._update_phsoff()
@@ -273,8 +275,8 @@ class AntennaArray(ArrayLocation):
     def get_active_pol(self):
         if self.active_pol is None: raise RuntimeError('No active polarization set (use AntennaArray.set_active_pol)')
         return self.active_pol
-    def pindices(pol):
-        assert(pol in ['xx','xy','yx','yy'])
+    def pindices(self,pol):
+        assert(pol in ('xx','xy','yx','yy'))
         d = {'x':0,'y':1}
         return d[pol[0]],d[pol[-1]]
     def update(self):
@@ -329,7 +331,7 @@ class AntennaArray(ArrayLocation):
     def get_phs_offset(self, i, j):
         """Return the frequency-dependent phase offset of baseline i,j."""
         if self[i].dp:
-            pi,pj = pindices(self.get_active_pol())
+            pi,pj = self.pindices(self.get_active_pol())
             return self[j].phsoff[pj] - self[i].phsoff[pi]
         else: return self[j].phsoff - self[i].phsoff
     def gen_uvw(self, i, j, src='z', w_only=False):
