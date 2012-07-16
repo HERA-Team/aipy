@@ -262,6 +262,7 @@ class AntennaArray(ArrayLocation):
         ArrayLocation.__init__(self, location=location)
         self.ants = ants
         assert(ant.dp==self.ants[0].dp for ant in ants)
+        self.active_pol = None
     def __iter__(self): return self.ants.__iter__()
     def __getitem__(self, *args): return self.ants.__getitem__(*args)
     def __setitem__(self, *args): return self.ants.__setitem__(*args)
@@ -270,8 +271,7 @@ class AntennaArray(ArrayLocation):
         assert(pol in ('xx','xy','yx','yy'))
         self.active_pol = pol
     def get_active_pol(self):
-        if self.active_pol: return self.active_pol
-        else: return 'xx'
+        if self.active_pol is None: raise RuntimeError('No active polarization set (use AntennaArray.set_active_pol)')
     def pindices(pol):
         assert(pol in ['xx','xy','yx','yy'])
         d = {'x':0,'y':1}
