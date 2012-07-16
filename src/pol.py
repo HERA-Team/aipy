@@ -41,7 +41,7 @@ class UV(miriad.UV):
 p2i = {'x':0,'y':1} #indices for each polarization
 
 #Pauli Spin-Matrices
-Sigma = {'t': np.matrix([[1,0],[0,1]]).
+Sigma = {'t': np.matrix([[1,0],[0,1]]),
          'x': np.matrix([[0,1],[1,0]]),
          'y': np.matrix([[0,-1.j],[1.j,0]]),
          'z': np.matrix([[1,0],[0,-1]])}
@@ -87,10 +87,28 @@ class Antenna(a.fit.Antenna):
         return [np.dot(G_i[i],D_i) for i in range(len(G_i))]
 
 
-
 #     _          n                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |
 #  / ___ \| | | | ||  __/ | | | | | | (_| |/ ___ \| |  | | | (_| | |_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
 #                                                                 |___/ 
+
+class AntennaArray(a.fit.AntennaArray):
+    def gen_phs_nocal(self,src,i,j,pol,mfreq=0.150,ionref=None,srcshape=None,resolve_src=False):
+        """Do the same thing as aa.gen_phs(), but don't apply delay/offset terms. This gets done in the Jones matrices."""
+        if ionref is None:
+            try: ionref = src.ionref
+            except(AttributeError): pass
+        if not ionref is None or resolve_src: u,v,w = self.gen_uvw(i,j,src=src)
+        else: w = self.gen_uvw(i,j,src=src, w_only=True)
+        if not ionref is None: w += self.refract(u, v, mfreq=mfreq, ionref=ionref)
+        if resolve_src:
+            if srcshape is None:
+                try: res = self.resolve_src(u, v, srcshape=src.srcshape)
+                except(AttributeError): res = 1
+            else: res = self.resolve_src(u, v, srcshape=srcshape)
+        else: res = 1
+        phs = res * n.exp(-1j*2*n.pi*(w))
+        return phs.squeeze()
+
