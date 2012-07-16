@@ -201,7 +201,7 @@ class Antenna:
         if self.dp:
             px = n.polyval(self._phsoff[0], self.beam.afreqs)
             py = n.polyval(self._phsoff[1], self.beam.afreqs)
-            self.phsoff = [np.array([[px[i],0.],[0.,py[i]]]) for i in range(len(px))]
+            self.phsoff = (px,py)
         else: self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
     def update(self):
         self._update_phsoff()
@@ -261,12 +261,13 @@ class AntennaArray(ArrayLocation):
         ants = list of Antenna objects."""
         ArrayLocation.__init__(self, location=location)
         self.ants = ants
+        assert(ant.dp==self.ants[0].dp for ant in ants)
     def __iter__(self): return self.ants.__iter__()
     def __getitem__(self, *args): return self.ants.__getitem__(*args)
     def __setitem__(self, *args): return self.ants.__setitem__(*args)
     def __len__(self): return self.ants.__len__()
     def set_active_pol(self,pol):
-        assert(pol in ['xx','xy','yx','yy','I','Q','U','V'])
+        assert(pol in ('xx','xy','yx','yy'))
         self.active_pol = pol
     def get_active_pol(self):
         if self.active_pol: return self.active_pol
@@ -326,10 +327,9 @@ class AntennaArray(ArrayLocation):
         return n.dot(m, bl).transpose()
     def get_phs_offset(self, i, j):
         """Return the frequency-dependent phase offset of baseline i,j."""
-        assert(self[i].dp == self[j].dp)
         if self[i].dp:
             pi,pj = pindices(self.get_active_pol())
-            return (self[j].phsoff - self[i].phsoff)[:,pi,pj]
+            return self[j].phsoff[pj] - self[i].phsoff[pi]
         else: return self[j].phsoff - self[i].phsoff
     def gen_uvw(self, i, j, src='z', w_only=False):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
