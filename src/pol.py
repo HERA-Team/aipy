@@ -41,10 +41,10 @@ class UV(miriad.UV):
 p2i = {'x':0,'y':1} #indices for each polarization
 
 #Pauli Spin-Matrices
-Sigma = {'t': np.matrix([[1,0],[0,1]]),
-         'x': np.matrix([[0,1],[1,0]]),
-         'y': np.matrix([[0,-1.j],[1.j,0]]),
-         'z': np.matrix([[1,0],[0,-1]])}
+Sigma = {'t': n.matrix([[1,0],[0,1]]),
+         'x': n.matrix([[0,1],[1,0]]),
+         'y': n.matrix([[0,-1.j],[1.j,0]]),
+         'z': n.matrix([[1,0],[0,-1]])}
 
 
 def ParAng(ha,dec,lat):
@@ -68,23 +68,23 @@ def ParAng(ha,dec,lat):
 #  / ___ \| | | | ||  __/ | | | | | | (_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
 
-class Antenna(a.fit.Antenna):
-    def __init__(self,x,y,z,beam,d=0., **kwargs)
+class Antenna(fit.Antenna):
+    def __init__(self,x,y,z,beam,d=0., **kwargs):
         pol.Antenna.__init__(self,x,y,z,beam,**kwargs)
         self.d = d #I may want to update this to be a polynomial or something later (dfm)
     def G_i(self):
         """2x2 gain matrix"""
         amp_i = self.passband()
         phs_i = self.phsoff
-        g_ix = amp_i[0]*np.exp(-2.j*np.pi*phs_i[0])
-        g_iy = amp_i[1]*np.exp(-2.j*np.pi*phs_i[1])
-        return [np.array([[g_ix[i],0.],[0.,g_iy[i]]]) for i in range(len(g_ix))]
+        g_ix = amp_i[0]*n.exp(-2.j*n.pi*phs_i[0])
+        g_iy = amp_i[1]*n.exp(-2.j*n.pi*phs_i[1])
+        return [n.array([[g_ix[i],0.],[0.,g_iy[i]]]) for i in range(len(g_ix))]
     def D_i(self):
         """2x2 rotation matrix for this antenna -- to first order in rot_angle."""
-        return np.array([[1.,self.d[1]],[-1.*np.conjugate(self.d[0]),1.]])
+        return n.array([[1.,self.d[1]],[-1.*n.conjugate(self.d[0]),1.]])
     def J_i(self):
         """Compute the Jones' matrix for this antenna."""
-        return [np.dot(G_i[i],D_i) for i in range(len(G_i))]
+        return [n.dot(G_i[i],D_i) for i in range(len(G_i))]
 
 
 #     _          n                            _                         
@@ -94,7 +94,7 @@ class Antenna(a.fit.Antenna):
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
 #                                                                 |___/ 
 
-class AntennaArray(a.fit.AntennaArray):
+class AntennaArray(fit.AntennaArray):
     def gen_phs_nocal(self,src,i,j,pol,mfreq=0.150,ionref=None,srcshape=None,resolve_src=False):
         """Do the same thing as aa.gen_phs(), but don't apply delay/offset terms. This gets done in the Jones matrices."""
         if ionref is None:

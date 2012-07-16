@@ -272,6 +272,7 @@ class AntennaArray(ArrayLocation):
         self.active_pol = pol
     def get_active_pol(self):
         if self.active_pol is None: raise RuntimeError('No active polarization set (use AntennaArray.set_active_pol)')
+        return self.active_pol
     def pindices(pol):
         assert(pol in ['xx','xy','yx','yy'])
         d = {'x':0,'y':1}

@@ -329,25 +329,46 @@ class Antenna(amp.Antenna):
         """Set all parameters from a dictionary."""
         changed = False
         self.beam.set_params(prms)
-        pi = {'x':0,'y':1}[pol]
-        try: self.pos[0], changed = prms['x'], True
-        except(KeyError): pass
-        try: self.pos[1], changed = prms['y'], True
-        except(KeyError): pass
-        try: self.pos[2], changed = prms['z'], True
-        except(KeyError): pass
-        try: self._phsoff[pi][-2], changed = prms['dly'], True
-        except(KeyError): pass
-        try: self._phsoff[pi][-1], changed = prms['off'], True
-        except(KeyError): pass
-        try: self._phsoff[pi], changed = prms['phsoff'], True
-        except(KeyError): pass
-        try: self.bp_r[pi], changed = prms['bp_r'], True
-        except(KeyError): pass
-        try: self.bp_i[pi], changed = prms['bp_i'], True
-        except(KeyError): pass
-        try: self.amp[pi], changed = prms['amp'], True
-        except(KeyError): pass
+        if self.dp:
+            pi = {'x':0,'y':1}[pol]
+            try: self.pos[0], changed = prms['x'], True
+            except(KeyError): pass
+            try: self.pos[1], changed = prms['y'], True
+            except(KeyError): pass
+            try: self.pos[2], changed = prms['z'], True
+            except(KeyError): pass
+            try: self._phsoff[pi][-2], changed = prms['dly'], True
+            except(KeyError): pass
+            try: self._phsoff[pi][-1], changed = prms['off'], True
+            except(KeyError): pass
+            try: self._phsoff[pi], changed = prms['phsoff'], True
+            except(KeyError): pass
+            try: self.bp_r[pi], changed = prms['bp_r'], True
+            except(KeyError): pass
+            try: self.bp_i[pi], changed = prms['bp_i'], True
+            except(KeyError): pass
+            try: self.amp[pi], changed = prms['amp'], True
+            except(KeyError): pass
+        else:
+            try: self.pos[0], changed = prms['x'], True
+            except(KeyError): pass
+            try: self.pos[1], changed = prms['y'], True
+            except(KeyError): pass
+            try: self.pos[2], changed = prms['z'], True
+            except(KeyError): pass
+            try: self._phsoff[-2], changed = prms['dly'], True
+            except(KeyError): pass
+            try: self._phsoff[-1], changed = prms['off'], True
+            except(KeyError): pass
+            try: self._phsoff, changed = prms['phsoff'], True
+            except(KeyError): pass
+            try: self.bp_r, changed = prms['bp_r'], True
+            except(KeyError): pass
+            try: self.bp_i, changed = prms['bp_i'], True
+            except(KeyError): pass
+            try: self.amp, changed = prms['amp'], True
+            except(KeyError): pass
+        
         if changed: self.update()
         return changed
 
@@ -378,6 +399,7 @@ class AntennaArray(amp.AntennaArray):
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
         changed = False
+        pol = self.get_active_pol()
         for i, a in enumerate(self):
             try: changed |= a.set_params(pol[0],prms[str(i)])
             except(KeyError): pass

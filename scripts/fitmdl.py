@@ -43,6 +43,8 @@ uv = a.miriad.UV(args[0])
 opts.ant += ',cross'
 a.scripting.uv_selector(uv, opts.ant, opts.pol)
 aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
+aa.set_active_pol(opts.pol)
+print aa.get_active_pol()
 chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
 aa.select_chans(chans)
 srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
