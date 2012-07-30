@@ -365,7 +365,7 @@ class AntennaArray(phs.AntennaArray):
         elif self._cache == {}:
             return n.zeros_like(self.passband(i,j))
         pol = self.get_active_pol()
-        if pol[0] != pol[-1]: return np.zeros_like(self.passband(i,j))
+        if pol[0] != pol[-1]: return n.zeros_like(self.passband(i,j))
         else:
             s_eqs = self._cache['s_eqs']
             u,v,w = self.gen_uvw(i, j, src=s_eqs)
