@@ -364,19 +364,22 @@ class AntennaArray(phs.AntennaArray):
             raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')
         elif self._cache == {}:
             return n.zeros_like(self.passband(i,j))
-        s_eqs = self._cache['s_eqs']
-        u,v,w = self.gen_uvw(i, j, src=s_eqs)
-        I_sf = self._cache['jys']
-        Gij_sf = self.passband(i,j)
-        Bij_sf = self.bm_response(i,j)
-        if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
-        # Get the phase of each src vs. freq, also does resolution effects
-        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],
-            srcshape=self._cache['s_shp'], ionref=self._cache['i_ref'],
-            resolve_src=True))
-        try: E_sf.shape = I_sf.shape
-        except(AttributeError): pass
-        # Combine and sum over sources
-        GBIE_sf = Gij_sf * Bij_sf * I_sf * E_sf
-        Vij_f = GBIE_sf.sum(axis=0)
-        return Vij_f
+        pol = self.get_active_pol()
+        if pol[0] != pol[-1]: return np.zeros_like(self.passband(i,j))
+        else:
+            s_eqs = self._cache['s_eqs']
+            u,v,w = self.gen_uvw(i, j, src=s_eqs)
+            I_sf = self._cache['jys']
+            Gij_sf = self.passband(i,j)
+            Bij_sf = self.bm_response(i,j)
+            if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
+            # Get the phase of each src vs. freq, also does resolution effects
+            E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],
+                srcshape=self._cache['s_shp'], ionref=self._cache['i_ref'],
+                resolve_src=True))
+            try: E_sf.shape = I_sf.shape
+            except(AttributeError): pass
+            # Combine and sum over sources
+            GBIE_sf = Gij_sf * Bij_sf * I_sf * E_sf
+            Vij_f = GBIE_sf.sum(axis=0)
+            return Vij_f
