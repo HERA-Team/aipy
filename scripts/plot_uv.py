@@ -223,7 +223,7 @@ for cnt, bl in enumerate(bls):
                 if gain[chan] == 0: continue
                 d[:,chan],info = a.deconv.clean(d[:,chan],ker[:,chan],tol=opts.clean)
                 d[:,chan] += info['res'] / gain[chan]
-        d = n.fft.fftshift(d, axes=0)
+        d = n.fft.fftshift(d, axes=[0])
         d = n.ma.array(d)
     plt_data[cnt+1] = d
     d = data_mode(d, opts.mode)
