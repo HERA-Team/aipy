@@ -183,7 +183,7 @@ for uvfile in args:
                 d, info = a.deconv.clean(d, ker, tol=opts.clean)
                 d += info['res'] / gain
             d = n.ma.array(d)
-            d = n.fft.fftshift(d, axis=0)
+            d = n.fft.fftshift(d, axes=[0])
         elif opts.unmask: d = d.data
         d.shape = (1,) + d.shape
         if not plot_x.has_key(bl): plot_x[bl] = []
