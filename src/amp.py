@@ -230,8 +230,11 @@ class Antenna(phs.Antenna):
         self.set_pointing(*pointing)
         if self.dp:
             if len(n.array(bp_r).shape) != 2: self.bp_r = [bp_r,bp_r]
+            else: self.bp_r = bp_r
             if len(n.array(bp_i).shape) != 2: self.bp_i = [bp_i,bp_i]
-            if len(n.array(amp).shape) != 2: self.amp = [amp,amp]
+            else: self.bp_i = bp_i
+            if n.array(amp).shape != (2,): self.amp = [amp,amp]
+            else: self.amp = amp
         else:
             self.bp_r = bp_r
             self.bp_i = bp_i
