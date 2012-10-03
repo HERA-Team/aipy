@@ -241,13 +241,12 @@ class Antenna(phs.Antenna):
             self.amp = amp
         self._update_gain()
     def _update_gain(self):
-        if self.dp: 
+        if self.dp:
             bpx = n.polyval(self.bp_r[0],self.beam.afreqs)+1.j*n.polyval(self.bp_i[0],self.beam.afreqs)
             bpy = n.polyval(self.bp_r[1],self.beam.afreqs)+1.j*n.polyval(self.bp_i[1],self.beam.afreqs)
-            self._gain = [bpx,bpy] 
+            self._gain = [self.amp[0]*bpx,self.amp[1]*bpy] 
         else:
-            bp = n.polyval(self.bp_r, self.beam.afreqs) + \
-                 1j*n.polyval(self.bp_i, self.beam.afreqs)
+            bp = n.polyval(self.bp_r, self.beam.afreqs) + 1j*n.polyval(self.bp_i, self.beam.afreqs)
             self._gain = self.amp * bp
     def update(self):
         phs.Antenna.update(self)

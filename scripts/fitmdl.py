@@ -40,7 +40,7 @@ opts, args = o.parse_args(sys.argv[1:])
 
 # Parse command-line options
 uv = a.miriad.UV(args[0])
-opts.ant += ',cross'
+#opts.ant += ',cross'
 a.scripting.uv_selector(uv, opts.ant, opts.pol)
 aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 aa.set_active_pol(opts.pol)
@@ -120,7 +120,6 @@ def fit_func(prms, filelist, decimate, decphs):
             a.scripting.uv_selector(uv, opts.ant, opts.pol)
             uv.select('decimate', decimate, decphs)
             for (uvw,t,(i,j)),d,f in uv.all(raw=True):
-                print i,j
                 if not dbuf.has_key(t): dbuf[t] = {}
                 if not opts.sim_autos and i == j: continue
                 if uvlen(aa.get_baseline(i,j))*0.15 < opts.minuv: continue
