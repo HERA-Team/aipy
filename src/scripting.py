@@ -155,7 +155,7 @@ def parse_srcs(src_str, cat_str):
             for piece in dec.split(':'): piece = float(piece)
             src_opt[i] = fit.RadioFixedBody(ra,dec, name=s)
         except(AssertionError,ValueError): continue
-    return src_opt, None, cats
+    return src_opt, cats
 
 name = r'([^\(/,\)=]+)'
 grp = r'(%s|\((%s(/%s)*)\))' % tuple([name]*3)
