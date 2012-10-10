@@ -162,6 +162,7 @@ for uvfile in args:
         #apply cal phases
         if not opts.cal is None:
             aa.set_jultime(t)
+            aa.set_active_pol(opts.pol)
             if not opts.src is None:
                 src.compute(aa)
                 d = aa.phs2src(d, src, i, j)
