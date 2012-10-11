@@ -47,8 +47,8 @@ aa.set_active_pol(opts.pol)
 print aa.get_active_pol()
 chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
 aa.select_chans(chans)
-srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
-cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
+srclist,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
+cat = a.cal.get_catalog(opts.cal, srclist, catalogs)
 (uvw,t,(i,j)),d = uv.read()
 aa.set_jultime(t)
 cat.compute(aa)
@@ -120,7 +120,6 @@ def fit_func(prms, filelist, decimate, decphs):
             a.scripting.uv_selector(uv, opts.ant, opts.pol)
             uv.select('decimate', decimate, decphs)
             for (uvw,t,(i,j)),d,f in uv.all(raw=True):
-                print i,j
                 if not dbuf.has_key(t): dbuf[t] = {}
                 if not opts.sim_autos and i == j: continue
                 if uvlen(aa.get_baseline(i,j))*0.15 < opts.minuv: continue
