@@ -70,7 +70,7 @@ def ParAng(ha,dec,lat):
 
 class Antenna(fit.Antenna):
     def __init__(self,x,y,z,beam,d=0., **kwargs):
-        pol.Antenna.__init__(self,x,y,z,beam,**kwargs)
+        fit.Antenna.__init__(self,x,y,z,beam,**kwargs)
         self.d = d #I may want to update this to be a polynomial or something later (dfm)
     def G_i(self):
         """2x2 gain matrix"""
