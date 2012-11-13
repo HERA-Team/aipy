@@ -27,6 +27,8 @@ o.add_option('--fmt', dest='fmt', default='im%04d',
     help='A format string for counting successive images written to files.  Default is im%04d (i.e. im0001).')
 o.add_option('--skip_phs', dest='skip_phs', action='store_true',
     help='Do not phase visibilities before gridding.')
+o.add_option('--zen_phased', dest='zen_phased', action='store_true',
+    help='If data have already have already been phased to zenith, set this flag.')
 o.add_option('--skip_amp', dest='skip_amp', action='store_true',
     help='Do not use amplitude information to normalize visibilities.')
 o.add_option('--skip_bm', dest='skip_bm', action='store_true',
@@ -210,7 +212,9 @@ for srccnt, s in enumerate(cat.values()):
           d,f = d.take(chans), f.take(chans)
           if not opts.skip_amp: d /= aa.passband(i,j)
           # Throws PointingError if not up:
-          if not opts.skip_phs: d = aa.phs2src(d, s, i, j)
+          if not opts.skip_phs:
+              if opts.zen_phased: d = aa.unphs2src(d, 'z', i, j)
+              d = aa.phs2src(d, s, i, j)
           u,v,w = aa.gen_uvw(i,j,src=s)
           longenough = n.where(n.sqrt(u**2+v**2) < opts.minuv, 0, 1).squeeze()
           if not opts.skip_bm:
