@@ -211,7 +211,7 @@ else:
                     i,j = ai.num,aj.num
                 except(AttributeError): pass
                 if j < i: continue
-                crd = ai.pos - aj.pos
+                crd = aa.get_baseline(i,j)
                 preamble = (crd, t, (i,j))
                 for pol in pols:
                     uv['pol'] = a.miriad.str2pol[pol]
