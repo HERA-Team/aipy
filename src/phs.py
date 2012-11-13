@@ -183,21 +183,28 @@ class Beam:
 
 class Antenna:
     """Representation of physical attributes of individual antenna."""
-    def __init__(self, x, y, z, beam, phsoff=[0.,0.], **kwargs):
+    def __init__(self, x, y, z, beam, phsoff=[0.,0.], dp = False, **kwargs):
         """x,y,z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object
         phsoff = polynomial phase vs. frequency.  Phs term that is linear
                  with freq is often called 'delay'."""
         self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
+        self.dp = dp
         self.beam = beam
-        self._phsoff = phsoff
+        if self.dp and len(n.array(phsoff).shape) != 2:
+            self._phsoff = [phsoff,phsoff]
+        else: self._phsoff = phsoff
         self._update_phsoff()
     def select_chans(self, active_chans=None):
         """Select only the specified channels for use in future calculations."""
         self.beam.select_chans(active_chans)
         self.update()
     def _update_phsoff(self):
-        self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
+        if self.dp:
+            px = n.polyval(self._phsoff[0], self.beam.afreqs)
+            py = n.polyval(self._phsoff[1], self.beam.afreqs)
+            self.phsoff = [px,py]
+        else: self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
     def update(self):
         self._update_phsoff()
     def __iter__(self): return self.pos.__iter__()
@@ -256,10 +263,22 @@ class AntennaArray(ArrayLocation):
         ants = list of Antenna objects."""
         ArrayLocation.__init__(self, location=location)
         self.ants = ants
+        assert(ant.dp==self.ants[0].dp for ant in ants)
+        self.active_pol = None
     def __iter__(self): return self.ants.__iter__()
     def __getitem__(self, *args): return self.ants.__getitem__(*args)
     def __setitem__(self, *args): return self.ants.__setitem__(*args)
     def __len__(self): return self.ants.__len__()
+    def set_active_pol(self,pol):
+        assert(pol in ('xx','xy','yx','yy'))
+        self.active_pol = pol
+    def get_active_pol(self):
+        if self.active_pol is None: raise RuntimeError('No active polarization set (use AntennaArray.set_active_pol)')
+        return self.active_pol
+    def pindices(self,pol):
+        assert(pol in ('xx','xy','yx','yy'))
+        d = {'x':0,'y':1}
+        return d[pol[0]],d[pol[-1]]
     def update(self):
         ArrayLocation.update(self)
         for a in self: a.update()
@@ -270,13 +289,11 @@ class AntennaArray(ArrayLocation):
     def ij2bl(self, i, j):
         """Convert baseline i,j (0 indexed) to Miriad's (i+1) << 8 | (j+1) 
         indexing scheme."""
-        return ij2bl(i,j)
-    
+        return ij2bl(i,j) 
     def bl2ij(self, bl):
         """Convert Miriad's (i+1) << 8 | (j+1) baseline indexing scheme to 
         i,j (0 indexed)"""
         return bl2ij(bl)
-
     def bl_indices(self, auto=True, cross=True):
         """Return bl indices for baselines in the array."""
         if auto:
@@ -313,7 +330,10 @@ class AntennaArray(ArrayLocation):
         return n.dot(m, bl).transpose()
     def get_phs_offset(self, i, j):
         """Return the frequency-dependent phase offset of baseline i,j."""
-        return self[j].phsoff - self[i].phsoff
+        if self[i].dp:
+            pi,pj = self.pindices(self.get_active_pol())
+            return self[j].phsoff[pj] - self[i].phsoff[pi]
+        else: return self[j].phsoff - self[i].phsoff
     def gen_uvw(self, i, j, src='z', w_only=False):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates.  If w_only is True, only w (instead
