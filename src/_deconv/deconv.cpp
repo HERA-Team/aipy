@@ -241,7 +241,7 @@ template<typename T> struct Clean {
                 IND1(mdl,n,T) = best_mdl[n];
                 IND1(res,n,T) = best_res[n];
             }
-        }   
+        }
         if (best_mdl != NULL) { free(best_mdl); free(best_res); }
         return maxiter;
     }
@@ -307,7 +307,9 @@ template<typename T> struct Clean {
                     }
                 }
             }
+	    printf("res[0,0]: %f\nres[1,0]: %f\n",CIND2R(res,0,0,float),CIND2R(res,1,0,float));
             nscore = sqrt(nscore / (dim1 * dim2));
+	    printf("nscore: %f\n", nscore);
             if (firstscore < 0) firstscore = nscore;
             if (verb != 0)
                 printf("Iter %d: Max=(%d,%d), Score = %f, Prev = %f\n", \
@@ -352,6 +354,7 @@ template<typename T> struct Clean {
                 i = 0;  // Reset maxiter counter
             }
             score = nscore;
+	    printf("argmax: (%u, %u)\n", argmax1, argmax2);
             argmax1 = nargmax1; argmax2 = nargmax2;
         }
         // If we end on maxiter, then make sure mdl/res reflect best score
