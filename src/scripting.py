@@ -108,7 +108,9 @@ def uv_selector(uv, ants=-1, pol_str=-1):
     if ants != -1:
         if type(ants) == str: ants = parse_ants(ants, uv['nants'])
         for cnt,(bl,include,pol) in enumerate(ants):
-            if cnt > 0: uv.select('or',-1,-1)
+            if cnt > 0:
+                if include: uv.select('or',-1,-1)
+                else: uv.select('and',-1,-1)
             if pol == -1: pol = pol_str # default to explicit pol parameter
             if bl == 'auto': uv.select('auto', 0, 0, include=include)
             else:

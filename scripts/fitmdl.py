@@ -40,7 +40,7 @@ opts, args = o.parse_args(sys.argv[1:])
 
 # Parse command-line options
 uv = a.miriad.UV(args[0])
-opts.ant += ',cross'
+#opts.ant += ',cross'
 a.scripting.uv_selector(uv, opts.ant, opts.pol)
 aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 chans = a.scripting.parse_chans(opts.chan, uv['nchan'])

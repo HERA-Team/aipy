@@ -125,17 +125,23 @@ for cnt, k in enumerate(keys):
     DIM = dbm.shape[0]
     lo,hi = (DIM-30)/2,(DIM+30)/2
     dbm_fit = dbm_fit[lo:hi,lo:hi]
-    cbm = a.twodgauss.twodgaussian(a.twodgauss.moments(dbm_fit),shape=dbm.shape)
-    cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
-    cbm /= n.sum(cbm)
+    if opts.deconv == 'none': # XXX this is a hack
+        rim = info['res']
+        bim = rim / bm_gain + cim
+    else:
+        # This doesn't work for deconv=none
+        cbm = a.twodgauss.twodgaussian(a.twodgauss.moments(dbm_fit),shape=dbm.shape)
+        cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
+        cbm /= n.sum(cbm)
 
-    cimc = n.fft.fftshift(n.fft.ifft2(n.fft.fft2(cim)*n.fft.fft2(cbm))).real
+        cimc = n.fft.fftshift(n.fft.ifft2(n.fft.fft2(cim)*n.fft.fft2(cbm))).real
 
-    rim = info['res']
+        rim = info['res']
 
-    bim = rim / bm_gain + cimc 
+        bim = rim / bm_gain + cimc 
     
     for ftag in ['cim','rim','bim','cimc']:
+        print ftag
         if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
     
 
