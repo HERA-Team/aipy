@@ -55,6 +55,13 @@ class TestClean(unittest.TestCase):
         rv = a._deconv.clean(res,ker,mdl,area,tol=1e-8)
         self.assertAlmostEqual(res[0], 0, 3)
         self.assertEqual(res[5], 1)
+    def test_clean2d_stop_if_div(self):
+        DIM1,DIM2 = 1000, 250
+        dim = n.random.normal(size=(DIM1,DIM2))
+        dbm = n.random.normal(size=(DIM1,DIM2))
+        mdl = n.zeros(dim.shape, dtype=dim.dtype)
+        area = n.ones(dim.shape, dtype=n.int)
+        rv = a._deconv.clean(dim, dbm, mdl, area, gain=.1, tol=1e-2, stop_if_div=0, maxiter=100)
     
 
 if __name__ == '__main__':

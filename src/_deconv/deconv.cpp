@@ -122,11 +122,11 @@ template<typename T> struct Clean {
                         wrap_n1 = (n1 + argmax1) % dim1;
                         for (int n2=0; n2 < dim2; n2++) {
                             wrap_n2 = (n2 + argmax2) % dim2;
-                            best_mdl[n1*dim1+n2] = IND2(mdl,n1,n2,T);
-                            best_res[wrap_n1*dim1+wrap_n2] = IND2(res,wrap_n1,wrap_n2,T) + IND2(ker,n1,n2,T) * step;
+                            best_mdl[n1*dim2+n2] = IND2(mdl,n1,n2,T);
+                            best_res[wrap_n1*dim2+wrap_n2] = IND2(res,wrap_n1,wrap_n2,T) + IND2(ker,n1,n2,T) * step;
                         }
                     }
-                    best_mdl[argmax1*dim1+argmax2] -= step;
+                    best_mdl[argmax1*dim2+argmax2] -= step;
                     best_score = score;
                     i = 0;  // Reset maxiter counter
                 }
@@ -144,8 +144,8 @@ template<typename T> struct Clean {
         if (best_score > 0 && best_score < nscore) {
             for (int n1=0; n1 < dim1; n1++) {
                 for (int n2=0; n2 < dim2; n2++) {
-                    IND2(mdl,n1,n2,T) = best_mdl[n1*dim1+n2];
-                    IND2(res,n1,n2,T) = best_res[n1*dim1+n2];
+                    IND2(mdl,n1,n2,T) = best_mdl[n1*dim2+n2];
+                    IND2(res,n1,n2,T) = best_res[n1*dim2+n2];
                 }
             }
         }   
@@ -333,14 +333,14 @@ template<typename T> struct Clean {
                         wrap_n1 = (n1 + argmax1) % dim1;
                         for (int n2=0; n2 < dim2; n2++) {
                             wrap_n2 = (n2 + argmax2) % dim2;
-                            best_mdl[2*(n1*dim1+n2)+0] = CIND2R(mdl,n1,n2,T);
-                            best_mdl[2*(n1*dim1+n2)+1] = CIND2I(mdl,n1,n2,T);
-                            best_res[2*(wrap_n1*dim1+wrap_n2)+0] = CIND2R(res,wrap_n1,wrap_n2,T) + CIND2R(ker,n1,n2,T) * stepr - CIND2I(ker,n1,n2,T) * stepi;
-                            best_res[2*(wrap_n1*dim1+wrap_n2)+1] = CIND2I(res,wrap_n1,wrap_n2,T) + CIND2R(ker,n1,n2,T) * stepi + CIND2I(ker,n1,n2,T) * stepr;
+                            best_mdl[2*(n1*dim2+n2)+0] = CIND2R(mdl,n1,n2,T);
+                            best_mdl[2*(n1*dim2+n2)+1] = CIND2I(mdl,n1,n2,T);
+                            best_res[2*(wrap_n1*dim2+wrap_n2)+0] = CIND2R(res,wrap_n1,wrap_n2,T) + CIND2R(ker,n1,n2,T) * stepr - CIND2I(ker,n1,n2,T) * stepi;
+                            best_res[2*(wrap_n1*dim2+wrap_n2)+1] = CIND2I(res,wrap_n1,wrap_n2,T) + CIND2R(ker,n1,n2,T) * stepi + CIND2I(ker,n1,n2,T) * stepr;
                         }
                     }
-                    best_mdl[2*(argmax1*dim1+argmax2)+0] -= stepr;
-                    best_mdl[2*(argmax1*dim1+argmax2)+1] -= stepi;
+                    best_mdl[2*(argmax1*dim2+argmax2)+0] -= stepr;
+                    best_mdl[2*(argmax1*dim2+argmax2)+1] -= stepi;
                     best_score = score;
                     i = 0;  // Reset maxiter counter
                 }
@@ -358,10 +358,10 @@ template<typename T> struct Clean {
         if (best_score > 0 && best_score < nscore) {
             for (int n1=0; n1 < dim1; n1++) {
                 for (int n2=0; n2 < dim2; n2++) {
-                    CIND2R(mdl,n1,n2,T) = best_mdl[2*(n1*dim1+n2)+0];
-                    CIND2I(mdl,n1,n2,T) = best_mdl[2*(n1*dim1+n2)+1];
-                    CIND2R(res,n1,n2,T) = best_res[2*(n1*dim1+n2)+0];
-                    CIND2I(res,n1,n2,T) = best_res[2*(n1*dim1+n2)+1];
+                    CIND2R(mdl,n1,n2,T) = best_mdl[2*(n1*dim2+n2)+0];
+                    CIND2I(mdl,n1,n2,T) = best_mdl[2*(n1*dim2+n2)+1];
+                    CIND2R(res,n1,n2,T) = best_res[2*(n1*dim2+n2)+0];
+                    CIND2I(res,n1,n2,T) = best_res[2*(n1*dim2+n2)+1];
                 }
             }
         }   
