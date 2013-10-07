@@ -162,8 +162,8 @@ for uvfile in args:
             if not opts.src is None:
                 src.compute(aa)
                 d = aa.phs2src(d, src, i, j)
-            else:
-                d *= n.exp(-1j*n.pi*aa.get_phs_offset(i,j))
+            #else: took out this mode because it's not used, and prefer not to phase.
+            #    d *= n.exp(-1j*n.pi*aa.get_phs_offset(i,j))
         # Do delay transform if required
         if opts.delay:
             w = a.dsp.gen_window(d.shape[-1], window=opts.window)
