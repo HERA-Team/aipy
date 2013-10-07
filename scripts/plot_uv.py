@@ -134,6 +134,7 @@ for uvfile in args:
     if not opts.cal is None:
         aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
         aa.set_active_pol(opts.pol)
+        aa.select_chans(chans)
     else: aa = None
     # Only select data that is needed to plot
     a.scripting.uv_selector(uv, opts.ant, opts.pol)
