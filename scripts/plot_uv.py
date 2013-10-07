@@ -128,17 +128,13 @@ times = []
 plots = {}
 plt_data = {}
 
-if opts.cal != None:
-    uv = a.miriad.UV(args[0])
-    aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
-    del(uv)
-else: aa = None
-
 for uvfile in args:
     print 'Reading', uvfile
     uv = a.miriad.UV(uvfile)
     if not opts.cal is None:
         aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
+        aa.set_active_pol(opts.pol)
+    else: aa = None
     # Only select data that is needed to plot
     a.scripting.uv_selector(uv, opts.ant, opts.pol)
     uv.select('decimate', opts.decimate, opts.decphs)
