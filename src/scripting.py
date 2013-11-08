@@ -120,6 +120,11 @@ def uv_selector(uv, ants=-1, pol_str=-1):
                 for p in pol.split(','):
                     polopt = miriad.str2pol[p]
                     uv.select('polarization', polopt, 0)
+    elif pol_str != -1:
+        for p in pol.split(','):
+            polopt = miriad.str2pol[p]
+            uv.select('polarization', polopt, 0)
+
 
 def parse_chans(chan_str, nchan, concat=True):
     """Return array of active channels based on number of channels and
