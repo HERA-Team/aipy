@@ -118,21 +118,22 @@ def fit_func(prms, filelist, decimate, decphs):
             uv.select('decimate', decimate, decphs)
             for (uvw,t,(i,j)),d,f in uv.all(raw=True):
                 if not dbuf.has_key(t): dbuf[t] = {}
+                if not dbuf[t].has_key(bl): dbuf[t][bl] = {}
                 if not opts.sim_autos and i == j: continue
                 if uvlen(aa.get_baseline(i,j))*0.15 < opts.minuv: continue
                 bl = a.miriad.ij2bl(i,j)
                 d = d.take(chans)
                 f = f.take(chans)
-                dbuf[t][bl] = (d, f, 
-                        n.where(f, 0, n.abs(d)**2).sum(),
-                        a.miriad.pol2str[uv['pol']])
+                pol = a.miriad.pol2str[uv['pol']]
+                dbuf[t][bl][pol] = (d, f, n.where(f, 0, n.abs(d)**2).sum())
         if not opts.quiet:
             samp, vsamp, wgts = 0, 0, 0.
             for t in dbuf:
               for bl in dbuf[t]:
-                samp += len(dbuf[t][bl][1])
-                vsamp += n.logical_not(dbuf[t][bl][1]).astype(n.int).sum()
-                wgts += dbuf[t][bl][2]
+                for pol in dbuf[t][pol]:
+                    samp += len(dbuf[t][bl][pol][1])
+                    vsamp += n.logical_not(dbuf[t][bl][pol][1]).astype(n.int).sum()
+                    wgts += dbuf[t][bl][pol][2]
             print 'Cache summary:'
             print '   %d samples' % samp
             print '   %d valid' % vsamp
@@ -149,13 +150,14 @@ def fit_func(prms, filelist, decimate, decphs):
             ionrefs=(dra,ddec), srcshapes=(a1,a2,th))
         for bl in dbuf[t]:
             i,j = a.miriad.bl2ij(bl)
-            d,f,nsamp,pol = dbuf[t][bl]
-            aa.set_active_pol(pol)
-            sim_d = aa.sim(i, j)
-            difsq = n.abs(d - sim_d)**2
-            difsq = n.where(f, 0, difsq)
-            score += difsq.sum()
-            nsamples += nsamp
+            for pol in dbuf[t][bl]:
+                d,f,nsamp = dbuf[t][bl][pol]
+                aa.set_active_pol(pol)
+                sim_d = aa.sim(i, j)
+                difsq = n.abs(d - sim_d)**2
+                difsq = n.where(f, 0, difsq)
+                score += difsq.sum()
+                nsamples += nsamp
     if opts.daemon: return score, nsamples
     if nsamples == 0:
         first_fit = 0.
