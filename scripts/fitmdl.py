@@ -117,11 +117,11 @@ def fit_func(prms, filelist, decimate, decphs):
             a.scripting.uv_selector(uv, opts.ant, opts.pol)
             uv.select('decimate', decimate, decphs)
             for (uvw,t,(i,j)),d,f in uv.all(raw=True):
+                bl = a.miriad.ij2bl(i,j)
                 if not dbuf.has_key(t): dbuf[t] = {}
                 if not dbuf[t].has_key(bl): dbuf[t][bl] = {}
                 if not opts.sim_autos and i == j: continue
                 if uvlen(aa.get_baseline(i,j))*0.15 < opts.minuv: continue
-                bl = a.miriad.ij2bl(i,j)
                 d = d.take(chans)
                 f = f.take(chans)
                 pol = a.miriad.pol2str[uv['pol']]
@@ -130,7 +130,7 @@ def fit_func(prms, filelist, decimate, decphs):
             samp, vsamp, wgts = 0, 0, 0.
             for t in dbuf:
               for bl in dbuf[t]:
-                for pol in dbuf[t][pol]:
+                for pol in dbuf[t][bl]:
                     samp += len(dbuf[t][bl][pol][1])
                     vsamp += n.logical_not(dbuf[t][bl][pol][1]).astype(n.int).sum()
                     wgts += dbuf[t][bl][pol][2]
