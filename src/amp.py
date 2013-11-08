@@ -300,7 +300,7 @@ class AntennaArray(phs.AntennaArray):
                 x,y,z = self._cache['s_top']
                 resp = self[c].bm_response((x,y,z), pol=p).transpose()
                 self._cache[c][p] = resp
-        return self._cache[j][p1] * n.conjugate(self._cache[i][p2])
+        return self._cache[j][p2] * n.conjugate(self._cache[i][p1])
     def sim_cache(self, s_eqs, jys=n.array([1.]), mfreqs=0.150,
             ionrefs=(0.,0.), srcshapes=(0,0,0)):
         """Cache intermediate computations given catalog information to speed
