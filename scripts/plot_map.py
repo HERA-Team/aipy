@@ -125,7 +125,8 @@ if not opts.nside is None:
     h = nh
 h.set_interpol(opts.interpolation != 'nearest')
 
-crd = a.coord.radec2eq(n.array([lons.flatten(), lats.flatten()]))
+if opts.osys == 'eq': crd = a.coord.radec2eq(n.array([lons.flatten(), lats.flatten()]))
+else: crd = a.coord.radec2eq(n.array([-lons.flatten(), lats.flatten()]))
 m = a.coord.convert_m(opts.osys, opts.isys, 
     iepoch=opts.oepoch, oepoch=opts.iepoch)
 x,y,z = n.dot(m, crd)
