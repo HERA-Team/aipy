@@ -130,7 +130,7 @@ class Beam2DGaussian(phs.Beam):
         coordinates.  Returns 'x' linear polarization (rotate pi/2 for 'y')."""
         x,y,z = xyz
         x,y = n.arcsin(x)/self.xwidth, n.arcsin(y)/self.ywidth
-        resp = n.sqrt(n.exp(-(x**2 + y**2)))
+        resp = n.sqrt(n.exp(-0.5*(x**2 + y**2)))
         resp = n.resize(resp, (self.afreqs.size, resp.size))
         return resp
 
