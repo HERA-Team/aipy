@@ -292,6 +292,9 @@ class AntennaArray(ArrayLocation):
     def get_afreqs(self):
         """Return array of frequencies that are active for simulation."""
         return self[0].beam.afreqs
+    def get_freqs(self):
+        """Return array of (all) frequencies."""
+        return self[0].beam.freqs
     def get_baseline(self, i, j, src='z'):
         """Return the baseline corresponding to i,j in various coordinate 
         projections: src='e' for current equatorial, 'z' for zenith 
