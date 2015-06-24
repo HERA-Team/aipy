@@ -25,7 +25,9 @@ def convert(crd, isys, osys, iepoch=e.J2000, oepoch=e.J2000):
 
 def convert_m(isys, osys, iepoch=e.J2000, oepoch=e.J2000):
     """Return the 3x3 matrix corresponding to a coordinate 
-    system/precssion transformation (see 'convert')."""
+    system/precssion transformation (see 'convert'). 
+    NOTE: To obtain a transformation matrix to dot with isys to get osys, 
+    must reverse isys and osys arguments in convert_m. """
     m = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
     for i in range(3):
         c = convert(m[:,i], isys, osys, iepoch=iepoch, oepoch=oepoch)
