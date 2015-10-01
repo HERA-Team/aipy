@@ -247,7 +247,9 @@ class Antenna(phs.Antenna):
         # Twist is negative b/c we apply it to the coords, not the beam
         rot = coord.rot_m(-twist, z)
         rot = n.dot(rot, coord.rot_m(alt-n.pi/2, y))
-        rot = n.dot(rot, coord.rot_m(-az, z))
+        # NOTE the az, alt definition, az (clockwise around z = up, 0 at x axis = north), alt (from horizon), see also coord.azalt2top
+        # rot = n.dot(rot, coord.rot_m(-az, z))
+        rot = n.dot(rot, coord.rot_m(-(n.pi/2 - az), z))
         self.rot_pol_x = rot
         self.rot_pol_y = n.dot(coord.rot_m(-n.pi/2, z), rot)
     def bm_response(self, top, pol='x'):
