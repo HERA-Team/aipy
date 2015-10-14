@@ -47,8 +47,11 @@ def rot_m(ang, vec):
     rm = n.array([[x*xC+c, xyC-zs, zxC+ys],
                   [xyC+zs, y*yC+c, yzC-xs],
                   [zxC-ys, yzC+xs, z*zC+c]], dtype=n.double)
-    axes = range(rm.ndim)
-    return rm.transpose(axes[-1:] + axes[:-1])
+    if rm.ndim > 2:
+        axes = range(rm.ndim)
+        return rm.transpose(axes[-1:] + axes[:-1])
+    else:
+        return rm
 
 def xyz2thphi(xyz):
     """Convert xyz vectors (x,y,z along first axis) into angles theta
