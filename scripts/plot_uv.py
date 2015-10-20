@@ -206,6 +206,8 @@ fig = p.figure()
 if not opts.src is None:fig.suptitle(opts.src)
 for cnt, bl in enumerate(bls):
     d = n.ma.concatenate(plot_x[bl], axis=0)
+    i,j,pol = map(int,bl.split(','))
+    if opts.ant.find('%d_%d' % (j,i)) != -1: d = d.conj() # obey antenna ordering, if possible
     if opts.df: d = d[:,:-2]/2 + d[:,2:]/2 - d[:,1:-1]
     if opts.dt: d = d[:-2]/2 + d[2:]/2 - d[1:-1]
     if opts.fringe:
@@ -229,7 +231,6 @@ for cnt, bl in enumerate(bls):
         dmin,dmax = None,None
         label = ''
     else:
-        i,j,pol = map(int,bl.split(','))
         pol = a.miriad.pol2str[pol]
         label = '%d%s,%d%s ' % (i,pol[0],j,pol[-1]) 
     if is_chan_range and is_time_range:
@@ -360,7 +361,6 @@ for cnt, bl in enumerate(bls):
         else: p.ylim(dmin,dmax)
     else: raise ValueError('Either time or chan needs to be a range.')
     if not opts.share:
-        i,j,pol = map(int,bl.split(','))
         pol = a.miriad.pol2str[pol]
         title = '%d%s,%d%s ' % (i,pol[0],j,pol[-1]) 
         p.title(title)
