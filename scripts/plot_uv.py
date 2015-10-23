@@ -156,6 +156,7 @@ for uvfile in args:
                 plot_t['cnt'].append(len(times)-1)
         if not use_this_time: continue
         d = d.take(chans)
+        if opts.ant.find('%d_%d' % (j,i)) != -1: d = d.conj() # obey antenna ordering, if possible
         #apply cal phases
         if not opts.cal is None:
             aa.set_jultime(t)
@@ -207,7 +208,6 @@ if not opts.src is None:fig.suptitle(opts.src)
 for cnt, bl in enumerate(bls):
     d = n.ma.concatenate(plot_x[bl], axis=0)
     i,j,pol = map(int,bl.split(','))
-    if opts.ant.find('%d_%d' % (j,i)) != -1: d = d.conj() # obey antenna ordering, if possible
     if opts.df: d = d[:,:-2]/2 + d[:,2:]/2 - d[:,1:-1]
     if opts.dt: d = d[:-2]/2 + d[2:]/2 - d[1:-1]
     if opts.fringe:
