@@ -11,7 +11,8 @@ output plot (i.e. as specified by --chan_axis and --time_axis).
 Author: Aaron Parsons, Griffin Foster
 """
 
-import aipy as a, numpy as n, pylab as p, sys, optparse
+import aipy as a, numpy as n, sys, optparse#,pylab as p
+from matplotlib import pylab as p
 
 o = optparse.OptionParser()
 o.set_usage('plot_uv.py [options] *.uv')
