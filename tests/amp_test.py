@@ -48,13 +48,31 @@ class TestBeam2DGaussian(unittest.TestCase):
         xyz = (x,y,z)
         resp = self.bm.response(xyz)
         self.assertEqual(resp.shape, (self.fqs.size,3))
-        ans = n.sqrt(n.array([1., n.exp(-1), n.exp(-4)]))
+        ans = n.sqrt(n.array([1., n.exp(-0.5), n.exp(-2)]))
         ans.shape = (1,3)
         self.bm.select_chans([0])
         resp = self.bm.response(xyz)
         self.assertTrue(n.all(n.round(resp - ans, 3) == 0))
 
-# TODO: other beam types
+class TestBeamAlm(unittest.TestCase):
+    def setUp(self):
+        self.fqs = n.arange(.1,.2,.01)
+        self.coeffs = {0:n.array([1.,0,0], dtype=n.complex)}
+        self.bm = amp.BeamAlm(self.fqs, lmax=1, mmax=1, deg=0, coeffs=self.coeffs)
+    def test_init_update(self):
+        self.assertTrue(n.allclose(self.bm.hmap[0].map, 1./n.sqrt(4*n.pi)))
+    def test_response(self):
+        x = n.array([0, .05,   0])
+        y = n.array([0,   0, .05])
+        z = n.array([1,   1,   1])
+        xyz = (x,y,z)
+        resp = self.bm.response(xyz)
+        self.assertEqual(resp.shape, (self.fqs.size,3))
+        ans = n.ones(3, dtype=n.complex) / n.sqrt(4*n.pi)
+        ans.shape = (1,3)
+        self.bm.select_chans([0])
+        resp = self.bm.response(xyz)
+        self.assertTrue(n.all(n.round(resp - ans, 3) == 0))
 
 class TestAntenna(unittest.TestCase):
     def setUp(self):
@@ -73,9 +91,9 @@ class TestAntenna(unittest.TestCase):
         xyz = (.05,0,1)
         self.ant.select_chans([0])
         resp = self.ant.bm_response(xyz, pol='x')
-        self.assertAlmostEqual(resp, n.sqrt(n.exp(-1)), 3)
+        self.assertAlmostEqual(resp, n.sqrt(n.exp(-0.5)), 3)
         resp = self.ant.bm_response(xyz, pol='y')
-        self.assertAlmostEqual(resp, n.sqrt(n.exp(-4)), 3)
+        self.assertAlmostEqual(resp, n.sqrt(n.exp(-2)), 3)
 
 #class TestMemLeaks(unittest.TestCase):
 #    def test_antenna_create(self):
