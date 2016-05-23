@@ -1,5 +1,6 @@
 #! /usr/bin/env python
-import aipy as a, numpy as n, pylab as p
+import aipy as a, numpy as n
+from matplotlib import pylab as p
 
 img = n.array([0,0,0,4,6,4,0,0,-2,-3,-2,0], dtype=n.float)
 ker = n.array([3,2,0,0,0,0,0,0,0,0,0,2], dtype=n.float)

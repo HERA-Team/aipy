@@ -4,7 +4,8 @@ This is a general-purpose script for plotting simple FITS images.
 """
 
 import aipy as a, sys, optparse, os
-import numpy as n, pylab as p, ephem, math
+import numpy as n, ephem, math
+from matplotlib import pylab as p
 
 o = optparse.OptionParser()
 o.set_usage('plot_img.py [options] *.fits')

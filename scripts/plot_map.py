@@ -6,7 +6,8 @@ in a *.fits file.
 Author: Aaron Parsons
 """
 
-import aipy as a, numpy as n, pylab as p, sys, os, ephem, optparse
+import aipy as a, numpy as n, sys, os, ephem, optparse
+from matplotlib import pylab as p
 
 class Basemap:
     """A placeholder class to give plot_map.py some functionality if

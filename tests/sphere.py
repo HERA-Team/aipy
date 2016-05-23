@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-import numpy as n, aipy as a, pylab as p, random, sys
+import numpy as n, aipy as a, random, sys
+from matplotlib import pylab as p
 try: from mpl_toolkits.basemap import Basemap
 except(ImportError): from matplotlib.toolkits.basemap import Basemap
 

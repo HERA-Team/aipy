@@ -7,7 +7,8 @@ a single source have been isolated in the data set.
 Author: Aaron Parsons
 """
 
-import aipy as a, numpy as n, pylab as p, os, sys, optparse, pickle
+import aipy as a, numpy as n, os, sys, optparse, pickle
+from matplotlib import pylab as p
 
 o = optparse.OptionParser()
 o.set_usage('flux_cal.py [options] *.uv')

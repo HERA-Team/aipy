@@ -4,7 +4,7 @@ Diagnose RFI and RFI removal strategies by plotting either maximum amplitude per
 """
 import numpy as n
 import aipy as a
-import pylab as p
+from matplotlib import pylab as p
 import os,sys,optparse,math
 
 #Set up the options, make sure to define them well.

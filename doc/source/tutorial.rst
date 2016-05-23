@@ -330,7 +330,8 @@ image on the sky (image size in *l,m* = 1/UV resolution).
 Coordinate Systems
 ------------------
 
->>> import aipy, pylab
+>>> import aipy
+>>> from matplotlib import pylab
 >>> im = aipy.img.Img(size=200, res=0.5)
 >>> L,M = im.get_LM(center=(200,200))
 >>> pylab.subplot(121); pylab.imshow(L); pylab.colorbar(shrink=.7)
@@ -413,7 +414,8 @@ matching the data in the UV file (sdf, sfreq, nchan).  We will also choose a sou
 "vir" indicates Virgo A from :mod:`aipy.src`) to phase our data to, putting it at the center of our 
 image:
 
->>> import aipy, pylab, numpy as n
+>>> import aipy, numpy as n
+>>> from matplotlib import pylab
 >>> uv = aipy.miriad.UV('test.uv')
 >>> aa = aipy.cal.get_aa('pwa303', uv['sdf'], uv['sfreq'], uv['nchan'])
 >>> srcs = aipy._src.misc.get_srcs(srcs=['vir'])
