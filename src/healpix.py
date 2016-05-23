@@ -3,10 +3,14 @@ Provides interfaces to Healpix_cxx, which was developed at the
 Max-Planck-Institut fuer Astrophysik and financially supported by the 
 Deutsches Zentrum fuer Luft- und Raumfahrt (DLR).
 Adds data to the HealpixBase class using numpy arrays, and interfaces to
-FITS files using pyfits.
+FITS files using astropy/pyfits.
 """
 
-import numpy as n, utils, pyfits
+import numpy as n, utils
+try:
+    from astropy.io import fits as pyfits
+except ImportError:
+    import pyfits
 from _healpix import HealpixBase
 from _alm import Alm
 

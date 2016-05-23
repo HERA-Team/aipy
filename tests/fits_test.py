@@ -1,5 +1,9 @@
 #! /usr/bin/env python
-import numpy as n, aipy as a, pyfits
+import numpy as n, aipy as a
+try:
+    from astropy.io import fits as pyfits
+except ImportError:
+    import pyfits
 
 im = a.img.Img(size=200, res=.5)
 L,M = im.get_LM(center=(200,200))

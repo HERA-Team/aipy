@@ -2,7 +2,11 @@
 Module for mapping and modeling the entire sky.
 """
 
-import numpy as n, healpix, pyfits, coord, random,img
+import numpy as n, healpix, coord, random,img
+try:
+    from astropy.io import fits as pyfits
+except ImportError:
+    import pyfits
 
 # Set a fixed random seed to make scrambling deterministic
 random.seed(1)

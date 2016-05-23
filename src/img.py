@@ -3,7 +3,11 @@ Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
 """
 
-import numpy as n, utils, coord, pyfits, time
+import numpy as n, utils, coord, time
+try:
+    from astropy.io import fits as pyfits
+except ImportError:
+    import pyfits
 USEDSP = True
 if USEDSP: import _dsp
 

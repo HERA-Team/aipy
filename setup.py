@@ -53,10 +53,7 @@ setup(name = 'aipy',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
     setup_requires = ['numpy>=1.2'],
-    install_requires = ['pyephem>=3.7.3.2', 'pyfits>=2.1', 'numpy>=1.2'],
-    dependency_links = [
-        'http://www.stsci.edu/resources/software_hardware/pyfits'
-    ],
+    install_requires = ['pyephem>=3.7.3.2', 'astropy>=1.0', 'numpy>=1.2'],
     package_dir = {'aipy':'src', 'aipy.optimize':'src/optimize', 'aipy._src':'src/_src'},
     packages = ['aipy', 'aipy.optimize','aipy._src'],
     ext_modules = [
