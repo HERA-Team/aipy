@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/home/saulkohn/src/anaconda/envs/PennStill/bin/python
 """
 Creates waterfall plots from Miriad UV files.  Can tile multiple plots
 on one window, or plot just a single baseline.  When taking the delay

@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/home/saulkohn/src/anaconda/envs/PennStill/bin/python
 import aipy as a, numpy as n
 import optparse, sys, os
 
