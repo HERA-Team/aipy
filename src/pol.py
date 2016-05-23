@@ -3,7 +3,7 @@ Module for adding polarization information to models.
 """
 
 from aipy import coord,fit,miriad
-import numpy as n
+import numpy as np
 
 #  _   ___     __
 # | | | \ \   / /
@@ -43,9 +43,9 @@ def ParAng(ha,dec,lat):
     For any hour angle, declenation in an image, calculate the paralactic angle at that point. Remember to multiply this by 2 when you're
     doing anything with it...
     """
-    up = (n.cos(lat)*n.sin(ha))
-    down = (n.sin(lat)*n.cos(dec))-(n.cos(lat)*n.sin(dec)*n.cos(ha))
-    return n.arctan2(up,down)
+    up = (np.cos(lat)*np.sin(ha))
+    down = (np.sin(lat)*np.cos(dec))-(np.cos(lat)*np.sin(dec)*np.cos(ha))
+    return np.arctan2(up,down)
 
 #  ____
 # | __ )  ___  __ _ _ ___ ___
@@ -65,15 +65,15 @@ class Antenna(fit.Antenna):
     def _update_phsoff(self):
         self.phsoff = {}
         for pol in self._phsoff: 
-            self.phsoff[pol] = n.polyval(self._phsoff[pol], self.beam.afreqs)
+            self.phsoff[pol] = np.polyval(self._phsoff[pol], self.beam.afreqs)
     def _update_gain(self):
         self._gain = {}
         for pol in self.bp_r:
-            bp = n.polyval(self.bp_r[pol], self.beam.afreqs) + \
-                1j*n.polyval(self.bp_i[pol], self.beam.afreqs)
+            bp = np.polyval(self.bp_r[pol], self.beam.afreqs) + \
+                1j*np.polyval(self.bp_i[pol], self.beam.afreqs)
             self._gain[pol] = self.amp[pol] * bp
     def passband(self, conj=False, pol='x'):
-        if conj: return n.conjugate(self._gain[pol])
+        if conj: return np.conjugate(self._gain[pol])
         else: return self._gain[pol]
     def bm_response(self,top,pol='x'):
         """Introduce Stokes parameters in to the definition of the beam."""
@@ -81,8 +81,8 @@ class Antenna(fit.Antenna):
             return fit.Antenna.bm_response(self,top,pol)
         else:
             assert(pol in 'IQUV')
-            if pol in 'IQ': return n.sqrt(0.5*fit.Antenna.bm_response(self,top,pol='x')**2+0.5*fit.Antenna.bm_response(self,top,pol='y')**2)
-            if pol in 'UV': return n.sqrt(fit.Antenna.bm_response(self,top,pol='x')*fit.Antenna.bm_response(self,top,pol='y'))
+            if pol in 'IQ': return np.sqrt(0.5*fit.Antenna.bm_response(self,top,pol='x')**2+0.5*fit.Antenna.bm_response(self,top,pol='y')**2)
+            if pol in 'UV': return np.sqrt(fit.Antenna.bm_response(self,top,pol='x')*fit.Antenna.bm_response(self,top,pol='y'))
     def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
         x,y,z = self.pos

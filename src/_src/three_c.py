@@ -6,7 +6,7 @@ the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy this file to "3c.txt" in the _src directory of your AIPY
 installation.'''
-import aipy as a, numpy as n, os
+import aipy as a, numpy as np, os
 
 class ThreeCCatalog(a.fit.SrcCatalog):
     def fromfile(self,filename):
@@ -37,7 +37,7 @@ def get_srcs(srcs=None, cutoff=None):
         if cutoff is None: srcs = _threeccat.keys()
         else:
             cut, fq = cutoff
-            fq = n.array([fq])
+            fq = np.array([fq])
             for s in _threeccat.keys(): _threeccat[s].update_jys(fq)
             srcs = [s for s in _threeccat.keys() if _threeccat[s].jys[0] > cut]
     srclist = []

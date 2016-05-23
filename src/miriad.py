@@ -6,7 +6,7 @@ radio telescopes.
 
 __version__ = '0.1.1'
 
-import numpy as n, _miriad
+import numpy as np, _miriad
 
 def echo(uv, p, d): return p, d
 
@@ -126,7 +126,7 @@ class UV(_miriad.UV):
         _miriad.hdaccess(h)
         if len(rv) == 1: return rv[0]
         elif type(rv) == str: return rv
-        else: return n.array(rv)
+        else: return np.array(rv)
     def _wrhd(self, name, val):
         """Provide write access to header items via low-level calls."""
         type = itemtable[name]
@@ -213,9 +213,9 @@ class UV(_miriad.UV):
         'raw' causes data and flags to be returned seperately."""
         preamble, data, flags, nread = self.raw_read(self.nchan)
         if nread == 0: raise IOError("No data read")
-        flags = n.logical_not(flags)
+        flags = np.logical_not(flags)
         if raw: return preamble, data, flags
-        return preamble, n.ma.array(data, mask=flags)
+        return preamble, np.ma.array(data, mask=flags)
     def all(self, raw=False):
         """Provide an iterator over preamble, data.  Allows constructs like: 
         for preamble, data in uv.all(): ..."""
@@ -228,15 +228,15 @@ class UV(_miriad.UV):
         array.  preamble must be (uvw, t, (i,j)), where uvw is an array of 
         u,v,w, t is the Julian date, and (i,j) is an antenna pair."""
         if data is None: return
-        if not flags is None: flags = n.logical_not(flags)
+        if not flags is None: flags = np.logical_not(flags)
         elif len(data.mask.shape) == 0:
-            flags = n.ones(data.shape)
+            flags = np.ones(data.shape)
             data = data.unmask()
         else:
-            flags = n.logical_not(data.mask)
+            flags = np.logical_not(data.mask)
             #data = data.filled(0)
             data = data.data
-        self.raw_write(preamble,data.astype(n.complex64),flags.astype(n.int32))
+        self.raw_write(preamble,data.astype(np.complex64),flags.astype(np.int32))
     def init_from_uv(self, uv, override={}, exclude=[]):
         """Initialize header items and variables from another UV.  Those in 
         override will be overwritten by override[k], and tracking will be 

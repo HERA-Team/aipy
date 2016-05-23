@@ -2,7 +2,7 @@
 Module for representing antenna array geometry and for generating
 phasing information.
 """
-import ephem, math, numpy as n, coord, const, _cephes
+import ephem, math, numpy as np, coord, const, _cephes
 from miriad import ij2bl, bl2ij
 
 class PointingError(Exception):
@@ -141,14 +141,14 @@ class SrcCatalog(dict):
     def get_crds(self, crdsys, ncrd=3, srcs=None):
         """Return coordinates of all objects in catalog."""
         if srcs is None: srcs = self.keys()
-        crds = n.array([self[s].get_crds(crdsys, ncrd=ncrd) for s in srcs])
+        crds = np.array([self[s].get_crds(crdsys, ncrd=ncrd) for s in srcs])
         return crds.transpose()
     def get(self, attribute, srcs=None):
         """Return the specified source attribute (e.g. "mfreq" for src.mfreq)
         in an array for all src names in 'srcs'.  If not provided, defaults to 
         all srcs in catalog."""
         if srcs is None: srcs = self.keys()
-        return n.array([getattr(self[s], attribute) for s in srcs]).transpose()
+        return np.array([getattr(self[s], attribute) for s in srcs]).transpose()
 
 #  ____
 # | __ )  ___  __ _ _ __ ___
@@ -163,7 +163,7 @@ class Beam:
     def __init__(self, freqs, **kwargs):
         """freqs = frequencies (in GHz) at bin centers across spectrum."""
         self.freqs = freqs
-        self.chans = n.arange(self.freqs.size)
+        self.chans = np.arange(self.freqs.size)
         self._update_afreqs()
     def _update_afreqs(self):
         self.afreqs = self.freqs.take(self.chans)
@@ -171,7 +171,7 @@ class Beam:
         self._update_afreqs()
     def select_chans(self, active_chans=None):
         """Select only enumerated channels to use for future calculations."""
-        if active_chans is None: active_chans = n.arange(self.freqs.size)
+        if active_chans is None: active_chans = np.arange(self.freqs.size)
         self.chans = active_chans
         self.update()
 
@@ -188,7 +188,7 @@ class Antenna:
         beam = Beam object
         phsoff = polynomial phase vs. frequency.  Phs term that is linear
                  with freq is often called 'delay'."""
-        self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
+        self.pos = np.array((x,y,z), np.float64) # must be float64 for mir
         self.beam = beam
         self._phsoff = phsoff
         self._update_phsoff()
@@ -197,7 +197,7 @@ class Antenna:
         self.beam.select_chans(active_chans)
         self.update()
     def _update_phsoff(self):
-        self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
+        self.phsoff = np.polyval(self._phsoff, self.beam.afreqs)
     def update(self):
         self._update_phsoff()
     def __iter__(self): return self.pos.__iter__()
@@ -239,7 +239,7 @@ class ArrayLocation(ephem.Observer):
         matrix for projecting baselines into current positions."""
         if t is None: t = ephem.now()
         self.date, self.epoch = t, t
-        self._eq2now = coord.rot_m(-self.sidereal_time(), n.array([0.,0.,1.]))
+        self._eq2now = coord.rot_m(-self.sidereal_time(), np.array([0.,0.,1.]))
 
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
@@ -302,8 +302,8 @@ class AntennaArray(ArrayLocation):
         projection toward that source."""
         bl = self[j] - self[i]
         if type(src) == str:
-            if src == 'e': return n.dot(self._eq2now, bl)
-            elif src == 'z': return n.dot(self._eq2zen, bl)
+            if src == 'e': return np.dot(self._eq2now, bl)
+            elif src == 'z': return np.dot(self._eq2zen, bl)
             elif src == 'r': return bl
             else: raise ValueError('Unrecognized source:' + src)
         try:
@@ -313,7 +313,7 @@ class AntennaArray(ArrayLocation):
         except(AttributeError):
             ra,dec = coord.eq2radec(src)
             m = coord.eq2top_m(self.sidereal_time() - ra, dec)
-        return n.dot(m, bl).transpose()
+        return np.dot(m, bl).transpose()
     def get_phs_offset(self, i, j):
         """Return the frequency-dependent phase offset of baseline i,j."""
         return self[j].phsoff - self[i].phsoff
@@ -323,14 +323,14 @@ class AntennaArray(ArrayLocation):
         of (u,v,w) will be returned)."""
         x,y,z = self.get_baseline(i,j, src=src)
         afreqs = self.get_afreqs()
-        afreqs = n.reshape(afreqs, (1,afreqs.size))
+        afreqs = np.reshape(afreqs, (1,afreqs.size))
         if len(x.shape) == 0:
             if w_only: return z*afreqs
-            else: return n.array([x*afreqs, y*afreqs, z*afreqs])
-        #afreqs = n.reshape(afreqs, (1,afreqs.size))
+            else: return np.array([x*afreqs, y*afreqs, z*afreqs])
+        #afreqs = np.reshape(afreqs, (1,afreqs.size))
         x.shape += (1,); y.shape += (1,); z.shape += (1,)
-        if w_only: return n.dot(z,afreqs)
-        else: return n.array([n.dot(x,afreqs), n.dot(y,afreqs), n.dot(z,afreqs)])
+        if w_only: return np.dot(z,afreqs)
+        else: return np.array([np.dot(x,afreqs), np.dot(y,afreqs), np.dot(z,afreqs)])
     def gen_phs(self, src, i, j, mfreq=.150, ionref=None, srcshape=None, 
             resolve_src=False):
         """Return phasing that is multiplied to data to point to src."""
@@ -341,7 +341,7 @@ class AntennaArray(ArrayLocation):
         else: w = self.gen_uvw(i,j,src=src, w_only=True)
         if not ionref is None: w += self.refract(u, v, mfreq=mfreq, ionref=ionref)
         o = self.get_phs_offset(i,j)
-        phs = n.exp(-1j*2*n.pi*(w + o))
+        phs = np.exp(-1j*2*np.pi*(w + o))
         if resolve_src:
             if srcshape is None:
                 try: srcshape = src.srcshape
@@ -359,11 +359,11 @@ class AntennaArray(ArrayLocation):
             if len(u.shape) > len(a1.shape): 
                 a1.shape += (1,); a2.shape += (1,); th.shape += (1,)
         except(AttributeError): pass
-        ru = a1 * (u*n.cos(th) - v*n.sin(th))
-        rv = a2 * (u*n.sin(th) + v*n.cos(th))
-        x = 2 * n.pi * n.sqrt(ru**2 + rv**2)
+        ru = a1 * (u*np.cos(th) - v*np.sin(th))
+        rv = a2 * (u*np.sin(th) + v*np.cos(th))
+        x = 2 * np.pi * np.sqrt(ru**2 + rv**2)
         # Use first Bessel function of the first kind (J_1)
-        return n.where(x == 0, 1, 2 * _cephes.j1(x)/x).squeeze()
+        return np.where(x == 0, 1, 2 * _cephes.j1(x)/x).squeeze()
     def refract(self, u_sf, v_sf, mfreq=.150, ionref=(0.,0.)):
         """Calibrate a frequency-dependent source offset by scaling measured
         offsets at a given frequency.  Generates dw, a change in the

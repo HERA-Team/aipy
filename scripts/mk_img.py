@@ -6,7 +6,7 @@ to a provided position, normalized for passband/primary beam effects, gridded
 to a UV matrix, and imaged
 """
 
-import aipy as a, numpy as n, sys, optparse, ephem, os
+import aipy as a, numpy as np, sys, optparse, ephem, os
 
 o = optparse.OptionParser()
 o.set_usage('mk_img.py [options] *.uv')
@@ -60,7 +60,7 @@ aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
 aa.select_chans(chans)
 aa.set_active_pol(opts.pol)
 afreqs = aa[0].beam.afreqs
-cfreq = n.average(afreqs)
+cfreq = np.average(afreqs)
 aa.set_jultime(t)
 del(uv)
 outputs = opts.output.split(',')
@@ -104,12 +104,12 @@ n_ints = 0
 #mask = top[0].mask
 #m = a.coord.eq2top_m(0, aa.lat)
 #top = top.transpose([1,0,2])
-#x,y,z = n.dot(m, top)
+#x,y,z = np.dot(m, top)
 #aa.select_chans([120])
 #d = aa.ants[0].bm_response((x.flatten(),y.flatten(),z.flatten()), pol='y')[0]**2
 #aa.select_chans(chans)
 #d.shape = (DIM,DIM)
-#bm_im = n.where(mask, 0, d)
+#bm_im = np.where(mask, 0, d)
 #print 'done'
 
 # Define a quick function writing an image to a FITS file
@@ -132,14 +132,14 @@ def to_fits(ftag,i,src,cnt,history=''):
         object=src.src_name, obs_date=str(aa.date),
         ra=cen.ra*a.img.rad2deg, dec=cen.dec*a.img.rad2deg, epoch=2000.,
         d_ra=L[-1,-1]*a.img.rad2deg, d_dec=M[1,1]*a.img.rad2deg,
-        freq=n.average(aa[0].beam.afreqs),history=history)
+        freq=np.average(aa[0].beam.afreqs),history=history)
 
 def grid_it(im,us,vs,ws,ds,wgts):
     #print 'Gridding %d integrations' % n_ints
     sys.stdout.write('|'); sys.stdout.flush()
     if len(ds) == 0: raise ValueError('No data to use.')
-    ds,wgts = n.concatenate(ds), n.concatenate(wgts).flatten()
-    us,vs,ws = n.concatenate(us), n.concatenate(vs), n.concatenate(ws)
+    ds,wgts = np.concatenate(ds), np.concatenate(wgts).flatten()
+    us,vs,ws = np.concatenate(us), np.concatenate(vs), np.concatenate(ws)
     # Grid data into UV matrix
     (us,vs,ws),ds,wgts = im.append_hermitian((us,vs,ws),ds,wgts)
     im.put((us,vs,ws), ds, wgts)
@@ -150,8 +150,8 @@ def img_it(im):
     #print 'Imaging with %d integrations' % n_ints
     n_ints = 0
     # Form dirty images/beams
-    uvs = a.img.recenter(n.abs(im.uv).astype(n.float), (DIM/2,DIM/2))
-    bms = a.img.recenter(n.abs(im.bm[0]).astype(n.float), (DIM/2,DIM/2))
+    uvs = a.img.recenter(np.abs(im.uv).astype(np.float), (DIM/2,DIM/2))
+    bms = a.img.recenter(np.abs(im.bm[0]).astype(np.float), (DIM/2,DIM/2))
     dim = im.image((DIM/2, DIM/2))
     dbm = im.bm_image(term=0, center=(DIM/2,DIM/2))
     return uvs,bms, dim,dbm
@@ -187,7 +187,7 @@ for srccnt, s in enumerate(cat.values()):
                               grid_it(im,us,vs,ws,ds,wgts)
                               uvs,bms,dim,dbm = img_it(im)
                           except(ValueError):
-                              uvs = n.abs(im.uv)
+                              uvs = np.abs(im.uv)
                               bms,dim,dbm = uvs,uvs,uvs
                           for k in ['uvs','bms','dim','dbm']:
                               if k in outputs: to_fits(k, eval(k), s,imgcnt,history=history)
@@ -216,15 +216,15 @@ for srccnt, s in enumerate(cat.values()):
               if opts.zen_phased: d = aa.unphs2src(d, 'z', i, j)
               d = aa.phs2src(d, s, i, j)
           u,v,w = aa.gen_uvw(i,j,src=s)
-          longenough = n.where(n.sqrt(u**2+v**2) < opts.minuv, 0, 1).squeeze()
+          longenough = np.where(np.sqrt(u**2+v**2) < opts.minuv, 0, 1).squeeze()
           if not opts.skip_bm:
               # Calculate beam strength for weighting purposes
               wgt = aa.bm_response(i,j).squeeze()
               # Optimal SNR: down-weight beam-attenuated data 
               # by another factor of the beam response.
               d *= wgt; wgt *= wgt
-          else: wgt = n.ones(d.shape, dtype=n.float)
-          valid = n.logical_and(n.logical_not(f), longenough)
+          else: wgt = np.ones(d.shape, dtype=np.float)
+          valid = np.logical_and(np.logical_not(f), longenough)
           d = d.compress(valid)
           if len(d) == 0: continue
           n_ints += 1

@@ -3,7 +3,7 @@ Module containing utilities (like parsing of certain command-line arguments)
 for writing scripts.
 """
 
-import miriad, fit, src, numpy as n, re,phs
+import miriad, fit, src, numpy as np, re,phs
 
 def add_standard_options(optparser, ant=False, pol=False, chan=False, 
         cal=False, src=False, prms=False, dec=False, cmap=False, 
@@ -130,16 +130,16 @@ def parse_chans(chan_str, nchan, concat=True):
     """Return array of active channels based on number of channels and
     string argument for chans (all, 20_30, or 55,56,57, or 20_30,31,32).
     Channel ranges include endpoints (i.e. 20_30 includes both 20 and 30)."""
-    if chan_str.startswith('all'): chanopt = [n.arange(nchan)]
+    if chan_str.startswith('all'): chanopt = [np.arange(nchan)]
     else:
         chanopt = []
         for co in chan_str.split(','):
             co = map(int, co.split('_'))
             assert(len(co) in [1,2,3])
-            if len(co) == 1: chanopt.append(n.array(co))
-            elif len(co) == 2: chanopt.append(n.arange(co[0],co[1]+1))
-            else: chanopt.append(n.arange(co[0],co[1]+1,co[2]))
-    if concat: return n.concatenate(chanopt)
+            if len(co) == 1: chanopt.append(np.array(co))
+            elif len(co) == 2: chanopt.append(np.arange(co[0],co[1]+1))
+            else: chanopt.append(np.arange(co[0],co[1]+1,co[2]))
+    if concat: return np.concatenate(chanopt)
     return chanopt
 
 def parse_srcs(src_str, cat_str):
@@ -218,4 +218,4 @@ def parse_prms(prm_str):
 
 def get_null_aa():
    return phs.AntennaArray([0,0],
-       [phs.Antenna(0,0,0,phs.Beam(n.array([0.15])))])
+       [phs.Antenna(0,0,0,phs.Beam(np.array([0.15])))])

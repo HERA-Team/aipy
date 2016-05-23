@@ -12,10 +12,10 @@ lower = lower bound of pixel values in deconvolved image
 upper = upper bound of pixel values in deconvolved image
 """
 
-import numpy as n, sys, _deconv
+import numpy as np, sys, _deconv
 
 # Find smallest representable # > 0 for setting clip level
-lo_clip_lev = n.finfo(n.float).tiny 
+lo_clip_lev = np.finfo(np.float).tiny 
 
 def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3, 
         stop_if_div=True, verbose=False, pos_def=False):
@@ -32,27 +32,27 @@ def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3,
         low, clean takes unnecessarily long.  If it is too high, clean does
         a poor job of deconvolving."""
     if mdl is None:
-        mdl = n.zeros(im.shape, dtype=im.dtype)
+        mdl = np.zeros(im.shape, dtype=im.dtype)
         res = im.copy()
     else:
         mdl = mdl.copy()
         if len(mdl.shape) == 1:
-            res = im - n.fft.ifft(n.fft.fft(mdl) * \
-                                  n.fft.fft(ker)).astype(im.dtype)
+            res = im - np.fft.ifft(np.fft.fft(mdl) * \
+                                  np.fft.fft(ker)).astype(im.dtype)
         elif len(mdl.shape) == 2:
-            res = im - n.fft.ifft2(n.fft.fft2(mdl) * \
-                                   n.fft.fft2(ker)).astype(im.dtype)
+            res = im - np.fft.ifft2(np.fft.fft2(mdl) * \
+                                   np.fft.fft2(ker)).astype(im.dtype)
         else: raise ValueError('Number of dimensions != 1 or 2')
     if area is None:
-        area = n.ones(im.shape, dtype=n.int)
+        area = np.ones(im.shape, dtype=np.int)
     else:
-        area = area.astype(n.int)
+        area = area.astype(np.int)
         
     iter = _deconv.clean(res, ker, mdl, area,
             gain=gain, maxiter=maxiter, tol=tol, 
             stop_if_div=int(stop_if_div), verbose=int(verbose),
             pos_def=int(pos_def))
-    score = n.sqrt(n.average(n.abs(res)**2))
+    score = np.sqrt(np.average(np.abs(res)**2))
     info = {'success':iter > 0 and iter < maxiter, 'tol':tol}
     if iter < 0: info.update({'term':'divergence', 'iter':-iter})
     elif iter < maxiter: info.update({'term':'tol', 'iter':iter})
@@ -68,12 +68,12 @@ def recenter(a, c):
     """Slide the (0,0) point of matrix a to a new location tuple c."""
     s = a.shape
     c = (c[0] % s[0], c[1] % s[1])
-    a1 = n.concatenate([a[c[0]:], a[:c[0]]], axis=0)
-    a2 = n.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
+    a1 = np.concatenate([a[c[0]:], a[:c[0]]], axis=0)
+    a2 = np.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
     return a2
 
 def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200, 
-        lower=lo_clip_lev, upper=n.Inf, verbose=False):
+        lower=lo_clip_lev, upper=np.Inf, verbose=False):
     """This simple least-square fitting procedure for deconvolving an image 
     saves computing by assuming a diagonal pixel-pixel gradient of the fit.
     In essence, this assumes that the convolution kernel is a delta-function.
@@ -88,32 +88,32 @@ def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200,
         in each iteration.  If this is too low, the fit takes unnecessarily 
         long.  If it is too high, the fit process can oscillate."""
     if mdl is None:
-        #mdl = n.zeros_like(im)
-        mdl = n.zeros(im.shape, dtype=im.dtype)
+        #mdl = np.zeros_like(im)
+        mdl = np.zeros(im.shape, dtype=im.dtype)
     x = mdl.copy()
     if area is None:
-        area = n.ones(im.shape, dtype=n.int)
+        area = np.ones(im.shape, dtype=np.int)
     else:
-        area = area.astype(n.int)
+        area = area.astype(np.int)
     # Estimate gain of the kernel
-    q = n.sqrt((n.abs(ker)**2).sum())
-    ker_i = n.fft.fft2(ker)
+    q = np.sqrt((np.abs(ker)**2).sum())
+    ker_i = np.fft.fft2(ker)
     info = {'success':True, 'term':'maxiter', 'tol':tol}
     # Function to calculate chi-square and gradient
     def f(x):
-        x_conv_ker = n.fft.ifft2(n.fft.fft2(x) * ker_i).real
+        x_conv_ker = np.fft.ifft2(np.fft.fft2(x) * ker_i).real
         diff = (im - x_conv_ker) * area
         g_chi2 = -2*q*(diff)
-        chi2 = n.abs(diff)**2
+        chi2 = np.abs(diff)**2
         return chi2, g_chi2
     score = 0
     # Start the fit loop
     for i in range(maxiter):
         chi2, g_chi2 = f(x)
-        n_score = n.average(chi2)
+        n_score = np.average(chi2)
         term = abs(1 - score/n_score)
         if verbose:
-            slope = n.sqrt(n.average(g_chi2**2))
+            slope = np.sqrt(np.average(g_chi2**2))
             print 'Step %d:' % i, 'score',  score, 
             print 'slope', slope, 'term', term
         if term < tol:
@@ -122,14 +122,14 @@ def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200,
         score = n_score
         # For especially clean imgs, g_chi2 in some components can go to 0.
         # This check makes lsq a little slower for most images, though...
-        d_x = n.where(abs(g_chi2) > 0, -(1/g_chi2) * chi2, 0)
-        x = n.clip(x + gain * d_x, lower, upper)
-    info.update({'res':im - n.fft.ifft2(n.fft.fft2(x) * ker_i).real,
+        d_x = np.where(abs(g_chi2) > 0, -(1/g_chi2) * chi2, 0)
+        x = np.clip(x + gain * d_x, lower, upper)
+    info.update({'res':im - np.fft.ifft2(np.fft.fft2(x) * ker_i).real,
         'score': score, 'iter':i+1})
     return x, info
 
 def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200, 
-        lower=lo_clip_lev, upper=n.Inf, verbose=False):
+        lower=lo_clip_lev, upper=np.Inf, verbose=False):
     """Maximum entropy deconvolution (MEM) (see Cornwell and Evans 1984
     "A Simple Maximum Entropy Deconvolution Algorithm" and Sault 1990
     "A Modification of the Cornwell and Evans Maximum Entropy Algorithm")
@@ -144,24 +144,24 @@ def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200,
         in each iteration.  If this is too low, the fit takes unnecessarily 
         long.  If it is too high, the fit process can oscillate."""
     d_i = im.flatten()
-    q = n.sqrt((ker**2).sum())
+    q = np.sqrt((ker**2).sum())
     minus_two_q = -2*q
     two_q_sq = 2*q**2
     if mdl is None:
-         #mdl = n.ones_like(im) * n.average(im) / ker.sum() 
-         mdl = n.ones(im.shape, dtype=im.dtype) * n.average(im) / ker.sum() 
-    #if mdl is None: mdl = n.ones_like(im) * n.average(im) / q
+         #mdl = np.ones_like(im) * np.average(im) / ker.sum() 
+         mdl = np.ones(im.shape, dtype=im.dtype) * np.average(im) / ker.sum() 
+    #if mdl is None: mdl = np.ones_like(im) * np.average(im) / q
     Nvar0 = d_i.size * var0
-    inv_ker = n.fft.fft2(ker)
+    inv_ker = np.fft.fft2(ker)
     m_i = mdl.flatten()
     def next_step(b_i, alpha, verbose=False):
         b_i.shape = im.shape
-        b_i_conv_ker = n.fft.ifft2(n.fft.fft2(b_i) * inv_ker).real
+        b_i_conv_ker = np.fft.ifft2(np.fft.fft2(b_i) * inv_ker).real
         b_i.shape = m_i.shape
         diff = (im - b_i_conv_ker).flatten()
-        chi2 = n.dot(diff,diff) - Nvar0
+        chi2 = np.dot(diff,diff) - Nvar0
         g_chi2 = minus_two_q*(diff)
-        g_J = (-n.log(b_i/m_i) - 1) - alpha * g_chi2
+        g_J = (-np.log(b_i/m_i) - 1) - alpha * g_chi2
         gg_J = (-1/b_i) - alpha * two_q_sq
         # Define dot product using the metric of -gg_J^-1
         def dot(x, y): return (x*y/-gg_J).sum()
@@ -169,9 +169,9 @@ def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200,
         d_alpha = (chi2 + dot(g_chi2,g_J)) / dot(g_chi2,g_chi2)
         # For especially clean images, gg_J in some components can go to 0.
         # This check makes lsq a little slower for most images, though...
-        d_b_i = n.where(abs(gg_J) > 0, -1/gg_J * (g_J - d_alpha*g_chi2), 0)
+        d_b_i = np.where(abs(gg_J) > 0, -1/gg_J * (g_J - d_alpha*g_chi2), 0)
         if verbose:
-            print '    score', score, 'fit', n.dot(diff,diff)
+            print '    score', score, 'fit', np.dot(diff,diff)
             print '    alpha', alpha, 'd_alpha', d_alpha
         return d_b_i, d_alpha, score
     alpha = 0.
@@ -183,18 +183,18 @@ def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200,
         if score < tol and score > 0:
             info['term'] = 'tol'
             break
-        elif score > 1e10 or n.isnan(score) or score <= 0:
+        elif score > 1e10 or np.isnan(score) or score <= 0:
             info.update({'term':'divergence', 'success':False})
             break
-        b_i = n.clip(b_i + gain * d_b_i, lower, upper)
+        b_i = np.clip(b_i + gain * d_b_i, lower, upper)
         alpha += gain * d_alpha
     b_i.shape = im.shape
-    info.update({'res':im - n.fft.ifft2(n.fft.fft2(b_i) * inv_ker).real,
+    info.update({'res':im - np.fft.ifft2(np.fft.fft2(b_i) * inv_ker).real,
         'score': score, 'alpha': alpha, 'iter':i+1})
     return b_i, info
 
 def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3, 
-        maxiter=200, lower=lo_clip_lev, upper=n.Inf, verbose=False, 
+        maxiter=200, lower=lo_clip_lev, upper=np.Inf, verbose=False, 
         maxiterok=False):
     """This frontend to maxent tries to find a variance for which maxent will
     converge.  If the starting variance (var) is not specified, it will be
@@ -206,7 +206,7 @@ def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
         # Get a starting estimate of variance to use via residual of lsq
         junk, info = lsq(im, ker, mdl=mdl, gain=gain, tol=tol,
             maxiter=maxiter/4, lower=lower, upper=upper, verbose=False)
-        var = n.var(info['res'])
+        var = np.var(info['res'])
         if verbose: print 'Using', f_var0, 'of LSQ estimate of var=', var
         var *= f_var0
     else:
@@ -235,8 +235,8 @@ def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
     if verbose: print 'Done with MEM.'
     return cl, info
 
-def anneal(im, ker, mdl=None, maxiter=1000, lower=lo_clip_lev, upper=n.Inf,
-        cooling=lambda i,x: 1e+1*(1-n.cos(i/50.))*(x**2), verbose=False):
+def anneal(im, ker, mdl=None, maxiter=1000, lower=lo_clip_lev, upper=np.Inf,
+        cooling=lambda i,x: 1e+1*(1-np.cos(i/50.))*(x**2), verbose=False):
     """Annealing takes a non-deterministic approach to deconvolution by
     randomly perturbing the model and selecting perturbations that improve the 
     residual.  By slowly reducing the temperature of the perturbations, 
@@ -250,18 +250,18 @@ def anneal(im, ker, mdl=None, maxiter=1000, lower=lo_clip_lev, upper=n.Inf,
         vector of standard deviation for noise in the respective pixels.
         Picking the scaling of this function correctly is vital for annealing
         to work."""
-    if mdl is None: mdl = n.zeros_like(im)
-    q = n.sqrt((ker**2).sum())
-    inv_ker = n.fft.fft2(ker)
-    dif = im - n.fft.ifft2(n.fft.fft2(mdl) * inv_ker).real
-    score = n.average(dif**2)
+    if mdl is None: mdl = np.zeros_like(im)
+    q = np.sqrt((ker**2).sum())
+    inv_ker = np.fft.fft2(ker)
+    dif = im - np.fft.ifft2(np.fft.fft2(mdl) * inv_ker).real
+    score = np.average(dif**2)
     #info = {'success':True, 'term':'maxiter', 'speed':speed}
     info = {'success':True, 'term':'maxiter'}
     for i in range(maxiter):
-        delta = n.random.normal(scale=1., size=mdl.shape) * cooling(i, dif/q)
-        n_mdl = n.clip(mdl + delta, lower, upper)
-        n_dif = im - n.fft.ifft2(n.fft.fft2(n_mdl) * inv_ker).real
-        n_score = n.average(n_dif**2)
+        delta = np.random.normal(scale=1., size=mdl.shape) * cooling(i, dif/q)
+        n_mdl = np.clip(mdl + delta, lower, upper)
+        n_dif = im - np.fft.ifft2(np.fft.fft2(n_mdl) * inv_ker).real
+        n_score = np.average(n_dif**2)
         if verbose: print 'Step %d:' % i, n_score, score
         if n_score < score: mdl, dif, score = n_mdl, n_dif, n_score
     info.update({'res':dif, 'score': score, 'iter':i+1})

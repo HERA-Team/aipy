@@ -10,32 +10,32 @@ Revisions:
 
 __all__ = ['interpolate', 'default_filter']
 
-import numpy as n
+import numpy as np
 
 def subsample(a, factor):
-    rv = n.zeros((a.size, factor), dtype=a.dtype)
+    rv = np.zeros((a.size, factor), dtype=a.dtype)
     rv[:,0] = a
-    wgts = n.zeros((a.size, factor), dtype=n.float)
+    wgts = np.zeros((a.size, factor), dtype=np.float)
     wgts[:,0] = 1.
     return rv.flatten(), wgts.flatten()
 
 def polyextend(y, nsamples, degree=2):
     """Extend y on either end by nsamples with a polynomial of the specified
     degree.  Assumes y is sampled on a uniform x grid."""
-    x = n.arange(-nsamples,nsamples)
-    p = n.polyfit(x[-nsamples:],y[:nsamples],degree)
-    y0 = n.polyval(p, x[:nsamples])
-    x = n.arange(-nsamples+1,nsamples+1)
-    p = n.polyfit(x[:nsamples],y[-nsamples:],degree)
-    y1 = n.polyval(p, x[-nsamples:])
-    return n.concatenate([y0, y, y1])
+    x = np.arange(-nsamples,nsamples)
+    p = np.polyfit(x[-nsamples:],y[:nsamples],degree)
+    y0 = np.polyval(p, x[:nsamples])
+    x = np.arange(-nsamples+1,nsamples+1)
+    p = np.polyfit(x[:nsamples],y[-nsamples:],degree)
+    y1 = np.polyval(p, x[-nsamples:])
+    return np.concatenate([y0, y, y1])
     
 def default_filter(xs, freq=.25):
     """A basic smoothing filter using a Hamming window and a sinc function
     of the specified frequency.  Input a sample grid [-x,x] to get the
     FIR coefficients used for smoothing."""
-    i = n.arange(xs.size, dtype=n.float) / xs.size * 2*n.pi
-    return (1-n.cos(i)) * n.sinc(freq*xs)
+    i = np.arange(xs.size, dtype=np.float) / xs.size * 2*np.pi
+    return (1-np.cos(i)) * np.sinc(freq*xs)
 
 def interpolate(ys, factor, filter=default_filter, order=4):
     """Oversample ys by the specified factor using a filter function to
@@ -47,8 +47,8 @@ def interpolate(ys, factor, filter=default_filter, order=4):
     step = 1./factor
     ys = polyextend(ys, order)
     ys_ss, wgts = subsample(ys, factor)
-    fir = filter(n.arange(-order,order+step,step))
-    ys_ss = n.convolve(ys_ss, fir, mode='valid')
-    wgts = n.convolve(wgts, fir, mode='valid')
+    fir = filter(np.arange(-order,order+step,step))
+    ys_ss = np.convolve(ys_ss, fir, mode='valid')
+    wgts = np.convolve(wgts, fir, mode='valid')
     return ys_ss / wgts
    

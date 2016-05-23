@@ -2,23 +2,23 @@
 Module for fitting 2d Gaussians to things.
 """
 
-import numpy as n
+import numpy as np
 
 def moments(data):
-    total = n.abs(data).sum()
-    Y,X = n.indices(data.shape)
-    y = n.argmax((X*n.abs(data)).sum(axis=1)/total)
-    x = n.argmax((Y*n.abs(data)).sum(axis=0)/total)
+    total = np.abs(data).sum()
+    Y,X = np.indices(data.shape)
+    y = np.argmax((X*np.abs(data)).sum(axis=1)/total)
+    x = np.argmax((Y*np.abs(data)).sum(axis=0)/total)
     col = data[int(y),:]
     row = data[:,int(x)]
     #First moment.
-    width_x = n.sqrt(n.abs((n.arange(col.size)-y)*col).sum()/n.abs(col).sum())
-    width_y = n.sqrt(n.abs((n.arange(row.size)-x)*row).sum()/n.abs(row).sum())
+    width_x = np.sqrt(np.abs((np.arange(col.size)-y)*col).sum()/np.abs(col).sum())
+    width_y = np.sqrt(np.abs((np.arange(row.size)-x)*row).sum()/np.abs(row).sum())
     width = ( width_x + width_y ) / 2.
-    height = n.median(data.ravel())
+    height = np.median(data.ravel())
     amplitude = data.max() - height
     mylist = [amplitude,x,y]
-    if n.isnan(width_y) or n.isnan(width_x) or n.isnan(height) or n.isnan(amplitude):
+    if np.isnan(width_y) or np.isnan(width_x) or np.isnan(height) or np.isnan(amplitude):
         raise ValueError("Somehthing is nan")
     mylist = [height] + mylist
     mylist = mylist + [width_x,width_y]
@@ -43,11 +43,11 @@ def twodgaussian(inpars,shape=None):
     def rotgauss(x,y):
         xp = x
         yp = y
-        g = amplitude*n.exp( 
+        g = amplitude*np.exp( 
             -(((rcen_x-xp)/width_x)**2 + 
             ((rcen_y-yp)/width_y)**2)/2.)
         return g
     if shape is not None:
-        return rotgauss(*n.indices(shape))
+        return rotgauss(*np.indices(shape))
     else:
         return rotgauss

@@ -15,7 +15,7 @@ data.
 Author: Aaron Parsons
 """
 
-import aipy as a, numpy as n, sys, os, optparse
+import aipy as a, numpy as np, sys, os, optparse
 
 o = optparse.OptionParser()
 o.set_usage('xtalk3.py [options] *.uv')
@@ -44,22 +44,22 @@ if opts.reprocess:
         if not os.path.exists(xfile):
             print xfile, 'does not exist.  Skipping...'
             continue
-        xtalk = n.load(xfile)
+        xtalk = np.load(xfile)
         for bl in xtalk.files:
-            dat = n.array(xtalk[bl])
-            adat = n.ma.masked_equal(n.abs(dat), 0)
+            dat = np.array(xtalk[bl])
+            adat = np.ma.masked_equal(np.abs(dat), 0)
             if not gain.has_key(bl): gain[bl] = []
-            gain[bl].append(n.average(adat[chans[0]:chans[1]]))
+            gain[bl].append(np.average(adat[chans[0]:chans[1]]))
             dat /= gain[bl][-1]
             xsum[bl] = xsum.get(bl, 0) + dat
-            cnt[bl] = cnt.get(bl, 0) + n.logical_not(adat.mask).astype(n.int)
-    for bl in xsum: xsum[bl] /= n.where(cnt[bl] == 0, 1, cnt[bl])
+            cnt[bl] = cnt.get(bl, 0) + np.logical_not(adat.mask).astype(np.int)
+    for bl in xsum: xsum[bl] /= np.where(cnt[bl] == 0, 1, cnt[bl])
     for c, jd in enumerate(times):
         repfile = '%f.xtalk.rep.npz' % jd
         xtalk = {}
         for bl in xsum: xtalk[bl] = gain[bl][c] * xsum[bl]
         print 'Writing', repfile
-        n.savez(repfile, **xtalk)
+        np.savez(repfile, **xtalk)
     import sys; sys.exit(0)
 
 guess, cnt, xtalk = {}, {}, {}
@@ -79,20 +79,20 @@ for filename in args:
             print xfile, 'does not exist.  Skipping...'
             continue
         print '    using', xfile
-        xtalk = n.load(xfile)
+        xtalk = np.load(xfile)
     else:
         guess, cnt, xtalk = {}, {}, {}
         for (uvw,t,(i,j)),d,f in uv.all(raw=True):
             bl = str(a.pol.ijp2blp(i,j,uv['pol']))
             if not guess.has_key(bl): guess[bl], cnt[bl] = 0, 0
-            guess[bl] += n.where(f, 0, d)
-            cnt[bl] += n.logical_not(f)
+            guess[bl] += np.where(f, 0, d)
+            cnt[bl] += np.logical_not(f)
         del(uv)
-        for bl in guess: xtalk[bl] = guess[bl] / n.clip(cnt[bl], 1, n.Inf)
+        for bl in guess: xtalk[bl] = guess[bl] / np.clip(cnt[bl], 1, np.Inf)
     if opts.outfile:
         xfile = '%f.xtalk.npz' % jd
         print 'Writing', xfile
-        n.savez(xfile, **xtalk)
+        np.savez(xfile, **xtalk)
     else:
         def mfunc(uv, p, d, f):
             uvw,t,(i,j) = p

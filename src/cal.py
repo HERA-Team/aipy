@@ -1,10 +1,10 @@
 """Load calibration information contained in specified calibration
 modules."""
 
-import numpy as n, src, os, sys
+import numpy as np, src, os, sys
 
 def get_freqs(sdf, sfreq, nchan):
-    return n.arange(nchan, dtype=n.float) * sdf + sfreq
+    return np.arange(nchan, dtype=np.float) * sdf + sfreq
 
 def get_aa(*args):
     '''Return the AntennaArray specified by cal_key, which should be the

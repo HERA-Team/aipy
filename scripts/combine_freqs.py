@@ -9,7 +9,7 @@ Revisions:
     12/11/07    arp Ported to new miriad file interface
 """
 
-import aipy as a, sys, os, numpy as n, optparse
+import aipy as a, sys, os, numpy as np, optparse
 
 o = optparse.OptionParser()
 o.set_usage('combine_freqs.py [options] *.uv')
@@ -46,16 +46,16 @@ for uvfile in args:
 
     if nchan != opts.nchan:
         def mfunc(uv, p, d, f):
-            d = n.where(f, 0, d)
+            d = np.where(f, 0, d)
             d.shape = (opts.nchan, nchan/opts.nchan)
             d = d.sum(axis=1)
             f.shape = (opts.nchan, nchan/opts.nchan)
-            f = n.logical_not(f).astype(n.int).sum(axis=1)
-            d /= f.clip(1,n.Inf)
-            if opts.careful_flag: f = n.where(f < nchan/opts.nchan, 1, 0)
-            elif opts.dont_flag: f = n.where(f < 1, 1, 0)
-            else: f = n.where(f <= nchan/opts.nchan/2, 1, 0)
-            return p, n.where(f, 0, d), f
+            f = np.logical_not(f).astype(np.int).sum(axis=1)
+            d /= f.clip(1,np.Inf)
+            if opts.careful_flag: f = np.where(f < nchan/opts.nchan, 1, 0)
+            elif opts.dont_flag: f = np.where(f < 1, 1, 0)
+            else: f = np.where(f <= nchan/opts.nchan/2, 1, 0)
+            return p, np.where(f, 0, d), f
         uvo.pipe(uvi, mfunc=mfunc, raw=True,
             append2hist='COMB_FREQ: nchan=%d careful=%s dont=%s unify=%s\n' % \
                 (opts.nchan, opts.careful_flag, opts.dont_flag, opts.unify))

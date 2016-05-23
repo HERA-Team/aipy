@@ -3,7 +3,7 @@ Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
 """
 
-import numpy as n, utils, coord, time
+import numpy as np, utils, coord, time
 try:
     from astropy.io import fits as pyfits
 except ImportError:
@@ -11,8 +11,8 @@ except ImportError:
 USEDSP = True
 if USEDSP: import _dsp
 
-deg2rad = n.pi / 180.
-rad2deg = 180. / n.pi
+deg2rad = np.pi / 180.
+rad2deg = 180. / np.pi
 
 def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
     """ 
@@ -26,7 +26,7 @@ def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
     awidth = min(width-2-len(prefix+ind1*' '),width-2-len(prefix+ind2*' '))
     words = string.split(' ')
     okwords = []
-    chunk = lambda v,l: [v[i*l:(i+1)*l] for i in range(int(n.ceil(len(v)/float(l))))]
+    chunk = lambda v,l: [v[i*l:(i+1)*l] for i in range(int(np.ceil(len(v)/float(l))))]
     for word in words:
         for okword in chunk(word,awidth):
             okwords.append(okword)
@@ -47,32 +47,32 @@ def recenter(a, c):
     inverse fft of uv data."""
     s = a.shape
     c = (c[0] % s[0], c[1] % s[1])
-    if n.ma.isMA(a):
-        a1 = n.ma.concatenate([a[c[0]:], a[:c[0]]], axis=0)
-        a2 = n.ma.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
+    if np.ma.isMA(a):
+        a1 = np.ma.concatenate([a[c[0]:], a[:c[0]]], axis=0)
+        a2 = np.ma.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
     else:
-        a1 = n.concatenate([a[c[0]:], a[:c[0]]], axis=0)
-        a2 = n.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
+        a1 = np.concatenate([a[c[0]:], a[:c[0]]], axis=0)
+        a2 = np.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
     return a2
 
 def convolve2d(a, b):
     """Convolve a and b by multiplying in Fourier domain.  Must be same size."""
-    return n.fft.ifft2(n.fft.fft2(a) * n.fft.fft2(b))
+    return np.fft.ifft2(np.fft.fft2(a) * np.fft.fft2(b))
 
 def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
     """Return a 2D gaussian.  Normalized to area under curve = 'amp'.  
     Down by 1/e at distance 'sigma' from 'center'."""
-    if type(shape) == type(0): shape = n.array([2, 2]) * sigma
+    if type(shape) == type(0): shape = np.array([2, 2]) * sigma
     def gaussian(x, y):
-        nx = n.where(x > shape[0] / 2, x - shape[0], x)
-        ny = n.where(y > shape[1] / 2, y - shape[1], y)
-        return n.exp(-(nx**2 + ny**2) / sigma**2)
-    g = n.fromfunction(gaussian, shape)
+        nx = np.where(x > shape[0] / 2, x - shape[0], x)
+        ny = np.where(y > shape[1] / 2, y - shape[1], y)
+        return np.exp(-(nx**2 + ny**2) / sigma**2)
+    g = np.fromfunction(gaussian, shape)
     g *= amp
     return recenter(g, center)
 
 def beam_gain(bm):
-    return n.abs(bm).max()
+    return np.abs(bm).max()
 
 class Img:
     """Class for gridding uv data, recording the synthesized beam profile,
@@ -83,34 +83,34 @@ class Img:
         res = resolution of the UV matrix (determines image field of view)."""
         self.res = float(res)
         self.size = float(size)
-        dim = n.round(self.size / self.res)
+        dim = np.round(self.size / self.res)
         self.shape = (dim,dim)
-        self.uv = n.zeros(shape=self.shape, dtype=n.complex64)
+        self.uv = np.zeros(shape=self.shape, dtype=np.complex64)
         self.bm = []
         for i in range(mf_order+1):
-            self.bm.append(n.zeros(shape=self.shape, dtype=n.complex64))
+            self.bm.append(np.zeros(shape=self.shape, dtype=np.complex64))
     def get_LM(self, center=(0,0)):
         """Get the (l,m) image coordinates for an inverted UV matrix."""
         dim = self.shape[0]
-        M,L = n.indices(self.shape)
-        L,M = n.where(L > dim/2, dim-L, -L), n.where(M > dim/2, M-dim, M)
-        L,M = L.astype(n.float32)/dim/self.res, M.astype(n.float32)/dim/self.res
-        mask = n.where(L**2 + M**2 >= 1, 1, 0)
-        L,M = n.ma.array(L, mask=mask), n.ma.array(M, mask=mask)
+        M,L = np.indices(self.shape)
+        L,M = np.where(L > dim/2, dim-L, -L), np.where(M > dim/2, M-dim, M)
+        L,M = L.astype(np.float32)/dim/self.res, M.astype(np.float32)/dim/self.res
+        mask = np.where(L**2 + M**2 >= 1, 1, 0)
+        L,M = np.ma.array(L, mask=mask), np.ma.array(M, mask=mask)
         return recenter(L, center), recenter(M, center)
     def get_indices(self, u, v):
         """Get the pixel indices corresponding to the provided uv coordinates."""
         if not USEDSP:
-            u = n.round(u / self.res).astype(n.int)
-            v = n.round(v / self.res).astype(n.int)
-            return n.array([-v,u],).transpose()
+            u = np.round(u / self.res).astype(np.int)
+            v = np.round(v / self.res).astype(np.int)
+            return np.array([-v,u],).transpose()
         else:
-            return (-v / self.res).astype(n.float32), (u / self.res).astype(n.float32)
+            return (-v / self.res).astype(np.float32), (u / self.res).astype(np.float32)
     def get_uv(self):
         """Return the u,v indices of the pixels in the uv matrix."""
-        u,v = n.indices(self.shape)
-        u = n.where(u < self.shape[0]/2, u, u - self.shape[0])
-        v = n.where(v < self.shape[1]/2, v, v - self.shape[1])
+        u,v = np.indices(self.shape)
+        u = np.where(u < self.shape[0]/2, u, u - self.shape[0])
+        v = np.where(v < self.shape[1]/2, v, v - self.shape[1])
         return u*self.res, v*self.res
     def put(self, (u,v,w), data, wgts=None, apply=True):
         """Grid uv data (w is ignored) onto a UV plane.  Data should already
@@ -122,19 +122,19 @@ class Img:
         if wgts is None:
             wgts = []
             for i in range(len(self.bm)):
-                if i == 0: wgts.append(n.ones_like(data))
-                else: wgts.append(n.zeros_like(data))
+                if i == 0: wgts.append(np.ones_like(data))
+                else: wgts.append(np.zeros_like(data))
         if len(self.bm) == 1 and len(wgts) != 1: wgts = [wgts]
         assert(len(wgts) == len(self.bm))
         if apply: uv,bm = self.uv,self.bm
         else:
-            uv = n.zeros_like(self.uv)
-            bm = [n.zeros_like(i) for i in self.bm]
+            uv = np.zeros_like(self.uv)
+            bm = [np.zeros_like(i) for i in self.bm]
         if not USEDSP:
             inds = self.get_indices(u,v)
             
-            ok = n.logical_and(n.abs(inds[:,0]) < self.shape[0],
-                n.abs(inds[:,1]) < self.shape[1])
+            ok = np.logical_and(np.abs(inds[:,0]) < self.shape[0],
+                np.abs(inds[:,1]) < self.shape[1])
             data = data.compress(ok)
             inds = inds.compress(ok, axis=0)
             utils.add2array(uv, inds, data.astype(uv.dtype))
@@ -163,8 +163,8 @@ class Img:
         else:
             u,v = self.get_indices(-u,v)
             u,v = -v,u # XXX necessary, but probably because of axis ordering in FITS files...
-            uvdat = n.zeros(u.shape, dtype=n.complex64)
-            bmdat = n.zeros(u.shape, dtype=n.complex64)
+            uvdat = np.zeros(u.shape, dtype=np.complex64)
+            bmdat = np.zeros(u.shape, dtype=np.complex64)
             _dsp.degrid2D_c(uv, u, v, uvdat)
             _dsp.degrid2D_c(bm, u, v, bmdat)
             #data = uvdat.sum() / bmdat.sum()
@@ -173,19 +173,19 @@ class Img:
     def append_hermitian(self, (u,v,w), data, wgts=None):
         """Append to (uvw, data, [wgts]) the points (-uvw, conj(data), [wgts]).
         This is standard practice to get a real-valued image."""
-        u = n.concatenate([u, -u], axis=0)
-        v = n.concatenate([v, -v], axis=0)
-        w = n.concatenate([w, -w], axis=0)
-        data = n.concatenate([data, n.conj(data)], axis=0)
-        if wgts is None: return n.array((u,v,w)), data
+        u = np.concatenate([u, -u], axis=0)
+        v = np.concatenate([v, -v], axis=0)
+        w = np.concatenate([w, -w], axis=0)
+        data = np.concatenate([data, np.conj(data)], axis=0)
+        if wgts is None: return np.array((u,v,w)), data
         if len(self.bm) == 1 and len(wgts) != 1: wgts = [wgts]
         assert(len(wgts) == len(self.bm))
-        for i,wgt in enumerate(wgts): wgts[i] = n.concatenate([wgt,wgt],axis=0)
+        for i,wgt in enumerate(wgts): wgts[i] = np.concatenate([wgt,wgt],axis=0)
         return (u,v,w), data, wgts
     def _gen_img(self, data, center=(0,0)):
         """Return the inverse FFT of the provided data, with the 0,0 point 
         moved to 'center'.  Up=North, Right=East."""
-        return recenter(n.fft.ifft2(data).real.astype(n.float32), center)
+        return recenter(np.fft.ifft2(data).real.astype(np.float32), center)
     def image(self, center=(0,0)):
         """Return the inverse FFT of the UV matrix, with the 0,0 point moved
         to 'center'.  Tranposes to put up=North, right=East."""
@@ -201,19 +201,19 @@ class Img:
     def get_top(self, center=(0,0)):
         """Return the topocentric coordinates of each pixel in the image."""
         x,y = self.get_LM(center)
-        z = n.sqrt(1 - x**2 - y**2)
+        z = np.sqrt(1 - x**2 - y**2)
         return x,y,z
     def get_eq(self, ra=0, dec=0, center=(0,0)):
         """Return the equatorial coordinates of each pixel in the image, 
         assuming the image is centered on the provided ra, dec (in radians)."""
         x,y,z = self.get_top(center)
         shape,mask = x.shape, x.mask
-        if len(mask.shape) == 0: mask = n.zeros(x.shape)
-        vec = n.array([a.filled().flatten() for a in (x,y,z)])
+        if len(mask.shape) == 0: mask = np.zeros(x.shape)
+        vec = np.array([a.filled().flatten() for a in (x,y,z)])
         m = coord.top2eq_m(-ra, dec)
-        vec = n.dot(m, vec)
+        vec = np.dot(m, vec)
         vec.shape = (3,) + shape
-        return n.ma.array(vec, mask=[mask,mask,mask])
+        return np.ma.array(vec, mask=[mask,mask,mask])
 
 class ImgW(Img):
     """A subclass of Img adding W projection functionality (see Cornwell
@@ -230,54 +230,54 @@ class ImgW(Img):
         if wgts is None:
             wgts = []
             for i in range(len(self.bm)):
-                if i == 0: wgts.append(n.ones_like(data))
-                else: wgts.append(n.zeros_like(data))
+                if i == 0: wgts.append(np.ones_like(data))
+                else: wgts.append(np.zeros_like(data))
         if len(self.bm) == 1 and len(wgts) != 1: wgts = [wgts]
         assert(len(wgts) == len(self.bm))
         # Sort uvw in order of w
-        order = n.argsort(w)
+        order = np.argsort(w)
         u = u.take(order)
         v = v.take(order)
         w = w.take(order)
         data = data.take(order)
         wgts = [wgt.take(order) for wgt in wgts]
-        sqrt_w = n.sqrt(n.abs(w)) * n.sign(w)
+        sqrt_w = np.sqrt(np.abs(w)) * np.sign(w)
         i = 0
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
             print '%d/%d datums' % (j, len(w))
-            avg_w = n.average(w[i:j])
+            avg_w = np.average(w[i:j])
             # Put all uv's down on plane for this gridded w point
             wgtsij = [wgt[i:j] for wgt in wgts]
             uv,bm = Img.put(self, (u[i:j],v[i:j],w[i:j]),
                 data[i:j], wgtsij, apply=False)
             # Convolve with the W projection kernel
-            invker = n.fromfunction(lambda u,v: self.conv_invker(u,v,avg_w),
+            invker = np.fromfunction(lambda u,v: self.conv_invker(u,v,avg_w),
                 uv.shape)
             if not invker2 is None: invker *= invker2
-            self.uv += n.fft.ifft2(n.fft.fft2(uv) * invker)
+            self.uv += np.fft.ifft2(np.fft.fft2(uv) * invker)
             for b in range(len(self.bm)):
-                self.bm[b] += n.fft.ifft2(n.fft.fft2(bm[b]) * invker)
+                self.bm[b] += np.fft.ifft2(np.fft.fft2(bm[b]) * invker)
             if j >= len(w): break
             i = j
     def get(self, (u,v,w)):
-        order = n.argsort(w.flat)
+        order = np.argsort(w.flat)
         u_,v_,w_ = u.take(order).squeeze(), v.take(order).squeeze(), w.take(order).squeeze()
-        sqrt_w = n.sqrt(n.abs(w_)) * n.sign(w_)
+        sqrt_w = np.sqrt(np.abs(w_)) * np.sign(w_)
         i, d_ = 0, []
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
             #print j, len(sqrt_w)
-            id = n.round(n.average(sqrt_w[i:j]) / self.wres) * self.wres
+            id = np.round(np.average(sqrt_w[i:j]) / self.wres) * self.wres
             if not self.wcache.has_key(id):
-                avg_w = n.average(w_[i:j])
+                avg_w = np.average(w_[i:j])
                 print 'Caching W plane ID=', id
-                projker = n.fromfunction(lambda us,vs: self.conv_invker(us,vs,-avg_w), 
-                    self.uv.shape).astype(n.complex64)
-                uv_wproj = n.fft.ifft2(n.fft.fft2(self.uv) * projker).astype(n.complex64)
-                bm_wproj = n.fft.ifft2(n.fft.fft2(self.bm[0]) * projker).astype(n.complex64) # is this right to convolve?
+                projker = np.fromfunction(lambda us,vs: self.conv_invker(us,vs,-avg_w), 
+                    self.uv.shape).astype(np.complex64)
+                uv_wproj = np.fft.ifft2(np.fft.fft2(self.uv) * projker).astype(np.complex64)
+                bm_wproj = np.fft.ifft2(np.fft.fft2(self.bm[0]) * projker).astype(np.complex64) # is this right to convolve?
                 self.wcache[id] = (uv_wproj, bm_wproj)
                 print '%d W planes cached' % (len(self.wcache))
             # Put all uv's down on plane for this gridded w point
@@ -286,9 +286,9 @@ class ImgW(Img):
             d_.append(Img.get(self, (u_[i:j],v_[i:j],w_[i:j]), uv_wproj, bm_wproj))
             if j >= len(sqrt_w): break
             i = j
-        d_ = n.concatenate(d_)
+        d_ = np.concatenate(d_)
         # Put back into original order
-        deorder = n.argsort(order)
+        deorder = np.argsort(order)
         return d_.take(deorder)
     def conv_invker(self, u, v, w):
         """Generates the W projection kernel (a function of u,v) for the
@@ -298,19 +298,19 @@ class ImgW(Img):
         small-angle approximated one given in the literature."""
         L,M = self.get_LM()
         # This is the exactly evaluated kernel (works better)
-        sqrt = n.sqrt(1 - L**2 - M**2).astype(n.complex64)
-        G = n.exp(-2*n.pi*1j*w*(sqrt - 1))
+        sqrt = np.sqrt(1 - L**2 - M**2).astype(np.complex64)
+        G = np.exp(-2*np.pi*1j*w*(sqrt - 1))
         # This is the kernel described by Cornwell using the small angle approx.
-        #G = n.exp(n.pi*1j*w*(l**2 + m**2))
+        #G = np.exp(np.pi*1j*w*(l**2 + m**2))
         G = G.filled(0)
         # Unscramble difference between fft(fft(G)) and G
-        G[1:] = n.flipud(G[1:]).copy()
-        G[:,1:] = n.fliplr(G[:,1:]).copy()
+        G[1:] = np.flipud(G[1:]).copy()
+        G[:,1:] = np.fliplr(G[:,1:]).copy()
         return G / G.size
 
 default_fits_format_codes = {
-    n.bool_:'L', n.uint8:'B', n.int16:'I', n.int32:'J', n.int64:'K',
-    n.float32:'E', n.float64:'D', n.complex64:'C', n.complex128:'M'
+    np.bool_:'L', np.uint8:'B', np.int16:'I', np.int32:'J', np.int64:'K',
+    np.float32:'E', np.float64:'D', np.complex64:'C', np.complex128:'M'
 }
 
 def to_fits(filename, data, clobber=False,
@@ -358,9 +358,9 @@ def to_fits(filename, data, clobber=False,
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec')\
         or ax.lower().startswith('glon') or ax.lower().startswith('glat'):
-            phdu.header.update('CRPIX%d' % (i+1), n.ceil(phdu.data.shape[-(i+1)]/2.))
+            phdu.header.update('CRPIX%d' % (i+1), np.ceil(phdu.data.shape[-(i+1)]/2.))
         else:
-            phdu.header.update('CRPIX%d' % (i+1), n.ceil(phdu.data.shape[-(i+1)]/2.))
+            phdu.header.update('CRPIX%d' % (i+1), np.ceil(phdu.data.shape[-(i+1)]/2.))
         phdu.header.update('CRVAL%d' % (i+1), val)
         if (ax.lower().startswith('ra') or ax.lower().startswith('glon')) and delta>0:
             phdu.header.update('CDELT%d' % (i+1), delta*-1)

@@ -1,4 +1,4 @@
-import aipy as a, numpy as n
+import aipy as a, numpy as np
 
 specials = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter',
     'Saturn', 'Uranus', 'Neptune']
@@ -48,7 +48,7 @@ def get_srcs(srcs=None, cutoff=None):
         if cutoff is None: srcs = _misccat.keys()
         else:
             cut, fq = cutoff
-            fq = n.array([fq])
+            fq = np.array([fq])
             for s in _misccat.keys(): _misccat[s].update_jys(fq)
             srcs = [s for s in _misccat.keys() if _misccat[s].jys[0] > cut]
 

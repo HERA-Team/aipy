@@ -7,7 +7,7 @@ for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy this file to "vlss.txt" in the _src directory of your AIPY
 installation.'''
 
-import aipy as a, numpy as n, os
+import aipy as a, numpy as np, os
     
 class VLSSCatalog(a.fit.SrcCatalog):
     def fromfile(self, filename):
@@ -38,7 +38,7 @@ def get_srcs(srcs=None, cutoff=None):
         if cutoff is None: srcs = _vlsscat.keys()
         else:
             cut, fq = cutoff
-            fq = n.array([fq])
+            fq = np.array([fq])
             for s in _vlsscat.keys(): _vlsscat[s].update_jys(fq)
             srcs = [s for s in _vlsscat.keys() if _vlsscat[s].jys[0] > cut]
 

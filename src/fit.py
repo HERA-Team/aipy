@@ -2,7 +2,7 @@
 Module for reading and setting parameters in components of an AntennaArray
 simulation for purpose of fitting.
 """
-import amp, numpy as n
+import amp, numpy as np
 
 #  _   _ _   _ _ _ _           _____                 _   _                 
 # | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
@@ -271,7 +271,7 @@ class BeamAlm(amp.BeamAlm):
         for i, a in enumerate(self.alm):
             k = 'alm%d' % i
             data = a.get_data()
-            aprms[k] = n.array([data.real, data.imag]).transpose().flatten()
+            aprms[k] = np.array([data.real, data.imag]).transpose().flatten()
         prms = {}
         for p in prm_list:
             if p.startswith('*'): prms = aprms
@@ -284,7 +284,7 @@ class BeamAlm(amp.BeamAlm):
         for p in prms:
             if not p.startswith('alm'): continue
             changed = True
-            data = n.array(prms[p])
+            data = np.array(prms[p])
             c = int(p[3:])
             data.shape = (data.size/2, 2)
             data = data[:,0] + data[:,1] * 1j

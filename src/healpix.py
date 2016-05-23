@@ -6,7 +6,7 @@ Adds data to the HealpixBase class using numpy arrays, and interfaces to
 FITS files using astropy/pyfits.
 """
 
-import numpy as n, utils
+import numpy as np, utils
 try:
     from astropy.io import fits as pyfits
 except ImportError:
@@ -15,25 +15,25 @@ from _healpix import HealpixBase
 from _alm import Alm
 
 default_fits_format_codes = {
-    n.bool_:'L', n.uint8:'B', n.int16:'I', n.int32:'J', n.int64:'K', 
-    n.float32:'E', n.float64:'D', n.complex64:'C', n.complex128:'M'
+    np.bool_:'L', np.uint8:'B', np.int16:'I', np.int32:'J', np.int64:'K', 
+    np.float32:'E', np.float64:'D', np.complex64:'C', np.complex128:'M'
 }
 
-def mk_arr(val, dtype=n.double):
-    if type(val) is n.ndarray: return val.astype(dtype)
-    return n.array(val, dtype=dtype).flatten()
+def mk_arr(val, dtype=np.double):
+    if type(val) is np.ndarray: return val.astype(dtype)
+    return np.array(val, dtype=dtype).flatten()
 
 class HealpixMap(HealpixBase):
     """Collection of utilities for mapping data on a sphere.  Adds a data map 
     to the infrastructure in _healpix.HealpixBase."""
     def __init__(self, *args, **kwargs):
-        dtype = kwargs.pop('dtype', n.double)
+        dtype = kwargs.pop('dtype', np.double)
         interp = kwargs.pop('interp', False)
         fromfits = kwargs.pop('fromfits', None)
         HealpixBase.__init__(self, *args, **kwargs)
         self._use_interpol = interp
         if fromfits is None:
-            m = n.zeros((self.npix(),), dtype=dtype)
+            m = np.zeros((self.npix(),), dtype=dtype)
             self.set_map(m, scheme=self.scheme())
         else: self.from_fits(fromfits)
     def set_interpol(self, onoff):
@@ -58,7 +58,7 @@ class HealpixMap(HealpixBase):
         """Reorder the pixels in map to be "RING" or "NEST" ordering."""
         assert(scheme in ["RING", "NEST"])
         if scheme == self.scheme(): return
-        i = self.nest_ring_conv(n.arange(self.npix()), scheme)
+        i = self.nest_ring_conv(np.arange(self.npix()), scheme)
         self[i] = self.map
         self.set_nside_scheme(self.nside(), scheme)
     def __getitem__(self, crd):
@@ -66,12 +66,12 @@ class HealpixMap(HealpixBase):
         crd = either 1d array of pixel indices, (th,phi), or (x,y,z), where
         th,phi,x,y,z are numpy arrays of coordinates."""
         if type(crd) is tuple:
-            crd = [mk_arr(c, dtype=n.double) for c in crd]
+            crd = [mk_arr(c, dtype=np.double) for c in crd]
             if self._use_interpol:
                 px,wgts = self.crd2px(*crd, **{'interpolate':1})
-                return n.sum(self.map[px] * wgts, axis=-1)
+                return np.sum(self.map[px] * wgts, axis=-1)
             else: px = self.crd2px(*crd)
-        else: px = mk_arr(crd, dtype=n.long)
+        else: px = mk_arr(crd, dtype=np.long)
         return self.map[px]
     def __setitem__(self, crd, val):
         """Assign data to a sphere via hpm[crd] = val.  Functionality slightly
@@ -80,22 +80,22 @@ class HealpixMap(HealpixBase):
         crd = either 1d array of pixel indices, (th,phi), or (x,y,z), where
         th,phi,x,y,z are numpy arrays of coordinates."""
         if type(crd) is tuple:
-            crd = [mk_arr(c, dtype=n.double) for c in crd]
+            crd = [mk_arr(c, dtype=np.double) for c in crd]
             px = self.crd2px(*crd)
         else:
-            if type(crd) is n.ndarray: assert(len(crd.shape) == 1)
-            px = mk_arr(crd, dtype=n.int)
+            if type(crd) is np.ndarray: assert(len(crd.shape) == 1)
+            px = mk_arr(crd, dtype=np.int)
         if px.size == 1:
-            if type(val) is n.ndarray: val = mk_arr(val, dtype=self.map.dtype)
+            if type(val) is np.ndarray: val = mk_arr(val, dtype=self.map.dtype)
             self.map[px] = val
         else:
-            m = n.zeros_like(self.map)
+            m = np.zeros_like(self.map)
             px = px.reshape(px.size,1)
-            cnt = n.zeros(self.map.shape, dtype=n.bool)
+            cnt = np.zeros(self.map.shape, dtype=np.bool)
             val = mk_arr(val, dtype=m.dtype)
             utils.add2array(m, px, val)
-            utils.add2array(cnt, px, n.ones(val.shape, dtype=n.bool))
-            self.map = n.where(cnt, m, self.map)
+            utils.add2array(cnt, px, np.ones(val.shape, dtype=np.bool))
+            self.map = np.where(cnt, m, self.map)
     def from_hpm(self, hpm):
         """Initialize this HealpixMap with data from another.  Takes care
         of upgrading or downgrading the resolution, and swaps ordering
@@ -103,18 +103,18 @@ class HealpixMap(HealpixBase):
         if hpm.nside() < self.nside():
             interpol = hpm._use_interpol
             hpm.set_interpol(True)
-            px = n.arange(self.npix())
+            px = np.arange(self.npix())
             th,phi = self.px2crd(px, ncrd=2)
             self[px] = hpm[th,phi].astype(self.get_dtype())
         elif hpm.nside() > self.nside():
-            px = n.arange(hpm.npix())
+            px = np.arange(hpm.npix())
             th,phi = hpm.px2crd(px, ncrd=2)
             self[th,phi] = hpm[px].astype(self.get_dtype())
         else:
             if hpm.scheme() == self.scheme():
                 self.map = hpm.map.astype(self.get_dtype())
             else:
-                i = self.nest_ring_conv(n.arange(self.npix()), hpm.scheme())
+                i = self.nest_ring_conv(np.arange(self.npix()), hpm.scheme())
                 self.map = hpm.map[i].astype(self.get_dtype())
     def from_alm(self, alm):
         """Set data to the map generated by the spherical harmonic

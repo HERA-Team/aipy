@@ -2,7 +2,7 @@
 Module for mapping and modeling the entire sky.
 """
 
-import numpy as n, healpix, coord, random,img
+import numpy as np, healpix, coord, random,img
 try:
     from astropy.io import fits as pyfits
 except ImportError:
@@ -11,40 +11,40 @@ except ImportError:
 # Set a fixed random seed to make scrambling deterministic
 random.seed(1)
 
-deg2rad = n.pi / 180.
-rad2deg = 180. / n.pi
+deg2rad = np.pi / 180.
+rad2deg = 180. / np.pi
 
 def pack_sphere(N):
     """Clever formula for putting N points nearly equally spaced on 
     the sphere.  Return xyz coordinates of each point in order from S to N."""
     dz = 2. / N
-    z = n.arange(-1+dz/2,1, dz)
-    r = n.sqrt(1-z**2)
-    dL = n.pi * (3 - n.sqrt(5))
-    long = n.arange(0, dL * N, dL)
-    return n.array([r*n.cos(long), r*n.sin(long), z])
+    z = np.arange(-1+dz/2,1, dz)
+    r = np.sqrt(1-z**2)
+    dL = np.pi * (3 - np.sqrt(5))
+    long = np.arange(0, dL * N, dL)
+    return np.array([r*np.cos(long), r*np.sin(long), z])
 
 def _bit_reverse(N, nbits=None):
     """Numerically bit-reverse the number N assuming the specified number
     of bits.  In not specified, will infer the least number of bits that
     can represent N."""
-    if nbits is None: nbits = int(n.floor(n.log2(N))) + 1
+    if nbits is None: nbits = int(np.floor(np.log2(N))) + 1
     ans = 0
     for bit in range(nbits):
-        ans += n.bitwise_and(N, 2**bit) * 2**(nbits-2*bit-1)
+        ans += np.bitwise_and(N, 2**bit) * 2**(nbits-2*bit-1)
     return ans
 
 def _bit_reverse_order(N):
     """Generate a list of indices from 0 to N-1 in bit reversed order (or
     the nearest approximation if N is not a power of 2)."""
-    nbits = int(n.floor(n.log2(N))) + 1
-    indices = _bit_reverse(n.arange(2**nbits), nbits=nbits)
+    nbits = int(np.floor(np.log2(N))) + 1
+    indices = _bit_reverse(np.arange(2**nbits), nbits=nbits)
     return indices.compress(indices < N)
 
 def _local_shuffle(L, width=2):
     """Shuffle elements of L without moving them too much by choosing chunks
     of the specified width and only scrambling elements within those chunks."""
-    for i in range(int(n.ceil(len(L) / float(width)))):
+    for i in range(int(np.ceil(len(L) / float(width)))):
         chunk = L[width*i:width*(i+1)]
         random.shuffle(chunk)
         L[width*i:width*(i+1)] = chunk
@@ -55,7 +55,7 @@ def facet_centers(N, ncrd=2):
     pointing centers wrt pack_sphere so that widely spaced points are done 
     first, and then the gaps between them, and then the gaps between those.."""
     assert(ncrd == 2 or ncrd == 3)
-    ind1 = n.arange(N); _local_shuffle(ind1)
+    ind1 = np.arange(N); _local_shuffle(ind1)
     ind2 = _bit_reverse_order(N)
     ind = ind1.take(ind2)
     pnts = pack_sphere(N)
@@ -90,7 +90,7 @@ class Map(object):
     def __getitem__(self, crds):
         """Return the average map/index values at the specified coordinates."""
         w = self.wgt[crds]
-        w = n.where(w > 0, w, 1)
+        w = np.where(w > 0, w, 1)
         fluxes = self.map[crds] / w
         ind = [i[crds] / w for i in self.ind]
         if len(ind) == 0: return fluxes
@@ -104,10 +104,10 @@ class Map(object):
         self.map[crds] = fluxes * wgts
         for n,i in enumerate(inds): self.ind[n][crds] = i * wgts
     def reset_wgt(self, wgt=1):
-        w = n.where(self.wgt.map > 0, self.wgt.map, 1)
+        w = np.where(self.wgt.map > 0, self.wgt.map, 1)
         self.map.map /= w
         for i in self.ind: i.map /= w
-        self.wgt.map = n.where(self.wgt.map > 0, wgt, 0)
+        self.wgt.map = np.where(self.wgt.map > 0, wgt, 0)
     def from_map(self, map):
         """Initialize this Map with data from another."""
         self.map.from_hpm(map.map)
@@ -125,7 +125,7 @@ class Map(object):
             self.wgt.from_fits(filename, hdunum=hdunum, colnum=1)
         except(IndexError):
             self.wgt = healpix.HealpixMap(*self.args, **self.kwargs)
-            self.wgt.set_map(n.ones_like(self.wgt.map))
+            self.wgt.set_map(np.ones_like(self.wgt.map))
         # Figure out how many cols there are (is there a better way?)
         hdu = pyfits.open(filename)[hdunum]
         nind = 0

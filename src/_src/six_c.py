@@ -7,7 +7,7 @@ for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy files to "6c1.txt", "6c2.txt", "6c3.txt", "6c4.txt", "6c5_1.txt",
 and "6c5_2.txt" (for the 5 fields) in the _src directory of your AIPY
 installation.'''
-import aipy as a, numpy as n, os
+import aipy as a, numpy as np, os
 
 class SixCCatalog(a.fit.SrcCatalog):
     def fromfile(self,filename):
@@ -39,7 +39,7 @@ def get_srcs(srcs=None, cutoff=None):
         if cutoff is None: srcs = _sixccat.keys()
         else:
             cut, fq = cutoff
-            fq = n.array([fq])
+            fq = np.array([fq])
             for s in _sixccat.keys(): _sixccat[s].update_jys(fq)
             srcs = [s for s in _sixccat.keys() if _sixccat[s].jys[0] > cut]
     srclist = []

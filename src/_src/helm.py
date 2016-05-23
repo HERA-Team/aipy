@@ -1,17 +1,17 @@
 '''This module interfaces to the Helmboldt catalog (http://arxiv.org/abs/0707.3418)'''
 
-import aipy as a, numpy as n, os
+import aipy as a, numpy as np, os
 
 class HelmboldtFixedBody(a.fit.RadioFixedBody):
     def compute(self, observer):
         a.phs.RadioFixedBody.compute(self, observer)
         self.update_jys(observer.get_afreqs())
     def update_jys(self, afreqs):
-        A = n.log10(self._jys)
+        A = np.log10(self._jys)
         try: B,C,D = (list(self.index) + [0,0,0])[:3]
         except(TypeError): B,C,D = (self.index,0,0)
-        X = n.log10(afreqs / self.mfreq)
-        self.jys = 10**(A + B*X + C*n.exp(D*X))
+        X = np.log10(afreqs / self.mfreq)
+        self.jys = 10**(A + B*X + C*np.exp(D*X))
     def get_params(self, prm_list=None):
         """Return all fitable parameters in a dictionary."""
         aprms = {
@@ -112,7 +112,7 @@ def get_srcs(srcs=None, cutoff=None):
         if cutoff is None: srcs = _helmcat.keys()
         else:
             cut, fq = cutoff
-            fq = n.array([fq])
+            fq = np.array([fq])
             for s in _helmcat.keys(): _helmcat[s].update_jys(fq)
             srcs = [s for s in _helmcat.keys() if _helmcat[s].jys[0] > cut]
     srclist = []

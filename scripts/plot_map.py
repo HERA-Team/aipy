@@ -6,7 +6,7 @@ in a *.fits file.
 Author: Aaron Parsons
 """
 
-import aipy as a, numpy as n, sys, os, ephem, optparse
+import aipy as a, numpy as np, sys, os, ephem, optparse
 from matplotlib import pylab as p
 
 class Basemap:
@@ -18,9 +18,9 @@ class Basemap:
         self.lat_0, self.lon_0 = lat_0, lon_0
     def __call__(self, lon, lat, inverse=False):
         if inverse:
-            lon = lon.astype(n.float) * 90 - self.lon_0
+            lon = lon.astype(np.float) * 90 - self.lon_0
             lon = self.wrap(lon, -180, 180)
-            lat = lat.astype(n.float) * 90 - self.lat_0
+            lat = lat.astype(np.float) * 90 - self.lat_0
             lat = self.wrap(lat, -90, 90)
             return lon,lat
         else:
@@ -30,24 +30,24 @@ class Basemap:
             y = self.wrap(y, -1, 1)
             return x,y
     def wrap(self, data, lo, hi):
-        data = n.where(data >= hi, lo + (data - hi), data)
-        data = n.where(data < lo, hi + (data - lo), data)
+        data = np.where(data >= hi, lo + (data - hi), data)
+        data = np.where(data < lo, hi + (data - lo), data)
         return data
     def drawmapboundary(self): pass
     def drawmeridians(self, locs, **kwargs):
-        x,y = self(locs, n.zeros_like(locs))
+        x,y = self(locs, np.zeros_like(locs))
         x = self.wrap(x, -2, 2)
         p.xticks(x, visible=False)
         p.grid(True)
     def drawparallels(self, lats, **kwargs):
-        x,y = self(n.zeros_like(lats),lats)
+        x,y = self(np.zeros_like(lats),lats)
         y = self.wrap(y, -1, 1)
         p.yticks(y, [str(L) for L in lats])
         p.grid(True)
     def makegrid(self, dim1, dim2, returnxy=True):
-        y,x = n.indices((dim2,dim1))
-        x = 4 * x.astype(n.float)/dim1 - 2
-        y = 1 - 2 * y.astype(n.float)/dim2
+        y,x = np.indices((dim2,dim1))
+        x = 4 * x.astype(np.float)/dim1 - 2
+        y = 1 - 2 * y.astype(np.float)/dim2
         lon,lat = self(x,y, inverse=True)
         if returnxy: return lon,lat, x,y
         else: return lon,lat
@@ -108,11 +108,11 @@ map = Basemap(projection=opts.projection,lat_0=0,lon_0=opts.cen, rsphere=1.)
 lons,lats,x,y = map.makegrid(360/opts.res,180/opts.res, returnxy=True)
 # Mask off parts of the image to be plotted that are outside of the map
 lt = lats[:,0]
-ln1 = n.ones_like(lt) * (lons[lons.shape[0]/2,0])
-ln2 = n.ones_like(lt) * (lons[lons.shape[0]/2,-1])
+ln1 = np.ones_like(lt) * (lons[lons.shape[0]/2,0])
+ln2 = np.ones_like(lt) * (lons[lons.shape[0]/2,-1])
 x1,y1 = map(ln1,lt); x2,y2 = map(ln2,lt)
-x = n.ma.array(x)
-for c,(i,j) in enumerate(zip(x1,x2)): x[c] = n.ma.masked_outside(x[c], i, j)
+x = np.ma.array(x)
+for c,(i,j) in enumerate(zip(x1,x2)): x[c] = np.ma.masked_outside(x[c], i, j)
 mask = x.mask
 if opts.osys == 'eq': lons = 360 - lons
 lats *= a.img.deg2rad; lons *= a.img.deg2rad
@@ -126,18 +126,18 @@ if not opts.nside is None:
     h = nh
 h.set_interpol(opts.interpolation != 'nearest')
 
-if opts.osys == 'eq': crd = a.coord.radec2eq(n.array([lons.flatten(), lats.flatten()]))
-else: crd = a.coord.radec2eq(n.array([-lons.flatten(), lats.flatten()]))
+if opts.osys == 'eq': crd = a.coord.radec2eq(np.array([lons.flatten(), lats.flatten()]))
+else: crd = a.coord.radec2eq(np.array([-lons.flatten(), lats.flatten()]))
 m = a.coord.convert_m(opts.osys, opts.isys, 
     iepoch=opts.oepoch, oepoch=opts.iepoch)
-x,y,z = n.dot(m, crd)
+x,y,z = np.dot(m, crd)
 try: data, indices = h[x,y,z]
 except(ValueError): data = h[x,y,z]
 if not opts.mask is None:
     try:
         wgts = h.wgt[x,y,z]
-        threshold = 10**(-opts.mask/10.)*n.max(wgts)
-        msk = n.where(wgts > threshold, 1, 0)
+        threshold = 10**(-opts.mask/10.)*np.max(wgts)
+        msk = np.where(wgts > threshold, 1, 0)
         data *= msk
         print "Masking %2.0f%% of sky"% ((1 - msk.sum() / float(len(msk)))*100)
     except(AttributeError):
@@ -167,7 +167,7 @@ if not opts.src is None:
     #cat.compute(o)
     # lat/lon coordinates of sources
     scrds = [ephem.Equatorial(s.ra,s.dec,epoch=o.epoch) for s in cat.values()]
-    afreqs = n.array([.150])
+    afreqs = np.array([.150])
     cat.update_jys(afreqs)
     sflxs = cat.get_jys().squeeze()
     snams = cat.keys()
@@ -175,18 +175,18 @@ if not opts.src is None:
         scrds = [ephem.Galactic(s, epoch=opts.oepoch) for s in scrds]
     elif opts.osys == 'ec':
         scrds = [ephem.Ecliptic(s, epoch=opts.oepoch) for s in scrds]
-    slats = n.array([float(s.get()[1]) for s in scrds]) * a.img.rad2deg
-    slons = n.array([float(s.get()[0]) for s in scrds]) * a.img.rad2deg
+    slats = np.array([float(s.get()[1]) for s in scrds]) * a.img.rad2deg
+    slons = np.array([float(s.get()[0]) for s in scrds]) * a.img.rad2deg
     if opts.osys == 'eq': slons = 360 - slons
-    slons = n.where(slons < -180, slons + 360, slons)
-    slons = n.where(slons >= 180, slons - 360, slons)
+    slons = np.where(slons < -180, slons + 360, slons)
+    slons = np.where(slons >= 180, slons - 360, slons)
 
 # Generate map grid/outline
 map.drawmapboundary()
-map.drawmeridians(n.arange(-180, 180, 30))
-map.drawparallels(n.arange(-90,90,30)[1:], labels=[0,1,0,0], labelstyle='+/-')
+map.drawmeridians(np.arange(-180, 180, 30))
+map.drawparallels(np.arange(-90,90,30)[1:], labels=[0,1,0,0], labelstyle='+/-')
 # Set up data to plot
-if opts.mode.startswith('log'): data = n.log10(n.abs(data))
+if opts.mode.startswith('log'): data = np.log10(np.abs(data))
 if opts.max is None: max = data.max()
 else: max = opts.max
 if opts.drng is None:
@@ -194,7 +194,7 @@ if opts.drng is None:
     if min < (max - 10): min = max-10
 else: min = max - opts.drng
 data = data.clip(min, max)
-data = n.ma.array(data, mask=mask)
+data = np.ma.array(data, mask=mask)
 map.imshow(data, vmax=max, vmin=min, cmap=cmap, interpolation=opts.interpolation)
 
 # Plot src labels and markers on top of map image
@@ -205,15 +205,15 @@ if not opts.src is None:
         if opts.src_mark != '':
             map.plot(sx, sy, opts.src_color+opts.src_mark,markerfacecolor=None)
         if flx < 10: flx = 10
-        p.text(xpt+.001, ypt+.001, name, size=5+2*int(n.round(n.log10(flx))),
+        p.text(xpt+.001, ypt+.001, name, size=5+2*int(np.round(np.log10(flx))),
             color=opts.src_color)
 if not opts.nobar: p.colorbar(shrink=.5, format='%.2f')
 else: p.subplots_adjust(.05,.05,.95,.95)
 
 
-def mk_arr(val, dtype=n.double):
-    if type(val) is n.ndarray: return val.astype(dtype)
-    return n.array(val, dtype=dtype).flatten()
+def mk_arr(val, dtype=np.double):
+    if type(val) is np.ndarray: return val.astype(dtype)
+    return np.array(val, dtype=dtype).flatten()
 
 if opts.outfile != '':
     print 'Saving to', opts.outfile
@@ -239,9 +239,9 @@ else:
             ra,dec = ephem.hours(lon), ephem.degrees(lat)
             x,y,z = a.coord.radec2eq((ra,dec))
             #flx = h[(x,y,z)]
-            crd = [mk_arr(c, dtype=n.double) for c in (x,y,z)]
+            crd = [mk_arr(c, dtype=np.double) for c in (x,y,z)]
             px,wgts = h.crd2px(*crd, **{'interpolate':1})
-            flx = n.sum(h[px],axis=-1)
+            flx = np.sum(h[px],axis=-1)
             print '#%d (RA,DEC): (%s, %s), Jy: %f (4px sum)' % (cnt, ra, dec, flx)
             cnt += 1
         else: return

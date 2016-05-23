@@ -6,7 +6,7 @@ is removed from measured data.
 
 Author: Aaron Parsons
 """
-import numpy as n, aipy as a, optparse, os, sys, ephem
+import numpy as np, aipy as a, optparse, os, sys, ephem
 
 o = optparse.OptionParser()
 o.set_usage('mdlvis.py [options] *.uv')
@@ -46,12 +46,12 @@ if len(args) > 0:
     uv = a.miriad.UV(args[0])
     aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
     p,d,f = uv.read(raw=True)
-    no_flags = n.zeros_like(f)
+    no_flags = np.zeros_like(f)
     del(uv)
 else:
     aa = a.cal.get_aa(opts.cal, opts.sdf, opts.sfreq, opts.nchan)
-    no_data = n.zeros(opts.nchan, dtype=n.complex64)
-    no_flags = n.zeros(opts.nchan, dtype=n.int32)
+    no_data = np.zeros(opts.nchan, dtype=np.complex64)
+    no_flags = np.zeros(opts.nchan, dtype=np.int32)
 
 # Generate a model of the sky with point sources and a pixel map
 
@@ -70,31 +70,31 @@ dras, ddecs = cat.get('ionref')
 ## Initialize pixel map
 #if not opts.map is None:
 #    h = a.map.Map(fromfits=opts.map)
-#    px = n.arange(h.npix())
+#    px = np.arange(h.npix())
 #    try: mflx, i_poly = h[px]
 #    except(ValueError): mflx = h[px]
-#    px = n.compress(mflx > 0, px)
+#    px = np.compress(mflx > 0, px)
 #    try: mflx, i_poly = h[px]
 #    except(ValueError):
 #        mflx = h[px]
-#        i_poly = [n.zeros_like(mflx)]
+#        i_poly = [np.zeros_like(mflx)]
 #    mind = i_poly[0]    # Only implementing first index term for now
-#    mmfq = opts.freq * n.ones_like(mind)
+#    mmfq = opts.freq * np.ones_like(mind)
 #    mfq.append(mmfq)
 #    x,y,z = h.px2crd(px, ncrd=3)
-#    m_eq = n.array((x,y,z))
+#    m_eq = np.array((x,y,z))
 #    # Should pixels include information for resolving them?
-#    a1s.append(n.zeros_like(mmfq))
-#    a2s.append(n.zeros_like(mmfq))
-#    ths.append(n.zeros_like(mmfq))
-#    dras.append(n.zeros_like(mmfq))
-#    ddecs.append(n.zeros_like(mmfq))
-#mfq = n.concatenate(mfq)
-#a1s = n.concatenate(a1s)
-#a2s = n.concatenate(a2s)
-#ths = n.concatenate(ths)
-#dras = n.concatenate(dras)
-#ddecs = n.concatenate(ddecs)
+#    a1s.append(np.zeros_like(mmfq))
+#    a2s.append(np.zeros_like(mmfq))
+#    ths.append(np.zeros_like(mmfq))
+#    dras.append(np.zeros_like(mmfq))
+#    ddecs.append(np.zeros_like(mmfq))
+#mfq = np.concatenate(mfq)
+#a1s = np.concatenate(a1s)
+#a2s = np.concatenate(a2s)
+#ths = np.concatenate(ths)
+#dras = np.concatenate(dras)
+#ddecs = np.concatenate(ddecs)
 
 # A pipe for applying the model
 curtime = None
@@ -114,11 +114,11 @@ def mdl(uv, p, d, f):
         #if not opts.map is None:
         #    m_precess = a.coord.convert_m('eq','eq',
         #        iepoch=opts.iepoch, oepoch=aa.epoch)
-        #    eqs.append(n.dot(m_precess, m_eq))
+        #    eqs.append(np.dot(m_precess, m_eq))
         #    flx.append(mflx); ind.append(mind)
-        #eqs = n.concatenate(eqs, axis=-1)
-        #flx = n.concatenate(flx)
-        #ind = n.concatenate(ind)
+        #eqs = np.concatenate(eqs, axis=-1)
+        #flx = np.concatenate(flx)
+        #ind = np.concatenate(ind)
         aa.sim_cache(eqs, flx, mfreqs=mfq, 
             ionrefs=(dras,ddecs), srcshapes=(a1s,a2s,ths))
     aa.set_active_pol(pol)
@@ -134,11 +134,11 @@ def mdl(uv, p, d, f):
         raise ValueError('Mode "%s" not supported.' % opts.mode)
     if opts.noiselev != 0:
         # Add on some noise for a more realistic experience
-        noise_amp = n.random.random(d.shape) * opts.noiselev
-        noise_phs = n.random.random(d.shape) * 2*n.pi * 1j
-        noise = noise_amp * n.exp(noise_phs)
+        noise_amp = np.random.random(d.shape) * opts.noiselev
+        noise_phs = np.random.random(d.shape) * 2*np.pi * 1j
+        noise = noise_amp * np.exp(noise_phs)
         d += noise * aa.passband(i,j)
-    return p, n.where(f, 0, d), f
+    return p, np.where(f, 0, d), f
 
 if len(args) > 0:
     # Run mdl on all files
@@ -172,7 +172,7 @@ else:
     uv.add_var('nspect'  ,'i'); uv['nspect'] = 1
     uv.add_var('nants'   ,'i'); uv['nants'] = len(aa)
     uv.add_var('antpos'  ,'d')
-    antpos = n.array([ant.pos for ant in aa], dtype=n.double)
+    antpos = np.array([ant.pos for ant in aa], dtype=np.double)
     uv['antpos'] = antpos.transpose().flatten()
     uv.add_var('sfreq'   ,'d'); uv['sfreq'] = opts.sfreq
     uv.add_var('freq'    ,'d'); uv['freq'] = opts.sfreq
@@ -196,7 +196,7 @@ else:
     uv.add_var('pol'     ,'i')
 
     # Now start generating data
-    times = n.arange(opts.startjd, opts.endjd, opts.inttime/a.const.s_per_day)
+    times = np.arange(opts.startjd, opts.endjd, opts.inttime/a.const.s_per_day)
     for cnt,t in enumerate(times):
         print 'Timestep %d / %d' % (cnt+1, len(times))
         aa.set_jultime(t)

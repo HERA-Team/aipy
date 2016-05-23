@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-import aipy as a, ephem as e, numpy as n, sys, optparse, os
+import aipy as a, ephem as e, numpy as np, sys, optparse, os
 
 o = optparse.OptionParser()
 o.set_usage('modmap.py [options]')
@@ -36,8 +36,8 @@ opts,args = o.parse_args(sys.argv[1:])
 assert(opts.in_map != None or opts.nside != None)
 assert(opts.dtype == None or opts.dtype in ['float', 'double'])
 if opts.dtype != None:
-    if opts.dtype.startswith('fl'): opts.dtype = n.float32
-    else: opts.dtype = n.double
+    if opts.dtype.startswith('fl'): opts.dtype = np.float32
+    else: opts.dtype = np.double
 
 if not opts.in_map is None:
     imap = a.map.Map(fromfits=opts.in_map)
@@ -51,17 +51,17 @@ if not opts.in_map is None:
         print 'Importing data from %s' % opts.in_map
         h.from_map(a.map.Map(fromfits=opts.in_map))
     h.map.map *= opts.mscale
-    px = n.arange(h.npix())
+    px = np.arange(h.npix())
     m = a.coord.convert_m(opts.osys, opts.isys,
         iepoch=opts.oepoch, oepoch=opts.iepoch)
-    x,y,z = n.dot(m,h.px2crd(px, ncrd=3))
+    x,y,z = np.dot(m,h.px2crd(px, ncrd=3))
     h.set_interpol(True)
     h.map[px] = h.map[x,y,z]
     h.wgt[px] = h.wgt[x,y,z]
     for i in h.ind: i[px] = i[x,y,z]
     h.set_interpol(False)
 else:
-    if opts.dtype is None: opts.dtype = n.double
+    if opts.dtype is None: opts.dtype = np.double
     h = a.map.Map(nside=opts.nside, nindices=opts.nindices, dtype=opts.dtype)
     print 'Starting a new map.'
 print 'NSIDE:', h.nside()
@@ -82,9 +82,9 @@ else:
     cat = a.src.get_catalog(srclist, cutoff, catalogs)
 
 m = a.coord.convert_m('eq', opts.osys, oepoch=opts.oepoch)
-ths,phis = h.px2crd(n.arange(h.npix()), ncrd=2)
-ras,decs = phis, n.pi/2 - ths
-afreq = n.array([opts.freq])
+ths,phis = h.px2crd(np.arange(h.npix()), ncrd=2)
+ras,decs = phis, np.pi/2 - ths
+afreq = np.array([opts.freq])
 for srcname in cat:
     src = cat[srcname]
     eq = e.Equatorial(src._ra, src._dec, epoch=e.J2000)
@@ -99,15 +99,15 @@ for srcname in cat:
     print 'Adding', srcname, 'with strength %f Jy' % strength,
     print 'and index', src.index
     print 'Source shape: a1=%f, a2=%f, th=%f' % (a1, a2, th)
-    da1 = dras*n.cos(th) - ddecs*n.sin(th)
-    da2 = dras*n.sin(th) + ddecs*n.cos(th)
+    da1 = dras*np.cos(th) - ddecs*np.sin(th)
+    da2 = dras*np.sin(th) + ddecs*np.cos(th)
     delta = (da1/a1)**2 + (da2/a2)**2
-    px = n.where(delta <= 1)[0]
+    px = np.where(delta <= 1)[0]
     if len(px) == 0:
         print 'Treating as point source.'
         eq = a.coord.radec2eq((ra,dec))
-        x,y,z = n.dot(m, eq)
-        px = h.crd2px(n.array([x]),n.array([y]),n.array([z]))
+        x,y,z = np.dot(m, eq)
+        px = h.crd2px(np.array([x]),np.array([y]),np.array([z]))
     str_per_px = strength / len(px)
     print 'Putting %f in each of %d pixels' % (str_per_px, len(px))
     if opts.nindices == 0:

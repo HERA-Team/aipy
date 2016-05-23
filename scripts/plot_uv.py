@@ -11,7 +11,7 @@ output plot (i.e. as specified by --chan_axis and --time_axis).
 Author: Aaron Parsons, Griffin Foster
 """
 
-import aipy as a, numpy as n, sys, optparse
+import aipy as a, numpy as np, sys, optparse
 from matplotlib import pylab as p
 
 o = optparse.OptionParser()
@@ -80,16 +80,16 @@ def gen_times(timeopt, uv, coords, decimate):
     return time_selector
 
 def data_mode(data, mode='abs'):
-    if mode.startswith('phs'): data = n.angle(data.filled(0))
+    if mode.startswith('phs'): data = np.angle(data.filled(0))
     elif mode.startswith('lin'):
-        data = n.ma.absolute(data.filled(0))
-        data = n.ma.masked_less_equal(data, 0)
+        data = np.ma.absolute(data.filled(0))
+        data = np.ma.masked_less_equal(data, 0)
     elif mode.startswith('real'): data = data.real
     elif mode.startswith('imag'): data = data.imag
     elif mode.startswith('log'):
-        data = n.ma.absolute(data.filled(0))
-        data = n.ma.masked_less_equal(data, 0)
-        data = n.ma.log10(data)
+        data = np.ma.absolute(data.filled(0))
+        data = np.ma.masked_less_equal(data, 0)
+        data = np.ma.log10(data)
     else: raise ValueError('Unrecognized plot mode.')
     return data
 
@@ -111,8 +111,8 @@ if opts.delay:
     if freqs.size == freqs[-1] - freqs[0] + 1:
         # XXX someday could allow for equal spaced chans
         raise ValueError('Channels must be contiguous to do delay transform (chan=%s)' % (opts.chan))
-    delays = n.fft.fftfreq(freqs.size, freqs[1]-freqs[0])
-    delays = n.fft.fftshift(delays)
+    delays = np.fft.fftfreq(freqs.size, freqs[1]-freqs[0])
+    delays = np.fft.fftshift(delays)
 time_sel = gen_times(opts.time, uv, opts.time_axis, opts.decimate)
 inttime = uv['inttime'] * opts.decimate
 if not opts.src is None:
@@ -165,24 +165,24 @@ for uvfile in args:
                 src.compute(aa)
                 d = aa.phs2src(d, src, i, j)
             #else: took out this mode because it's not used, and prefer not to phase.
-            #    d *= n.exp(-1j*n.pi*aa.get_phs_offset(i,j))
+            #    d *= np.exp(-1j*np.pi*aa.get_phs_offset(i,j))
         # Do delay transform if required
         if opts.delay:
             w = a.dsp.gen_window(d.shape[-1], window=opts.window)
             if opts.unmask:
-                flags = n.ones(d.shape, dtype=n.float)
+                flags = np.ones(d.shape, dtype=np.float)
                 d = d.data
             else:
-                flags = n.logical_not(d.mask).astype(n.float)
+                flags = np.logical_not(d.mask).astype(np.float)
                 d = d.filled(0)
-            d = n.fft.ifft(d*w)
-            ker = n.fft.ifft(flags*w)
+            d = np.fft.ifft(d*w)
+            ker = np.fft.ifft(flags*w)
             gain = a.img.beam_gain(ker)
-            if not opts.clean is None and not n.all(d == 0):
+            if not opts.clean is None and not np.all(d == 0):
                 d, info = a.deconv.clean(d, ker, tol=opts.clean)
                 d += info['res'] / gain
-            d = n.ma.array(d)
-            d = n.fft.fftshift(d, axes=0)
+            d = np.ma.array(d)
+            d = np.fft.fftshift(d, axes=0)
         elif opts.unmask: d = d.data
         d.shape = (1,) + d.shape
         if not plot_x.has_key(bl): plot_x[bl] = []
@@ -199,32 +199,32 @@ bls.sort(cmp=sort_func)
 if len(bls) == 0:
     print 'No data to plot.'
     sys.exit(0)
-m2 = int(n.sqrt(len(bls)))
-m1 = int(n.ceil(float(len(bls)) / m2))
+m2 = int(np.sqrt(len(bls)))
+m1 = int(np.ceil(float(len(bls)) / m2))
 
 # Generate all the plots
 dmin,dmax = None, None
 fig = p.figure()
 if not opts.src is None:fig.suptitle(opts.src)
 for cnt, bl in enumerate(bls):
-    d = n.ma.concatenate(plot_x[bl], axis=0)
+    d = np.ma.concatenate(plot_x[bl], axis=0)
     i,j,pol = map(int,bl.split(','))
     if opts.df: d = d[:,:-2]/2 + d[:,2:]/2 - d[:,1:-1]
     if opts.dt: d = d[:-2]/2 + d[2:]/2 - d[1:-1]
     if opts.fringe:
         d = d.filled(0)
         w = a.dsp.gen_window(d.shape[0], window=opts.window); w.shape += (1,)
-        wgts = n.where(d != 0, 1., 0.) * w
-        gain = n.sqrt(n.average(wgts**2, axis=0))
-        ker = n.fft.ifft(wgts, axis=0) # w already put in 2 lines above
-        d = n.fft.ifft(d*w, axis=0)
+        wgts = np.where(d != 0, 1., 0.) * w
+        gain = np.sqrt(np.average(wgts**2, axis=0))
+        ker = np.fft.ifft(wgts, axis=0) # w already put in 2 lines above
+        d = np.fft.ifft(d*w, axis=0)
         if not opts.clean is None:
             for chan in range(d.shape[1]):
                 if gain[chan] == 0: continue
                 d[:,chan],info = a.deconv.clean(d[:,chan],ker[:,chan],tol=opts.clean)
                 d[:,chan] += info['res'] / gain[chan]
-        d = n.fft.fftshift(d, axes=0)
-        d = n.ma.array(d)
+        d = np.fft.fftshift(d, axes=0)
+        d = np.ma.array(d)
     plt_data[cnt+1] = d
     d = data_mode(d, opts.mode)
     if not opts.share:
@@ -237,14 +237,14 @@ for cnt, bl in enumerate(bls):
     if is_chan_range and is_time_range:
         if opts.fringe:
             if opts.time_axis == 'index':
-                drates = n.fft.fftfreq(len(plot_t['cnt']), 1./len(plot_t['cnt']))
+                drates = np.fft.fftfreq(len(plot_t['cnt']), 1./len(plot_t['cnt']))
                 step = drates[1] - drates[0]
                 ylabel = 'Delay-Rate (bins)'
             else:
-                drates = n.fft.fftfreq(len(plot_t['cnt']), inttime) * 1e3 # mHz
+                drates = np.fft.fftfreq(len(plot_t['cnt']), inttime) * 1e3 # mHz
                 step = drates[1] - drates[0]
                 ylabel = 'Delay-Rate (milliHz)'
-            drates = n.fft.fftshift(drates)
+            drates = np.fft.fftshift(drates)
             t1,t2 = drates[0]-0.5*step,drates[-1]+0.5*step
         else:
             if opts.time_axis == 'index':
@@ -253,7 +253,7 @@ for cnt, bl in enumerate(bls):
                 ylabel = 'Time (integrations)'
             elif opts.time_axis=='lst':
                 step = plot_t['lst'][1] - plot_t['lst'][0]
-                t1,t2 = (plot_t['lst'][0]-0.5*step)*12/n.pi, (plot_t['lst'][-1]+0.5*step)*12/n.pi
+                t1,t2 = (plot_t['lst'][0]-0.5*step)*12/np.pi, (plot_t['lst'][-1]+0.5*step)*12/np.pi
                 ylabel = 'Local Sideral time (hrs)'
             else:
                 step = plot_t['jd'][1] - plot_t['jd'][0]
@@ -326,13 +326,13 @@ for cnt, bl in enumerate(bls):
     elif not is_chan_range and is_time_range:
         if opts.fringe:
             if opts.time_axis == 'index':
-                drates = n.fft.fftfreq(len(plot_t['cnt']), 1./len(plot_t['cnt']))
+                drates = np.fft.fftfreq(len(plot_t['cnt']), 1./len(plot_t['cnt']))
                 xlabel = 'Delay-Rate (bins)'
             else:
                 print inttime, len(plot_t['cnt'])
-                drates = n.fft.fftfreq(len(plot_t['cnt']), inttime) * 1e3 # mHz
+                drates = np.fft.fftfreq(len(plot_t['cnt']), inttime) * 1e3 # mHz
                 xlabel = 'Delay-Rate (milliHz)'
-            plot_times = n.fft.fftshift(drates)
+            plot_times = np.fft.fftshift(drates)
         else:
             if opts.time_axis == 'index':
                 plot_times = range(len(plot_t['jd']))

@@ -3,7 +3,7 @@ Module adding simulation support to RadioBodys and AntennaArrays.
 Mostly, this means adding gain/amplitude information vs. frequency.
 """
 
-import phs, numpy as n, ephem, coord, healpix
+import phs, numpy as np, ephem, coord, healpix
 
 #  ____           _ _       ____            _       
 # |  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _ 
@@ -99,7 +99,7 @@ class SrcCatalog(phs.SrcCatalog):
     def get_jys(self, srcs=None):
         """Return list of fluxes of all src objects in catalog."""
         if srcs is None: srcs = self.keys()
-        return n.array([self[s].get_jys() for s in srcs])
+        return np.array([self[s].get_jys() for s in srcs])
     def update_jys(self, afreqs):
         for s in self.keys(): self[s].update_jys(afreqs)
 
@@ -113,13 +113,13 @@ class Beam(phs.Beam):
     """Representation of a flat (gain=1) antenna beam pattern."""
     def response(self, xyz):
         """Return the (unity) beam response as a function of position."""
-        x,y,z = n.array(xyz)
-        return n.ones((self.afreqs.size, x.size))
+        x,y,z = np.array(xyz)
+        return np.ones((self.afreqs.size, x.size))
 
 class Beam2DGaussian(phs.Beam):
     """Representation of a 2D Gaussian beam pattern, with default setting for 
     a flat beam."""
-    def __init__(self, freqs, xwidth=n.Inf, ywidth=n.Inf):
+    def __init__(self, freqs, xwidth=np.Inf, ywidth=np.Inf):
         """xwidth = angular width (radians) in EW direction
         ywidth = angular width (radians) in NS direction"""
         phs.Beam.__init__(self, freqs)
@@ -129,15 +129,15 @@ class Beam2DGaussian(phs.Beam):
         coordinates: (x=E,y=N,z=UP). x,y,z may be arrays of multiple 
         coordinates.  Returns 'x' linear polarization (rotate pi/2 for 'y')."""
         x,y,z = xyz
-        x,y = n.arcsin(x)/self.xwidth, n.arcsin(y)/self.ywidth
-        resp = n.sqrt(n.exp(-0.5*(x**2 + y**2)))
-        resp = n.resize(resp, (self.afreqs.size, resp.size))
+        x,y = np.arcsin(x)/self.xwidth, np.arcsin(y)/self.ywidth
+        resp = np.sqrt(np.exp(-0.5*(x**2 + y**2)))
+        resp = np.resize(resp, (self.afreqs.size, resp.size))
         return resp
 
 class BeamPolynomial(phs.Beam):
     """Representation of a gaussian beam model whose width varies with azimuth
     angle and with frequency."""
-    def __init__(self, freqs, poly_azfreq=n.array([[.5]])):
+    def __init__(self, freqs, poly_azfreq=np.array([[.5]])):
         """poly_azfreq = a 2D polynomial in cos(2*n*az) for first axis and 
         in freq**n for second axis."""
         self.poly = poly_azfreq
@@ -149,9 +149,9 @@ class BeamPolynomial(phs.Beam):
         phs.Beam.select_chans(self, active_chans)
         self.update()
     def _update_sigma(self):
-        f = n.resize(self.afreqs, (self.poly.shape[1], self.afreqs.size))
-        f = f**n.array([range(self.poly.shape[1])]).transpose()
-        self.sigma = n.dot(self.poly, f)
+        f = np.resize(self.afreqs, (self.poly.shape[1], self.afreqs.size))
+        f = f**np.array([range(self.poly.shape[1])]).transpose()
+        self.sigma = np.dot(self.poly, f)
     def update(self):
         phs.Beam.update(self)
         self._update_sigma()
@@ -160,16 +160,16 @@ class BeamPolynomial(phs.Beam):
         coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  
         Returns 'x' pol (rotate pi/2 for 'y')."""
         az,alt = coord.top2azalt(top)
-        zang = n.pi/2 - alt
+        zang = np.pi/2 - alt
         if zang.size == 1:
-            zang = n.array([zang]); zang.shape = (1,)
-            az = n.array([az]); az.shape = (1,)
-        a = 2 * n.arange(self.poly.shape[0], dtype=n.float)
+            zang = np.array([zang]); zang.shape = (1,)
+            az = np.array([az]); az.shape = (1,)
+        a = 2 * np.arange(self.poly.shape[0], dtype=np.float)
         a.shape = (1,) + a.shape; az.shape += (1,); zang.shape += (1,)
-        a = n.cos(n.dot(az, a))
+        a = np.cos(np.dot(az, a))
         a[:,0] = 0.5
-        s = n.dot(a, self.sigma)
-        return n.sqrt(n.exp(-(zang/s)**2)).transpose()
+        s = np.dot(a, self.sigma)
+        return np.sqrt(np.exp(-(zang/s)**2)).transpose()
 
 class BeamAlm(phs.Beam):
     """Representation of a beam model where each pointing has a response
@@ -201,10 +201,10 @@ class BeamAlm(phs.Beam):
         """Return beam response across active band for specified topocentric 
         coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  
         Returns 'x' pol (rotate pi/2 for 'y')."""
-        top = [healpix.mk_arr(c, dtype=n.double) for c in top]
+        top = [healpix.mk_arr(c, dtype=np.double) for c in top]
         px,wgts = self.hmap[0].crd2px(*top, **{'interpolate':1})
-        poly = n.array([n.sum(h.map[px] * wgts, axis=-1) for h in self.hmap])
-        rv = n.polyval(poly, n.reshape(self.afreqs, (self.afreqs.size, 1)))
+        poly = np.array([np.sum(h.map[px] * wgts, axis=-1) for h in self.hmap])
+        rv = np.polyval(poly, np.reshape(self.afreqs, (self.afreqs.size, 1)))
         return rv
 
 #     _          _                         
@@ -216,8 +216,8 @@ class BeamAlm(phs.Beam):
 class Antenna(phs.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array."""
-    def __init__(self, x, y, z, beam, phsoff=[0.,0.], bp_r=n.array([1]),
-            bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
+    def __init__(self, x, y, z, beam, phsoff=[0.,0.], bp_r=np.array([1]),
+            bp_i=np.array([0]), amp=1, pointing=(0.,np.pi/2,0), **kwargs):
         """x,y z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object (implements response() function)
         phsoff = polynomial phase vs. frequency.  Phs term that is linear
@@ -233,34 +233,34 @@ class Antenna(phs.Antenna):
         self.amp = amp
         self._update_gain()
     def _update_gain(self):
-        bp = n.polyval(self.bp_r, self.beam.afreqs) + \
-             1j*n.polyval(self.bp_i, self.beam.afreqs)
+        bp = np.polyval(self.bp_r, self.beam.afreqs) + \
+             1j*np.polyval(self.bp_i, self.beam.afreqs)
         self._gain = self.amp * bp
     def update(self):
         phs.Antenna.update(self)
         self._update_gain()
-    def set_pointing(self, az=0, alt=n.pi/2, twist=0):
+    def set_pointing(self, az=0, alt=np.pi/2, twist=0):
         """Set the antenna beam to point at (az, alt) with specified
         right-hand twist to polarizations.  Polarization y is assumed
         to be +pi/2 azimuth from pol x."""
-        y, z = n.array([0,1,0]), n.array([0,0,1])
+        y, z = np.array([0,1,0]), np.array([0,0,1])
         # Twist is negative b/c we apply it to the coords, not the beam
         rot = coord.rot_m(-twist, z)
-        rot = n.dot(rot, coord.rot_m(alt-n.pi/2, y))
+        rot = np.dot(rot, coord.rot_m(alt-np.pi/2, y))
         # NOTE the az, alt definition, az (clockwise around z = up, 0 at x axis = north), alt (from horizon), see also coord.azalt2top
-        # rot = n.dot(rot, coord.rot_m(-az, z))
-        rot = n.dot(rot, coord.rot_m(-(n.pi/2 - az), z))
+        # rot = np.dot(rot, coord.rot_m(-az, z))
+        rot = np.dot(rot, coord.rot_m(-(np.pi/2 - az), z))
         self.rot_pol_x = rot
-        self.rot_pol_y = n.dot(coord.rot_m(-n.pi/2, z), rot)
+        self.rot_pol_y = np.dot(coord.rot_m(-np.pi/2, z), rot)
     def bm_response(self, top, pol='x'):
         """Return response of beam for specified polarization."""
-        top = n.array(top)
-        top = {'x':n.dot(self.rot_pol_x, top), 
-               'y':n.dot(self.rot_pol_y, top)}[pol]
+        top = np.array(top)
+        top = {'x':np.dot(self.rot_pol_x, top), 
+               'y':np.dot(self.rot_pol_y, top)}[pol]
         x,y,z = top
         return self.beam.response((x,y,z))
     def passband(self, conj=False):
-        if conj: return n.conjugate(self._gain)
+        if conj: return np.conjugate(self._gain)
         else: return self._gain
 
 #     _          _                            _                         
@@ -302,8 +302,8 @@ class AntennaArray(phs.AntennaArray):
                 x,y,z = self._cache['s_top']
                 resp = self[c].bm_response((x,y,z), pol=p).transpose()
                 self._cache[c][p] = resp
-        return self._cache[j][p2] * n.conjugate(self._cache[i][p1])
-    def sim_cache(self, s_eqs, jys=n.array([1.]), mfreqs=0.150,
+        return self._cache[j][p2] * np.conjugate(self._cache[i][p1])
+    def sim_cache(self, s_eqs, jys=np.array([1.]), mfreqs=0.150,
             ionrefs=(0.,0.), srcshapes=(0,0,0)):
         """Cache intermediate computations given catalog information to speed
         simulation for multiple baselines.  For efficiency, should only be 
@@ -317,10 +317,10 @@ class AntennaArray(phs.AntennaArray):
             semimajor, semiminor axes, and th is the angle (in radians) of
             the semimajor axis from E."""
         # Get topocentric coordinates of all srcs
-        src_top = n.dot(self.eq2top_m, s_eqs)
+        src_top = np.dot(self.eq2top_m, s_eqs)
         # Throw out everything that is below the horizon
         valid = src_top[2,:] > 0
-        if n.all(valid == 0): self._cache = {}
+        if np.all(valid == 0): self._cache = {}
         else:
             jys = jys.compress(valid, axis=0)
             try:
@@ -356,15 +356,15 @@ class AntennaArray(phs.AntennaArray):
         if self._cache is None:
             raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')
         elif self._cache == {}:
-            return n.zeros_like(self.passband(i,j))
+            return np.zeros_like(self.passband(i,j))
         s_eqs = self._cache['s_eqs']
         u,v,w = self.gen_uvw(i, j, src=s_eqs)
         I_sf = self._cache['jys']
         Gij_sf = self.passband(i,j)
         Bij_sf = self.bm_response(i,j)
-        if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
+        if len(Bij_sf.shape) == 2: Gij_sf = np.reshape(Gij_sf, (1, Gij_sf.size))
         # Get the phase of each src vs. freq, also does resolution effects
-        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],
+        E_sf = np.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],
             srcshape=self._cache['s_shp'], ionref=self._cache['i_ref'],
             resolve_src=True))
         try: E_sf.shape = I_sf.shape

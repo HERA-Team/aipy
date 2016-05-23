@@ -3,7 +3,7 @@ The PAPER catalog here is derived by experimental methods in either facets or
 healpix maps.
 """
 
-import aipy as a, numpy as n, os
+import aipy as a, numpy as np, os
     
 class PAPERCatalog(a.fit.SrcCatalog):
     def fromfile(self, filename):
@@ -34,7 +34,7 @@ def get_srcs(srcs=None, cutoff=None):
         if cutoff is None: srcs = _papercat.keys()
         else:
             cut, fq = cutoff
-            fq = n.array([fq])
+            fq = np.array([fq])
             for s in _papercat.keys(): _papercat[s].update_jys(fq)
             srcs = [s for s in _papercat.keys() if _papercat[s].jys[0] > cut]
 
