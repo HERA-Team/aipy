@@ -141,7 +141,17 @@ class AntennaArray(fit.AntennaArray):
         self.active_pol = pol
     def get_phs_offset(self, i, j):
         pol = self.get_active_pol()
-        return self[j].phsoff[pol[-1]] - self[i].phsoff[pol[0]]
+        if pol in ['xx','yy','xy','yx']:
+            return self[j].phsoff[pol[-1]] - self[i].phsoff[pol[0]]
+        elif pol in ['I','Q','U','V']:
+            if pol == 'I':
+                return (self[j].phsoff['y'] - self[i].phsoff['y'])+(self[j].phsoff['x'] - self[i].phsoff['x'])
+            if pol == 'Q':
+                return (self[j].phsoff['y'] - self[i].phsoff['y'])-(self[j].phsoff['x'] - self[i].phsoff['x'])
+            if pol == 'U':
+                return (self[j].phsoff['y'] - self[i].phsoff['x'])+(self[j].phsoff['x'] - self[i].phsoff['y'])
+            if pol == 'V':
+                return np.conj((self[j].phsoff['y'] - self[i].phsoff['x'])-(self[j].phsoff['x'] - self[i].phsoff['y']))
     def passband(self, i, j):
         pol = self.get_active_pol()
         return self[j].passband(pol=pol[-1]) * self[i].passband(conj=True, pol=pol[0])
