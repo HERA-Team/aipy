@@ -67,7 +67,7 @@ void option_err(char *options[]) {
         i++;
     }
     strcat(errstr, "]");
-    PyErr_Format(PyExc_ValueError, errstr);
+    PyErr_Format(PyExc_ValueError, "%s", errstr);
 }
     
 int get_option(char *options[], PyObject *choice) {
@@ -124,7 +124,7 @@ static int AlmObject_init(AlmObject *self, PyObject *args, PyObject *kwds) {
         self->alm = Alm<xcomplex<double> >(lmax, mmax);
         self->alm.SetToZero();
     } catch (Message_error &e) {
-        PyErr_Format(PyExc_RuntimeError, e.what());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.what());
         return -1;
     }
     return 0;
@@ -143,14 +143,14 @@ static PyObject * AlmObject_get(AlmObject *self, PyObject *args) {
     xcomplex<double> c;
     if (!PyArg_ParseTuple(args, "ii", &l, &m)) return NULL;
     if (l < 0 || l > lmax || m < 0 || m > mmax || m > l) {
-        PyErr_Format(PyExc_RuntimeError, "Index out of range");
+        PyErr_Format(PyExc_RuntimeError, "%s", "Index out of range");
         return NULL;
     }
     try {
         c = self->alm(l,m);
         return PyComplex_FromDoubles((double)c.real(), (double)c.imag());
     } catch (Message_error &e) {
-        PyErr_Format(PyExc_RuntimeError, e.what());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.what());
         return NULL;
     }
 }
@@ -161,7 +161,7 @@ static int AlmObject_set(AlmObject *self, PyObject *ind, PyObject *val) {
     xcomplex<double> c;
     if (!PyArg_ParseTuple(ind, "ii", &l, &m)) return -1;
     if (l < 0 || l > lmax || m < 0 || m > mmax || m > l) {
-        PyErr_Format(PyExc_RuntimeError, "Index out of range");
+        PyErr_Format(PyExc_RuntimeError, "%s", "Index out of range");
         return -1;
     }
     if (PyComplex_Check(val)) {
@@ -171,14 +171,14 @@ static int AlmObject_set(AlmObject *self, PyObject *ind, PyObject *val) {
     } else if (PyInt_Check(val)) {
         c.Set((double) PyInt_AsLong(val), 0);
     } else {
-        PyErr_Format(PyExc_ValueError, "Could not convert value to complex");
+        PyErr_Format(PyExc_ValueError, "%s", "Could not convert value to complex");
         return -1;
     }
     try {
         self->alm(l,m) = c;
         return 0;
     } catch (Message_error &e) {
-        PyErr_Format(PyExc_RuntimeError, e.what());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.what());
         return -1;
     }
 }
@@ -211,7 +211,7 @@ static PyObject * AlmObject_to_map(AlmObject *self, PyObject *args) {
     if (strcmp(PyString_AsString(ordering), "NEST") == 0) {
         scheme = NEST;
     } else if (strcmp(PyString_AsString(ordering), "RING") != 0) {
-        PyErr_Format(PyExc_ValueError,"ordering must be 'RING' or 'NEST'.");
+        PyErr_Format(PyExc_ValueError, "%s", "ordering must be 'RING' or 'NEST'.");
         return NULL;
     }
     try {
@@ -224,7 +224,7 @@ static PyObject * AlmObject_to_map(AlmObject *self, PyObject *args) {
         for (int i=0; i < npix; i++) IND1(rv,i,double) = map[i];
         return PyArray_Return(rv);
     } catch (Message_error &e) {
-        PyErr_Format(PyExc_RuntimeError, e.what());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.what());
         return NULL;
     }
 }
@@ -237,7 +237,7 @@ static PyObject * AlmObject_from_map(AlmObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "O!i", &PyArray_Type, &data, &iter))
         return NULL;
     if (RANK(data) != 1) {
-        PyErr_Format(PyExc_ValueError, "data must have 1 dimension.");
+        PyErr_Format(PyExc_ValueError, "%s", "data must have 1 dimension.");
         return NULL;
     }
     nside = hpb.npix2nside(DIM(data,0));
@@ -276,7 +276,7 @@ static PyObject * AlmObject_from_map(AlmObject *self, PyObject *args) {
         Py_INCREF(Py_None);
         return Py_None;
     } catch (Message_error &e) {
-        PyErr_Format(PyExc_RuntimeError, e.what());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.what());
         return NULL;
     }
 }
@@ -331,7 +331,7 @@ static PyObject * AlmObject_set_data(AlmObject *self, PyObject *args) {
     xcomplex<double> c;
     if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &data)) return NULL;
     if (RANK(data) != 1 || DIM(data,0) != num_alms) {
-        PyErr_Format(PyExc_ValueError, "data must have length %d.", num_alms);
+        PyErr_Format(PyExc_ValueError, "%s", "data must have length %d.", num_alms);
         return NULL;
     }
     CHK_ARRAY_TYPE(data, NPY_CDOUBLE);

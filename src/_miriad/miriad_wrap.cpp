@@ -49,7 +49,7 @@ static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
     switch (corrmode[0]) {
         case 'r': case 'j': break;
         default:
-            PyErr_Format(PyExc_ValueError, "UV corrmode must be 'r' or 'j' (got '%c')", corrmode[0]);
+            PyErr_Format(PyExc_ValueError, "%s", "UV corrmode must be 'r' or 'j' (got '%c')", corrmode[0]);
             return -1;
     }
     // Setup an error handler so MIRIAD doesn't just exit
@@ -61,7 +61,7 @@ static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
         uvset_c(self->tno,"corr",corrmode,0,0.,0.,0.);
     } catch (MiriadError &e) {
         self->tno = -1;
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return -1;
     }
     return 0;
@@ -105,7 +105,7 @@ PyObject * UVObject_read(UVObject *self, PyObject *args) {
             uvread_c(self->tno, preamble,
                 (float *)data->data, (int *)flags->data, n2read, &nread);
         } catch (MiriadError &e) {
-            PyErr_Format(PyExc_RuntimeError, e.get_message());
+            PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
             return NULL;
         }
         if (preamble[3] != self->curtime) {
@@ -145,7 +145,7 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
         &PyArray_Type, &uvw, &t, &i, &j,
         &PyArray_Type, &data, &PyArray_Type, &flags)) return NULL;
     if (RANK(uvw) != 1 || DIM(uvw,0) != 3) {
-        PyErr_Format(PyExc_ValueError,
+        PyErr_Format(PyExc_ValueError, "%s", 
             "uvw must have shape (3,) %d", RANK(uvw));
         return NULL;
     } else if (RANK(data)!=1 || RANK(flags)!=1 || DIM(data,0)!=DIM(flags,0)) {
@@ -158,7 +158,7 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
     // Check for both int,long, b/c label of 32b number is platform dependent
     if (TYPE(flags) != NPY_INT && \
             (sizeof(int) == sizeof(long) && TYPE(flags) != NPY_LONG)) {
-        PyErr_Format(PyExc_ValueError, "type(flags) != NPY_LONG or NPY_INT");
+        PyErr_Format(PyExc_ValueError, "%s", "type(flags) != NPY_LONG or NPY_INT");
         return NULL;
     }
     // Fill up the preamble
@@ -172,7 +172,7 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
         uvwrite_c(self->tno, preamble,
             (float *)data->data, (int *)flags->data, DIM(data,0));
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
     Py_INCREF(Py_None);
@@ -186,7 +186,7 @@ PyObject * UVObject_copyvr(UVObject *self, PyObject *args) {
     try {
         uvcopyvr_c(uv->tno, self->tno);
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
     Py_INCREF(Py_None);
@@ -200,7 +200,7 @@ PyObject * UVObject_trackvr(UVObject *self, PyObject *args) {
     try {
         uvtrack_c(self->tno, name, sw);
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
     Py_INCREF(Py_None);
@@ -258,11 +258,11 @@ PyObject * UVObject_rdvr(UVObject *self, PyObject *args) {
                 uvgetvr_c(self->tno,H_CMPLX,name,(char *)rv->data,length);
                 return PyArray_Return(rv);
             default:
-                PyErr_Format(PyExc_ValueError,"unknown var type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "%s", "unknown var type: %c",type[0]);
                 return NULL;
         }
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
 }
@@ -320,13 +320,13 @@ PyObject * UVObject_wrvr(UVObject *self, PyObject *args) {
                 }
                 break;
             default:
-                PyErr_Format(PyExc_ValueError,"unknown var type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "%s", "unknown var type: %c",type[0]);
                 return NULL;
         }
         Py_INCREF(Py_None);
         return Py_None;
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
 }
@@ -344,7 +344,7 @@ PyObject * UVObject_select(UVObject *self, PyObject *args) {
         try {
             uvselect_c(self->tno, name, n1, n2, include);
         } catch (MiriadError &e) {
-            PyErr_Format(PyExc_RuntimeError, e.get_message());
+            PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
             return NULL;
         }
     }
@@ -362,7 +362,7 @@ PyObject * UVObject_haccess(UVObject *self, PyObject *args) {
         CHK_IO(iostat);
         return PyInt_FromLong(item_hdl);
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
 }
@@ -376,7 +376,7 @@ PyObject * WRAP_hdaccess(UVObject *self, PyObject *args) {
         Py_INCREF(Py_None);
         return Py_None;
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
 }
@@ -402,12 +402,12 @@ PyObject * WRAP_hwrite_init(PyObject *self, PyObject *args) {
             case 'd': INIT(dble_item,H_DBLE_SIZE); break;
             case 'c': INIT(cmplx_item,H_CMPLX_SIZE); break;
             default:
-                PyErr_Format(PyExc_ValueError, "unknown item type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "%s", "unknown item type: %c",type[0]);
                 return NULL;
         }
         return PyInt_FromLong(offset);
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
 }
@@ -449,7 +449,7 @@ PyObject * WRAP_hread_init(PyObject *self, PyObject *args) {
         PyErr_Format(PyExc_RuntimeError, "unknown item type");
         return NULL;
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
 }
@@ -522,7 +522,7 @@ PyObject * WRAP_hwrite(PyObject *self, PyObject *args) {
         }
         return PyInt_FromLong(offset);
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
 }
@@ -574,7 +574,7 @@ PyObject * WRAP_hread(PyObject *self, PyObject *args) {
                 return NULL;
         }
     } catch (MiriadError &e) {
-        PyErr_Format(PyExc_RuntimeError, e.get_message());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
     }
 }
