@@ -48,7 +48,7 @@
 
 #include "miriad.h"
 
-#define MAXPATH 128
+#define MAXPATH 1024
 
 #ifndef NULL
 #  define NULL 0
