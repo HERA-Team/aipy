@@ -1,7 +1,10 @@
 """Load calibration information contained in specified calibration
 modules."""
 
-import numpy as np, src, os, sys
+import numpy as np
+import os
+import sys
+from . import src
 
 def get_freqs(sdf, sfreq, nchan):
     return np.arange(nchan, dtype=np.float) * sdf + sfreq

@@ -3,7 +3,11 @@ Module adding simulation support to RadioBodys and AntennaArrays.
 Mostly, this means adding gain/amplitude information vs. frequency.
 """
 
-import phs, numpy as np, ephem, coord, healpix
+import numpy as np
+import ephem
+from . import phs
+from . import coord
+from . import healpix
 
 #  ____           _ _       ____            _       
 # |  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _ 
