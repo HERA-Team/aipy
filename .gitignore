@@ -1,4 +1,4 @@
-*/*pyc
+*.pyc
 .coverage
 build/
 aipy_src/__branch__.py

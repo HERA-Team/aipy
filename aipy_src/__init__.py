@@ -11,7 +11,14 @@ Author: Aaron Parsons
 """
 
 import phs, const, coord, deconv
-import ephem, fit, healpix, img 
+import ephem, fit, healpix, img
+# from . import src
+# from . import optimize
+# from . import rfi
+# from . import amp
+# from . import scripting
+# from . import _src
+# from . import utils
 import interp, cal, map, miriad
 import optimize, rfi, amp, scripting, src, _src, utils
 import dsp

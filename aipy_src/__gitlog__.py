@@ -1,6 +1,6 @@
-__gitlog__ = """dcea258
-rewind src/phs.py to _cephes call
+__gitlog__ = """b384a9d
+Update travis command
 --
-Saul A. Kohn
-saul.aryeh.kohn@gmail.com
-2017-05-31 16:48:19 -0400"""
+Paul La Plante
+plaplant@sas.upenn.edu
+2017-06-14 16:31:52 -0700"""
