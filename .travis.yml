@@ -19,7 +19,7 @@ install:
     - conda info -a
 
     # create environment and install dependencies
-    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy astropy nose pip coverage
+    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy astropy nose pip coverage matplotlib
     - source activate test-environment
     - pip install ephem
     
@@ -32,6 +32,6 @@ before_script:
     - "python -c 'import sys; print sys.path'"
     - sleep 3
 
-script: nosetests $(ls tests/*.py) --with-coverage --cover-package=aipy --no-path-adjustment
+script: nosetests $(ls tests/*.py) --with-coverage --cover-package=aipy
 after_success:
     - coveralls
