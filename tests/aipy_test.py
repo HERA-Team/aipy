@@ -9,7 +9,6 @@ import _healpix_test
 import amp_test
 import coord_test
 import deconv_test
-import helm_test
 import miriad_test
 import phs_test
 import phs_benchmark
@@ -28,7 +27,6 @@ class TestSuite(unittest.TestSuite):
                 self.addTest(amp_test.TestSuite())
                 self.addTest(coord_test.TestSuite())
                 self.addTest(deconv_test.TestSuite())
-                self.addTest(helm_test.TestSuite())
                 self.addTest(miriad_test.TestSuite())
                 self.addTest(phs_test.TestSuite())
                 self.addTest(phs_benchmark.TestSuite())
