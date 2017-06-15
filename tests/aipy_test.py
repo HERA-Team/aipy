@@ -13,7 +13,6 @@ import helm_test
 import miriad_test
 import phs_test
 import phs_benchmark
-import src_test
 import scripting_test
 
 class TestSuite(unittest.TestSuite):
@@ -33,7 +32,6 @@ class TestSuite(unittest.TestSuite):
                 self.addTest(miriad_test.TestSuite())
                 self.addTest(phs_test.TestSuite())
                 self.addTest(phs_benchmark.TestSuite())
-                self.addTest(src_test.TestSuite())
                 self.addTest(scripting_test.TestSuite())
 
 def main(opts=None, args=None):

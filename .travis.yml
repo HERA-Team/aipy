@@ -19,10 +19,10 @@ install:
     - conda info -a
 
     # create environment and install dependencies
-    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy astropy nose pip coverage matplotlib
+    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy astropy nose pip coverage
     - source activate test-environment
     - pip install ephem
-    
+
     # setup install
     - python setup.py install
 
