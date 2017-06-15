@@ -32,6 +32,6 @@ before_script:
     - "python -c 'import sys; print sys.path'"
     - sleep 3
 
-script: nosetests $(ls tests/*.py) --with-coverage --cover-package=aipy
+script: nosetests $(ls tests/*.py) --with-coverage --cover-package=aipy --no-path-adjustment
 after_success:
     - coveralls
