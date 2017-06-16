@@ -1,5 +1,6 @@
 *.pyc
 .coverage
 build/
-aipy_src/__branch__.py
-aipy_src/__gitlog__.py
+/aipy_src/__branch__.py
+/aipy_src/__gitlog__.py
+/aipy_src/__version__.py

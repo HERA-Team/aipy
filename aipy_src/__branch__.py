@@ -1,1 +1,0 @@
-__branch__ = "refs/heads/travis_build"
