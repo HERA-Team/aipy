@@ -27,10 +27,10 @@ open('aipy_src/__gitlog__.py','w').write('__gitlog__ = \"\"\"%s\"\"\"'%gitlog)
 
 
 def get_description():
-    lines = [L.strip() for L in open('README').readlines()]
+    lines = [L.strip() for L in open('README.md').readlines()]
     d_start = None
     for cnt, L in enumerate(lines):
-        if L.startswith('DESCRIPTION'): d_start = cnt + 1
+        if L.startswith('# Description'): d_start = cnt + 1
         elif not d_start is None:
             if len(L) == 0: return ' '.join(lines[d_start:cnt])
     raise RuntimeError('Bad README')
