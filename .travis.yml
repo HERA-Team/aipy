@@ -1,6 +1,7 @@
 language: python
 python:
     - "2.7"
+
 install:
     - sudo apt-get update
     # We do this conditionally because it saves us some downloading if the
@@ -26,12 +27,7 @@ install:
     # setup install
     - python setup.py install
 
-before_script:
-    - "export DISPLAY=:99.0"
-    - "sh -e /etc/init.d/xvfb start"
-    - "python -c 'import sys; print sys.path'"
-    - sleep 3
+script: nosetests tests/*.py --with-coverage --cover-package=aipy --no-path-adjustment
 
-script: nosetests $(ls tests/*.py) --with-coverage --cover-package=aipy --no-path-adjustment
 after_success:
     - coveralls
