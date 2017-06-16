@@ -4,7 +4,8 @@ This is a general-purpose script for plotting simple FITS images.
 """
 
 import aipy as a, sys, optparse, os
-import numpy as n, pylab as p, ephem, math
+import numpy as np, ephem, math
+from matplotlib import pylab as p
 
 o = optparse.OptionParser()
 o.set_usage('plot_img.py [options] *.fits')
@@ -61,23 +62,23 @@ for cnt, filename in enumerate(args):
     except(KeyError): pass
 
     compress_axes.reverse()
-    for ax in compress_axes: d = n.average(d, axis=ax)
+    for ax in compress_axes: d = np.average(d, axis=ax)
 
     # Put array in (ra,dec) order for plotting
     d = d.transpose((ra_ax,dec_ax))
 
     # Generate plots
     if opts.fft:
-        d = n.fft.fft2(d)
+        d = np.fft.fft2(d)
         d = a.img.recenter(d, (d.shape[0]/2, d.shape[1]/2))
-    if opts.mode.startswith('phs'): d = n.angle(d)
-    elif opts.mode.startswith('lin'): d = n.absolute(d)
+    if opts.mode.startswith('phs'): d = np.angle(d)
+    elif opts.mode.startswith('lin'): d = np.absolute(d)
     elif opts.mode.startswith('real'): d = d.real
     elif opts.mode.startswith('imag'): d = d.imag
     elif opts.mode.startswith('log'):
-        d = n.ma.absolute(d)
-        d = n.ma.masked_less_equal(d, 0)
-        d = n.ma.log10(d)
+        d = np.ma.absolute(d)
+        d = np.ma.masked_less_equal(d, 0)
+        d = np.ma.log10(d)
 
     if not opts.max is None: max = opts.max
     else: max = d.max()
@@ -94,8 +95,8 @@ for cnt, filename in enumerate(args):
         dy2 = (ypx/2 - .5) * kwds['d_dec'] * a.img.deg2rad
         map = Basemap(projection='ortho', lon_0=180, lat_0=kwds['dec'],
             rsphere=1, llcrnrx=dx1, llcrnry=dy1, urcrnrx=dx2,urcrnry=dy2)
-        map.drawmeridians(n.arange(kwds['ra']-180,kwds['ra']+180,30))
-        map.drawparallels(n.arange(-90,120,30))
+        map.drawmeridians(np.arange(kwds['ra']-180,kwds['ra']+180,30))
+        map.drawparallels(np.arange(-90,120,30))
         map.drawmapboundary()
         map.imshow(d, vmin=min, vmax=max, cmap=cmap, interpolation='nearest')
     else: p.imshow(d, vmin=min, vmax=max, origin='lower', cmap=cmap, interpolation='nearest')
@@ -118,14 +119,14 @@ def click(event):
         lon = (180 + kwds['ra'] - lon) % 360
         lon *= a.img.deg2rad; lat *= a.img.deg2rad
         ra,dec = ephem.hours(lon), ephem.degrees(lat)
-        xpx = n.around((event.xdata-1-dx1) / (dx2 - dx1) * d.shape[0] - .5)
-        ypx = n.around((event.ydata-1-dy1) / (dy2 - dy1) * d.shape[1] - .5)
+        xpx = np.around((event.xdata-1-dx1) / (dx2 - dx1) * d.shape[0] - .5)
+        ypx = np.around((event.ydata-1-dy1) / (dy2 - dy1) * d.shape[1] - .5)
         flx = d[ypx,xpx]
         if opts.mode.startswith('log'): flx = 10**flx
         print '#%d (RA,DEC): (%s, %s), PX: (%d,%d) Jy: %f' % (cnt, ra, dec, xpx, ypx, flx)
     else:
-        xpx = n.around(event.xdata)
-        ypx = n.around(event.ydata)
+        xpx = np.around(event.xdata)
+        ypx = np.around(event.ydata)
         flx = d[ypx,xpx]
         if opts.mode.startswith('log'): flx = 10**flx
         print '#%d PX: (%d,%d) Jy: %f' % (cnt, xpx, ypx, flx)

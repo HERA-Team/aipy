@@ -6,7 +6,7 @@ Do a one iteration delay-solving algorithm.
 
 import aipy as a
 import numpy as np
-import pylab as pl
+from matplotlib import pylab as pl
 import optparse,sys,os
 from time import time
 from glob import glob

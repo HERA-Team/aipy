@@ -330,7 +330,8 @@ image on the sky (image size in *l,m* = 1/UV resolution).
 Coordinate Systems
 ------------------
 
->>> import aipy, pylab
+>>> import aipy
+>>> from matplotlib import pylab
 >>> im = aipy.img.Img(size=200, res=0.5)
 >>> L,M = im.get_LM(center=(200,200))
 >>> pylab.subplot(121); pylab.imshow(L); pylab.colorbar(shrink=.7)
@@ -413,7 +414,8 @@ matching the data in the UV file (sdf, sfreq, nchan).  We will also choose a sou
 "vir" indicates Virgo A from :mod:`aipy.src`) to phase our data to, putting it at the center of our 
 image:
 
->>> import aipy, pylab, numpy as n
+>>> import aipy, numpy as np
+>>> from matplotlib import pylab
 >>> uv = aipy.miriad.UV('test.uv')
 >>> aa = aipy.cal.get_aa('pwa303', uv['sdf'], uv['sfreq'], uv['nchan'])
 >>> srcs = aipy._src.misc.get_srcs(srcs=['vir'])
@@ -436,13 +438,13 @@ making this a multi-frequency map:
 ...        crd = aa.gen_uvw(i, j, src=src)
 ...    except aipy.phs.PointingError:
 ...        continue
-...    uvw.append(n.squeeze(crd.compress(n.logical_not(d.mask), axis=2)))
+...    uvw.append(np.squeeze(crd.compress(np.logical_not(d.mask), axis=2)))
 ...    data.append(d.compressed())
-...    wgts.append(n.array([1.] * len(data[-1])))
+...    wgts.append(np.array([1.] * len(data[-1])))
 ...
->>> data = n.concatenate(data)
->>> uvw = n.concatenate(uvw, axis=1)
->>> wgts = n.concatenate(wgts)
+>>> data = np.concatenate(data)
+>>> uvw = np.concatenate(uvw, axis=1)
+>>> wgts = np.concatenate(wgts)
 
 The above also illustrates how different sample weights can be specified for each data, although in 
 this case we equally weight each sample.  Now that we've gathered up all our visibility data with uvw 
@@ -451,10 +453,10 @@ coordinate and sample weights, we are ready to make an image:
 >>> im = aipy.img.Img(size=200, res=0.5)
 >>> uvw, data, wgts = im.append_hermitian(uvw, data, wgts=wgts)
 >>> im.put(uvw, data, wgts=wgts)
->>> pylab.subplot(221); pylab.imshow(n.abs(im.uv))
->>> pylab.subplot(222); pylab.imshow(n.abs(im.bm))
->>> pylab.subplot(223); pylab.imshow(n.log10(im.image(center=(200,200))))
->>> pylab.subplot(224); pylab.imshow(n.log10(im.bm_image(center=(200,200))))
+>>> pylab.subplot(221); pylab.imshow(np.abs(im.uv))
+>>> pylab.subplot(222); pylab.imshow(np.abs(im.bm))
+>>> pylab.subplot(223); pylab.imshow(np.log10(im.image(center=(200,200))))
+>>> pylab.subplot(224); pylab.imshow(np.log10(im.bm_image(center=(200,200))))
 >>> pylab.show()
 
 We have specified an Img that is larger than our maximum baseline to be able to hold all UV data,

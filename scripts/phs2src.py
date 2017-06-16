@@ -4,7 +4,7 @@ Rotate zenith UV data to a particular source.  Can specify 'zen' to phase data
 to zenith, or nothing at all to just remove delay/offset phase components.
 """
 
-import aipy as a, numpy as n, sys, os, optparse
+import aipy as a, numpy as np, sys, os, optparse
 
 o = optparse.OptionParser()
 o.set_usage('phs2src.py [options] *.uv')
@@ -40,8 +40,8 @@ def phs(uv, p, d, f):
         if not src is None and not type(src) == str: src.compute(aa)
     if i == j: return p, d, f
     try:
-        if opts.setphs: d = aa.unphs2src(n.abs(d), src, i, j)
-        elif src is None: d *= n.exp(-1j*n.pi*aa.get_phs_offset(i,j))
+        if opts.setphs: d = aa.unphs2src(np.abs(d), src, i, j)
+        elif src is None: d *= np.exp(-1j*np.pi*aa.get_phs_offset(i,j))
         else: d = aa.phs2src(d, src, i, j)
         if opts.rot_uvw: 
             uvw = aa.gen_uvw(i,j,src=src)

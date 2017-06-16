@@ -6,7 +6,7 @@ Healpix FITS format) from individual "flat" maps stored in FITS files.
 Author: Aaron Parsons
 """
 
-import sys, numpy as n, os, aipy as a, optparse, ephem
+import sys, numpy as np, os, aipy as a, optparse, ephem
 
 o = optparse.OptionParser()
 o.set_usage('mk_map.py [options] *.fits')
@@ -46,7 +46,7 @@ for i, filename in enumerate(args):
     print 'Reading file %s (%d / %d)' % (filename, i + 1, len(args))
     print kwds
     print 'Pointing (ra, dec):', ra, dec
-    print 'Image Power:', n.abs(img).sum()
+    print 'Image Power:', np.abs(img).sum()
     if prev_dra != kwds['d_ra']:
         prev_dra = kwds['d_ra']
         DIM = img.shape[0]
@@ -54,9 +54,9 @@ for i, filename in enumerate(args):
         im = a.img.Img(DIM*RES, RES, mf_order=0)
         tx,ty,tz = im.get_top(center=(DIM/2,DIM/2))
         # Define a weighting for gridding data into the skymap
-        map_wgts = n.exp(-(tx**2+ty**2) / n.sin(opts.fwidth*a.img.deg2rad)**2)
+        map_wgts = np.exp(-(tx**2+ty**2) / np.sin(opts.fwidth*a.img.deg2rad)**2)
         map_wgts.shape = (map_wgts.size,)
-        valid = n.logical_not(map_wgts.mask)
+        valid = np.logical_not(map_wgts.mask)
         map_wgts = map_wgts.compress(valid)
     # Get coordinates of image pixels in the epoch of the observation
     ex,ey,ez = im.get_eq(ra, dec, center=(DIM/2,DIM/2))
@@ -65,7 +65,7 @@ for i, filename in enumerate(args):
     # Precess the pixel coordinates to the (J2000) epoch of the map
     m = a.coord.convert_m('eq','eq', 
         iepoch=kwds['obs_date'], oepoch=ephem.J2000)
-    ex,ey,ez = n.dot(m, n.array([ex,ey,ez])) 
+    ex,ey,ez = np.dot(m, np.array([ex,ey,ez])) 
     # Put the data into the skymap
     skymap.add((ex,ey,ez), map_wgts, img)
 skymap.to_fits(opts.map, clobber=True)

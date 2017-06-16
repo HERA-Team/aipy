@@ -5,7 +5,7 @@ starting parameters in a cal file and a list of sources.  The fitter used
 here is a steepest-decent filter and does not make use of priors.
 """
 
-import aipy as a, numpy as n, sys, os, optparse
+import aipy as a, numpy as np, sys, os, optparse
 
 o = optparse.OptionParser()
 o.set_usage('fitmdl.py [options] *.uv')
@@ -51,7 +51,7 @@ cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
 aa.set_jultime(t)
 cat.compute(aa)
 del(uv)
-if opts.maxiter < 0: opts.maxiter = n.Inf
+if opts.maxiter < 0: opts.maxiter = np.Inf
 
 # Figure out parameters to fit
 prms, prm_dict, shkeys = {}, {}, []
@@ -86,7 +86,7 @@ first_fit = None    # Used to normalize fit values to the starting fit
 mfq = cat.get('mfreq')
 dbuf = None
 
-def uvlen(A): return n.sqrt(n.dot(A,A))
+def uvlen(A): return np.sqrt(np.dot(A,A))
 
 # The function to be optimized
 def fit_func(prms, filelist, decimate, decphs):
@@ -125,14 +125,14 @@ def fit_func(prms, filelist, decimate, decphs):
                 d = d.take(chans)
                 f = f.take(chans)
                 pol = a.miriad.pol2str[uv['pol']]
-                dbuf[t][bl][pol] = (d, f, n.where(f, 0, n.abs(d)**2).sum())
+                dbuf[t][bl][pol] = (d, f, np.where(f, 0, np.abs(d)**2).sum())
         if not opts.quiet:
             samp, vsamp, wgts = 0, 0, 0.
             for t in dbuf:
               for bl in dbuf[t]:
                 for pol in dbuf[t][bl]:
                     samp += len(dbuf[t][bl][pol][1])
-                    vsamp += n.logical_not(dbuf[t][bl][pol][1]).astype(n.int).sum()
+                    vsamp += np.logical_not(dbuf[t][bl][pol][1]).astype(np.int).sum()
                     wgts += dbuf[t][bl][pol][2]
             print 'Cache summary:'
             print '   %d samples' % samp
@@ -154,15 +154,15 @@ def fit_func(prms, filelist, decimate, decphs):
                 d,f,nsamp = dbuf[t][bl][pol]
                 aa.set_active_pol(pol)
                 sim_d = aa.sim(i, j)
-                difsq = n.abs(d - sim_d)**2
-                difsq = n.where(f, 0, difsq)
+                difsq = np.abs(d - sim_d)**2
+                difsq = np.where(f, 0, difsq)
                 score += difsq.sum()
                 nsamples += nsamp
     if opts.daemon: return score, nsamples
     if nsamples == 0:
         first_fit = 0.
         return 0.
-    score = n.sqrt(score / nsamples)
+    score = np.sqrt(score / nsamples)
     if first_fit is None: first_fit = score
     if not opts.quiet:
         print
@@ -215,7 +215,7 @@ elif opts.master:
             scr, nsp = struct.unpack('<dd', data)
             score += scr; nsamples += nsp
             if not opts.quiet: print score, nsamples
-        score = n.sqrt(score / nsamples)
+        score = np.sqrt(score / nsamples)
         if nsamples == 0:
             first_fit = 0.
             return 0.
@@ -231,7 +231,7 @@ elif opts.master:
         fit_func, prm_list,
         #args=(args, opts.decimate, opts.decphs),
         full_output=1, disp=0,
-        maxfun=opts.maxiter, maxiter=n.Inf, 
+        maxfun=opts.maxiter, maxiter=np.Inf, 
         ftol=opts.ftol, xtol=opts.xtol
     )
     prms,score = rv[:2]
@@ -249,7 +249,7 @@ elif not opts.snap:
         fit_func, prm_list,
         args=(args, opts.decimate, opts.decphs),
         full_output=1, disp=0,
-        maxfun=opts.maxiter, maxiter=n.Inf, 
+        maxfun=opts.maxiter, maxiter=np.Inf, 
         ftol=opts.ftol, xtol=opts.xtol
     )
     prms,score = rv[:2]
@@ -280,7 +280,7 @@ else:
                 fit_func, prm_list,
                 args=([uvfile], decimate, opts.decimate*cnt + opts.decphs),
                 full_output=1, disp=0,
-                maxfun=opts.maxiter, maxiter=n.Inf, 
+                maxfun=opts.maxiter, maxiter=np.Inf, 
                 ftol=opts.ftol, xtol=opts.xtol
             )
             prms,score = rv[:2]
