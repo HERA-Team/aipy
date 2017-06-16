@@ -1,6 +1,7 @@
 [run]
 omit =
      */tests/*
+     */_src/*
      */doc/*
      */scripts/*
      */catalogTests/*
@@ -8,6 +9,7 @@ omit =
 [report]
 omit =
      */tests/*
+     */_src/*
      */doc/*
      */scripts/*
      */catalogTests/*
