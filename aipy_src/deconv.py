@@ -12,7 +12,9 @@ lower = lower bound of pixel values in deconvolved image
 upper = upper bound of pixel values in deconvolved image
 """
 
-import numpy as np, sys, _deconv
+import numpy as np
+import sys
+from . import _deconv
 
 # Find smallest representable # > 0 for setting clip level
 lo_clip_lev = np.finfo(np.float).tiny 

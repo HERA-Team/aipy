@@ -6,7 +6,8 @@ with magnitude 1, representing a point on the unit sphere.  Includes generic
 3 vector rotation code.
 """
 
-import numpy as np, ephem as e
+import numpy as np
+import ephem as e
 
 sys_dict = {
     'eq': e.Equatorial,

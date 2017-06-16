@@ -84,7 +84,7 @@ class Img:
         self.res = float(res)
         self.size = float(size)
         dim = np.round(self.size / self.res)
-        self.shape = (dim,dim)
+        self.shape = (int(dim),int(dim))
         self.uv = np.zeros(shape=self.shape, dtype=np.complex64)
         self.bm = []
         for i in range(mf_order+1):
