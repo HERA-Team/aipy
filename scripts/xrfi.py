@@ -6,7 +6,7 @@ job of identifying low-level interference if sky model and crosstalk are
 removed from the data first.
 """
 
-import numpy as n, aipy as a, os, sys, pickle, optparse
+import numpy as np, aipy as a, os, sys, pickle, optparse
 
 o = optparse.OptionParser()
 o.set_usage('xrfi.py [options] *.uv')
@@ -73,12 +73,12 @@ for uvfile in args:
         if not bl in data[pol]:
             data[pol][bl] = {}
             mask[pol][bl] = {}
-        if opts.reflag: f = n.zeros_like(f)
-        f = n.where(n.abs(d) == 0, 1, f)
+        if opts.reflag: f = np.zeros_like(f)
+        f = np.where(np.abs(d) == 0, 1, f)
         if i != j:
             if window is None: 
-                window = d.size/2 - abs(n.arange(d.size) - d.size/2)
-            d = n.fft.fft(n.fft.ifft(d) * window)
+                window = d.size/2 - abs(np.arange(d.size) - d.size/2)
+            d = np.fft.fft(np.fft.ifft(d) * window)
         # Manually flagged channels
         f[chans] = 1
         mask[pol][bl][t] = f
@@ -93,15 +93,15 @@ for uvfile in args:
             i, j = a.miriad.bl2ij(bl)
             if i == j: continue
             data_times = data[pol][bl].keys()
-            d = n.ma.array([data[pol][bl][t] for t in data_times],
+            d = np.ma.array([data[pol][bl][t] for t in data_times],
                 mask=[mask[pol][bl][t] for t in data_times])
             hi_thr, lo_thr = a.rfi.gen_rfi_thresh(d, nsig=opts.nsig)
-            m = n.where(n.abs(d) > hi_thr,1,0)
+            m = np.where(np.abs(d) > hi_thr,1,0)
             for i, t in enumerate(data_times): mask[pol][bl][t] |= m[i]
             # If more than ch_thresh of the data in a channel or 
             # integration is flagged, flag the whole thing
-            ch_cnt = n.array([mask[pol][bl][t] for t in data_times]).sum(axis=0)
-            ch_msk = n.where(ch_cnt > ch_cnt.max()*opts.ch_thresh,1,0)
+            ch_cnt = np.array([mask[pol][bl][t] for t in data_times]).sum(axis=0)
+            ch_msk = np.where(ch_cnt > ch_cnt.max()*opts.ch_thresh,1,0)
             for t in mask[pol][bl]:
                 if mask[pol][bl][t].sum() > mask[pol][bl][t].size \
                         * opts.int_thresh:
@@ -118,10 +118,10 @@ for uvfile in args:
             if i != j: continue
             data_times = data[pol][bl].keys()
             data_times.sort()
-            d = n.ma.array([data[pol][bl][t] for t in data_times],
+            d = np.ma.array([data[pol][bl][t] for t in data_times],
                 mask=[mask[pol][bl][t] for t in data_times])
             bad_ints = a.rfi.flag_by_int(d, nsig=opts.nsig, raw=opts.raw)
-            for i in n.where(bad_ints)[0]:
+            for i in np.where(bad_ints)[0]:
                 t = data_times[i]
                 mask[pol][bl][t] |= 1
 
@@ -130,7 +130,7 @@ for uvfile in args:
     def rfi_mfunc(uv, preamble, data, flags):
         uvw, t, (i,j) = preamble
         f = mask[uv['pol']][a.miriad.ij2bl(i,j)][t]
-        return preamble, n.where(f, 0, data), f
+        return preamble, np.where(f, 0, data), f
 
     uvi.rewind()
     uvo = a.miriad.UV(uvofile, status='new')

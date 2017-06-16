@@ -6,7 +6,7 @@ Get a first-pass gain calibration by enforcing amplitude closure.
 
 import aipy as a
 import numpy as np
-import pylab as pl
+from matplotlib import pylab as pl
 import optparse,sys,os
 from time import time
 

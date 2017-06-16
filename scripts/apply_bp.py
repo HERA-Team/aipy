@@ -17,7 +17,7 @@ Revisions:
 
 __version__ = '0.0.1'
 
-import aipy as a, numpy as n, sys, os, optparse
+import aipy as a, numpy as np, sys, os, optparse
 
 o = optparse.OptionParser()
 o.set_usage('apply_bp.py [options] *.uv')
@@ -34,7 +34,7 @@ opts, args = o.parse_args(sys.argv[1:])
 # port A pocket_correlator, shift=x3ff, clk=600MHz
 # Data is [digital gain, power output]
 
-qdata1 = n.array([
+qdata1 = np.array([
      [12157.543882402342, 69.423910140999993],
      [10941.789494162109, 66.790805816700001],
      [9847.6105447458976, 63.422136306799999],
@@ -74,7 +74,7 @@ qdata1 = n.array([
 # port A pocket_correlator, shift=x3ff, gain=[3500], clk=600MHz
 # Data is [Attenuation (Coarse, Fine), Power Output]
 
-qdata2 = n.array([
+qdata2 = np.array([
     [40,  4,  0.43  ],
     [40,  3,  0.46  ],
     [40,  2,  0.50  ],
@@ -119,11 +119,11 @@ qdata2 = n.array([
 # and use them to apply the correction function.  Polynomials are normalized
 # to map a raw value of 10 to itself.
 
-digi_cpoly = n.polyfit(qdata1[:,1], qdata1[:,0]**2, 6)
-full_cpoly = n.polyfit(qdata2[:,2], 10**(-(qdata2[:,0]+qdata2[:,1])/10), 6)
-digi_cpoly *= 10 / n.polyval(digi_cpoly, 10)
-full_cpoly *= 10 / n.polyval(full_cpoly, 10)
-null_cpoly = n.array([0, 0, 0, 0, 0, 1, 0])
+digi_cpoly = np.polyfit(qdata1[:,1], qdata1[:,0]**2, 6)
+full_cpoly = np.polyfit(qdata2[:,2], 10**(-(qdata2[:,0]+qdata2[:,1])/10), 6)
+digi_cpoly *= 10 / np.polyval(digi_cpoly, 10)
+full_cpoly *= 10 / np.polyval(full_cpoly, 10)
+null_cpoly = np.array([0, 0, 0, 0, 0, 1, 0])
 # Unscientifically average the 3 linearization polynomials.  In practice, this
 # seems to work best.
 comb_cpoly = (null_cpoly + full_cpoly + digi_cpoly) / 3
@@ -156,11 +156,11 @@ for filename in args:
         print
     except:
         print 'No bandpass found'
-        bp = n.ones((nants, nchan))
+        bp = np.ones((nants, nchan))
         print '.'
     def f(uv, preamble, data, flags):
         uvw, t, (i,j) = preamble
-        if i == j: data = n.polyval(cpoly, data)
+        if i == j: data = np.polyval(cpoly, data)
         data *= bp[i,:] * bp[j,:] * opts.scale
         return preamble, data, flags
     uvo.pipe(uvi, mfunc=f, raw=True,

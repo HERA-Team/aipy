@@ -101,11 +101,11 @@ class TestRot_m(unittest.TestCase):
         m = n.round(a.coord.rot_m(2*n.pi, n.array([1.,0,0])), 10)
         self.assertTrue(n.all(m == diag))
         m = n.round(a.coord.rot_m(n.pi/2, n.array([0.,0,1])), 10)
-        self.assertTrue(n.all(m == n.array([e2,-e1,e3])))
+        self.assertTrue(n.all(m == n.array([-e2,e1,e3])))
         m = n.round(a.coord.rot_m(n.pi/2, n.array([0,1,0])), 10)
-        self.assertTrue(n.all(m == n.array([-e3,e2,e1])))
+        self.assertTrue(n.all(m == n.array([e3,e2,-e1])))
         m = n.round(a.coord.rot_m(n.pi/2, n.array([1,0,0])), 10)
-        self.assertTrue(n.all(m == n.array([e1,e3,-e2])))
+        self.assertTrue(n.all(m == n.array([e1,-e3,e2])))
         
 class TestXyz2thphi(unittest.TestCase):
     def testshape(self):

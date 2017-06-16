@@ -3,11 +3,11 @@ Requirements
 The requirements for AIPY are:
  * numpy >= 1.2
  * pyephem >= 3.7.2.3
- * pyfits >= 1.1
+ * astropy >= 1.0, or pyfits >= 1.1
  * matplotlib >= 0.98 [1]_
  * matplotlib-basemap >= 0.99 [1]_
 
-.. [1] Required for some fo the included scripts
+.. [1] Required for some of the included scripts
 
 Installing
 ==========

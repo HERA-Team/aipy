@@ -3,7 +3,7 @@
 Output LST, Julian date, and Sun position at the provided location
 """
 
-import aipy as a, numpy as n, sys, optparse, ephem
+import aipy as a, numpy as np, sys, optparse, ephem
 
 o = optparse.OptionParser()
 o.set_usage('lst [options] jd1 jd2 ...')
@@ -15,7 +15,7 @@ if not opts.src is None:
     srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
 else: srclist,cutoff,catalogs = [], None, []
 cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
-aa = a.cal.get_aa(opts.cal, n.array([.15]))
+aa = a.cal.get_aa(opts.cal, np.array([.15]))
 sun = ephem.Sun()
 moon = ephem.Moon()
 if len(args) == 0: args = [a.phs.ephem2juldate(ephem.now())]

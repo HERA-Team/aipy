@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-import aipy as a, numpy as n
+import aipy as a, numpy as np
 import optparse, sys, os
 
 o = optparse.OptionParser()
@@ -43,7 +43,7 @@ for uvfile in args:
         continue
     if opts.from_npz:
         print '    Reading flags from', opts.from_npz
-        m = n.load(opts.from_npz)
+        m = np.load(opts.from_npz)
         mask = {'xx':{257:{}}} # Just use dummy values here to mimic structure of mask dictionary
         for cnt,t in enumerate(m['times']):
             mask['xx'][257][t] = m[str(cnt)]
@@ -73,36 +73,36 @@ for uvfile in args:
             i, j = a.miriad.bl2ij(bl)
             data_times = data[pol][bl].keys()
             data_times.sort()
-            d = n.array([data[pol][bl][t] for t in data_times])
-            m = n.array([mask[pol][bl][t] for t in data_times])
+            d = np.array([data[pol][bl][t] for t in data_times])
+            m = np.array([mask[pol][bl][t] for t in data_times])
             if opts.df != None:
                 ddf = d[:,1:-1] - .5 * (d[:,:-2] + d[:,2:])
-                ddf2 = n.abs(ddf)**2
-                sig = n.sqrt(n.median(ddf2, axis=1))
+                ddf2 = np.abs(ddf)**2
+                sig = np.sqrt(np.median(ddf2, axis=1))
                 sig.shape = (sig.size,1)
-                m[:,0] |= 1; m[:,-1] |= 1
-                m[:,1:-1] |= n.where(ddf2/sig**2 > opts.df**2, 1, 0)
+                m[:,0] |= True; m[:,-1] |= True
+                m[:,1:-1] |= np.where(ddf2/sig**2 > opts.df**2, True, False)
             if opts.dt != None:
                 ddt = d[1:-1,:] - .5 * (d[:-2,:] + d[2:,:])
-                ddt2 = n.abs(ddt)**2
-                sig = n.sqrt(n.median(ddt2, axis=0))
+                ddt2 = np.abs(ddt)**2
+                sig = np.sqrt(np.median(ddt2, axis=0))
                 sig.shape = (1,sig.size)
-                m[0,:] |= 1; m[-1,:] |= 1
-                m[1:-1,:] |= n.where(ddt2/sig**2 > opts.dt**2, 1, 0)
+                m[0,:] |= True; m[-1,:] |= True
+                m[1:-1,:] |= np.where(ddt2/sig**2 > opts.dt**2, True, False)
             if opts.df == None and opts.dt == None:
-                ad = n.abs(d)
-                med = n.median(ad)
-                sig = n.sqrt(n.median(n.abs(ad-med)**2))
-                m |= n.where(ad > med + opts.nsig * sig, 1, 0)
+                ad = np.abs(d)
+                med = np.median(ad)
+                sig = np.sqrt(np.median(np.abs(ad-med)**2))
+                m |= np.where(ad > med + opts.nsig * sig, True, False)
             for i, t in enumerate(data_times): mask[pol][bl][t] |= m[i]
         if opts.combine:
             new_mask = {}
             for pol in mask:
               for bl in mask[pol]:
                 for t in mask[pol][bl]:
-                    new_mask[t] = new_mask.get(t,0)+mask[pol][bl][t].astype(n.int)
+                    new_mask[t] = new_mask.get(t,0)+mask[pol][bl][t].astype(np.int)
             for t in new_mask:
-                m = n.where(new_mask[t] >= opts.thresh, 1, 0)
+                m = np.where(new_mask[t] >= opts.thresh, 1, 0)
                 for pol in mask:
                   for bl in mask[pol]:
                     mask[pol][bl][t] = m
@@ -112,10 +112,10 @@ for uvfile in args:
         print '    Writing flags to', opts.to_npz
         m = {}
         _m = mask.values()[0].values()[0]
-        times = n.array(_m.keys())
+        times = np.array(_m.keys())
         for cnt,t in enumerate(times): m[str(cnt)] = _m[t]
         m['times'] = times
-        n.savez(opts.to_npz, **m)
+        np.savez(opts.to_npz, **m)
     else:
         # Generate a pipe for applying the mask to data as it comes in.
         def rfi_mfunc(uv, preamble, data, flags):
@@ -123,9 +123,9 @@ for uvfile in args:
             bl = a.miriad.ij2bl(i,j)
             if opts.combine:
                 try: m = mask.values()[0].values()[0][t]
-                except(KeyError): m = n.ones_like(flags) # default to flagging
+                except(KeyError): m = np.ones_like(flags) # default to flagging
             else: m = mask[uv['pol']][bl][t]
-            return preamble, n.where(m, 0, data), m
+            return preamble, np.where(m, 0, data), m
 
         uvi = a.miriad.UV(uvfile)
         uvo = a.miriad.UV(uvofile, status='new')

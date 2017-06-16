@@ -5,7 +5,7 @@ is specified, will remove/extract that source.  If none is specified,
 will filter/extract in absolute terms.
 """
 
-import aipy as a, numpy as n, os, sys, optparse, math
+import aipy as a, numpy as np, os, sys, optparse, math
 
 def gen_skypass_delay(aa, sdf, nchan, pol, max_bl_frac=1.5):
     aa.set_active_pol(pol)
@@ -16,10 +16,10 @@ def gen_skypass_delay(aa, sdf, nchan, pol, max_bl_frac=1.5):
         if j <= i: continue
         bl = aa.ij2bl(i,j)
         max_bl = aa.get_baseline(i,j)
-        max_bl = max_bl_frac * n.sqrt(n.dot(max_bl, max_bl))
+        max_bl = max_bl_frac * np.sqrt(np.dot(max_bl, max_bl))
         dly,off = aa.get_phs_offset(i,j)[-2:]
         uthresh, lthresh = (dly + max_bl)/bin_dly + 1, (dly - max_bl)/bin_dly
-        uthresh, lthresh = int(n.round(uthresh)), int(n.round(lthresh))
+        uthresh, lthresh = int(np.round(uthresh)), int(np.round(lthresh))
         filters[bl] = (uthresh,lthresh)
     return filters
 
@@ -83,21 +83,21 @@ for uvfile in args:
                 cat.compute(aa)
         bl = a.miriad.ij2bl(i,j)
         try:
-            flags = n.logical_not(f).astype(n.float)
+            flags = np.logical_not(f).astype(np.float)
             # Check first if source is up
             if not src is None:
                 d = aa.phs2src(d, src, i, j)
             # Put passband into kernel, where it gets divided out of the data
             if opts.passband: flags *= aa.passband(i,j)
-            gain = n.sqrt(n.average(flags**2))
-            ker = n.fft.ifft(flags)
-            d = n.where(f, 0, d)
+            gain = np.sqrt(np.average(flags**2))
+            ker = np.fft.ifft(flags)
+            d = np.where(f, 0, d)
             src_up = True
-            d = n.fft.ifft(d)
-            if not n.all(d == 0):
+            d = np.fft.ifft(d)
+            if not np.all(d == 0):
                 d, info = a.deconv.clean(d, ker, tol=opts.clean)
                 d += info['res'] / gain
-        except(a.phs.PointingError): d = n.zeros_like(d)
+        except(a.phs.PointingError): d = np.zeros_like(d)
         try: phs_dat[pol][bl].append(d)
         except(KeyError): phs_dat[pol][bl] = [d]
 
@@ -105,19 +105,19 @@ for uvfile in args:
         print '    Performing delay-rate transform and cleaning...'
     for pol in phs_dat:
         for bl in phs_dat[pol]:
-            d = n.array(phs_dat[pol][bl])
+            d = np.array(phs_dat[pol][bl])
             if not src_up:
                 phs_dat[pol][bl] = d
                 continue
             # create some padding data on either end to mitigate wrap-around
             # effects of a delay-rate filter
             padlen = math.ceil(d.shape[0] * .1)
-            d = n.concatenate([n.flipud(d[:padlen]), d, n.flipud(d[-padlen:])])
+            d = np.concatenate([np.flipud(d[:padlen]), d, np.flipud(d[-padlen:])])
             if opts.drw != -1:
-                flags = n.where(d[:,0] != 0, 1., 0.)
-                gain = n.sqrt(n.average(flags**2))
-                ker = n.fft.ifft(flags)
-                d = n.fft.ifft(d, axis=0)
+                flags = np.where(d[:,0] != 0, 1., 0.)
+                gain = np.sqrt(np.average(flags**2))
+                ker = np.fft.ifft(flags)
+                d = np.fft.ifft(d, axis=0)
                 for chan in range(d.shape[1]):
                     d[:,chan],info = a.deconv.clean(d[:,chan],ker,tol=opts.clean)
                     d[:,chan] += info['res'] / gain
@@ -129,8 +129,8 @@ for uvfile in args:
                 if y2 == 0: y2 = d.shape[1]
             else: y1, y2 = filters[pol][bl]
             d[:,y1:y2] = 0
-            if opts.drw != -1: d = n.fft.fft(d, axis=0)
-            d = n.fft.fft(d, axis=1)
+            if opts.drw != -1: d = np.fft.fft(d, axis=0)
+            d = np.fft.fft(d, axis=1)
             # unpad the data
             d = d[padlen:-padlen]
             phs_dat[pol][bl] = d
@@ -161,7 +161,7 @@ for uvfile in args:
         if opts.passband:
             data *= aa.passband(i,j)
         cnt[pol][bl] += 1
-        if opts.extract: return p, n.ma.array(data, mask=d.mask)
+        if opts.extract: return p, np.ma.array(data, mask=d.mask)
         else: return p, d - data
 
     print '    Writing out filtered data...'

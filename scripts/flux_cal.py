@@ -7,7 +7,8 @@ a single source have been isolated in the data set.
 Author: Aaron Parsons
 """
 
-import aipy as a, numpy as n, pylab as p, os, sys, optparse, pickle
+import aipy as a, numpy as np, os, sys, optparse, pickle
+from matplotlib import pylab as p
 
 o = optparse.OptionParser()
 o.set_usage('flux_cal.py [options] *.uv')
@@ -58,7 +59,7 @@ def mfunc(uv, p, d, f):
     if opts.beam: bm_resp = aa.bm_response(i,j).squeeze()
     else: bm_resp = 1
     gain = passband * bm_resp * src_spec
-    d /= n.where(gain == 0, 1, gain)
+    d /= np.where(gain == 0, 1, gain)
     return p, d, f
 
 ext = '.'
