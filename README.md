@@ -12,7 +12,7 @@ data sets), and some math/fitting routines from SciPy.
 
 # On the Web
 There are further instructions, documentation, and a FAQ at:
-http://setiathome.berkeley.edu/~aparsons/aipy/aipy.cgi
+http://github.com/HERA-Team/aipy
 
 # Installation
 This is a *nix package.  With some trouble it can install on intel-based
