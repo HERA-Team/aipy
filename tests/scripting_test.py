@@ -20,6 +20,7 @@ class TestParseAnts(unittest.TestCase):
             '(0,1)_(2,3)': [(ij2bl(0,2),1), (ij2bl(0,3),1),
                             (ij2bl(1,2),1), (ij2bl(1,3),1)],
             '0_(1,-2)': [(ij2bl(0,1),1), (ij2bl(0,2),0)],
+            '(-0,1)_(2,-3)': [(ij2bl(0,2),0), (ij2bl(0,3),0), (ij2bl(1,2),1), (ij2bl(1,3),0)],
             '0,1,all': [],
         }
         for i in range(nants):

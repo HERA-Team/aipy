@@ -67,17 +67,18 @@ def parse_ants(ant_str, nants):
                 else: ais = m[3].split(',')
                 if m[6] is None: ajs = [m[5]]
                 else: ajs = m[6].split(',')
-            include = None
             for i in ais:
+                if type(i) == str and i.startswith('-'):
+                     i = i[1:] #nibble the - off the string
+                     include_i = 0 
+                else: include_i = 1
                 for j in ajs:
-                    if type(i) == str and i.startswith('-'):
-                         i = i[1:] #nibble the - off the string
-                         include = 0 
+                    include = None
                     if type(j) == str and j.startswith('-'):
                         j = j[1:]
-                        include = 0
-                    elif include==0:pass
-                    else: include = 1
+                        include_j = 0
+                    else: include_j = 1
+                    include = int(include_i and include_j)
                     pol = None
                     i,j = str(i),str(j)
                     if not i.isdigit():
