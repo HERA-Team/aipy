@@ -102,7 +102,7 @@ static int HPBObject_init(HPBObject *self, PyObject *args, PyObject *kwds) {
         if (nside == -1) self->hpb = Healpix_Base();
         else self->hpb = Healpix_Base(nside, scheme, SET_NSIDE);
     } catch (Message_error &e) {
-        PyErr_Format(PyExc_RuntimeError, e.what());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.what());
         return -1;
     }
     return 0;
@@ -122,7 +122,7 @@ static PyObject * HPBObject_npix2nside(HPBObject *self, PyObject *args) {
     try {
         return PyInt_FromLong(self->hpb.npix2nside(npix));
     } catch (Message_error &e) {
-        PyErr_Format(PyExc_RuntimeError, e.what());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.what());
         return NULL;
     }
 }
@@ -151,7 +151,7 @@ static PyObject * HPBObject_nest_ring_conv(HPBObject *self, PyObject *args) {
             return NULL;
         }
     } catch (Message_error &e) {
-        PyErr_Format(PyExc_RuntimeError, e.what());
+        PyErr_Format(PyExc_RuntimeError, "%s", e.what());
         return NULL;
     }
     Py_INCREF(px);
