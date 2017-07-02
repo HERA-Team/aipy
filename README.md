@@ -15,10 +15,7 @@ There are further instructions, documentation, and a FAQ at:
 http://github.com/HERA-Team/aipy
 
 # Installation
-This is a *nix package.  With some trouble it can install on intel-based
-Macs. It probably doesn't install on Windows. You need to have
-python >= 2.4 (and < 3.0 for now).  AIPY depends on the following 
-python packages:
+AIPY depends on the following python packages:
 1. numpy >= 1.2
 2. pyephem >= 3.7.3
 3. astropy, or pyfits >= 1.3
