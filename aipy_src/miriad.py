@@ -72,7 +72,7 @@ class UV(_miriad.UV):
         assert(corrmode in ['r', 'j'])
         _miriad.UV.__init__(self, filename, status, corrmode)
         self.status = status
-        self.nchan = 4096
+        self.nchan = 32768
         if status == 'old':
             self.vartable = self._gen_vartable()
             self.read(); self.rewind() # Update variables for the user
