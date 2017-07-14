@@ -15,7 +15,7 @@
 #define		MAXBASE		524800
 #endif
 #define		MAXBASE2	500
-#define		MAXCHAN		16384
+#define		MAXCHAN		32768
 #define		MAXNAX		7
 #define		MAXWIN		16
 #define		MAXBUF		4194304
