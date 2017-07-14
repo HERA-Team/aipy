@@ -680,5 +680,6 @@ PyMODINIT_FUNC init_miriad(void) {
     import_array();
     Py_INCREF(&UVType);
     PyModule_AddObject(m, "UV", (PyObject *)&UVType);
+    PyModule_AddIntConstant(m, "MAXCHAN", MAXCHAN);
 }
 

@@ -10,6 +10,7 @@
 #include <string>
 #include "hio.h"
 #include "io.h"
+#include "maxdimc.h"
 
 // Some miriad macros...
 #define PREAMBLE_SIZE 5

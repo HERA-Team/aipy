@@ -4,7 +4,7 @@ Image Analysis and Display package for reducing interferometric data for
 radio telescopes.
 """
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 import numpy as np, _miriad
 
@@ -72,8 +72,7 @@ class UV(_miriad.UV):
         assert(corrmode in ['r', 'j'])
         _miriad.UV.__init__(self, filename, status, corrmode)
         self.status = status
-        try: self.nchan = self._rdhd('nchan0')
-        except(IOError): self.nchan = 4096
+        self.nchan = _miriad.MAXCHAN
         if status == 'old':
             self.vartable = self._gen_vartable()
             self.read(); self.rewind() # Update variables for the user

@@ -20,6 +20,8 @@ class TestMiriadUV(unittest.TestCase):
         uv.write(preamble,self.data)
         uv['pol'] = -6
         uv.write(preamble,self.data)
+    def test_maxchan(self):
+        self.assertEqual(type(_m.MAXCHAN), int)
     def test_immediate_corr(self):
         """Test immediate corr of a Miriad UV file"""
         uv = m.UV(self.filename2, status='new')
