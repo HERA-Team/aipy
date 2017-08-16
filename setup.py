@@ -1,9 +1,8 @@
-from distutils.core import setup, Extension
+#! /usr/bin/env python
 
-import os, glob, numpy, sys,subprocess
-if 'upload' in sys.argv or 'register' in sys.argv:
-    from ez_setup import use_setuptools; use_setuptools()
-    from setuptools import setup, Extension
+from setuptools import setup, Extension
+
+import os, glob, numpy, subprocess
 
 print "Generating aipy_src/__version__.py: ",
 __version__ = open('VERSION').read().strip()
