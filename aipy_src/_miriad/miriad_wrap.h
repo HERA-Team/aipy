@@ -14,8 +14,6 @@
 
 // Some miriad macros...
 #define PREAMBLE_SIZE 5
-#define MAXVAR 256
-#define MAX_LINE_LEN 80
 
 //AAR: (use the other Miriad BL convention to accommodate more baselines)
 #define GETI(bl) ( (int) (bl) > 65536 ? (((int) bl-65536)/2048 - 1) : (((int) bl >> 8) - 1) )
