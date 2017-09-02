@@ -47,6 +47,8 @@ itemtable = {
     'bandpass': 'c',
     'nspect0' : 'i',
     'nchan0'  : 'i',
+    'stopt'   : 'd',
+    'duration': 'd',
 }
 
 data_types = {
