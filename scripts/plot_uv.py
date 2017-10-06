@@ -311,8 +311,8 @@ for cnt, bl in enumerate(bls):
         else:
             if cnt == 0: plot_t = plot_t['jd']
             label += 'jd%f'
-        for i,t in enumerate(plot_t):
-            p.plot(plot_chans, d[i,:], '-', label=label % t)
+        for ti,t in enumerate(plot_t):
+            p.plot(plot_chans, d[ti,:], '-', label=label % t)
         p.xlabel(xlabel)
         if not opts.xlim == None: p.xlim(*opts.xlim)
         if not opts.max is None: dmax = opts.max
