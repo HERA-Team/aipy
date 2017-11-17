@@ -18,7 +18,11 @@ Instructions, documentation, and a FAQ may be found at
 
 We strongly recommend installing AIPY with the [conda](https://conda.io/docs/)
 packaging tool using the public [conda-forge](https://conda-forge.org/)
-package repository.
+package repository:
+
+```
+$ conda install -c conda-forge aipy
+```
 
 ## Documentation
 
