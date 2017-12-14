@@ -334,40 +334,39 @@ def to_fits(filename, data, clobber=False,
         raise TypeError('to_fits: axes dimension list does not match data shape')
     phdu = pyfits.PrimaryHDU(data)
     phdu.update_header()
-    phdu.header.update('TRANSPOS',0,comment='Import code for old AIPY convention.')
-    phdu.header.update('OBJECT', object, comment='SOURCE NAME')
-    phdu.header.update('TELESCOP', telescope)
-    phdu.header.update('INSTRUME', instrument)
-    phdu.header.update('OBSERVER', observer)
-    phdu.header.update('DATE-OBS', obs_date, 
-        comment='OBSERVATION START DATE DD/MM/YY')
-    phdu.header.update('BSCALE ', bscale,
-        comment='REAL = FITS_VALUE * BSCALE + BZERO')
-    phdu.header.update('BZERO  ', bzero)
-    phdu.header.update('BUNIT  ', 'JY/BEAM ', comment='UNITS OF FLUX')
-    phdu.header.update('EQUINOX', epoch, comment='EQUINOX OF RA DEC')
-    phdu.header.update('EPOCH',epoch,'Epoch of coordinate system')
-    phdu.header.update('DATAMAX', data.max(), comment='MAX PIXEL VALUE')
-    phdu.header.update('DATAMIN', data.min(), comment='MIN PIXEL VALUE')
+    #phdu.header.update('TRANSPOS',0,comment='Import code for old AIPY convention.')
+    phdu.header['TRANSPOS'] = (0,'Import code for old AIPY convention.')
+    phdu.header['OBJECT'] = (object, 'SOURCE NAME')
+    phdu.header['TELESCOP'] = (telescope)
+    phdu.header['INSTRUME'] = (instrument)
+    phdu.header['OBSERVER'] = (observer)
+    phdu.header['DATE-OBS'] = (obs_date,'OBSERVATION START DATE DD/MM/YY')
+    phdu.header['BSCALE '] = (bscale,'REAL = FITS_VALUE * BSCALE + BZERO')
+    phdu.header['BZERO  '] = (bzero)
+    phdu.header['BUNIT  '] = ('JY/BEAM ', 'UNITS OF FLUX')
+    phdu.header['EQUINOX'] = (epoch,'EQUINOX OF RA DEC')
+    phdu.header['EPOCH'] = (epoch,'Epoch of coordinate system')
+    phdu.header['DATAMAX'] = (data.max(), 'MAX PIXEL VALUE')
+    phdu.header['DATAMIN']= (data.min(), 'MIN PIXEL VALUE')
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra') or ax.lower().startswith('glon'): val,delta = (ra, d_ra)
         elif ax.lower().startswith('dec') or ax.lower().startswith('glat'): val,delta = (dec, d_dec)
         elif ax.lower().startswith('freq'): val,delta = (freq, d_freq)
         elif ax.lower().startswith('stokes'): val,delta = (1, 1)
         else: val,delta = (0,0)
-        phdu.header.update('CTYPE%d' % (i+1), ax.upper())
+        phdu.header['CTYPE%d' % (i+1)] = (ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec')\
         or ax.lower().startswith('glon') or ax.lower().startswith('glat'):
-            phdu.header.update('CRPIX%d' % (i+1), np.ceil(phdu.data.shape[-(i+1)]/2.))
+            phdu.header['CRPIX%d' % (i+1)] = (np.ceil(phdu.data.shape[-(i+1)]/2.))
         else:
-            phdu.header.update('CRPIX%d' % (i+1), np.ceil(phdu.data.shape[-(i+1)]/2.))
-        phdu.header.update('CRVAL%d' % (i+1), val)
+            phdu.header['CRPIX%d' % (i+1)] = (np.ceil(phdu.data.shape[-(i+1)]/2.))
+        phdu.header['CRVAL%d' % (i+1)] = (val)
         if (ax.lower().startswith('ra') or ax.lower().startswith('glon')) and delta>0:
-            phdu.header.update('CDELT%d' % (i+1), delta*-1)
+            phdu.header['CDELT%d' % (i+1)]= (delta*-1)
         else:
-            phdu.header.update('CDELT%d' % (i+1), delta)
-        phdu.header.update('CROTA%d' % (i+1), 0)
-        phdu.header.update('NAXIS%d' % (i+1),phdu.data.shape[i])
+            phdu.header['CDELT%d' % (i+1)]= (delta)
+        phdu.header['CROTA%d' % (i+1)] = (0)
+        phdu.header['NAXIS%d' % (i+1)] = (phdu.data.shape[i])
     if history!='':
         history = [h.strip() for h in history.split("\n")]
         for line in history:
@@ -378,8 +377,8 @@ def to_fits(filename, data, clobber=False,
                 else:
                     for subline in word_wrap(line,70,5,10,'#').split("\n"):
                         phdu.header.add_history(subline)
-    phdu.header.update('ORIGIN', origin)
-    phdu.header.update('DATE', cur_date, comment='FILE WRITTEN ON DD/MM/YY')
+    phdu.header['ORIGIN'] = (origin)
+    phdu.header['DATE'] = (cur_date,'FILE WRITTEN ON DD/MM/YY')
     pyfits.writeto(filename,phdu.data,phdu.header,clobber=True)
 
 def from_fits(filename):
@@ -467,16 +466,17 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
              if kwds.has_key('d_freq'):delta = kwds['d_freq']
              else: delta=None
         else: val,delta = None,None
-        phdu.header.update('CTYPE%d' % (i+1), ax.upper())
+        phdu.header['CTYPE%d' % (i+1)] = (ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
-            phdu.header.update('CRPIX%d' % (i+1), 
-                    round(data.shape[-(i+1)]/2.))
+            phdu.header['CRPIX%d' % (i+1)]= (round(data.shape[-(i+1)]/2.))
         else:
-            phdu.header.update('CRPIX%d' % (i+1), 1)
+            phdu.header['CRPIX%d' % (i+1)] = (1)
         print ax,round(data.shape[-(i+1)]/2.)
-        if not val is None: phdu.header.update('CRVAL%d' % (i+1), val);
-        if not delta is None: phdu.header.update('CDELT%d' % (i+1), delta)
-        phdu.header.update('CROTA%d' % (i+1), 0)
+        if not val is None:
+            phdu.header['CRVAL%d' % (i+1)] =(val)
+        if not delta is None:
+            phdu.header['CDELT%d' % (i+1)] = (delta)
+        phdu.header['CROTA%d' % (i+1)] = (0)
     for k,v in kwds.iteritems():
         try:
             phdu.header.update(k,v)
