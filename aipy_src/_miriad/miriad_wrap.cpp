@@ -51,7 +51,7 @@ static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
     switch (corrmode[0]) {
         case 'r': case 'j': break;
         default:
-            PyErr_Format(PyExc_ValueError, "%s", "UV corrmode must be 'r' or 'j' (got '%c')", corrmode[0]);
+            PyErr_Format(PyExc_ValueError, "UV corrmode must be 'r' or 'j' (got '%c')", corrmode[0]);
             return -1;
     }
     // Setup an error handler so MIRIAD doesn't just exit
@@ -147,8 +147,7 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
         &PyArray_Type, &uvw, &t, &i, &j,
         &PyArray_Type, &data, &PyArray_Type, &flags)) return NULL;
     if (RANK(uvw) != 1 || DIM(uvw,0) != 3) {
-        PyErr_Format(PyExc_ValueError, "%s",
-            "uvw must have shape (3,) %d", RANK(uvw));
+        PyErr_Format(PyExc_ValueError, "uvw must have shape (3,) %d", RANK(uvw));
         return NULL;
     } else if (RANK(data)!=1 || RANK(flags)!=1 || DIM(data,0)!=DIM(flags,0)) {
         PyErr_Format(PyExc_ValueError,
@@ -160,7 +159,7 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
     // Check for both int,long, b/c label of 32b number is platform dependent
     if (TYPE(flags) != NPY_INT && \
             (sizeof(int) == sizeof(long) && TYPE(flags) != NPY_LONG)) {
-        PyErr_Format(PyExc_ValueError, "%s", "type(flags) != NPY_LONG or NPY_INT");
+        PyErr_Format(PyExc_ValueError, "type(flags) != NPY_LONG or NPY_INT");
         return NULL;
     }
     // Fill up the preamble
@@ -357,7 +356,7 @@ PyObject * UVObject_wrvr(UVObject *self, PyObject *args) {
                 }
                 break;
             default:
-                PyErr_Format(PyExc_ValueError, "%s", "unknown var type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "unknown UV variable type: %c", type[0]);
                 return NULL;
         }
         Py_INCREF(Py_None);
@@ -439,7 +438,7 @@ PyObject * WRAP_hwrite_init(PyObject *self, PyObject *args) {
             case 'd': INIT(dble_item,H_DBLE_SIZE); break;
             case 'c': INIT(cmplx_item,H_CMPLX_SIZE); break;
             default:
-                PyErr_Format(PyExc_ValueError, "%s", "unknown item type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "unknown item type: %c", type[0]);
                 return NULL;
         }
         return PyInt_FromLong(offset);
@@ -554,7 +553,7 @@ PyObject * WRAP_hwrite(PyObject *self, PyObject *args) {
                 offset = H_CMPLX_SIZE;
                 break;
             default:
-                PyErr_Format(PyExc_ValueError, "unknown item type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "unknown item type: %c", type[0]);
                 return NULL;
         }
         return PyInt_FromLong(offset);
@@ -607,7 +606,7 @@ PyObject * WRAP_hread(PyObject *self, PyObject *args) {
                 Py_DECREF(val);
                 return rv;
             default:
-                PyErr_Format(PyExc_ValueError, "unknown item type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "unknown item type: %c", type[0]);
                 return NULL;
         }
     } catch (MiriadError &e) {
