@@ -1,6 +1,6 @@
 #include "miriad_wrap.h"
 
-#define MAXVAR 8192
+#define MAXVAR 32768
 
 /*____                           _                    _
  / ___|_ __ ___  _   _ _ __   __| |_      _____  _ __| | __
