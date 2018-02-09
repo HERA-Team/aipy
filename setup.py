@@ -1,23 +1,25 @@
 #! /usr/bin/env python
 
+from __future__ import absolute_import, division, print_function
+
 from setuptools import setup, Extension
 
 import os, glob, numpy, subprocess
 
-print "Generating aipy_src/__version__.py: ",
+print("Generating aipy_src/__version__.py: ", end='')
 __version__ = open('VERSION').read().strip()
-print __version__
+print(__version__)
 open('aipy_src/__version__.py','w').write('__version__="%s"'%__version__)
 
 #read the latest git status out to an installed file
 try:
 #    gitbranch = subprocess.check_output('git symbolic-ref -q HEAD',shell=True, cwd='.').strip().split('/')[-1]
     gitbranch = os.popen('git symbolic-ref -q HEAD').read().strip()
-    print "Generating aipy_src/__branch__.py"
+    print("Generating aipy_src/__branch__.py")
 #    gitlog = subprocess.check_output('git log -n1 --pretty="%h%n%s%n--%n%an%n%ae%n%ai"',shell=True, cwd='.').strip()
     gitlog = os.popen('git log -n1 --pretty="%h%n%s%n--%n%an%n%ae%n%ai"').read().strip()
-    print "Generating aipy_src/__gitlog__.py."
-    print gitlog
+    print("Generating aipy_src/__gitlog__.py.")
+    print(gitlog)
 except:
     gitbranch = "unknown branch"
     gitlog = "git log not found"
