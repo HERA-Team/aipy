@@ -150,16 +150,16 @@ static void * kolmogi_data[] = { (void *)kolmogi, (void *)kolmogi, };
 static void * besselpoly_data[] = {(void *)besselpoly, (void *)besselpoly,};
 
 
-static char cephes_6_types[] = { PyArray_FLOAT,  PyArray_FLOAT,  PyArray_FLOAT, PyArray_FLOAT, PyArray_FLOAT, PyArray_FLOAT, PyArray_DOUBLE,  PyArray_DOUBLE, PyArray_DOUBLE, PyArray_DOUBLE, PyArray_DOUBLE, PyArray_DOUBLE,};
+static char cephes_6_types[] = { NPY_FLOAT,  NPY_FLOAT,  NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_DOUBLE,  NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,};
 
 
 
 
-static char cephes_4_types[] = { PyArray_FLOAT,  PyArray_FLOAT,  PyArray_FLOAT, PyArray_FLOAT, PyArray_DOUBLE,  PyArray_DOUBLE, PyArray_DOUBLE, PyArray_DOUBLE,};
+static char cephes_4_types[] = { NPY_FLOAT,  NPY_FLOAT,  NPY_FLOAT, NPY_FLOAT, NPY_DOUBLE,  NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,};
 
 
-static char cephes_3_types[] = { PyArray_FLOAT,  PyArray_FLOAT,  PyArray_FLOAT,   PyArray_DOUBLE,  PyArray_DOUBLE, PyArray_DOUBLE, };
-static char cephes_2_types[] = { PyArray_FLOAT,  PyArray_FLOAT,  PyArray_DOUBLE,  PyArray_DOUBLE,  };
+static char cephes_3_types[] = { NPY_FLOAT,  NPY_FLOAT,  NPY_FLOAT,   NPY_DOUBLE,  NPY_DOUBLE, NPY_DOUBLE, };
+static char cephes_2_types[] = { NPY_FLOAT,  NPY_FLOAT,  NPY_DOUBLE,  NPY_DOUBLE,  };
 
 
 /* Some functions needed from ufunc object, so that Py_complex's aren't being returned 

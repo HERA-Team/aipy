@@ -16,7 +16,7 @@
         PyErr_Format(PyExc_ValueError, "dim(%s) != %s", \
         QUOTE(a), QUOTE(d)); \
         return NULL; }
-#define RANK(a) a->nd
+#define RANK(a) PyArray_NDIM(a)
 #define CHK_ARRAY_RANK(a,r) \
     if (RANK(a) != r) { \
         PyErr_Format(PyExc_ValueError, "rank(%s) != %s", \

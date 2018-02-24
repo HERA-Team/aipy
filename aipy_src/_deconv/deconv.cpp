@@ -10,8 +10,8 @@
 
 #define QUOTE(s) # s
 
-#define PNT1(a,i) (a->data + i*a->strides[0])
-#define PNT2(a,i,j) (a->data+i*a->strides[0]+j*a->strides[1])
+#define PNT1(a,i) ((char *)PyArray_DATA(a) + i*PyArray_STRIDES(a)[0])
+#define PNT2(a,i,j) ((char *)PyArray_DATA(a)+i*PyArray_STRIDES(a)[0]+j*PyArray_STRIDES(a)[1])
 #define IND1(a,i,type) *((type *)PNT1(a,i))
 #define IND2(a,i,j,type) *((type *)PNT2(a,i,j))
 #define CIND1R(a,i,type) *((type *)PNT1(a,i))
@@ -19,21 +19,21 @@
 #define CIND2R(a,i,j,type) *((type *)PNT2(a,i,j))
 #define CIND2I(a,i,j,type) *((type *)(PNT2(a,i,j)+sizeof(type)))
 
-#define TYPE(a) a->descr->type_num
+#define TYPE(a) PyArray_DESCR(a)->type_num
 #define CHK_ARRAY_TYPE(a,type) \
     if (TYPE(a) != type) { \
         PyErr_Format(PyExc_ValueError, "type(%s) != %s", \
         QUOTE(a), QUOTE(type)); \
         return NULL; }
 
-#define DIM(a,i) a->dimensions[i]
+#define DIM(a,i) PyArray_DIM(a, i)
 #define CHK_ARRAY_DIM(a,i,d) \
     if (DIM(a,i) != d) { \
         PyErr_Format(PyExc_ValueError, "dim(%s) != %s", \
         QUOTE(a), QUOTE(d)); \
         return NULL; }
 
-#define RANK(a) a->nd
+#define RANK(a) PyArray_NDIM(a)
 #define CHK_ARRAY_RANK(a,r) \
     if (RANK(a) != r) { \
         PyErr_Format(PyExc_ValueError, "rank(%s) != %s", \

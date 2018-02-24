@@ -97,15 +97,15 @@ PyObject * UVObject_read(UVObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "i", &n2read)) return NULL;
     // Make numpy arrays to hold the results
     npy_intp data_dims[1] = {n2read};
-    data = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, PyArray_CFLOAT);
+    data = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, NPY_CFLOAT);
     CHK_NULL(data);
-    flags = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, PyArray_INT);
+    flags = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, NPY_INT);
     CHK_NULL(flags);
     while (1) {
         // Here is the MIRIAD call
         try {
             uvread_c(self->tno, preamble,
-                (float *)data->data, (int *)flags->data, n2read, &nread);
+                     (float *)PyArray_DATA(data), (int *)PyArray_DATA(flags), n2read, &nread);
         } catch (MiriadError &e) {
             PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
             return NULL;
@@ -120,7 +120,7 @@ PyObject * UVObject_read(UVObject *self, PyObject *args) {
     }
     // Now we build a return value of ((uvw,t,(i,j)), data, flags, nread)
     npy_intp uvw_dims[1] = {3};
-    uvw = (PyArrayObject *) PyArray_SimpleNew(1, uvw_dims, PyArray_DOUBLE);
+    uvw = (PyArrayObject *) PyArray_SimpleNew(1, uvw_dims, NPY_DOUBLE);
     CHK_NULL(uvw);
     IND1(uvw,0,double) = preamble[0];
     IND1(uvw,1,double) = preamble[1];
@@ -171,7 +171,7 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
     // Here is the MIRIAD call
     try {
         uvwrite_c(self->tno, preamble,
-            (float *)data->data, (int *)flags->data, DIM(data,0));
+            (float *)PyArray_DATA(data), (int *)PyArray_DATA(flags), DIM(data,0));
     } catch (MiriadError &e) {
         PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
@@ -214,7 +214,7 @@ PyObject * UVObject_trackvr(UVObject *self, PyObject *args) {
         return pyconstructor((type1) ((type2 *)value)[0]); } \
     rv = (PyArrayObject *) PyArray_SimpleNew(1,dims,npy_type); \
     CHK_NULL(rv); \
-    uvgetvr_c(self->tno,htype,name,(char *)(rv->data),length);\
+    uvgetvr_c(self->tno,htype,name,(char *)(PyArray_DATA(rv)),length);\
     return PyArray_Return(rv);
 
 /* rdvr is responsible for reading variables of all types.  It wraps the
@@ -273,26 +273,26 @@ PyObject * UVObject_rdvr(UVObject *self, PyObject *args) {
                 uvgetvr_c(self->tno,H_INT2,name,value,length);
                 if (length == 1)
                     return PyInt_FromLong((long) ((short *)value)[0]);
-                rv = (PyArrayObject *) PyArray_SimpleNew(1, dims, PyArray_INT);
+                rv = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_INT);
                 CHK_NULL(rv);
                 for (int i=0; i < length; i++)
                     IND1(rv,i,int) = ((short *)value)[i];
                 return PyArray_Return(rv);
             case 'i':
-                RET_IA(H_INT,PyInt_FromLong,long,int,PyArray_INT);
+                RET_IA(H_INT,PyInt_FromLong,long,int,NPY_INT);
             case 'r':
-                RET_IA(H_REAL,PyFloat_FromDouble,double,float,PyArray_FLOAT);
+                RET_IA(H_REAL,PyFloat_FromDouble,double,float,NPY_FLOAT);
             case 'd':
-                RET_IA(H_DBLE,PyFloat_FromDouble,double,double,PyArray_DOUBLE);
+                RET_IA(H_DBLE,PyFloat_FromDouble,double,double,NPY_DOUBLE);
             case 'c':
                 if (length == 1) {
                     uvgetvr_c(self->tno,H_CMPLX,name,value,length);
                     return PyComplex_FromDoubles(((double *)value)[0],
                                                  ((double *)value)[1]);
                 }
-                rv = (PyArrayObject *) PyArray_SimpleNew(1,dims,PyArray_CDOUBLE);
+                rv = (PyArrayObject *) PyArray_SimpleNew(1,dims,NPY_CDOUBLE);
                 CHK_NULL(rv);
-                uvgetvr_c(self->tno,H_CMPLX,name,(char *)rv->data,length);
+                uvgetvr_c(self->tno,H_CMPLX,name,(char *)PyArray_DATA(rv),length);
                 return PyArray_Return(rv);
             default:
                 return NULL; /* can't happen with previous switch */
@@ -306,7 +306,7 @@ PyObject * UVObject_rdvr(UVObject *self, PyObject *args) {
 #define STORE_IA(npy_type,htype,chk_type,type,pyconverter) \
     if (PyArray_Check(wr_val)) { \
         CHK_ARRAY_TYPE(wr_arr,npy_type); \
-        uvputvr_c(self->tno,htype,name,(char *)wr_arr->data,DIM(wr_arr,0)); \
+        uvputvr_c(self->tno,htype,name,(char *) PyArray_DATA(wr_arr),DIM(wr_arr,0)); \
     } else { \
         chk_type(wr_val); \
         ((type *)value)[0] = (type) pyconverter(wr_val); \
@@ -346,7 +346,7 @@ PyObject * UVObject_wrvr(UVObject *self, PyObject *args) {
             case 'c':
                 if (PyArray_Check(wr_val)) {
                     CHK_ARRAY_TYPE(wr_arr,NPY_CDOUBLE);
-                    uvputvr_c(self->tno,H_CMPLX,name,(char *)wr_arr->data,
+                    uvputvr_c(self->tno,H_CMPLX,name,(char *)PyArray_DATA(wr_arr),
                         DIM(wr_arr,0));
                 } else {
                     CHK_COMPLEX(wr_val);

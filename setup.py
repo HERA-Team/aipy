@@ -39,6 +39,8 @@ def get_description():
 def indir(path, files):
     return [os.path.join(path, f) for f in files]
 
+global_macros = [('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')]
+
 setup(name = 'aipy',
     version = __version__,
     description = 'Astronomical Interferometry in PYthon',
@@ -61,6 +63,7 @@ setup(name = 'aipy',
         Extension('aipy._healpix',
             ['aipy_src/_healpix/healpix_wrap.cpp', 
             'aipy_src/_healpix/cxx/Healpix_cxx/healpix_base.cc'],
+            define_macros = global_macros,
             include_dirs = [numpy.get_include(), 'aipy_src/_healpix/cxx/cxxsupport',
                 'aipy_src/_healpix/cxx/Healpix_cxx']),
         Extension('aipy._alm',
@@ -71,25 +74,31 @@ setup(name = 'aipy',
             'aipy_src/_healpix/cxx/libfftpack/fftpack.c',
             'aipy_src/_healpix/cxx/Healpix_cxx/healpix_map.cc',
             'aipy_src/_healpix/cxx/Healpix_cxx/healpix_base.cc'],
+            define_macros = global_macros,
             include_dirs = [numpy.get_include(), 'aipy_src/_healpix/cxx/cxxsupport',
                 'aipy_src/_healpix/cxx/Healpix_cxx']),
         Extension('aipy._miriad', ['aipy_src/_miriad/miriad_wrap.cpp'] + \
             indir('aipy_src/_miriad/mir', ['uvio.c','hio.c','pack.c','bug.c',
                 'dio.c','headio.c','maskio.c']),
+            define_macros = global_macros,
             include_dirs = [numpy.get_include(), 'aipy_src/_miriad', 
                 'aipy_src/_miriad/mir']),
         Extension('aipy._deconv', ['aipy_src/_deconv/deconv.cpp'],
+            define_macros = global_macros,
             include_dirs = [numpy.get_include()]),
         #Extension('aipy._img', ['aipy_src/_img/img.cpp'],
         #    include_dirs = [numpy.get_include()]),
         Extension('aipy._dsp', ['aipy_src/_dsp/dsp.c', 'aipy_src/_dsp/grid/grid.c'],
+            define_macros = global_macros,
             include_dirs = [numpy.get_include(), 'aipy_src/_dsp', 'aipy_src/_dsp/grid']),
         Extension('aipy.utils', ['aipy_src/utils/utils.cpp'],
+            define_macros = global_macros,
             include_dirs = [numpy.get_include()]),
         Extension('aipy._cephes',
             ['aipy_src/_cephes/_cephesmodule.c', 'aipy_src/_cephes/ufunc_extras.c'] + \
             glob.glob('aipy_src/_cephes/cephes/*.c') + \
             glob.glob('aipy_src/_cephes/c_misc/*.c'),
+            define_macros = global_macros,
             include_dirs = [numpy.get_include()]),
     ],
     scripts=glob.glob('scripts/*'),
