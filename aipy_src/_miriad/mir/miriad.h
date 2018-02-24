@@ -279,8 +279,8 @@ void xysetpl_c (int tno, int naxis, Const int *axes);
 /* maskio.c */
 char *mkopen_c (int tno, char *name, char *status);
 void mkclose_c (char *handle);
-int  mkread_c  (char *handle, int mode, int *flags, int offset, int n, int nsize);
-void mkwrite_c (char *handle, int mode, int *flags, int offset, int n, int nsize);
+int  mkread_c  (char *handle, int mode, int *flags, off64_t offset, int n, int nsize);
+void mkwrite_c (char *handle, int mode, int *flags, off64_t offset, int n, int nsize);
 void mkflush_c (char *handle);
 
 

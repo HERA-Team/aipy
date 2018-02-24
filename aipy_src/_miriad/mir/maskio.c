@@ -62,12 +62,13 @@ static int masks[BITS_PER_INT+1]={
 #define OFFSET (((ITEM_HDR_SIZE-1)/H_INT_SIZE + 1)*BITS_PER_INT)
 typedef struct {
   int item;
-  int buf[BUFFERSIZE],offset,length,size,modified,rdonly,tno;
+  int buf[BUFFERSIZE],modified,rdonly,tno;
+  off64_t offset, length, size;
   char name[32];
 } MASK_INFO;
 
 
-private void mkfill(MASK_INFO *mask,int offset);
+private void mkfill(MASK_INFO *mask,off64_t offset);
 
 /************************************************************************/
 char *mkopen_c(int tno,char *name,char *status)
@@ -145,7 +146,7 @@ void mkclose_c(char *handle)
   free((char *)mask);
 }
 /************************************************************************/
-int mkread_c(char *handle,int mode,int *flags,int offset,int n,int nsize)
+int mkread_c(char *handle,int mode,int *flags,off64_t offset,int n,int nsize)
 /*
 ------------------------------------------------------------------------*/
 {
@@ -153,7 +154,8 @@ int mkread_c(char *handle,int mode,int *flags,int offset,int n,int nsize)
 		     t = state; state = otherstate; otherstate = t
 
   MASK_INFO *mask;
-  int i,len,boff,blen,bitmask,*buf,iostat,t,state,otherstate,runs;
+  int i,len,blen,bitmask,*buf,iostat,t,state,otherstate,runs;
+  off64_t boff;
   int *flags0;
 
   flags0 = flags;
@@ -232,12 +234,13 @@ int mkread_c(char *handle,int mode,int *flags,int offset,int n,int nsize)
   return(flags - flags0);
 }
 /************************************************************************/
-void mkwrite_c(char *handle,int mode,int *flags,int offset,int n,int nsize)
+void mkwrite_c(char *handle,int mode,int *flags,off64_t offset,int n,int nsize)
 /*
 ------------------------------------------------------------------------*/
 {
   MASK_INFO *mask;
-  int i,len,boff,blen,bitmask,*buf,t;
+  int i,len,blen,bitmask,*buf,t;
+  off64_t boff;
   int run,curr,state,iostat;
 
   curr = 0;
@@ -343,7 +346,8 @@ void mkflush_c(char *handle)
 ------------------------------------------------------------------------*/
 {
   MASK_INFO *mask;
-  int i,t,*buf,offset,iostat;
+  int i,t,*buf,iostat;
+  off64_t offset;
 
   mask = (MASK_INFO *)handle;
 
@@ -375,7 +379,7 @@ void mkflush_c(char *handle)
   mask->modified = FALSE;
 }
 /************************************************************************/
-private void mkfill(MASK_INFO *mask,int offset)
+private void mkfill(MASK_INFO *mask,off64_t offset)
 /*
   We have to fill in some bits in the current buffer.
 
