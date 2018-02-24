@@ -11,7 +11,7 @@
 
 #include "mconf.h"
 #ifdef INFINITIES
-extern double INFINITY;
+extern double CEPHES_INFINITY;
 #endif
 #ifndef ANSIPROT
 int isnan(), isfinite();
@@ -88,9 +88,9 @@ if( isnan(x) )
 	return(x);
 #endif
 #ifdef INFINITIES
-if( x == INFINITY )
-	return(INFINITY);
-if( x == -INFINITY )
+if( x == CEPHES_INFINITY )
+	return(CEPHES_INFINITY);
+if( x == -CEPHES_INFINITY )
 	return(-1.0);
 #endif
 if( (x < -0.5) || (x > 0.5) )

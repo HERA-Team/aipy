@@ -485,7 +485,7 @@ return( p * SQ2OPI / sqrt(x) );
 }
 
 
-extern double INFINITY, NAN;
+extern double CEPHES_INFINITY, CEPHES_NAN;
 
 double y1(x)
 double x;
@@ -496,10 +496,10 @@ if( x <= 5.0 )
 	{
 	if (x == 0.0) {
 		mtherr("y1", SING);
-		return -INFINITY;
+		return -CEPHES_INFINITY;
 	} else if (x <= 0.0) {
 		mtherr("y1", DOMAIN);
-		return NAN;
+		return CEPHES_NAN;
 	}
 	z = x * x;
 	w = x * (polevl( z, YP, 5 ) / p1evl( z, YQ, 8 ));
