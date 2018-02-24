@@ -29,6 +29,7 @@
 /*    pjt  21jun02   MIR4 prototyping                                   */
 /************************************************************************/
 
+#include <Python.h>
 #include "sysdep.h"
 #include "miriad.h"
 

@@ -89,7 +89,7 @@ void scrread_c(int handle,float *buffer,int offset,int length)
   int iostat;
 
   hreadb_c(handle,(char *)buffer,
-    (off_t)sizeof(float)*offset,sizeof(float)*length,&iostat);
+    (off64_t)sizeof(float)*offset,sizeof(float)*length,&iostat);
   if(iostat){
     bug_c(  'w',"Error reading from scratch file");
     bugno_c('f',iostat);
@@ -118,7 +118,7 @@ void scrwrite_c(int handle,Const float *buffer,int offset,int length)
   int iostat;
 
   hwriteb_c(handle,(char *)buffer,
-    (off_t)sizeof(float)*offset,sizeof(float)*length,&iostat);
+    (off64_t)sizeof(float)*offset,sizeof(float)*length,&iostat);
   if(iostat){
     bug_c(  'w',"Error writing to scratch file");
     bugno_c('f',iostat);

@@ -260,6 +260,7 @@
 #define CKMS 299792.458
 #define PI   3.141592653589793
 
+#include <Python.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -459,13 +460,13 @@ typedef struct {
 typedef struct {
 	char *handle;
 	int nflags,*flags,exists,init;
-        off_t offset;
+        off64_t offset;
 } FLAGS;
 
 typedef struct {
 	int item;
 	int nvar,saved_nvar,tno,flags,callno,maxvis,mark;
-        off_t offset, max_offset;
+        off64_t offset, max_offset;
 	int presize,gflag;
 	FLAGS corr_flags,wcorr_flags;
 	VARIABLE *coord,*corr,*time,*bl,*tscale,*nschan,*axisrms;
@@ -596,7 +597,7 @@ my_uvlist(int tno,char *fname)
     float *fp;
     short *sp;
     int iostat, intsize, extsize, i, *ip, eor_count=0;
-    off_t offset;
+    off64_t offset;
     VARIABLE *v;
     UV *uv;
     char s[UV_HDR_SIZE], *b, buffer[128];
@@ -745,7 +746,9 @@ void uvopen_c(int *tno,Const char *name,Const char *status)
 #ifdef MIR4
     /* figure out if to read old MIR3 or new MIR4 */
     if (1) {
-      rdhdl_c(*tno,"vislen",&(uv->max_offset),hsize_c(uv->item));
+        int8 vislen;
+      rdhdl_c(*tno,"vislen",&vislen,hsize_c(uv->item));
+      uv->max_offset = (off64_t) vislen;
     } else {
       int old_vislen;
       rdhdi_c(*tno,"vislen",&old_vislen,hsize_c(uv->item));
@@ -790,7 +793,9 @@ void uvopen_c(int *tno,Const char *name,Const char *status)
 #ifdef MIR4
     /* figure out if to read old MIR3 or new MIR4 */
     if (1) {
-      rdhdl_c(*tno,"vislen",&(uv->offset),hsize_c(uv->item));
+        int8 vislen;
+      rdhdl_c(*tno,"vislen",&vislen,hsize_c(uv->item));
+      uv->offset = (off64_t) vislen;
     } else {
       int old_vislen;
       rdhdi_c(*tno,"vislen",&old_vislen,hsize_c(uv->item));
@@ -810,8 +815,13 @@ void uvopen_c(int *tno,Const char *name,Const char *status)
     rdhda_c(*tno,"obstype",line,"",MAXLINE);
     if(!strcmp(line,"autocorrelation"))		uv->flags |= UVF_AUTO;
     else if(!strcmp(line,"crosscorrelation"))	uv->flags |= UVF_CROSS;
-    rdhdl_c(*tno,"ncorr",&(uv->corr_flags.offset),-1);
-    rdhdl_c(*tno,"nwcorr",&(uv->wcorr_flags.offset),-1);
+    {
+        int8 n;
+        rdhdl_c(*tno,"ncorr",&n,-1);
+        uv->corr_flags.offset = n;
+        rdhdl_c(*tno,"nwcorr",&n,-1);
+        uv->wcorr_flags.offset = n;
+    }
     if(uv->corr_flags.offset < 0 || uv->wcorr_flags.offset < 0)
       BUG('f',"Cannot append to uv file without 'ncorr' and/or 'nwcorr' items");
 
@@ -1857,7 +1867,7 @@ private int uv_scan(UV *uv, VARIABLE *vt)
 ------------------------------------------------------------------------*/
 {
   int iostat,intsize,extsize,terminate,found,changed,i;
-  off_t offset;
+  off64_t offset;
   VARIABLE *v;
   char s[UV_HDR_SIZE],*b;
 
@@ -2762,8 +2772,7 @@ private void uvset_linetype(LINE_INFO *line, char *type, int n,
 }
 
 /************************************************************************/
-int uvdim_c(tno)
-int tno;
+int uvdim_c(int tno)
 /**uvdim - Number of channels.						*/
 /*&rjs                                                                  */
 /*:uv-i/o								*/
@@ -4418,7 +4427,7 @@ void uvflgwr_c(int tno, Const int *flags)
 /*----------------------------------------------------------------------*/
 {
   int nchan,width,step,n,i;
-  off_t offset;
+  off64_t offset;
   UV *uv;
   VARIABLE *v;
   FLAGS *flags_info;
@@ -4475,7 +4484,7 @@ void uvwflgwr_c(int tno,Const int *flags)
 /*----------------------------------------------------------------------*/
 {
   int nchan;
-  off_t offset;
+  off64_t offset;
   UV *uv;
   VARIABLE *v;
   FLAGS *flags_info;
@@ -4628,7 +4637,7 @@ private void uvinfo_variance(UV *uv,double *data)
   double *restfreq,*tab;
   float bw,inttime,jyperk,*syst,*t1,*t2,factor;
   int i,j,bl,i1,i2,nants,nsyst,*nschan,start;
-  off_t offset;
+  off64_t offset;
   LINE_INFO *line;
   VARIABLE *tsys;
 
@@ -4752,7 +4761,7 @@ private void uvinfo_chan(UV *uv,double *data,int mode)
 {
   LINE_INFO *line;
   int n,i,j,step;
-  off_t offset;
+  off64_t offset;
   double temp,fdash;
   float *wfreq,*wwide,vobs;
   int *nschan;

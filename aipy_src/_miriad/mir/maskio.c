@@ -17,6 +17,8 @@
 /*    rjs  19apr97   Handle FORTRAN LOGICALs better. Some tidying.      */
 /************************************************************************/
 
+#include <Python.h>
+
 #define BUG(sev,a)   bug_c(sev,a)
 #define ERROR(sev,a) bug_c(sev,((void)sprintf a,message))
 #define CHECK(x) if(x) bugno_c('f',x)

@@ -31,6 +31,7 @@
 /*  pjt  6sep06   read integers via rdhdi                               */
 /************************************************************************/
 
+#include <Python.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
