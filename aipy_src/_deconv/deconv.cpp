@@ -6,6 +6,7 @@
  */
 
 #include <Python.h>
+#include <cmath>
 #include "numpy/arrayobject.h"
 
 #define QUOTE(s) # s
@@ -103,7 +104,7 @@ template<typename T> struct Clean {
                 printf("Iter %d: Max=(%d,%d,%f), Score=%f, Prev=%f, Delta=%f\n", \
                        i, nargmax1, nargmax2, (double) max, (double) (nscore/firstscore), \
                     (double) (score/firstscore), 
-                       (double) (fabs(score - nscore) / firstscore));
+                       (double) (std::abs(score - nscore) / firstscore));
             if (score > 0 && nscore > score) {
                 if (stop_if_div) {
                     // We've diverged: undo last step and give up
@@ -130,7 +131,7 @@ template<typename T> struct Clean {
                     best_score = score;
                     i = 0;  // Reset maxiter counter
                 }
-            } else if (score > 0 && fabs(score - nscore) / firstscore < tol) {
+            } else if (score > 0 && std::abs(score - nscore) / firstscore < tol) {
                 // We're done
                 if (best_mdl != NULL) { free(best_mdl); free(best_res); }
                 return i;
