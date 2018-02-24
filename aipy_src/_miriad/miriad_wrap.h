@@ -1,11 +1,8 @@
 #ifndef _MIRIAD_WRAP_H_
 #define _MIRIAD_WRAP_H_
 
-/* You have to import miriad.h first, otherwise python and miriad disagree
- * about sizeof(off_t) which leads to lots of painfully concealed errors.
- */
-#include "miriad.h"
 #include <Python.h>
+#include "miriad.h"
 #include "numpy/arrayobject.h"
 #include <string>
 #include "hio.h"

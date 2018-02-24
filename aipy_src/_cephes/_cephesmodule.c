@@ -9,7 +9,7 @@
  * Revisions 2008 Aaron Parsons: stripped out fortran routines
  */
 
-#include "Python.h"
+#include <Python.h>
 #include "numpy/arrayobject.h"
 #include "numpy/ufuncobject.h" 
 #include "ufunc_extras.h"

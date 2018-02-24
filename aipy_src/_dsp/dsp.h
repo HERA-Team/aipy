@@ -1,8 +1,8 @@
 #ifndef _DSP_H_
 #define _DSP_H_
 
-#include "grid.h"
 #include <Python.h>
+#include "grid.h"
 #include "numpy/arrayobject.h"
 
 #define QUOTE(s) # s
