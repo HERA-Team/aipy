@@ -34,7 +34,7 @@
 
 #if defined(WORDS_BIGENDIAN)
 
-static int words_bigendian = 1; /* never used actually, but handy symbol to find via nm(1) */
+/* static int words_bigendian = 1; never used actually, but handy symbol to find via nm(1) */
 
 void	pack16_c(register int *from,char *to,int n)
 {
@@ -75,7 +75,7 @@ void	unpack64_c(char *from,register int *to,int n)
 
 #ifndef WORDS_BIGENDIAN 
 #ifndef unicos
-static int words_littleendian = 1; /* never used actually, but handy symbol to find via nm(1) */
+/* static int words_littleendian = 1; never used actually, but handy symbol to find via nm(1) */
 /************************************************************************/
 /*									*/
 /*  The pack routines -- these convert between the host format and	*/

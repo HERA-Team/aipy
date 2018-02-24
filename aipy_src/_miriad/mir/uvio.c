@@ -501,21 +501,41 @@ static AMP noamp;
 static int first=TRUE;
 
 /* void uvputvr_c(); */
-private void uvinfo_chan(),uvinfo_variance(),uvbasant_c();
-private void uv_init(),uv_freeuv(),uv_free_select();
-private void uvread_defline(),uvread_init(),uvread_velocity(),uvread_flags();
-private void uvread_defvelline();
-private void uvread_updated_planet(),uvread_reference();
-private void uvread_updated_uvw(),uvread_preamble();
-private void uv_vartable_out(),uv_vartable_in();
-private void uvset_coord(),uvset_linetype(),uvset_planet();
-private void uvset_selection(),uvset_preamble();
-private void uv_addopers(),uv_override();
-private UV *uv_getuv();
-private VARIABLE *uv_mkvar(),*uv_locvar(),*uv_checkvar();
-private int uv_scan(),uvread_line(),uvread_select(),uvread_maxvis();
-private int uvread_shadowed(),uvread_match();
-private double uv_getskyfreq();
+private void uvinfo_chan(UV *uv,double *data,int mode);
+private void uvinfo_variance(UV *uv,double *data);
+private void uvbasant_c(int baseline,int *i1,int *i2);
+private void uv_init(void);
+private void uv_freeuv(UV *uv);
+private void uv_free_select(SELECT *sel);
+private void uvread_defline(int tno);
+private void uvread_init(int tno);
+private void uvread_velocity(UV *uv,LINE_INFO *line,float *data, int *flags,int nsize,LINE_INFO *actual);
+private void uvread_flags(UV *uv,VARIABLE *v,FLAGS *flag_info,int nchan);
+private void uvread_defvelline(UV* uv,LINE_INFO *line,WINDOW *win);
+private void uvread_updated_planet(UV *uv);
+private void uvread_reference(UV *uv, float *data, int *flags,int n);
+private void uvread_updated_uvw(UV *uv);
+private void uvread_preamble(UV *uv, double *preamble);
+private void uv_vartable_out(UV *uv);
+private void uv_vartable_in(UV *uv);
+private void uvset_coord(UV *uv, char *type);
+private void uvset_linetype(LINE_INFO *line, char *type, int n, double start,double width,double step);
+private void uvset_planet(UV *uv, double p1,double p2,double p3);
+private void uvset_selection(UV *uv, char *type, int n);
+private void uvset_preamble(UV *uv, char *type);
+private void uv_addopers(SELECT *sel,int type,int discard,double p1,double p2,char *ps);
+private void uv_override(UV *uv);
+private UV *uv_getuv(int tno);
+private VARIABLE *uv_mkvar(int tno,char *name,int type);
+private VARIABLE *uv_locvar(int tno,char *name);
+private VARIABLE *uv_checkvar(int tno,char *varname,int type);
+private int uv_scan(UV *uv, VARIABLE *vt);
+private int uvread_line(UV *uv,LINE_INFO *line,float *data, int nsize,int *flags,LINE_INFO *actual);
+private int uvread_select(UV *uv);
+private int uvread_maxvis(SELECT *sel);
+private int uvread_shadowed(UV *uv,double diameter);
+private int uvread_match(char *s1,char *s2, int length);
+private double uv_getskyfreq(UV *uv,WINDOW *win);
 
 /************************************************************************/
 #ifdef TESTBED
@@ -904,7 +924,7 @@ void uvflush_c(int tno)
   CHECK(iostat,(message,"Error calling hflush, in UVFLSH"));
 }
 /************************************************************************/
-private void uv_init()
+private void uv_init(void)
 /*
   Initalise everything imaginable.
 ------------------------------------------------------------------------*/
