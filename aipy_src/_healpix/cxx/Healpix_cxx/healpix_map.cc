@@ -46,10 +46,10 @@ template<typename T> void Healpix_Map<T>::Import_degrade
     &Healpix_Map::xyf2ring : &Healpix_Map::xyf2nest;
 
   int minhits = pessimistic ? fact : 1;
-#pragma omp parallel
+//#pragma omp parallel
 {
   int m;
-#pragma omp for schedule (static)
+//#pragma omp for schedule (static)
   for (m=0; m<npix_; ++m)
     {
     int x,y,f;

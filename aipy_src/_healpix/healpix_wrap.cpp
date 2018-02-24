@@ -87,8 +87,8 @@ static int HPBObject_init(HPBObject *self, PyObject *args, PyObject *kwds) {
     int nside=-1;
     Healpix_Ordering_Scheme scheme = RING;
     PyObject *scheme_str=NULL;
-    static char *kwlist[] = {"nside", "scheme", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"|iO", kwlist, \
+    static const char *kwlist[] = {"nside", "scheme", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"|iO", (char **) kwlist, \
             &nside, &scheme_str))
         return -1;
     if (scheme_str == NULL) scheme = RING;
@@ -186,9 +186,9 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
     vec3 v;
     PyArrayObject *crd1, *crd2, *crd3=NULL, *rv, *wgt=NULL;
     PyObject *rv2;
-    static char *kwlist[] = {"crd1", "crd2", "crd3", "interpolate", NULL};
+    static const char *kwlist[] = {"crd1", "crd2", "crd3", "interpolate", NULL};
     // Parse and check input arguments
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!O!|O!i", kwlist, 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!O!|O!i", (char **) kwlist, 
             &PyArray_Type, &crd1, &PyArray_Type, &crd2, &PyArray_Type, &crd3,
             &interpolate))
         return NULL;
@@ -260,9 +260,9 @@ static PyObject * HPBObject_px2crd(HPBObject *self,
     vec3 v;
     int ncrd=3;
     PyArrayObject *px, *crd1, *crd2, *crd3;
-    static char *kwlist[] = {"px", "ncrd", NULL};
+    static const char *kwlist[] = {"px", "ncrd", NULL};
     // Parse and check input arguments
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!|i", kwlist, 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!|i", (char **) kwlist, 
             &PyArray_Type, &px, &ncrd))
         return NULL;
     if (ncrd != 2 && ncrd != 3) {

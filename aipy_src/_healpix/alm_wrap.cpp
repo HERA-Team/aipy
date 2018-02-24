@@ -314,8 +314,8 @@ static PyObject * AlmObject_get_data(AlmObject *self) {
         for (int m=0; m<=mmax; ++m) {
             if (m > l) break;
             c = self->alm(l,m);
-            *((double *)(PyArray_DATA(rv) + cnt*PyArray_STRIDES(rv)[0])) = (double) c.real();
-            *((double *)(PyArray_DATA(rv) + cnt*PyArray_STRIDES(rv)[0] + sizeof(double))) = (double) c.imag();
+            *((double *)((char *) PyArray_DATA(rv) + cnt*PyArray_STRIDES(rv)[0])) = (double) c.real();
+            *((double *)((char *) PyArray_DATA(rv) + cnt*PyArray_STRIDES(rv)[0] + sizeof(double))) = (double) c.imag();
             cnt++;
         }
     }
@@ -331,15 +331,15 @@ static PyObject * AlmObject_set_data(AlmObject *self, PyObject *args) {
     xcomplex<double> c;
     if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &data)) return NULL;
     if (RANK(data) != 1 || DIM(data,0) != num_alms) {
-        PyErr_Format(PyExc_ValueError, "%s", "data must have length %d.", num_alms);
+        PyErr_Format(PyExc_ValueError, "data must have length %d.", num_alms);
         return NULL;
     }
     CHK_ARRAY_TYPE(data, NPY_CDOUBLE);
     for (int l=0; l<=lmax; ++l) {
         for (int m=0; m<=mmax; ++m) {
             if (m > l) break;
-            c.Set(*((double *)(PyArray_DATA(data) + cnt*PyArray_STRIDES(data)[0])),
-                  *((double *)(PyArray_DATA(data) + cnt*PyArray_STRIDES(data)[0] + sizeof(double))));
+            c.Set(*((double *)((char *) PyArray_DATA(data) + cnt*PyArray_STRIDES(data)[0])),
+                  *((double *)((char *) PyArray_DATA(data) + cnt*PyArray_STRIDES(data)[0] + sizeof(double))));
             self->alm(l,m) = c;
             cnt++;
         }
