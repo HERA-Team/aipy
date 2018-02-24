@@ -42,6 +42,11 @@
 #include <stdarg.h>
 #include "sysdep.h"        /* since it now contains the "pack.c" prototypes */
 
+#ifdef __APPLE__
+#define off64_t off_t
+#define lseek64 lseek
+#endif
+
 /* Define const and void if needed. */
 
 #ifndef MIRIAD_TYPES_DEFINED
