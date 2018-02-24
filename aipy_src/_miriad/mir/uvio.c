@@ -519,12 +519,12 @@ private void uvread_updated_uvw(UV *uv);
 private void uvread_preamble(UV *uv, double *preamble);
 private void uv_vartable_out(UV *uv);
 private void uv_vartable_in(UV *uv);
-private void uvset_coord(UV *uv, char *type);
-private void uvset_linetype(LINE_INFO *line, char *type, int n, double start,double width,double step);
+private void uvset_coord(UV *uv, const char *type);
+private void uvset_linetype(LINE_INFO *line, const char *type, int n, double start,double width,double step);
 private void uvset_planet(UV *uv, double p1,double p2,double p3);
-private void uvset_selection(UV *uv, char *type, int n);
-private void uvset_preamble(UV *uv, char *type);
-private void uv_addopers(SELECT *sel,int type,int discard,double p1,double p2,char *ps);
+private void uvset_selection(UV *uv, const char *type, int n);
+private void uvset_preamble(UV *uv, const char *type);
+private void uv_addopers(SELECT *sel,int type,int discard,double p1,double p2,const char *ps);
 private void uv_override(UV *uv);
 private UV *uv_getuv(int tno);
 private VARIABLE *uv_mkvar(int tno,char *name,int type);
@@ -1197,7 +1197,7 @@ private void uv_vartable_in(UV *uv)
 {
   int item;
   char line[MAXLINE],name[MAXNAM+1],ctype;
-  int iostat,type;
+  int iostat,type = 0;
 
   haccess_c(uv->tno,&item,"vartable","read",&iostat);
   CHECK(iostat,(message,"Error opening vartable, in UVOPEN(vartable_in)"));
@@ -1886,7 +1886,7 @@ private int uv_scan(UV *uv, VARIABLE *vt)
 
     changed = FALSE;
     if(*(s+2) != VAR_EOR){
-      v = &uv->variable[*s];       /*  warning: array subscript has type `char' */
+      v = &uv->variable[(int) *s];       /*  warning: array subscript has type `char' */
       intsize = internal_size[v->type];
       extsize = external_size[v->type];
     }
@@ -2525,7 +2525,7 @@ void uvselect_c(int tno,Const char *object,double p1,double p2,int datasel)
   }
 }
 /************************************************************************/
-private void uv_addopers(SELECT *sel,int type,int discard,double p1,double p2,char *ps)
+private void uv_addopers(SELECT *sel,int type,int discard,double p1,double p2,const char *ps)
 {
   int n,i;
   OPERS *oper;
@@ -2630,7 +2630,7 @@ void uvset_c(int tno,Const char *object,Const char *type,
   }
 }
 /************************************************************************/
-private void uvset_preamble(UV *uv, char *type)
+private void uvset_preamble(UV *uv, const char *type)
 /*
   Set the preamble that the user wants to use.
 ------------------------------------------------------------------------*/
@@ -2679,7 +2679,7 @@ private void uvset_preamble(UV *uv, char *type)
   }
 }
 /************************************************************************/
-private void uvset_selection(UV *uv, char *type, int n)
+private void uvset_selection(UV *uv, const char *type, int n)
 /*
   Set the way the uvselect routine works.
 ------------------------------------------------------------------------*/
@@ -2704,7 +2704,7 @@ private void uvset_planet(UV *uv, double p1,double p2,double p3)
   uv->need_planet = TRUE;
 }
 /************************************************************************/
-private void uvset_coord(UV *uv, char *type)
+private void uvset_coord(UV *uv, const char *type)
 /*
   Set the flags to do with the processing of uv coordinates.
 
@@ -2725,7 +2725,7 @@ private void uvset_coord(UV *uv, char *type)
   }
 }
 /************************************************************************/
-private void uvset_linetype(LINE_INFO *line, char *type, int n, 
+private void uvset_linetype(LINE_INFO *line, const char *type, int n, 
 			    double start,double width,double step)
 /*
   Decode the line type.
@@ -2895,7 +2895,7 @@ private void uvread_preamble(UV *uv, double *preamble)
 ------------------------------------------------------------------------*/
 {
   VARIABLE *v;
-  double scale,uu,vv,ww,*coord;
+  double scale,uu,vv,ww = 0.,*coord;
   int bl,i1,i2,i;
 
 
@@ -4145,11 +4145,11 @@ private void uvread_velocity(UV *uv,LINE_INFO *line,float *data,
 {
   float idv,idv2,odv2,dv2,scale,wt,v,vobs,temp;
   double *sfreq,*sdf,*restfreq;
-  int nspect,first,last,fout,lout,i,j,n;
+  int nspect,first,last,fout = 0,lout = 0,i,j,n;
   int *nschan,*flagin,*flagin1,*flagout,*wins,doint2;
   float *wts,*dataout;
-  int *di,*di1;
-  float *df,*df1;
+  int *di = NULL,*di1 = NULL;
+  float *df = NULL,*df1 = NULL;
 
 /* Set the default line if needed. */
 
@@ -4635,11 +4635,11 @@ private void uvinfo_variance(UV *uv,double *data)
 ------------------------------------------------------------------------*/
 {
   double *restfreq,*tab;
-  float bw,inttime,jyperk,*syst,*t1,*t2,factor;
+  float bw = 0.0,inttime,jyperk,*syst,*t1,*t2,factor;
   int i,j,bl,i1,i2,nants,nsyst,*nschan,start;
-  off64_t offset;
+  off64_t offset = 0;
   LINE_INFO *line;
-  VARIABLE *tsys;
+  VARIABLE *tsys = NULL;
 
 /* Miscellaneous. */
 
