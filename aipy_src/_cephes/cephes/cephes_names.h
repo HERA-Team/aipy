@@ -1,6 +1,11 @@
 #ifndef CEPHES_NAMES_H
 #define CEPHES_NAMES_H
 
+#undef signbit
+#define signbit cephes_signbit
+#undef isfinite
+#define isfinite cephes_isfinite
+
 #define airy cephes_airy
 #define bdtrc cephes_bdtrc
 #define bdtr cephes_bdtr
