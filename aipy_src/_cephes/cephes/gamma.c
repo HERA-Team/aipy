@@ -278,10 +278,10 @@ extern int isfinite ( double x );
 static double stirf(double);
 #endif
 #ifdef INFINITIES
-extern double INFINITY;
+extern double CEPHES_INFINITY;
 #endif
 #ifdef NANS
-extern double NAN;
+extern double CEPHES_NAN;
 #endif
 
 /* Gamma function computed by Stirling's formula.
@@ -293,7 +293,7 @@ double y, w, v;
 
 if (x >= MAXGAM) {
 #ifdef INFINITIES
-	return (INFINITY);
+	return (CEPHES_INFINITY);
 #else
 	return (MAXNUM);
 #endif
@@ -328,9 +328,9 @@ if( isnan(x) )
 #endif
 #ifdef INFINITIES
 #ifdef NANS
-if( x == INFINITY )
+if( x == CEPHES_INFINITY )
 	return(x);
-if( x == -INFINITY )
+if( x == -CEPHES_INFINITY )
 	return(x);
 #else
 if( !isfinite(x) )
@@ -367,7 +367,7 @@ gamnan:
 		if( z == 0.0 )
 			{
 #ifdef INFINITIES
-			return( sgngam * INFINITY);
+			return( sgngam * CEPHES_INFINITY);
 #else
 goverf:
 			mtherr( "Gamma", OVERFLOW );
@@ -422,7 +422,7 @@ if( x == 0.0 )
 #ifdef NANS
 	  goto gamnan;
 #else
-	  return( INFINITY );
+	  return(CEPHES_INFINITY );
 #endif
 #else
 	mtherr( "Gamma", SING );
@@ -581,7 +581,7 @@ if( isnan(x) )
 
 #ifdef INFINITIES
 if( !isfinite(x) )
-	return(INFINITY);
+	return(CEPHES_INFINITY);
 #endif
 
 if( x < -34.0 )
@@ -594,7 +594,7 @@ if( x < -34.0 )
 lgsing:
 #ifdef INFINITIES
 		mtherr( "lgam", SING );
-		return (INFINITY);
+		return (CEPHES_INFINITY);
 #else
 		goto loverf;
 #endif
@@ -655,7 +655,7 @@ if( x < 13.0 )
 if( x > MAXLGM )
 	{
 #ifdef INFINITIES
-	return( sgngam * INFINITY );
+	return( sgngam * CEPHES_INFINITY );
 #else
 loverf:
 	mtherr( "lgam", OVERFLOW );

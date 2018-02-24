@@ -80,7 +80,7 @@ static double incbcf(), incbd(), pseries();
 static double big = 4.503599627370496e15;
 static double biginv =  2.22044604925031308085e-16;
 
-extern double NAN;
+extern double CEPHES_NAN;
 
 double incbet( aa, bb, xx )
 double aa, bb, xx;
@@ -99,7 +99,7 @@ if( (xx <= 0.0) || ( xx >= 1.0) )
 		return( 1.0 );
 domerr:
 	mtherr( "incbet", DOMAIN );
-	return( NAN );
+	return(CEPHES_NAN );
 	}
 
 flag = 0;

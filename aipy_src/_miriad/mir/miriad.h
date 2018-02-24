@@ -114,10 +114,10 @@ void haccess_c(int tno, int *ihandle, Const char *keyword, Const char *status, i
 void hmode_c(int tno, char *mode);
 int  hexists_c(int tno, Const char *keyword);
 void hdaccess_c(int ihandle, int *iostat);
-off_t hsize_c(int ihandle);
-void hio_c(int ihandle, int dowrite, int type, char *buf, off_t offset, size_t length, int *iostat);
-void hseek_c(int ihandle, off_t offset);
-off_t htell_c(int ihandle);
+off64_t hsize_c(int ihandle);
+void hio_c(int ihandle, int dowrite, int type, char *buf, off64_t offset, size_t length, int *iostat);
+void hseek_c(int ihandle, off64_t offset);
+off64_t htell_c(int ihandle);
 void hreada_c(int ihandle, char *line, size_t length, int *iostat);
 void hwritea_c(int ihandle, Const char *line, size_t length, int *iostat);
 
@@ -184,10 +184,10 @@ void ddelete_c   (char *path, int *iostat);
 void dtrans_c    (char *inpath, char *outpath, int *iostat);
 void dmkdir_c    (char *path, int *iostat);
 void drmdir_c    (char *path, int *iostat);
-void dopen_c     (int *fd, char *name, char *status, off_t *size, int *iostat);
+void dopen_c     (int *fd, char *name, char *status, off64_t *size, int *iostat);
 void dclose_c    (int fd, int *iostat);
-void dread_c     (int fd, char *buffer, off_t offset, size_t length, int *iostat);
-void dwrite_c    (int fd, char *buffer, off_t offset, size_t length, int *iostat);
+void dread_c     (int fd, char *buffer, off64_t offset, size_t length, int *iostat);
+void dwrite_c    (int fd, char *buffer, off64_t offset, size_t length, int *iostat);
 void dwait_c     (int fd, int *iostat);
 int dexpand_c    (char *tmplte, char *output, int length);
 void dopendir_c  (char **contxt, char *path);
@@ -279,8 +279,8 @@ void xysetpl_c (int tno, int naxis, Const int *axes);
 /* maskio.c */
 char *mkopen_c (int tno, char *name, char *status);
 void mkclose_c (char *handle);
-int  mkread_c  (char *handle, int mode, int *flags, int offset, int n, int nsize);
-void mkwrite_c (char *handle, int mode, int *flags, int offset, int n, int nsize);
+int  mkread_c  (char *handle, int mode, int *flags, off64_t offset, int n, int nsize);
+void mkwrite_c (char *handle, int mode, int *flags, off64_t offset, int n, int nsize);
 void mkflush_c (char *handle);
 
 
@@ -335,7 +335,7 @@ void mkeyi_c   (Const char *keyword, int value[], Const int nmax, int *n);
 
 /* mir.c */
 void mirInit_c(const char *f_name);
-void mirClose_c();
+void mirClose_c(void);
 void inWrite_c(const int conid, const int icocd, const int traid, const int inhid, const int ints, const int itq, const float az, const float el, const float ha, const int iut, const int iref_time, const double dhrs, const float vc, const int ivctype, const double sx, const double sy, const double sz, const float rinteg, const int proid, const int souid, const int isource, const int ipos, const float offx, const float offy, const int iofftype, const int ira, const int idec, const double rar, const double decr, const float epoch, const float sflux, const float size);
 void blWrite_c(const int blhid, const int inhid, const int isb, const int ipol, const float pa, const int iaq, const int ibq, const int icq, const int ioq, const int irec, const int iffc, const float u, const float v, const float w, const float prbl, const float angres, const float vis, const float coh, const float sigcoh, const float csnr, const float vflux, const float cnoise, const double avedhrs, const float ampav, const float phaave, const float tpvar, const int blsid, const int itel1, const int itel2, const int iblcd, const float ble, const float bln, const float blu, const int soid);
 void spWrite_c(const int sphid, const int blhid, const int inhid, const int igq, const int ipq, const int iband, const int ipstate, const float tau0, const double vel, const float vres, const int ivtype, const double fsky, const float fres, const float tssb, const float integ, const float wt, const int itaper, const float snoise, const int nch, const int nrec, const int dataoff, const int linid, const int itrans, const double rfreq, const int pasid, const int gaiidamp, const int gaiidpha, const int flcid, const int atmid);

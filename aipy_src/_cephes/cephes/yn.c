@@ -60,9 +60,9 @@ extern double log ( double );
 #else
 double y0(), y1(), log();
 #endif
-extern double MAXNUM, MAXLOG, INFINITY;
+extern double MAXNUM, MAXLOG, CEPHES_INFINITY;
 #ifdef NANS
-extern double NAN;
+extern double CEPHES_NAN;
 #endif
 
 double yn( n, x )
@@ -92,10 +92,10 @@ if( n == 1 )
 /* test for overflow */
 if (x == 0.0) {
 	mtherr("yn", SING);
-	return -INFINITY;
+	return -CEPHES_INFINITY;
 } else if (x < 0.0) {
 	mtherr("yn", DOMAIN);
-        return NAN;
+        return CEPHES_NAN;
 }
 
 /* forward recurrence on n */

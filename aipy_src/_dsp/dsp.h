@@ -1,8 +1,8 @@
 #ifndef _DSP_H_
 #define _DSP_H_
 
-#include "grid.h"
 #include <Python.h>
+#include "grid.h"
 #include "numpy/arrayobject.h"
 
 #define QUOTE(s) # s
@@ -16,7 +16,7 @@
         PyErr_Format(PyExc_ValueError, "dim(%s) != %s", \
         QUOTE(a), QUOTE(d)); \
         return NULL; }
-#define RANK(a) a->nd
+#define RANK(a) PyArray_NDIM(a)
 #define CHK_ARRAY_RANK(a,r) \
     if (RANK(a) != r) { \
         PyErr_Format(PyExc_ValueError, "rank(%s) != %s", \

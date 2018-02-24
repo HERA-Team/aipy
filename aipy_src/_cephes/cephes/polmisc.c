@@ -3,6 +3,7 @@
  * See polyn.c for data structures and discussion.
  */
 
+#include <Python.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "mconf.h"

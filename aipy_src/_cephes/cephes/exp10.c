@@ -161,7 +161,7 @@ int isnan(), isfinite();
 #endif
 extern double MAXNUM;
 #ifdef INFINITIES
-extern double INFINITY;
+extern double CEPHES_INFINITY;
 #endif
 
 double exp10(double x)
@@ -176,7 +176,7 @@ if( isnan(x) )
 if( x > MAXL10 )
 	{
 #ifdef INFINITIES
-	return( INFINITY );
+	return(CEPHES_INFINITY );
 #else
 	mtherr( "exp10", OVERFLOW );
 	return( MAXNUM );

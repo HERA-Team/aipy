@@ -166,7 +166,7 @@ if( an < 500.0 )
 if( an > 2.0 * y )
 	goto rlarger;
 
-	if( (n >= 0.0) && (n < 20.0)
+if( (n >= 0.0) && (n < 20.0)
 		&& (y > 6.0) && (y < 20.0) )
 		{
 /* Recur backwards from a larger value of n
@@ -208,7 +208,6 @@ rlarger:
 			}
 		if( q == 0.0 )
 			{
-underf:
 			y = 0.0;
 			goto done;
 			}

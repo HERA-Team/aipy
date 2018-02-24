@@ -33,6 +33,7 @@
 /*       2-mar-05  pjt template->templat for C++, just in case          */
 /************************************************************************/
 
+#include <Python.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,7 +58,7 @@
 #define Malloc(x) malloc((unsigned)(x))
 #define Strcat (void)strcat
 #define Strcpy (void)strcpy
-#define Lseek(a,b,c) (off_t)lseek(a,(off_t)(b),c)
+#define Lseek(a,b,c) (off64_t)lseek64(a,(off64_t)(b),c)
 
 struct dent { 
   char path[MAXPATH];
@@ -140,7 +141,7 @@ void drmdir_c(char *path,int *iostat)
   if(rmdir(Path) < 0) *iostat = errno;
 }
 /************************************************************************/
-void dopen_c(int *fd,char *name,char *status,off_t *size,int *iostat)
+void dopen_c(int *fd,char *name,char *status,off64_t *size,int *iostat)
 /*
   Open a file.
   Input:
@@ -192,7 +193,7 @@ void dclose_c(int fd,int *iostat)
   *iostat = ( close(fd) < 0 ? errno : 0 );
 }
 /************************************************************************/
-void dread_c(int fd, char *buffer,off_t offset,size_t length,int *iostat)
+void dread_c(int fd, char *buffer,off64_t offset,size_t length,int *iostat)
 /*
   Read from a file.
 ------------------------------------------------------------------------*/
@@ -207,7 +208,7 @@ void dread_c(int fd, char *buffer,off_t offset,size_t length,int *iostat)
   else if(nread != (ssize_t) length) *iostat = EIO;
 }
 /************************************************************************/
-void dwrite_c(int fd, char *buffer,off_t offset,size_t length,int *iostat)
+void dwrite_c(int fd, char *buffer,off64_t offset,size_t length,int *iostat)
 /*
   Write to a file.
 ------------------------------------------------------------------------*/

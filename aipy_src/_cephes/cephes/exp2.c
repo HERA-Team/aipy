@@ -123,7 +123,7 @@ double polevl(), p1evl(), floor(), ldexp();
 int isnan(), isfinite();
 #endif
 #ifdef INFINITIES
-extern double INFINITY;
+extern double CEPHES_INFINITY;
 #endif
 extern double MAXNUM;
 
@@ -139,7 +139,7 @@ if( isnan(x) )
 if( x > MAXL2)
 	{
 #ifdef INFINITIES
-	return( INFINITY );
+	return(CEPHES_INFINITY );
 #else
 	mtherr( "exp2", OVERFLOW );
 	return( MAXNUM );

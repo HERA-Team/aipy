@@ -44,10 +44,10 @@ typedef struct
 
 /* Add fractions. */
 #ifdef ANSIPROT
-static void radd(fract*,fract*,fract*);
-static void rsub(fract*,fract*,fract*);
-static void rmul(fract*,fract*,fract*);
-static void rdiv(fract*,fract*,fract*);
+void radd(fract*,fract*,fract*);
+void rsub(fract*,fract*,fract*);
+void rmul(fract*,fract*,fract*);
+void rdiv(fract*,fract*,fract*);
 #endif
 
 void radd( f1, f2, f3 )

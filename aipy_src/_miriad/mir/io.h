@@ -28,14 +28,14 @@
 /*  MIRIAD3 and below data structures */
 
 
-static char 	binary_item[ITEM_HDR_SIZE]	= {0,0,0,0},
-		real_item[ITEM_HDR_SIZE]	= {0,0,0,H_REAL},
-		int_item[ITEM_HDR_SIZE]		= {0,0,0,H_INT},
-		int2_item[ITEM_HDR_SIZE]	= {0,0,0,H_INT2},
-		int8_item[ITEM_HDR_SIZE]	= {0,0,0,H_INT8},
-		char_item[ITEM_HDR_SIZE]	= {0,0,0,H_BYTE},
-		dble_item[ITEM_HDR_SIZE]	= {0,0,0,H_DBLE},
-		cmplx_item[ITEM_HDR_SIZE]	= {0,0,0,H_CMPLX};
+extern char binary_item[ITEM_HDR_SIZE],
+    real_item[ITEM_HDR_SIZE],
+    int_item[ITEM_HDR_SIZE],
+    int2_item[ITEM_HDR_SIZE],
+    int8_item[ITEM_HDR_SIZE],
+    char_item[ITEM_HDR_SIZE],
+    dble_item[ITEM_HDR_SIZE],
+    cmplx_item[ITEM_HDR_SIZE];
 
 #else
 
