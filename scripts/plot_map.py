@@ -1,4 +1,4 @@
-#!/usr/global/paper/bin/python
+#!/usr/bin/env python
 """
 Script for displaying a projection of a spherical (Healpix) data set stored
 in a *.fits file.
