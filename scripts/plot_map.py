@@ -6,8 +6,14 @@ in a *.fits file.
 Author: Aaron Parsons
 """
 
-import aipy as a, numpy as np, sys, os, ephem, optparse
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
+import ephem
+import numpy as np
 from matplotlib import pylab as p
+import aipy as a
 
 class Basemap:
     """A placeholder class to give plot_map.py some functionality if
@@ -116,10 +122,10 @@ for c,(i,j) in enumerate(zip(x1,x2)): x[c] = np.ma.masked_outside(x[c], i, j)
 mask = x.mask
 if opts.osys == 'eq': lons = 360 - lons
 lats *= a.img.deg2rad; lons *= a.img.deg2rad
-print 'Reading %s' % args[0]
+print('Reading %s' % args[0])
 h = a.map.Map(fromfits=args[0])
-print 'SCHEME:', h.scheme()
-print 'NSIDE:', h.nside()
+print('SCHEME:', h.scheme())
+print('NSIDE:', h.nside())
 if not opts.nside is None:
     nh = a.healpix.HealpixMap(nside=opts.nside)
     nh.from_hpm(h)
@@ -139,9 +145,9 @@ if not opts.mask is None:
         threshold = 10**(-opts.mask/10.)*np.max(wgts)
         msk = np.where(wgts > threshold, 1, 0)
         data *= msk
-        print "Masking %2.0f%% of sky"% ((1 - msk.sum() / float(len(msk)))*100)
+        print("Masking %2.0f%% of sky"% ((1 - msk.sum() / float(len(msk)))*100))
     except(AttributeError):
-        print "Weights not included in file. No mask will be applied."
+        print("Weights not included in file. No mask will be applied.")
 data.shape = lats.shape
 
 
@@ -216,7 +222,7 @@ def mk_arr(val, dtype=np.double):
     return np.array(val, dtype=dtype).flatten()
 
 if opts.outfile != '':
-    print 'Saving to', opts.outfile
+    print('Saving to', opts.outfile)
     p.savefig(opts.outfile)
 else:
     # Add right-click functionality for finding locations/strengths in map.
@@ -230,7 +236,7 @@ else:
             ra,dec = ephem.hours(lon), ephem.degrees(lat)
             x,y,z = a.coord.radec2eq((ra,dec))
             flx = h[(x,y,z)]
-            print '#%d (RA,DEC): (%s, %s), Jy: %f' % (cnt, ra, dec, flx)
+            print('#%d (RA,DEC): (%s, %s), Jy: %f' % (cnt, ra, dec, flx))
             cnt += 1
         elif event.button==2:
             lon,lat = map(event.xdata, event.ydata, inverse=True)
@@ -242,7 +248,7 @@ else:
             crd = [mk_arr(c, dtype=np.double) for c in (x,y,z)]
             px,wgts = h.crd2px(*crd, **{'interpolate':1})
             flx = np.sum(h[px],axis=-1)
-            print '#%d (RA,DEC): (%s, %s), Jy: %f (4px sum)' % (cnt, ra, dec, flx)
+            print('#%d (RA,DEC): (%s, %s), Jy: %f (4px sum)' % (cnt, ra, dec, flx))
             cnt += 1
         else: return
             

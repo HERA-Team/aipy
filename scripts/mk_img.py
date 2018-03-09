@@ -6,7 +6,13 @@ to a provided position, normalized for passband/primary beam effects, gridded
 to a UV matrix, and imaged
 """
 
-import aipy as a, numpy as np, sys, optparse, ephem, os
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
+import ephem
+import numpy as np
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('mk_img.py [options] *.uv')
@@ -85,7 +91,7 @@ if opts.list_facets:
     for cnt, src in enumerate(cat.values()):
         cen = ephem.Equatorial(src.ra, src.dec, epoch=aa.epoch)
         cen = ephem.Equatorial(cen, epoch=ephem.J2000)
-        print '# %3d >  RA=%s  DEC=%s  (%f, %f in deg)' % \
+        print('# %3d >  RA=%s  DEC=%s  (%f, %f in deg)' % \)
             (cnt, cen.ra, cen.dec, 
             a.img.rad2deg*cen.ra, a.img.rad2deg*cen.dec)
 
@@ -99,7 +105,7 @@ L,M = im.get_LM()
 DIM = int(opts.size/opts.res)
 n_ints = 0
 
-#print 'Calculating image of primary beam'
+#print('Calculating image of primary beam')
 #top = im.get_eq(0, aa.lat)
 #mask = top[0].mask
 #m = a.coord.eq2top_m(0, aa.lat)
@@ -110,13 +116,13 @@ n_ints = 0
 #aa.select_chans(chans)
 #d.shape = (DIM,DIM)
 #bm_im = np.where(mask, 0, d)
-#print 'done'
+#print('done')
 
 # Define a quick function writing an image to a FITS file
 def fname(ftag, cnt): return '%s.%s.fits' % (opts.fmt % cnt, ftag)
 def to_fits(ftag,i,src,cnt,history=''):
     filename = fname(ftag,cnt)
-    print 'Saving data to', filename
+    print('Saving data to', filename)
     while len(i.shape) < 4: i.shape = i.shape + (1,)
     cen = ephem.Equatorial(src.ra, src.dec, epoch=aa.epoch)
     # We precess the coordinates of the center of the image here to
@@ -135,7 +141,7 @@ def to_fits(ftag,i,src,cnt,history=''):
         freq=np.average(aa[0].beam.afreqs),history=history)
 
 def grid_it(im,us,vs,ws,ds,wgts):
-    #print 'Gridding %d integrations' % n_ints
+    #print('Gridding %d integrations' % n_ints)
     sys.stdout.write('|'); sys.stdout.flush()
     if len(ds) == 0: raise ValueError('No data to use.')
     ds,wgts = np.concatenate(ds), np.concatenate(wgts).flatten()
@@ -147,7 +153,7 @@ def grid_it(im,us,vs,ws,ds,wgts):
 
 def img_it(im):
     global n_ints
-    #print 'Imaging with %d integrations' % n_ints
+    #print('Imaging with %d integrations' % n_ints)
     n_ints = 0
     # Form dirty images/beams
     uvs = a.img.recenter(np.abs(im.uv).astype(np.float), (DIM/2,DIM/2))
@@ -161,8 +167,8 @@ imgcnt = opts.cnt
 for srccnt, s in enumerate(cat.values()):
     if srccnt < opts.skip: continue
     s.compute(aa)
-    print '%d / %d' % (srccnt + 1, len(cat.values()))
-    print 'Pointing (ra, dec):', s.ra, s.dec
+    print('%d / %d' % (srccnt + 1, len(cat.values())))
+    print('Pointing (ra, dec):', s.ra, s.dec)
     src = a.fit.SrcCatalog([s])
     # Gather data
     snapcnt,curtime = 0, None
@@ -243,7 +249,7 @@ for srccnt, s in enumerate(cat.values()):
         grid_it(im,us,vs,ws,ds,wgts)
         uvs,bms,dim,dbm = img_it(im)
     except(ValueError):
-        print 'No data: skipping output file.'
+        print('No data: skipping output file.')
         continue
     for k in ['uvs','bms','dim','dbm']:
         if k in outputs: to_fits(k, eval(k), s, imgcnt,history=history)

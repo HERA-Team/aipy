@@ -3,8 +3,11 @@
 Apply calibration parameters to a data set.
 """
 
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
 import aipy as a
-import optparse, sys, os
 
 o = optparse.OptionParser()
 a.scripting.add_standard_options(o, cal=True)
@@ -26,9 +29,9 @@ def mfunc(uv, p, d, f):
 
 for infile in args:
     outfile = infile+'C'
-    print infile,'-->',outfile
+    print(infile,'-->',outfile)
     if os.path.exists(outfile):
-        print 'File exists, skipping....'
+        print('File exists, skipping....')
         continue 
 
     uvi = a.miriad.UV(infile)

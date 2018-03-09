@@ -7,8 +7,14 @@ a single source have been isolated in the data set.
 Author: Aaron Parsons
 """
 
-import aipy as a, numpy as np, os, sys, optparse, pickle
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import pickle
+import optparse
+import numpy as np
 from matplotlib import pylab as p
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('flux_cal.py [options] *.uv')
@@ -32,10 +38,10 @@ if opts.srcflux:
     srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
     cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
     s = cat.values()[0]
-    print 'Calibrating for source with',
-    print 'strength', s._jys,
-    print 'measured at', s.mfreq, 'GHz',
-    print 'with index', s.index
+    print('Calibrating for source with',)
+    print('strength', s._jys,)
+    print('measured at', s.mfreq, 'GHz',)
+    print('with index', s.index)
     src_spec = None
 else: src_spec = 1
 
@@ -68,9 +74,9 @@ if opts.beam: ext += 'b'
 if opts.srcflux: ext += 'f'
 for filename in args:
     uvofile = filename + ext
-    print filename,'->',uvofile
+    print(filename,'->',uvofile)
     if os.path.exists(uvofile):
-        print 'File exists: skipping'
+        print('File exists: skipping')
         continue
     uvi = a.miriad.UV(filename)
     uvo = a.miriad.UV(uvofile, status='new')

@@ -58,8 +58,8 @@ details.
 
 """
 
+from __future__ import absolute_import, print_function, division
 import math
-
 import numpy
 
 def mlog(x):
@@ -117,7 +117,7 @@ def broyden2(F, xin, iter=10, alpha=0.4, verbose = False):
         Fxm=Fxm1
         Gm=Gm+(deltaxm-Gm*deltaFxm)*deltaFxm.T/norm(deltaFxm)**2
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n+1, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n+1, norm(Fxm)))
     return xm.flat
 
 def broyden3(F, xin, iter=10, alpha=0.4, verbose = False):
@@ -153,7 +153,7 @@ def broyden3(F, xin, iter=10, alpha=0.4, verbose = False):
         #Gm=Gm+(deltaxm-Gm*deltaFxm)*deltaFxm.T/norm(deltaFxm)**2
         updateG(deltaxm-Gmul(deltaFxm),deltaFxm/norm(deltaFxm)**2)
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n+1, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n+1, norm(Fxm)))
     return xm.flat
 
 def broyden_generalized(F, xin, iter=10, alpha=0.1, M=5, verbose = False):
@@ -201,7 +201,7 @@ def broyden_generalized(F, xin, iter=10, alpha=0.1, M=5, verbose = False):
             gamma=a.I*dFF
 
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def anderson(F, xin, iter=10, alpha=0.1, M=5, w0=0.01, verbose = False):
@@ -248,10 +248,10 @@ def anderson(F, xin, iter=10, alpha=0.1, M=5, w0=0.01, verbose = False):
             for k in range(n+1-MM,n+1):
                 dFF[k-(n+1-MM)]=dFxm[k].T*Fxm
             gamma=solve(a,dFF)
-#            print gamma
+#            print(gamma)
 
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def anderson2(F, xin, iter=10, alpha=0.1, M=5, w0=0.01, verbose = False):
@@ -294,10 +294,10 @@ def anderson2(F, xin, iter=10, alpha=0.1, M=5, w0=0.01, verbose = False):
             for k in range(n+1-MM,n+1):
                 dFF[k-(n+1-MM)]=(Fxm-dFxm[k]).T*Fxm
             theta=solve(a,dFF)
-#            print gamma
+#            print(gamma)
 
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def broyden_modified(F, xin, iter=10, alpha=0.35, w0=0.01, wl=5, verbose = False):
@@ -335,7 +335,7 @@ def broyden_modified(F, xin, iter=10, alpha=0.35, w0=0.01, wl=5, verbose = False
         betta=(w0**2*numpy.matrix(numpy.identity(n+1))+a).I
 
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def broyden1(F, xin, iter=10, alpha=0.1, verbose = False):
@@ -360,7 +360,7 @@ def broyden1(F, xin, iter=10, alpha=0.1, verbose = False):
         Fxm=Fxm1
         Jm=Jm+(deltaFxm-Jm*deltaxm)*deltaxm.T/norm(deltaxm)**2
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def broyden1_modified(F, xin, iter=10, alpha=0.1, verbose = False):
@@ -388,13 +388,13 @@ def broyden1_modified(F, xin, iter=10, alpha=0.1, verbose = False):
         Fxm1=myF(F,xm)
         deltaFxm=Fxm1-Fxm
         Fxm=Fxm1
-#        print "-------------",norm(deltaFxm),norm(deltaxm)
+#        print("-------------",norm(deltaFxm),norm(deltaxm))
         deltaFxm/=norm(deltaxm)
         deltaxm/=norm(deltaxm)
         Jm=inv(Jm+deltaxm*deltaxm.T*Jm,-deltaFxm,deltaxm)
         
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm
 
 def vackar(F, xin, iter=10, alpha=0.1, verbose = False):
@@ -417,7 +417,7 @@ def vackar(F, xin, iter=10, alpha=0.1, verbose = False):
         Fxm=Fxm1
         d=d-(deltaFxm+d*deltaxm)*deltaxm/norm(deltaxm)**2
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm
 
 def linearmixing(F,xin, iter=10, alpha=0.1, verbose = False):
@@ -436,7 +436,7 @@ def linearmixing(F,xin, iter=10, alpha=0.1, verbose = False):
         deltaFxm=Fxm1-Fxm
         Fxm=Fxm1
         if verbose:
-            print "%d: |F(x)|=%.3f" %(n,norm(Fxm))
+            print("%d: |F(x)|=%.3f" %(n,norm(Fxm)))
 
     return xm
 
@@ -464,6 +464,6 @@ def excitingmixing(F,xin,iter=10,alpha=0.1,alphamax=1.0, verbose = False):
                 beta[i]=alpha
         Fxm=Fxm1
         if verbose:
-            print "%d: |F(x)|=%.3f" %(n,norm(Fxm))
+            print("%d: |F(x)|=%.3f" %(n,norm(Fxm)))
 
     return xm

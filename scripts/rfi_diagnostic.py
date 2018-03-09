@@ -2,10 +2,14 @@
 """
 Diagnose RFI and RFI removal strategies by plotting either maximum amplitude per channel or fraction of flagged data per channel.
 """
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import math
+import optparse
 import numpy as np
-import aipy as a
 from matplotlib import pylab as p
-import os,sys,optparse,math
+import aipy as a
 
 #Set up the options, make sure to define them well.
 
@@ -34,7 +38,7 @@ hi_bl,med_bl,lo_bl = '','',''
 freqs = []
 
 for uvfile in args:
-	print 'Reading',uvfile
+	print('Reading',uvfile)
 	uv = a.miriad.UV(uvfile)
 	a.scripting.uv_selector(uv,opts.ant,opts.pol)	
 	if uvfile == args[0]:
@@ -61,7 +65,7 @@ for uvfile in args:
 			data[bl][t] = d
 			mask[bl][t] = f	
 		if not opts.max_hold and not opts.dwell:
-			print 'Please indicate whether you want max-hold (-m) or dwell-time (-d) plots'
+			print('Please indicate whether you want max-hold (-m) or dwell-time (-d) plots')
 			sys.exit(0)
 	
 	if opts.dwell:
@@ -147,7 +151,7 @@ if opts.x_axis == 'chan':
 
 bls = plot_y.keys() #This keeps track of all the baselines.
 if len(bls) == 0:
-        print 'No data to plot'
+        print('No data to plot')
         sys.exit(0)
 
 def sort_func(a,b): #This guy will make sure that your baselines always show up in order.

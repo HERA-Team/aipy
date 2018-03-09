@@ -3,7 +3,12 @@
 A script for listing sources (and optionally source parameters) from
 catalogs.
 """
-import aipy as a, ephem, sys, optparse,logging
+from __future__ import absolute_import, print_function, division
+import sys
+import ephem
+import optparse
+import logging
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('srclist.py [options]')
@@ -102,7 +107,7 @@ if opts.dec_rng != None:
 # We're done selecting sources now.  Time to print information
 srcs.sort()
 if opts.prms == None:
-    print opts.divstr.join(srcs)
+    print(opts.divstr.join(srcs))
 else:
     if not opts.fitprms:
         prms = opts.prms.split(',')
@@ -126,4 +131,4 @@ else:
                 else: outstring += prm
             if scount<snum-1:outstring += "),"
             else: outstring += ")"
-        print outstring
+        print(outstring)

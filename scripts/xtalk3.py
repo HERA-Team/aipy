@@ -15,7 +15,12 @@ data.
 Author: Aaron Parsons
 """
 
-import aipy as a, numpy as np, sys, os, optparse
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
+import aipy as a
+import numpy as np
 
 o = optparse.OptionParser()
 o.set_usage('xtalk3.py [options] *.uv')
@@ -39,10 +44,10 @@ if opts.reprocess:
         uv = a.miriad.UV(filename)
         (uvw,jd,(i,j)),d,f = uv.read(raw=True)
         xfile = '%f.xtalk.npz' % jd
-        print xfile
+        print(xfile)
         times.append(jd)
         if not os.path.exists(xfile):
-            print xfile, 'does not exist.  Skipping...'
+            print(xfile, 'does not exist.  Skipping...')
             continue
         xtalk = np.load(xfile)
         for bl in xtalk.files:
@@ -58,15 +63,15 @@ if opts.reprocess:
         repfile = '%f.xtalk.rep.npz' % jd
         xtalk = {}
         for bl in xsum: xtalk[bl] = gain[bl][c] * xsum[bl]
-        print 'Writing', repfile
+        print('Writing', repfile)
         np.savez(repfile, **xtalk)
     import sys; sys.exit(0)
 
 guess, cnt, xtalk = {}, {}, {}
 for filename in args:
-    print filename,'->',filename+'x'
+    print(filename,'->',filename+'x')
     if not opts.outfile and os.path.exists(filename+'x'):
-        print filename+'x', 'exists.  Skipping...'
+        print(filename+'x', 'exists.  Skipping...')
         continue
     uv = a.miriad.UV(filename)
     uv.select('auto',0, 0, include=False)
@@ -76,9 +81,9 @@ for filename in args:
         xfile = '%f.xtalk.rep.npz' % jd
         if not os.path.exists(xfile): xfile = '%f.xtalk.npz' % jd
         if not os.path.exists(xfile):
-            print xfile, 'does not exist.  Skipping...'
+            print(xfile, 'does not exist.  Skipping...')
             continue
-        print '    using', xfile
+        print('    using', xfile)
         xtalk = np.load(xfile)
     else:
         guess, cnt, xtalk = {}, {}, {}
@@ -91,7 +96,7 @@ for filename in args:
         for bl in guess: xtalk[bl] = guess[bl] / np.clip(cnt[bl], 1, np.Inf)
     if opts.outfile:
         xfile = '%f.xtalk.npz' % jd
-        print 'Writing', xfile
+        print('Writing', xfile)
         np.savez(xfile, **xtalk)
     else:
         def mfunc(uv, p, d, f):

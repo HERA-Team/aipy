@@ -10,12 +10,28 @@ All code provided is released under the GNU General Public License
 Author: Aaron Parsons
 """
 
-import phs, const, coord, deconv
-import ephem, fit, healpix, img
-import interp, cal, map, miriad
-import optimize, rfi, amp, scripting, src, _src, utils
+import phs
+import const
+import coord
+import deconv
+import ephem
+import fit
+import healpix
+import img
+import interp
+import cal
+import map
+import miriad
+import optimize
+import rfi
+import amp
+import scripting
+import src
+import _src
+from aipy import utils
 import dsp
-import pol, twodgauss #added by dfm
+import pol
+import twodgauss #added by dfm
 from __gitlog__ import __gitlog__
 from __version__ import __version__
 from __branch__ import __branch__

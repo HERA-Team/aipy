@@ -3,8 +3,11 @@
 Parse large data files by antenna number. Keep antenna 0 in all of them as a phase reference.
 """
 
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
 import aipy as a
-import sys,os,optparse
 
 o = optparse.OptionParser()
 o.set_usage('pull_ants.py [options] *.uv')
@@ -13,14 +16,14 @@ o.add_option('-a','--ants',dest='ants',type='str',default=None,help='List of Ant
 opts,args = o.parse_args(sys.argv[1:])
 
 if opts.ants == None:
-    print 'You forgot to tell me which antennae to pull. Try using a -a ant1,ant2,ant3 option or something, dude'
+    print('You forgot to tell me which antennae to pull. Try using a -a ant1,ant2,ant3 option or something, dude')
     sys.exit()
 
 for filename in args:
     outfile = filename+'A'
-    print filename,'-->',outfile
+    print(filename,'-->',outfile)
     if os.path.exists(outfile):
-        print 'File exists, skipping'
+        print('File exists, skipping')
         continue
     
     ants2use = opts.ants.split(',') 

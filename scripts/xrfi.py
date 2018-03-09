@@ -6,7 +6,13 @@ job of identifying low-level interference if sky model and crosstalk are
 removed from the data first.
 """
 
-import numpy as np, aipy as a, os, sys, pickle, optparse
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import pickle
+import optparse
+import numpy as np
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('xrfi.py [options] *.uv')
@@ -53,9 +59,9 @@ del(uv)
 
 for uvfile in args:
     uvofile = uvfile+'r'
-    print uvfile,'->',uvofile
+    print(uvfile,'->',uvofile)
     if os.path.exists(uvofile):
-        print uvofile, 'exists, skipping.'
+        print(uvofile, 'exists, skipping.')
         continue
     uvi = a.miriad.UV(uvfile)
     (uvw,jd,(i,j)),d,f = uvi.read(raw=True)

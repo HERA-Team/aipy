@@ -4,10 +4,13 @@
 Do a one iteration delay-solving algorithm.
 """
 
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
 import aipy as a
 import numpy as np
 from matplotlib import pylab as pl
-import optparse,sys,os
 from time import time
 from glob import glob
 
@@ -55,7 +58,7 @@ DD = {}
 bl_len = {}
 AntNos = []
 for uvfile in args:
-    print 'Reading',uvfile
+    print('Reading',uvfile)
     uv = a.miriad.UV(uvfile)
     for (uvw,t,(i,j)),d,f in uv.all(raw=True):
         if i == j: continue
@@ -134,7 +137,7 @@ if not opts.cal is None:
             if pol != pols[-1]: calstr += ', '
         calstr += ' }'
         if i != len(AntNos)-1: calstr += ','
-        print calstr
+        print(calstr)
 else:
     for i,ant in enumerate(AntNos):
         calstr = str(ant)+' : { '
@@ -144,13 +147,13 @@ else:
             if pol != pols[-1]: calstr += ', '
         calstr += ' }'
         if i != len(AntNos)-1: calstr += ','
-        print calstr
+        print(calstr)
 
-print 'Computing time =', time() - t0,'s for',Nbl,'baselines.'
+print('Computing time =', time() - t0,'s for',Nbl,'baselines.')
 
 
 if opts.plots:
-    print 'Generating plots.... this may take a while...'
+    print('Generating plots.... this may take a while...')
     figcnt = 0
     AntNos = np.array(AntNos) 
     

@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import, print_function, division
 import unittest
 import aipy as a, numpy as n
 #import pylab as p
@@ -22,7 +23,7 @@ class TestDeconv(unittest.TestCase):
         
     def test_clean(self):
         """Test that the standard clean deconvolution runs"""
-        #print 'Clean'
+        #print('Clean')
         #p.subplot(221)
         c,info = a.deconv.clean(self.d, self.b, verbose=False)
         #p.title('CLEAN')
@@ -30,7 +31,7 @@ class TestDeconv(unittest.TestCase):
 
     def test_lsq(self):
         """Test that least squared deconvolution runs"""
-        #print 'LSQ'
+        #print('LSQ')
         #p.subplot(222)
         c,info = a.deconv.lsq(self.d, self.b, verbose=False)
         #p.title('LSQ')
@@ -38,7 +39,7 @@ class TestDeconv(unittest.TestCase):
         
     def test_mem(self):
         """Test the maximum entropy deconvolution runs"""
-        #print 'MEM'
+        #print('MEM')
         #p.subplot(223)
         c,info = a.deconv.maxent(self.d, self.b, n.var(self.d**2)*.5, verbose=False)
         #p.title('MEM')
@@ -46,7 +47,7 @@ class TestDeconv(unittest.TestCase):
 
     def test_anneal(self):
         """Test that simulated annealing deconvolution runs"""
-        #print 'Anneal'
+        #print('Anneal')
         #p.subplot(224)
         c,info = a.deconv.anneal(self.d, self.b, verbose=False)
         #p.title('Anneal')

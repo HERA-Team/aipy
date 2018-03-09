@@ -4,7 +4,12 @@ Add or subtract the data in the second UV file from the data in the
 first UV file.  They'll need to have corresponding integrations/data order.
 """
 
-import aipy as a, numpy as np, sys, optparse, os
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
+import numpy as np
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('uv_addsub.py [options] file1.uv file2.uv')
@@ -27,9 +32,9 @@ def mfunc(uv, p, d, f):
 if opts.sub: filename = args[0] + 'd'
 else: filename = args[0] + 'a'
 if os.path.exists(filename):
-    print 'File exists: skipping'
+    print('File exists: skipping')
     sys.exit(0)
-print args[0], '->', filename
+print(args[0], '->', filename)
 uvo = a.miriad.UV(filename, status='new')
 uvo.init_from_uv(uv1)
 uvo.pipe(uv1, mfunc=mfunc, raw=True, 

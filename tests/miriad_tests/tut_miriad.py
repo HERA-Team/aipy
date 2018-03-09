@@ -1,31 +1,32 @@
 # --------------------------------------------------------------------
 
+from __future__ import absolute_import, print_function, division
 import aipy
 uv = aipy.miriad.UV('test.uv')
-print uv.items()
+print(uv.items())
 # ['vartable', 'obstype', 'history']
-print uv['history']
+print(uv['history'])
 # C2M (Python): Version=0.1.1.Fixed bandpass inversion & ordering, and pol 
 # label.APPLY_BP: version=0.0.1, corr type = combXRFI: version 0.0.2XTALK2: 
 # version 0.0.1 Miniaturized...
-print uv.vars()
+print(uv.vars())
 # ['latitud', 'npol', 'nspect', 'obsdec', 'vsource', 'ischan', 'operator', 
 # 'nants', 'baseline', 'sfreq', 'inttime', 'source', 'epoch', 'version', 
 # 'ra', 'restfreq', 'nschan', 'sdf', 'corr', 'freq', 'longitu', 'nchan', 
 # 'tscale', 'antpos', 'telescop', 'pol', 'coord', 'veldop', 'lst', 'time', 
 # 'dec', 'obsra']
-print uv['nchan']
+print(uv['nchan'])
 # 64
-print uv['antpos']
+print(uv['antpos'])
 # [  -8.48  205.47  187.1  -262.7   455.28  319.53 -352.95 -219.07    9.82
 #  -251.71 -232.59  318.7 ]
 
 # --------------------------------------------------------------------
 
 preamble, data = uv.read()
-print preamble
+print(preamble)
 # (array([ 0.,  0.,  0.]), 2454302.8700115741, (0, 0))
-print data
+print(data)
 # [(3.55898427963+0j) (5.16037225723+0j) (7.65382957458+0j)
 #  (11.5349502563+0j) (17.6214637756+0j) (26.8085384369+0j)
 #  (40.0749702454+0j) (56.860118866+0j) (74.8811569214+0j) (89.6064910889+0j)
@@ -45,10 +46,10 @@ print data
 #  (38.8019142151+0j) (38.0523262024+0j) (37.1168937683+0j)
 #  (36.1814575195+0j) (35.2924880981+0j) (34.3105926514+0j)
 #  (33.4278144836+0j) (32.3839683533+0j)]
-print uv['pol'], aipy.miriad.pol2str[uv['pol']]
+print(uv['pol'], aipy.miriad.pol2str[uv['pol']])
 # -6 yy
 preamble, data = uv.read()
-print preamble
+print(preamble)
 # (array([-538.6,  298.79613781, -674.73816035]), 2454302.8700115741, (1, 3))
 preamble, data, flags = uv.read(raw=True)
 
@@ -58,7 +59,7 @@ uv.rewind()
 uv.select('antennae', 0, 1, include=True)
 for preamble, data in uv.all():
     uvw, t, (i,j) = preamble
-    print i, j, t
+    print(i, j, t)
 # 0 1 2454302.87001
 # 0 1 2454302.87009
 # 0 1 2454302.87017
@@ -123,8 +124,8 @@ uv.write(preamble,data)
 del(uv)
 uv = aipy.miriad.UV('newest.uv')
 for p, d in uv.all():
-    print p, uv['pol']
-    print d
+    print(p, uv['pol'])
+    print(d)
 
 # (array([ 1.,  2.,  3.]), 12345.678900000001, (0, 1)) -5
 # [1j (2+0j) -- (4+0j)]

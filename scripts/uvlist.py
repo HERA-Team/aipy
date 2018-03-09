@@ -6,7 +6,10 @@ will print a list of available keywords.
 Author: Aaron Parsons
 """
 
-import aipy as a, sys, optparse
+from __future__ import absolute_import, print_function, division
+import sys
+import optparse
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('uvlist.py [options] *.uv')
@@ -16,11 +19,11 @@ o.add_option('-k', '--key', dest='key',
 opts,args = o.parse_args(sys.argv[1:])
 
 for uvfile in args:
-    print uvfile
+    print(uvfile)
     uv = a.miriad.UV(uvfile)
-    if opts.key is None: print '    ', uv.items() + uv.vars()
+    if opts.key is None: print('    ', uv.items() + uv.vars())
     else:
         for key in opts.key.split(','):
-            print '    ', key
-            print '        ', uv[key]
-    print '-----------------------------------------------------------'
+            print('    ', key)
+            print('        ', uv[key])
+    print('-----------------------------------------------------------')

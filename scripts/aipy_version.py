@@ -7,21 +7,22 @@ Lists:
     last commit
     branch
 """
+from __future__ import absolute_import, print_function, division
 import aipy
-print "AIPY base version in use:",
+print("AIPY base version in use:",)
 try:
-    print aipy.__version__
+    print(aipy.__version__)
 except(AttributeError):
-    print "Version number not Found"
-print "Install location:",aipy.__file__
-print "Last Git commit log:"
+    print("Version number not Found")
+print("Install location:",aipy.__file__)
+print("Last Git commit log:")
 try:
-    print aipy.__gitlog__
+    print(aipy.__gitlog__)
 except(AttributeError):
-    print "     Gitlog not found"
-print "Branch:",
+    print("     Gitlog not found")
+print("Branch:",)
 try:
-    print aipy.__branch__
+    print(aipy.__branch__)
 except(AttributeError):
-    print "Branch Unknown"
+    print("Branch Unknown")
 

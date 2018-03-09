@@ -2,7 +2,9 @@
 Module for reading and setting parameters in components of an AntennaArray
 simulation for purpose of fitting.
 """
-import amp, numpy as np
+from __future__ import absolute_import, print_function, division
+import numpy as np
+from . import amp
 
 #  _   _ _   _ _ _ _           _____                 _   _                 
 # | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
@@ -56,27 +58,27 @@ def print_params(prms, indent='', grad=None):
                 (type(v) is list and v == []):
             continue
         if type(v) == dict:
-            print indent, k
+            print(indent, k)
             if grad is None: print_params(v, indent + '  ')
             else: print_params(v, indent + '  ', grad[k])
         else:
-            print indent, k,
+            print(indent, k,)
             if grad is None:
                 if not type(v) is list:
                     try: v = [list(v)]
                     except(TypeError): v = [v]
-                if len(v) == 1: print v[0]
+                if len(v) == 1: print(v[0])
                 else:
-                    print
-                    for i in v: print indent, ' ', i
+                    print()
+                    for i in v: print(indent, ' ', i)
             else:
-                print
-                print indent, v, '\t<', grad[k], '>'
+                print()
+                print(indent, v, '\t<', grad[k], '>')
                 if not type(v) is list:
                     try: v = [list(v)]
                     except(TypeError): v = [v]
                 for i in len(v):
-                    print indent, ' ', v[i], '\t<', grad[k][i], '>'
+                    print(indent, ' ', v[i], '\t<', grad[k][i], '>')
 
 
 #  ____           _ _       _____ _              _ ____            _       

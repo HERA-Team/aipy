@@ -4,7 +4,12 @@ Rotate zenith UV data to a particular source.  Can specify 'zen' to phase data
 to zenith, or nothing at all to just remove delay/offset phase components.
 """
 
-import aipy as a, numpy as np, sys, os, optparse
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
+import numpy as np
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('phs2src.py [options] *.uv')
@@ -53,9 +58,9 @@ def phs(uv, p, d, f):
 for filename in args:
     if not opts.src is None: uvofile = filename + '.' + opts.src
     else: uvofile = filename + 'P'
-    print filename,'->',uvofile
+    print(filename,'->',uvofile)
     if os.path.exists(uvofile):
-        print 'File exists: skipping'
+        print('File exists: skipping')
         continue
     uvi = a.miriad.UV(filename)
     uvo = a.miriad.UV(uvofile, status='new')

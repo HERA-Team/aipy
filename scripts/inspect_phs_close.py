@@ -4,12 +4,15 @@
 Do one iteration of a delay-solving algorithm.
 """
 
-import aipy as a
-import numpy as np
-from matplotlib import pylab as pl
-import optparse,sys,os
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
 from time import time
 from glob import glob
+import numpy as np
+from matplotlib import pylab as pl
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_description(__doc__)
@@ -36,7 +39,7 @@ exec('from %s import prms' % opts.cal)
 DD = {}
 AntNos = []
 for uvfile in args:
-    print 'Reading',uvfile
+    print('Reading',uvfile)
     uv = a.miriad.UV(uvfile)
     for (uvw,t,(i,j)),d in uv.all():
         if i == j: continue
@@ -137,14 +140,14 @@ for pol in pols:
                 if k <= j: continue
                 CC[pol][(i,j,k)] = Phi_ij[pol][(i,j)] + Phi_ij[pol][(j,k)] - Phi_ij[pol][(i,k)]
 
-print 'Computing time =', time() - t0,'s for',Nbl,'baselines.'
+print('Computing time =', time() - t0,'s for',Nbl,'baselines.')
 
 #Print delays:
 for pol in pols:
     for i,d in enumerate(Tau[pol]):
         badstr = ''
         if np.abs(d-np.average(Tau[pol])) >= 2.*np.std(Tau[pol]): badstr = '!!!'
-        print 'Antenna',AntNos[i],pol[0],':',d,'ns',badstr
+        print('Antenna',AntNos[i],pol[0],':',d,'ns',badstr)
 
 
 #Generate plots:

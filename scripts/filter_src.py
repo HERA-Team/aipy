@@ -5,7 +5,13 @@ is specified, will remove/extract that source.  If none is specified,
 will filter/extract in absolute terms.
 """
 
-import aipy as a, numpy as np, os, sys, optparse, math
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import math
+import optparse
+import numpy as np
+import aipy as a
 
 def gen_skypass_delay(aa, sdf, nchan, pol, max_bl_frac=1.5):
     aa.set_active_pol(pol)
@@ -61,14 +67,14 @@ for uvfile in args:
     if src is None: uvofile = uvfile + 'f'
     elif opts.extract: uvofile = uvfile+'.e_'+opts.src
     else: uvofile = uvfile+'.f_'+opts.src
-    print uvfile,'->',uvofile
+    print(uvfile,'->',uvofile)
     if os.path.exists(uvofile):
-        print uvofile, 'exists, skipping.'
+        print(uvofile, 'exists, skipping.')
         continue
     uvi = a.miriad.UV(uvfile)
 
     curtime = None
-    print '    Performing delay transform and cleaning...'
+    print('    Performing delay transform and cleaning...')
     src_up = False
     for (uvw,t,(i,j)),d,f in uvi.all(raw=True):
         pol = a.miriad.pol2str[uvi['pol']]
@@ -102,7 +108,7 @@ for uvfile in args:
         except(KeyError): phs_dat[pol][bl] = [d]
 
     if opts.drw != -1:
-        print '    Performing delay-rate transform and cleaning...'
+        print('    Performing delay-rate transform and cleaning...')
     for pol in phs_dat:
         for bl in phs_dat[pol]:
             d = np.array(phs_dat[pol][bl])
@@ -164,7 +170,7 @@ for uvfile in args:
         if opts.extract: return p, np.ma.array(data, mask=d.mask)
         else: return p, d - data
 
-    print '    Writing out filtered data...'
+    print('    Writing out filtered data...')
     uvi.rewind()
     uvo = a.miriad.UV(uvofile, status='new')
     uvo.init_from_uv(uvi)

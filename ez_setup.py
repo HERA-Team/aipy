@@ -13,7 +13,15 @@ the appropriate options to ``use_setuptools()``.
 
 This file can also be run as a script to install or upgrade setuptools.
 """
+
+import os
 import sys
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
+from __future__ import absolute_import, print_function, division
+
 DEFAULT_VERSION = "0.6c9"
 DEFAULT_URL     = "http://pypi.python.org/packages/%s/s/setuptools/" % sys.version[:3]
 
@@ -53,18 +61,13 @@ md5_data = {
     'setuptools-0.6c9-py2.5.egg': 'fe67c3e5a17b12c0e7c541b7ea43a8e6',
 }
 
-import sys, os
-try: from hashlib import md5
-except ImportError: from md5 import md5
 
 def _validate_md5(egg_name, data):
     if egg_name in md5_data:
         digest = md5(data).hexdigest()
         if digest != md5_data[egg_name]:
-            print >>sys.stderr, (
-                "md5 validation of %s failed!  (Possible download problem?)"
-                % egg_name
-            )
+            print("md5 validation of %s failed!  (Possible download problem?)" % egg_name,
+                  file=sys.stderr)
             sys.exit(2)
     return data
 
@@ -96,12 +99,12 @@ def use_setuptools(
         pkg_resources.require("setuptools>="+version); return
     except pkg_resources.VersionConflict, e:
         if was_imported:
-            print >>sys.stderr, (
-            "The required version of setuptools (>=%s) is not available, and\n"
-            "can't be installed while this script is running. Please install\n"
-            " a more recent version first, using 'easy_install -U setuptools'."
-            "\n\n(Currently using %r)"
-            ) % (version, e.args[0])
+            print("""The required version of setuptools (>=%s) is not available, and
+            can't be installed while this script is running. Please install
+             a more recent version first, using 'easy_install -U setuptools'.
+
+            (Currently using %r)
+            """ % (version, e.args[0]), file=sys.stderr)
             sys.exit(2)
         else:
             del pkg_resources, sys.modules['pkg_resources']    # reload ok
@@ -207,10 +210,8 @@ def main(argv, version=DEFAULT_VERSION):
                 os.unlink(egg)
     else:
         if setuptools.__version__ == '0.0.1':
-            print >>sys.stderr, (
-            "You have an obsolete version of setuptools installed.  Please\n"
-            "remove it from your system entirely before rerunning this script."
-            )
+            print("""You have an obsolete version of setuptools installed.  Please
+            remove it from your system entirely before rerunning this script.""", file=sys.stderr)
             sys.exit(2)
 
     req = "setuptools>="+version
@@ -229,8 +230,8 @@ def main(argv, version=DEFAULT_VERSION):
             from setuptools.command.easy_install import main
             main(argv)
         else:
-            print "Setuptools version",version,"or greater has been installed."
-            print '(Run "ez_setup.py -U setuptools" to reinstall or upgrade.)'
+            print("Setuptools version " + version + " or greater has been installed.")
+            print('(Run "ez_setup.py -U setuptools" to reinstall or upgrade.)')
 
 def update_md5(filenames):
     """Update our built-in md5 registry"""
@@ -253,7 +254,7 @@ def update_md5(filenames):
 
     match = re.search("\nmd5_data = {\n([^}]+)}", src)
     if not match:
-        print >>sys.stderr, "Internal error!"
+        print("Internal error!", file=sys.stderr)
         sys.exit(2)
 
     src = src[:match.start(1)] + repl + src[match.end(1):]

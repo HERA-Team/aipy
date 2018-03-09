@@ -3,13 +3,18 @@ Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
 """
 
-import numpy as np, utils, coord, time
+from __future__ import absolute_import, print_function, division
+import time
+import numpy as np
 try:
     from astropy.io import fits as pyfits
 except ImportError:
     import pyfits
+from . import utils, coord
+
 USEDSP = True
-if USEDSP: import _dsp
+if USEDSP:
+    from . import _dsp
 
 deg2rad = np.pi / 180.
 rad2deg = 180. / np.pi
@@ -246,7 +251,7 @@ class ImgW(Img):
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
-            print '%d/%d datums' % (j, len(w))
+            print('%d/%d datums' % (j, len(w)))
             avg_w = np.average(w[i:j])
             # Put all uv's down on plane for this gridded w point
             wgtsij = [wgt[i:j] for wgt in wgts]
@@ -269,17 +274,17 @@ class ImgW(Img):
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
-            #print j, len(sqrt_w)
+            #print(j, len(sqrt_w))
             id = np.round(np.average(sqrt_w[i:j]) / self.wres) * self.wres
             if not self.wcache.has_key(id):
                 avg_w = np.average(w_[i:j])
-                print 'Caching W plane ID=', id
+                print('Caching W plane ID=', id)
                 projker = np.fromfunction(lambda us,vs: self.conv_invker(us,vs,-avg_w), 
                     self.uv.shape).astype(np.complex64)
                 uv_wproj = np.fft.ifft2(np.fft.fft2(self.uv) * projker).astype(np.complex64)
                 bm_wproj = np.fft.ifft2(np.fft.fft2(self.bm[0]) * projker).astype(np.complex64) # is this right to convolve?
                 self.wcache[id] = (uv_wproj, bm_wproj)
-                print '%d W planes cached' % (len(self.wcache))
+                print('%d W planes cached' % (len(self.wcache)))
             # Put all uv's down on plane for this gridded w point
             uv_wproj, bm_wproj = self.wcache[id]
             # Could think about improving this by interpolating between w planes.
@@ -439,7 +444,7 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     for i in range(1,phdu.header.get('naxis')+1):
         type = "CTYPE"+str(i)
         axes.append(phdu.header.get(type))
-    print axes
+    print(axes)
     data.shape = data.shape #+ (1,) * (len(axes) - len(data.shape))
 #    try: 
 #        if phdu.header['TRANSPOS']:
@@ -473,7 +478,7 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
                     round(data.shape[-(i+1)]/2.))
         else:
             phdu.header.update('CRPIX%d' % (i+1), 1)
-        print ax,round(data.shape[-(i+1)]/2.)
+        print(ax,round(data.shape[-(i+1)]/2.))
         if not val is None: phdu.header.update('CRVAL%d' % (i+1), val);
         if not delta is None: phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)

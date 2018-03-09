@@ -9,7 +9,12 @@ Revisions:
     12/11/07    arp Ported to new miriad file interface
 """
 
-import aipy as a, sys, os, numpy as np, optparse
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
+import numpy as np
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('combine_freqs.py [options] *.uv')
@@ -26,7 +31,7 @@ opts, args = o.parse_args(sys.argv[1:])
 
 uvo = None
 for uvfile in args:
-    print uvfile,'->',uvfile+'m'
+    print(uvfile,'->',uvfile+'m')
     uvi = a.miriad.UV(uvfile)
     sfreq,sdf,nchan = uvi['sfreq'], uvi['sdf'], uvi['nchan']
     newsfreq = sfreq + ((nchan/opts.nchan) * sdf) / 2
@@ -35,7 +40,7 @@ for uvfile in args:
     if uvo is None:
         uvofile = uvfile+'m'
         if os.path.exists(uvofile):
-            print uvofile, 'exists, skipping.'
+            print(uvofile, 'exists, skipping.')
             continue
         uvo = a.miriad.UV(uvofile, status='new')
         if nchan != opts.nchan:

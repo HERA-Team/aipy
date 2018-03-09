@@ -6,7 +6,13 @@ Healpix FITS format) from individual "flat" maps stored in FITS files.
 Author: Aaron Parsons
 """
 
-import sys, numpy as np, os, aipy as a, optparse, ephem
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
+import ephem
+import numpy as np
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('mk_map.py [options] *.fits')
@@ -42,11 +48,11 @@ for i, filename in enumerate(args):
     # the ra/dec axes of the epoch of the image.
     s = ephem.Equatorial(s, epoch=kwds['obs_date'])
     ra, dec = s.get()
-    print '-----------------------------------------------------------'
-    print 'Reading file %s (%d / %d)' % (filename, i + 1, len(args))
-    print kwds
-    print 'Pointing (ra, dec):', ra, dec
-    print 'Image Power:', np.abs(img).sum()
+    print('-----------------------------------------------------------')
+    print('Reading file %s (%d / %d)' % (filename, i + 1, len(args)))
+    print(kwds)
+    print('Pointing (ra, dec):', ra, dec)
+    print('Image Power:', np.abs(img).sum())
     if prev_dra != kwds['d_ra']:
         prev_dra = kwds['d_ra']
         DIM = img.shape[0]

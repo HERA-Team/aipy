@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-import unittest, aipy._healpix as h, numpy as n
+from __future__ import absolute_import, print_function, division
+import unittest
+import aipy._healpix as h
+import numpy as np
 
 class TestHealpix(unittest.TestCase):
     def setUp(self):
@@ -28,9 +31,9 @@ if False:
         while True: hpb = h.HealpixBase(nside=256)
     def test_crd2pix(self):
         one = 0.99
-        x = n.arange(-one, one, .01, dtype=n.double)
-        y = n.zeros_like(x)
-        z = n.sqrt(1 - x**2 - y**2)
+        x = np.arange(-one, one, .01, dtype=np.double)
+        y = np.zeros_like(x)
+        z = np.sqrt(1 - x**2 - y**2)
         while True: crds = self.hpb.crd2px(x, y, z)
 
 class TestSuite(unittest.TestSuite):
@@ -47,7 +50,7 @@ if __name__ == '__main__':
     unittest.main()
 
 #hp = aipy._healpix.HealpixBase(2**6, 'NEST')
-#print hp.order(), hp.nside(), hp.npix(), hp.scheme()
+#print(hp.order(), hp.nside(), hp.npix(), hp.scheme())
 #px = numpy.arange(hp.npix())
 #px = hp.nest_ring_conv(px, 'RING')
 #hp.set_nside_scheme(hp.nside(), 'RING')

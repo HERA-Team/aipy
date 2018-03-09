@@ -2,8 +2,9 @@
 Module for adding polarization information to models.
 """
 
-from aipy import coord,fit,miriad
+from __future__ import absolute_import, print_function, division
 import numpy as np
+from . import coord, fit, miriad
 
 #  _   ___     __
 # | | | \ \   / /
@@ -28,7 +29,7 @@ class UV(miriad.UV):
         """Reliably write polarization metadata."""
         try: return self._wrvr('pol','i',miriad.str2pol[pol])
         except(KeyError): 
-            print pol,"is not a reasonable polarization value!"
+            print(pol,"is not a reasonable polarization value!")
             return
 
 #  _   _ _   _ _ _ _           _____                 _   _                 

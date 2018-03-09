@@ -1,6 +1,10 @@
 #! /usr/bin/env python
-import aipy as a, numpy as np
-import optparse, sys, os
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
+import numpy as np
+import aipy as a
 
 o = optparse.OptionParser()
 a.scripting.add_standard_options(o, ant=True)
@@ -37,12 +41,12 @@ if opts.to_npz or opts.from_npz: assert(opts.combine)
 
 for uvfile in args:
     uvofile = uvfile+'R'
-    print uvfile,'->',uvofile
+    print(uvfile,'->',uvofile)
     if os.path.exists(uvofile):
-        print uvofile, 'exists, skipping.'
+        print(uvofile, 'exists, skipping.')
         continue
     if opts.from_npz:
-        print '    Reading flags from', opts.from_npz
+        print('    Reading flags from', opts.from_npz)
         m = np.load(opts.from_npz)
         mask = {'xx':{257:{}}} # Just use dummy values here to mimic structure of mask dictionary
         for cnt,t in enumerate(m['times']):
@@ -109,7 +113,7 @@ for uvfile in args:
         del(uvi)
 
     if opts.to_npz:
-        print '    Writing flags to', opts.to_npz
+        print('    Writing flags to', opts.to_npz)
         m = {}
         _m = mask.values()[0].values()[0]
         times = np.array(_m.keys())

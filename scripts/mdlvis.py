@@ -6,7 +6,13 @@ is removed from measured data.
 
 Author: Aaron Parsons
 """
-import numpy as np, aipy as a, optparse, os, sys, ephem
+from __future__ import absolute_import, print_function, division
+import os
+import sys
+import optparse
+import ephem
+import numpy as np
+import aipy as a
 
 o = optparse.OptionParser()
 o.set_usage('mdlvis.py [options] *.uv')
@@ -144,9 +150,9 @@ if len(args) > 0:
     # Run mdl on all files
     for filename in args:
         uvofile = filename + 's'
-        print filename,'->',uvofile
+        print(filename,'->',uvofile)
         if os.path.exists(uvofile):
-            print 'File exists: skipping'
+            print('File exists: skipping')
             continue
         uvi = a.miriad.UV(filename)
         a.scripting.uv_selector(uvi, opts.ant)
@@ -198,7 +204,7 @@ else:
     # Now start generating data
     times = np.arange(opts.startjd, opts.endjd, opts.inttime/a.const.s_per_day)
     for cnt,t in enumerate(times):
-        print 'Timestep %d / %d' % (cnt+1, len(times))
+        print('Timestep %d / %d' % (cnt+1, len(times)))
         aa.set_jultime(t)
         uv['lst'] = aa.sidereal_time()
         uv['ra'] = aa.sidereal_time()
