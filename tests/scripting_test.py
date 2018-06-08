@@ -28,8 +28,8 @@ class TestParseAnts(unittest.TestCase):
             '0,1,all': [],
         }
         for i in range(nants):
-            cases[str(i)] = map(lambda x: (ij2bl(x,i),1), range(nants))
-            cases['-'+str(i)] = map(lambda x: (ij2bl(x,i),0), range(nants))
+            cases[str(i)] = list(map(lambda x: (ij2bl(x,i),1), range(nants)))
+            cases['-'+str(i)] = list(map(lambda x: (ij2bl(x,i),0), range(nants)))
         # inelegantly paste on the new pol parsing flag on the above tests
         # XXX really should add some new tests for the new pol parsing
         for k in cases:
