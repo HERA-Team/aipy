@@ -124,7 +124,9 @@ class UV(_miriad.UV):
             while True:
                 try: c, o = _miriad.hread(h, offset, itype)
                 except(IOError): break
-                if itype == 'a': c = c[:o]
+                if itype == 'a':
+                    try: c = str(c[:o], 'utf-8')
+                    except(TypeError): c = c[:o]
                 rv.append(c)
                 offset += o
             if itype == 'a': rv = ''.join(rv)

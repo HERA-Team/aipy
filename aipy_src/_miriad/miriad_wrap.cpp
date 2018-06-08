@@ -1,3 +1,31 @@
+#include <Python.h>
+#include "numpy/arrayobject.h"
+#include <string>
+
+// Python3 compatibility
+#if PY_MAJOR_VERSION >= 3
+	#define PyCapsule_Type PyCObject_Type
+	#define PyInt_AsLong PyLong_AsLong
+	#define PyInt_FromLong PyLong_FromLong
+	#define PyInt_Check PyLong_Check
+	#define PyString_Check PyUnicode_Check
+	#define PyString_Size PyUnicode_GET_LENGTH
+	#define PyString_FromStringAndSize PyUnicode_FromStringAndSize
+char* PyString_AsString(PyObject *ob) {
+	PyObject *enc;
+	char *cstr;
+	enc = PyUnicode_AsEncodedString(ob, "utf-8", "Error");
+	if( enc == NULL ) {
+		PyErr_Format(PyExc_ValueError, "Cannot encode string");
+		return NULL;
+	}
+	cstr = PyBytes_AsString(enc);
+	Py_XDECREF(enc);
+	return cstr;
+}
+#endif
+
+
 #include "miriad_wrap.h"
 
 #define MAXVAR 32768
@@ -577,7 +605,11 @@ PyObject * WRAP_hread(PyObject *self, PyObject *args) {
             case 'a':
                 hreadb_c(item_hdl, st, offset, H_BYTE_SIZE, &iostat);
                 CHK_IO(iostat);
+#if PY_MAJOR_VERSION >= 3
+                return Py_BuildValue("yi", st, H_BYTE_SIZE);
+#else
                 return Py_BuildValue("si", st, H_BYTE_SIZE);
+#endif
             case 'i':
                 hreadi_c(item_hdl, &in, offset, H_INT_SIZE, &iostat);
                 CHK_IO(iostat);

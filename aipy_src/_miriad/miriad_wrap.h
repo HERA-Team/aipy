@@ -1,37 +1,10 @@
 #ifndef _MIRIAD_WRAP_H_
 #define _MIRIAD_WRAP_H_
 
-#include <Python.h>
 #include "miriad.h"
-#include "numpy/arrayobject.h"
-#include <string>
 #include "hio.h"
 #include "io.h"
 #include "maxdimc.h"
-
-// Python3 compatibility
-#if PY_MAJOR_VERSION >= 3
-	#define PyCapsule_Type PyCObject_Type
-	#define PyInt_AsLong PyLong_AsLong
-	#define PyInt_FromLong PyLong_FromLong
-	#define PyInt_Check PyLong_Check
-	#define PyString_Check PyUnicode_Check
-	#define PyString_Size PyUnicode_GET_LENGTH
-	#define PyString_FromString PyUnicode_FromString
-	#define PyString_FromStringAndSize PyUnicode_FromStringAndSize
-char* PyString_AsString(PyObject *ob) {
-	PyObject *enc;
-	char *cstr;
-	enc = PyUnicode_AsEncodedString(ob, "utf-8", "Error");
-	if( enc == NULL ) {
-		PyErr_Format(PyExc_ValueError, "Cannot encode string");
-		return NULL;
-	}
-	cstr = PyBytes_AsString(enc);
-	Py_XDECREF(enc);
-	return cstr;
-}
-#endif
 
 // Some miriad macros...
 #define PREAMBLE_SIZE 5
