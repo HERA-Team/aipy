@@ -23,9 +23,11 @@ import ephem
 
 try:
     from __gitlog__ import __gitlog__
-    from __version__ import __version__
     from __branch__ import __branch__
+    from __version__ import __version__
 except ImportError:
     __gitlog__ = None
-    __version__ = None
     __branch__ = None
+    fh = open('VERSION', 'r')
+    __version__ = fh.read()
+    fh.close()
