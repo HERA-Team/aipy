@@ -1,3 +1,10 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
 """
 A package for interfacing to Miriad: the Multichannel Image Reconstruction
 Image Analysis and Display package for reducing interferometric data for
@@ -6,7 +13,8 @@ radio telescopes.
 
 __version__ = '0.1.2'
 
-import numpy as np, _miriad
+import numpy as np
+from . import _miriad
 
 def echo(uv, p, d): return p, d
 
@@ -291,7 +299,7 @@ def bl2ij(bl):
     else:
         mant = 256
 #AAR    return (bl>>8)-1, (bl&255) - 1
-    return bl/mant - 1, bl%mant -1
+    return bl//mant - 1, bl%mant -1
 
 def ij2bl(i, j):
     if i > j: i,j = j,i

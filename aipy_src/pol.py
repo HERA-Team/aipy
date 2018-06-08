@@ -1,8 +1,15 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
 """
 Module for adding polarization information to models.
 """
 
-from aipy import coord,fit,miriad
+from . import coord,fit,miriad
 import numpy as np
 
 #  _   ___     __
@@ -16,7 +23,7 @@ def ijp2blp(i,j,pol):
     return miriad.ij2bl(i,j) * 16 + (pol + 9)
 
 def blp2ijp(blp):
-    bl,pol = int(blp) / 16, (blp % 16) - 9
+    bl,pol = int(blp) // 16, (blp % 16) - 9
     i,j = miriad.bl2ij(bl)
     return i,j,pol
 
@@ -28,7 +35,7 @@ class UV(miriad.UV):
         """Reliably write polarization metadata."""
         try: return self._wrvr('pol','i',miriad.str2pol[pol])
         except(KeyError): 
-            print pol,"is not a reasonable polarization value!"
+            print(pol,"is not a reasonable polarization value!")
             return
 
 #  _   _ _   _ _ _ _           _____                 _   _                 

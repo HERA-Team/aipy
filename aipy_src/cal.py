@@ -1,5 +1,14 @@
-"""Load calibration information contained in specified calibration
-modules."""
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
+"""
+Load calibration information contained in specified calibration
+modules.
+"""
 
 import numpy as np
 import os

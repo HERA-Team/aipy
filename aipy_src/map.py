@@ -1,8 +1,16 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
 """
 Module for mapping and modeling the entire sky.
 """
 
-import numpy as np, healpix, coord, random,img
+from .  import healpix, coord, img
+import numpy as np, random
 try:
     from astropy.io import fits as pyfits
 except ImportError:

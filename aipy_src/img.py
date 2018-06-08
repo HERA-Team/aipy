@@ -1,15 +1,23 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
 """
 Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
 """
 
-import numpy as np, utils, coord, time
+import numpy as np, time
+from . import utils, coord
 try:
     from astropy.io import fits as pyfits
 except ImportError:
     import pyfits
 USEDSP = True
-if USEDSP: import _dsp
+if USEDSP: from . import _dsp
 
 deg2rad = np.pi / 180.
 rad2deg = 180. / np.pi
@@ -64,8 +72,8 @@ def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
     Down by 1/e at distance 'sigma' from 'center'."""
     if type(shape) == type(0): shape = np.array([2, 2]) * sigma
     def gaussian(x, y):
-        nx = np.where(x > shape[0] / 2, x - shape[0], x)
-        ny = np.where(y > shape[1] / 2, y - shape[1], y)
+        nx = np.where(x > shape[0] // 2, x - shape[0], x)
+        ny = np.where(y > shape[1] // 2, y - shape[1], y)
         return np.exp(-(nx**2 + ny**2) / sigma**2)
     g = np.fromfunction(gaussian, shape)
     g *= amp
@@ -93,7 +101,7 @@ class Img:
         """Get the (l,m) image coordinates for an inverted UV matrix."""
         dim = self.shape[0]
         M,L = np.indices(self.shape)
-        L,M = np.where(L > dim/2, dim-L, -L), np.where(M > dim/2, M-dim, M)
+        L,M = np.where(L > dim//2, dim-L, -L), np.where(M > dim//2, M-dim, M)
         L,M = L.astype(np.float32)/dim/self.res, M.astype(np.float32)/dim/self.res
         mask = np.where(L**2 + M**2 >= 1, 1, 0)
         L,M = np.ma.array(L, mask=mask), np.ma.array(M, mask=mask)
@@ -109,16 +117,17 @@ class Img:
     def get_uv(self):
         """Return the u,v indices of the pixels in the uv matrix."""
         u,v = np.indices(self.shape)
-        u = np.where(u < self.shape[0]/2, u, u - self.shape[0])
-        v = np.where(v < self.shape[1]/2, v, v - self.shape[1])
+        u = np.where(u < self.shape[0]//2, u, u - self.shape[0])
+        v = np.where(v < self.shape[1]//2, v, v - self.shape[1])
         return u*self.res, v*self.res
-    def put(self, (u,v,w), data, wgts=None, apply=True):
+    def put(self, uvw, data, wgts=None, apply=True):
         """Grid uv data (w is ignored) onto a UV plane.  Data should already
         have the phase due to w removed.  Assumes the Hermitian conjugate
         data is in uvw already (i.e. the conjugate points are not placed for
         you).  If wgts are not supplied, default is 1 (normal weighting).
         If apply is false, returns uv and bm data without applying it do
         the internally stored matrices."""
+        u,v,w = uvw
         if wgts is None:
             wgts = []
             for i in range(len(self.bm)):
@@ -149,10 +158,11 @@ class Img:
             else:
                 _dsp.grid2D_c(bm[i], u, v, wgt.astype(bm[0].dtype))
         if not apply: return uv, bm
-    def get(self, (u,v,w), uv=None, bm=None):
+    def get(self, uvw, uv=None, bm=None):
         """Generate data as would be observed at the provided (u,v,w) based on
         this Img's current uv data.  Phase due to 'w' will be applied to data
         before returning."""
+        u,v,w = uvw
         u,v = u.flatten(), v.flatten()
         if uv is None: uv,bm = self.uv, self.bm[0]
         if not USEDSP:
@@ -170,9 +180,10 @@ class Img:
             #data = uvdat.sum() / bmdat.sum()
             data = uvdat / bmdat
         return data
-    def append_hermitian(self, (u,v,w), data, wgts=None):
+    def append_hermitian(self, uvw, data, wgts=None):
         """Append to (uvw, data, [wgts]) the points (-uvw, conj(data), [wgts]).
         This is standard practice to get a real-valued image."""
+        u,v,w = uvw
         u = np.concatenate([u, -u], axis=0)
         v = np.concatenate([v, -v], axis=0)
         w = np.concatenate([w, -w], axis=0)
@@ -218,14 +229,16 @@ class Img:
 class ImgW(Img):
     """A subclass of Img adding W projection functionality (see Cornwell
     et al. 2005 "Widefield Imaging Problems in Radio Astronomy")."""
-    def __init__(self, size=100, res=1, wres=.5, mf_order=0):
+    def __init__(self, size=100, res=1, wres=.5, mf_order=0, verbose=True):
         """wres: the gridding resolution of sqrt(w) when projecting to w=0."""
         Img.__init__(self, size=size, res=res, mf_order=mf_order)
         self.wres = wres
         self.wcache = {}
-    def put(self, (u,v,w), data, wgts=None, invker2=None):
+        self.verbose = verbose
+    def put(self, uvw, data, wgts=None, invker2=None):
         """Same as Img.put, only now the w component is projected to the w=0
         plane before applying the data to the UV matrix."""
+        u,v,w = uvw
         if len(u) == 0: return
         if wgts is None:
             wgts = []
@@ -246,7 +259,8 @@ class ImgW(Img):
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
-            print '%d/%d datums' % (j, len(w))
+            if self.verbose:
+                print('%d/%d datums' % (j, len(w)))
             avg_w = np.average(w[i:j])
             # Put all uv's down on plane for this gridded w point
             wgtsij = [wgt[i:j] for wgt in wgts]
@@ -261,7 +275,8 @@ class ImgW(Img):
                 self.bm[b] += np.fft.ifft2(np.fft.fft2(bm[b]) * invker)
             if j >= len(w): break
             i = j
-    def get(self, (u,v,w)):
+    def get(self, uvw):
+        u,v,w = uvw
         order = np.argsort(w.flat)
         u_,v_,w_ = u.take(order).squeeze(), v.take(order).squeeze(), w.take(order).squeeze()
         sqrt_w = np.sqrt(np.abs(w_)) * np.sign(w_)
@@ -269,17 +284,19 @@ class ImgW(Img):
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
-            #print j, len(sqrt_w)
+            #print(j, len(sqrt_w))
             id = np.round(np.average(sqrt_w[i:j]) / self.wres) * self.wres
             if not self.wcache.has_key(id):
                 avg_w = np.average(w_[i:j])
-                print 'Caching W plane ID=', id
+                if self.verbose:
+                    print('Caching W plane ID=', id)
                 projker = np.fromfunction(lambda us,vs: self.conv_invker(us,vs,-avg_w), 
                     self.uv.shape).astype(np.complex64)
                 uv_wproj = np.fft.ifft2(np.fft.fft2(self.uv) * projker).astype(np.complex64)
                 bm_wproj = np.fft.ifft2(np.fft.fft2(self.bm[0]) * projker).astype(np.complex64) # is this right to convolve?
                 self.wcache[id] = (uv_wproj, bm_wproj)
-                print '%d W planes cached' % (len(self.wcache))
+                if self.verbose:
+                    print('%d W planes cached' % (len(self.wcache)))
             # Put all uv's down on plane for this gridded w point
             uv_wproj, bm_wproj = self.wcache[id]
             # Could think about improving this by interpolating between w planes.
@@ -439,7 +456,7 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     for i in range(1,phdu.header.get('naxis')+1):
         type = "CTYPE"+str(i)
         axes.append(phdu.header.get(type))
-    print axes
+    print(axes)
     data.shape = data.shape #+ (1,) * (len(axes) - len(data.shape))
 #    try: 
 #        if phdu.header['TRANSPOS']:
@@ -473,7 +490,7 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
                     round(data.shape[-(i+1)]/2.))
         else:
             phdu.header.update('CRPIX%d' % (i+1), 1)
-        print ax,round(data.shape[-(i+1)]/2.)
+        print(ax,round(data.shape[-(i+1)]/2.))
         if not val is None: phdu.header.update('CRVAL%d' % (i+1), val);
         if not delta is None: phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)

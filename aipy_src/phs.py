@@ -1,9 +1,19 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
 """
 Module for representing antenna array geometry and for generating
 phasing information.
 """
-import ephem, math, numpy as np, coord, const, _cephes
-from miriad import ij2bl, bl2ij
+
+import ephem, math, numpy as np
+from . import coord
+from . import const, _cephes
+from .miriad import ij2bl, bl2ij
 
 class PointingError(Exception):
     """An error to throw if a source is below the horizon."""

@@ -1,3 +1,10 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
 """
 A module implementing various techniques for deconvolving an image by a
 kernel.  Currently implemented are Clean, Least-Squares, Maximum Entropy,
@@ -61,9 +68,9 @@ def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3,
     else: info.update({'term':'maxiter', 'iter':iter})
     info.update({'res':res, 'score':score})
     if verbose:
-        print 'Term Condition:', info['term']
-        print 'Iterations:', info['iter']
-        print 'Score:', info['score']
+        print('Term Condition:', info['term'])
+        print('Iterations:', info['iter'])
+        print('Score:', info['score'])
     return mdl, info
 
 def recenter(a, c):
@@ -116,8 +123,7 @@ def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200,
         term = abs(1 - score/n_score)
         if verbose:
             slope = np.sqrt(np.average(g_chi2**2))
-            print 'Step %d:' % i, 'score',  score, 
-            print 'slope', slope, 'term', term
+            print('Step %d:' % i, 'score',  score, 'slope', slope, 'term', term)
         if term < tol:
             info['term'] = 'tol'
             break
@@ -173,14 +179,14 @@ def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200,
         # This check makes lsq a little slower for most images, though...
         d_b_i = np.where(abs(gg_J) > 0, -1/gg_J * (g_J - d_alpha*g_chi2), 0)
         if verbose:
-            print '    score', score, 'fit', np.dot(diff,diff)
-            print '    alpha', alpha, 'd_alpha', d_alpha
+            print('    score', score, 'fit', np.dot(diff,diff))
+            print('    alpha', alpha, 'd_alpha', d_alpha)
         return d_b_i, d_alpha, score
     alpha = 0.
     b_i = m_i.copy()
     info = {'success':True, 'term':'maxiter', 'var0':var0, 'tol':tol}
     for i in range(maxiter):
-        if verbose: print 'Step %d:' % i
+        if verbose: print('Step %d:' % i)
         d_b_i, d_alpha, score = next_step(b_i, alpha, verbose=verbose)
         if score < tol and score > 0:
             info['term'] = 'tol'
@@ -209,23 +215,23 @@ def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
         junk, info = lsq(im, ker, mdl=mdl, gain=gain, tol=tol,
             maxiter=maxiter/4, lower=lower, upper=upper, verbose=False)
         var = np.var(info['res'])
-        if verbose: print 'Using', f_var0, 'of LSQ estimate of var=', var
+        if verbose: print('Using', f_var0, 'of LSQ estimate of var=', var)
         var *= f_var0
     else:
-        if verbose: print 'Using specified var=', var
+        if verbose: print('Using specified var=', var)
     while cl is None:
-        print cnt
+        print(cnt)
         if cnt == -1: v = var
         else: v = var / (1.5**cnt)
         while cnt < 0 or v < var * (1.5**cnt):
             if verbose:
-                print 'Trying var=', v,
+                print('Trying var=', v)
                 sys.stdout.flush()
             c, i = maxent(im, ker, v, mdl=mdl, gain=gain, tol=tol,
                 maxiter=maxiter, lower=lower, upper=upper, verbose=False)
             if verbose:
-                print 'success %d,' % i['success'],
-                print 'term: %s,' % i['term'], 'score:' , i['score']
+                print('success %d,' % i['success'])
+                print('term: %s,' % i['term'], 'score:' , i['score'])
             # Check if fit converged
             if i['success'] and (maxiterok or i['term'] == 'tol'):
                 cl, info = c, i
@@ -234,7 +240,7 @@ def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
                 if not cl is None or cnt == -1: break
                 v *= 1.2 ** (1./(2*(cnt+1)))
         cnt += 1
-    if verbose: print 'Done with MEM.'
+    if verbose: print('Done with MEM.')
     return cl, info
 
 def anneal(im, ker, mdl=None, maxiter=1000, lower=lo_clip_lev, upper=np.Inf,
@@ -264,7 +270,7 @@ def anneal(im, ker, mdl=None, maxiter=1000, lower=lo_clip_lev, upper=np.Inf,
         n_mdl = np.clip(mdl + delta, lower, upper)
         n_dif = im - np.fft.ifft2(np.fft.fft2(n_mdl) * inv_ker).real
         n_score = np.average(n_dif**2)
-        if verbose: print 'Step %d:' % i, n_score, score
+        if verbose: print('Step %d:' % i, n_score, score)
         if n_score < score: mdl, dif, score = n_mdl, n_dif, n_score
     info.update({'res':dif, 'score': score, 'iter':i+1})
     return mdl, info

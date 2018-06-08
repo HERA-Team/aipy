@@ -1,9 +1,17 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
 """
 Module containing utilities (like parsing of certain command-line arguments) 
 for writing scripts.
 """
 
-import miriad, fit, src, numpy as np, re,phs
+from . import miriad, fit, src, phs
+import numpy as np, re
 
 def add_standard_options(optparser, ant=False, pol=False, chan=False, 
         cal=False, src=False, prms=False, dec=False, cmap=False, 
@@ -212,7 +220,7 @@ def parse_prms(prm_str):
             ival = [ival]
             sval = [sval]
         for o,il,sl in zip(obj,ival,sval):
-            if not prms.has_key(o): prms[o] = {}
+            if o not in prms: prms[o] = {}
             for p,i,s in zip(plist,il,sl):
                 prms[o][p] = (i,s)
     return prms

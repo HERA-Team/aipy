@@ -1,3 +1,10 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
 """
 Provides interfaces to Healpix_cxx, which was developed at the 
 Max-Planck-Institut fuer Astrophysik and financially supported by the 
@@ -6,13 +13,14 @@ Adds data to the HealpixBase class using numpy arrays, and interfaces to
 FITS files using astropy/pyfits.
 """
 
-import numpy as np, utils
+import numpy as np
+from . import utils
 try:
     from astropy.io import fits as pyfits
 except ImportError:
     import pyfits
-from _healpix import HealpixBase
-from _alm import Alm
+from ._healpix import HealpixBase
+from ._alm import Alm
 
 default_fits_format_codes = {
     np.bool_:'L', np.uint8:'B', np.int16:'I', np.int32:'J', np.int64:'K', 

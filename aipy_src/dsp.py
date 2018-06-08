@@ -1,6 +1,13 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
 import numpy as np
-from aipy._cephes import i0
-from _dsp import *
+from ._cephes import i0
+from ._dsp import *
 
 
 def tukey(x, L, alpha=0.5):

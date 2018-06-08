@@ -1,6 +1,16 @@
-'''This module provides a front-end interface for accessing sources in 
-all catalogs in the _src module of AIPY.'''
-import fit, _src
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+	xrange = range
+	long = int
+
+"""
+This module provides a front-end interface for accessing sources in 
+all catalogs in the _src module of AIPY.
+"""
+
+from . import fit, _src
 
 def get_catalog(srcs=None, cutoff=None, catalogs=['helm','misc']):
     """Return a source catalog created out of the sources listed in 'srcs',
