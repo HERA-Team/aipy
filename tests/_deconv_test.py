@@ -1,3 +1,6 @@
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 import unittest, ephem, random
 import aipy as a, numpy as n
 

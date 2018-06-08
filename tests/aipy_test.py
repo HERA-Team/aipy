@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 
-"""Unit test suite for the AIPY package."""
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
+"""
+Unit test suite for the AIPY package.
+"""
 
 import unittest
 
-import _alm_test
-import _healpix_test
-import amp_test
-import coord_test
-import deconv_test
-import miriad_test
-import phs_test
-import phs_benchmark
-import scripting_test
+from . import _alm_test
+from . import _healpix_test
+from . import amp_test
+from . import coord_test
+from . import deconv_test
+from . import miriad_test
+from . import phs_test
+from . import phs_benchmark
+from . import scripting_test
 
 class TestSuite(unittest.TestSuite):
         """A unittest.TestSuite class which contains all of the package unit tests."""

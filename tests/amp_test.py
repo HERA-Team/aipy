@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 import unittest
 import aipy.amp as amp, numpy as n
 
