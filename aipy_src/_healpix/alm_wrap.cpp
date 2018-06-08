@@ -125,7 +125,7 @@ typedef struct {
 
 // Deallocate memory when Python object is deleted
 static void AlmObject_dealloc(AlmObject *self) {
-    ((PyTypeObject *) self)->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 // Allocate memory for Python object

@@ -22,7 +22,7 @@ typedef struct {
 // Deallocate memory when Python object is deleted
 static void UVObject_dealloc(UVObject *self) {
     if (self->tno != -1) uvclose_c(self->tno);
-    ((PyTypeObject *) self)->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 // Allocate memory for Python object and Healpix_Base (__new__)
@@ -743,7 +743,7 @@ MOD_INIT(_miriad) {
     
     Py_INCREF(&UVType);
     PyModule_AddObject(m, "UV", (PyObject *)&UVType);
-    PyModule_AddIntConstant(m, "MAXCHAN", MAXCHAN);
+    PyModule_AddObject(m, "MAXCHAN", PyInt_FromLong(MAXCHAN));
     
     return MOD_SUCCESS_VAL(m);
 }

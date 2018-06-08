@@ -91,7 +91,7 @@ typedef struct {
 
 // Deallocate memory when Python object is deleted
 static void HPBObject_dealloc(HPBObject *self) {
-    ((PyTypeObject *) self)->tp_free((PyObject*)self);
+   Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 // Allocate memory for Python object and Healpix_Base (__new__)
