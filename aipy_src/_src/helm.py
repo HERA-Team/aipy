@@ -1,6 +1,15 @@
-'''This module interfaces to the Helmboldt catalog (http://arxiv.org/abs/0707.3418)'''
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
 
-import aipy as a, numpy as np, os
+"""
+This module interfaces to the Helmboldt catalog (http://arxiv.org/abs/0707.3418)
+"""
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 class HelmboldtFixedBody(a.fit.RadioFixedBody):
     def compute(self, observer):

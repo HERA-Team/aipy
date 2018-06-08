@@ -1,4 +1,11 @@
-import aipy as a, numpy as np
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 specials = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter',
     'Saturn', 'Uranus', 'Neptune']

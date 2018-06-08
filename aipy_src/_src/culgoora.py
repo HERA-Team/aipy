@@ -1,12 +1,23 @@
-'''The Culgoora Catalog.
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
+"""
+The Culgoora Catalog.
+
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy this file to "culgoora.txt" in the _src directory of your AIPY
-installation.'''
-import aipy as a, numpy as np, os
+installation.
+"""
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 class CulgooraCatalog(a.fit.SrcCatalog):
     metadata = {}

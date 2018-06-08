@@ -1,8 +1,19 @@
-'''The Mauritius Radio Telescope catalog.  Can be downloaded from
-http://www.rri.res.in/surveys/MRT/Catalogues/CatalogueMRTa.txt Copy this file
-to "CatalogueMRTa.txt" in the _src directory of your AIPY installation.'''
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
 
-import aipy as a, numpy as np, os
+"""
+The Mauritius Radio Telescope catalog.
+
+Can be downloaded from
+http://www.rri.res.in/surveys/MRT/Catalogues/CatalogueMRTa.txt Copy this file
+to "CatalogueMRTa.txt" in the _src directory of your AIPY installation.
+"""
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 class MRTCatalog(a.fit.SrcCatalog):
     def fromfile(self, filename):
