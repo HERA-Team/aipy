@@ -13,6 +13,7 @@ all catalogs in the _src module of AIPY.
 """
 
 from . import fit, _src
+import warnings
 
 def get_catalog(srcs=None, cutoff=None, catalogs=['helm','misc']):
     """Return a source catalog created out of the sources listed in 'srcs',
@@ -26,7 +27,8 @@ def get_catalog(srcs=None, cutoff=None, catalogs=['helm','misc']):
             continue
         try:
             srclist += c.get_srcs(srcs=srcs, cutoff=cutoff)
-        except(FileNotFoundError):
+        except(FileNotFoundError) as e:
+            warnings.warn("Catalog - %s" % str(e), RuntimeWarning)
             continue
     # Add in sources that are already made
     if srcs != None: srclist += [s for s in srcs if type(s) != str]
