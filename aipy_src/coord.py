@@ -56,7 +56,7 @@ def rot_m(ang, vec):
                    [xyC+zs, y*yC+c, yzC-xs],
                    [zxC-ys, yzC+xs, z*zC+c]], dtype=np.double)
     if rm.ndim > 2:
-        axes = range(rm.ndim)
+        axes = list(range(rm.ndim))
         return rm.transpose(axes[-1:] + axes[:-1])
     else:
         return rm
