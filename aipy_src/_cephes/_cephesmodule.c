@@ -22,6 +22,26 @@ extern int scipy_special_print_error_messages;
  
 #include "cephes_doc.h"
 
+// Python3 compatibility
+#if PY_MAJOR_VERSION >= 3
+	#define PyCapsule_Type PyCObject_Type
+	#define PyInt_AsLong PyLong_AsLong
+	#define PyInt_FromLong PyLong_FromLong
+	#define PyString_FromString PyUnicode_FromString
+char* PyString_AsString(PyObject *ob) {
+	PyObject *enc;
+	char *cstr;
+	enc = PyUnicode_AsEncodedString(ob, "utf-8", "Error");
+	if( enc == NULL ) {
+		PyErr_Format(PyExc_ValueError, "Cannot encode string");
+		return NULL;
+	}
+	cstr = PyBytes_AsString(enc);
+	Py_XDECREF(enc);
+	return cstr;
+}
+#endif
+
 
 static PyUFuncGenericFunction cephes1_functions[] = { NULL, NULL, };
 static PyUFuncGenericFunction cephes1rc_functions[] = { NULL, NULL, NULL, NULL};
@@ -563,12 +583,34 @@ static struct PyMethodDef methods[] = {
   {NULL,		NULL, 0}		/* sentinel */
 };
 
+#ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
+#define PyMODINIT_FUNC void
+#endif
 
-PyMODINIT_FUNC init_cephes(void) {
-  PyObject *m, *d, *s;
+#if PY_MAJOR_VERSION >= 3
+	#define MOD_ERROR_VAL NULL
+	#define MOD_SUCCESS_VAL(val) val
+	#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+	#define MOD_DEF(ob, name, methods, doc) \
+	   static struct PyModuleDef moduledef = { \
+	      PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
+	   ob = PyModule_Create(&moduledef);
+#else
+	#define MOD_ERROR_VAL
+	#define MOD_SUCCESS_VAL(val)
+	#define MOD_INIT(name) PyMODINIT_FUNC init##name(void)
+	#define MOD_DEF(ob, name, methods, doc) \
+	   ob = Py_InitModule3(name, methods, doc);
+#endif
+
+MOD_INIT(_cephes) {
+  PyObject *m, *d;
   
   /* Create the module and add the functions */
-  m = Py_InitModule("_cephes", methods); 
+  MOD_DEF(m, "_cephes", methods, "_cephes module");
+  if( m == NULL ) {
+    return MOD_ERROR_VAL;
+  }
 
   /* Import the ufunc objects */
   import_array();
@@ -576,10 +618,11 @@ PyMODINIT_FUNC init_cephes(void) {
 
   /* Add some symbolic constants to the module */
   d = PyModule_GetDict(m);
-
-  s = PyString_FromString("2.0");
-  PyDict_SetItemString(d, "__version__", s);
-  Py_DECREF(s);
+  if( d == NULL ) {
+    return MOD_ERROR_VAL;
+  }
+  
+  PyDict_SetItemString(d, "__version__", PyString_FromString("2.0"));
 
   /* Add scipy_special_print_error_message global variable */
   /*  No, instead acessible through errprint */
@@ -588,7 +631,9 @@ PyMODINIT_FUNC init_cephes(void) {
   Cephes_InitOperators(d); 
   
   /* Check for errors */
-  if (PyErr_Occurred())
+  if( PyErr_Occurred() ) {
     Py_FatalError("can't initialize module _cephes");
+  }
+  
+  return MOD_SUCCESS_VAL(m);
 }
-
