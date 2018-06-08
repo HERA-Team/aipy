@@ -143,7 +143,7 @@ def parse_chans(chan_str, nchan, concat=True):
     else:
         chanopt = []
         for co in chan_str.split(','):
-            co = map(int, co.split('_'))
+            co = list(map(int, co.split('_')))
             assert(len(co) in [1,2,3])
             if len(co) == 1: chanopt.append(np.array(co))
             elif len(co) == 2: chanopt.append(np.arange(co[0],co[1]+1))
@@ -158,7 +158,7 @@ def parse_srcs(src_str, cat_str):
     cats = cat_str.split(',')
     if src_str.startswith('all'): return None, None, cats
     if src_str.find('/') != -1:
-        cutoff = map(float, src_str.split('/'))
+        cutoff = list(map(float, src_str.split('/')))
         return None, cutoff, cats
     src_opt = src_str.split(',')
     for i, s in enumerate(src_opt):
@@ -194,10 +194,10 @@ def parse_prms(prm_str):
         if g[8]: plist = [g[8]]
         else: plist = g[9].split('/')
         if g[16]: ival = [float(g[16])]
-        elif g[17]: ival = map(float, g[17].split('/'))
+        elif g[17]: ival = list(map(float, g[17].split('/')))
         else: ival = [None]
         if g[23]: sval = [float(g[23])]
-        elif g[24]: sval = map(float, g[24].split('/'))
+        elif g[24]: sval = list(map(float, g[24].split('/')))
         else: sval = [None]
         if len(obj) != 1:
             if len(plist) != 1:
