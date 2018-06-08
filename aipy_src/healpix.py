@@ -2,8 +2,8 @@
 from __future__ import print_function, division, absolute_import
 import sys
 if sys.version_info > (3,):
-	xrange = range
-	long = int
+    xrange = range
+    long = int
 
 """
 Provides interfaces to Healpix_cxx, which was developed at the 

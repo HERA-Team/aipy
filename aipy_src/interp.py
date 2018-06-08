@@ -2,8 +2,8 @@
 from __future__ import print_function, division, absolute_import
 import sys
 if sys.version_info > (3,):
-	xrange = range
-	long = int
+    xrange = range
+    long = int
 
 """
 A pure-python, spline-like implementation of 1D interpolation.  Uses
