@@ -20,9 +20,9 @@ typedef struct {
 } UVObject;
 
 // Deallocate memory when Python object is deleted
-static void UVObject_dealloc(UVObject* self) {
+static void UVObject_dealloc(UVObject *self) {
     if (self->tno != -1) uvclose_c(self->tno);
-    self->ob_type->tp_free((PyObject*)self);
+    ((PyTypeObject *) self)->tp_free((PyObject*)self);
 }
 
 // Allocate memory for Python object and Healpix_Base (__new__)
@@ -646,8 +646,8 @@ static PyMethodDef UVObject_methods[] = {
 };
 
 PyTypeObject UVType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
+//     0,                         /*ob_size*/
     "_miriad.UV", /*tp_name*/
     sizeof(UVObject), /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -706,15 +706,44 @@ static PyMethodDef _miriad_methods[] = {
 #define PyMODINIT_FUNC void
 #endif
 
+#if PY_MAJOR_VERSION >= 3
+	#define MOD_ERROR_VAL NULL
+	#define MOD_SUCCESS_VAL(val) val
+	#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+	#define MOD_DEF(ob, name, methods, doc) \
+	   static struct PyModuleDef moduledef = { \
+	      PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
+	   ob = PyModule_Create(&moduledef);
+#else
+	#define MOD_ERROR_VAL
+	#define MOD_SUCCESS_VAL(val)
+	#define MOD_INIT(name) PyMODINIT_FUNC init##name(void)
+	#define MOD_DEF(ob, name, methods, doc) \
+	   ob = Py_InitModule3(name, methods, doc);
+#endif
+
 // Module init
-PyMODINIT_FUNC init_miriad(void) {
+MOD_INIT(_miriad) {
     PyObject* m;
+    
+    Py_Initialize();
+    
     UVType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&UVType) < 0) return;
-    m = Py_InitModule3("_miriad", _miriad_methods,
-    "This is a hand-written Python wrapper (by Aaron Parsons) for MIRIAD.");
+    if( PyType_Ready(&UVType) < 0 ) {
+        return MOD_ERROR_VAL;
+    }
+    
+    // Module definitions and functions
+    MOD_DEF(m, "_miriad", _miriad_methods, \
+            "This is a hand-written Python wrapper (by Aaron Parsons) for MIRIAD.");
+    if( m == NULL ) {
+        return MOD_ERROR_VAL;
+    }
     import_array();
+    
     Py_INCREF(&UVType);
     PyModule_AddObject(m, "UV", (PyObject *)&UVType);
     PyModule_AddIntConstant(m, "MAXCHAN", MAXCHAN);
+    
+    return MOD_SUCCESS_VAL(m);
 }
