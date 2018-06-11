@@ -1,9 +1,5 @@
 # Python3 compatibility
 from __future__ import print_function, division, absolute_import
-import sys
-if sys.version_info > (3,):
-    xrange = range
-    long = int
 
 """
 A package for interfacing to Miriad: the Multichannel Image Reconstruction
