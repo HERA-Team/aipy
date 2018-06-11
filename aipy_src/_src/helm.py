@@ -84,7 +84,7 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
         # Read spectral data
         srclines = [L for L in open(fitfile).readlines() if L.startswith('J')]
         for line in srclines: 
-            srcs[line[:9]].append(map(float, line[13:62].split()))
+            srcs[line[:9]].append(list(map(float, line[13:62].split())))
             try: self.rms[line[:9]] = float(line[63:70])
             except(ValueError): self.rms[line[:9]]=-1
 
