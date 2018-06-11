@@ -37,7 +37,7 @@ class ParkesCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=2.70))
         self.add_srcs(addsrcs)
 
-PARKESFILE = os.path.dirname(__file__) + os.sep + 'parkes.txt'
+PARKESFILE = os.path.join(os.path.dirname(__file__), 'parkes.txt')
 _parkescat = None
 
 def get_srcs(srcs=None, cutoff=None):

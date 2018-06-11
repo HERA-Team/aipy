@@ -36,7 +36,7 @@ class NVSSCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=1.40))
         self.add_srcs(addsrcs)
 
-NVSSFILE = os.path.dirname(__file__) + os.sep + 'nvss.txt'
+NVSSFILE = os.path.join(os.path.dirname(__file__), 'nvss.txt')
 _nvsscat = None
 
 def get_srcs(srcs=None, cutoff=None):

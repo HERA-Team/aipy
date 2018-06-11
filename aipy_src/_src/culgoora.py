@@ -65,7 +65,7 @@ class CulgooraCatalog(a.fit.SrcCatalog):
                     jys=jys080, index=0, mfreq=0.080))
         self.add_srcs(addsrcs)
 
-CULGOORAFILE = os.path.dirname(__file__) + os.sep + 'culgoora.txt'
+CULGOORAFILE = os.path.join(os.path.dirname(__file__), 'culgoora.txt')
 _culgooracat = None
 
 def get_srcs(srcs=None, cutoff=None):

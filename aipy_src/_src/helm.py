@@ -106,8 +106,8 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
                 jys=jys, index=index, mfreq=.074))
         self.add_srcs(addsrcs)
 
-FITFILE = os.path.dirname(__file__) + os.sep + 'helm_fit.txt'
-POSFILE = os.path.dirname(__file__) + os.sep + 'helm_pos.txt'
+FITFILE = os.path.join(os.path.dirname(__file__), 'helm_fit.txt')
+POSFILE = os.path.join(os.path.dirname(__file__), 'helm_pos.txt')
 
 _helmcat = None
 

@@ -36,7 +36,7 @@ class FourCCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=0.178))
         self.add_srcs(addsrcs)
 
-FOURCFILE = os.path.dirname(__file__) + os.sep + '4c.txt'
+FOURCFILE = os.path.join(os.path.dirname(__file__), '4c.txt')
 _fourccat = None
 
 def get_srcs(srcs=None, cutoff=None):

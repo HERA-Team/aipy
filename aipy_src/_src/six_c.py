@@ -37,7 +37,7 @@ class SixCCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=.151))
         self.add_srcs(addsrcs)
 
-SIXCFILES = [os.path.dirname(__file__) + os.sep + cat 
+SIXCFILES = [os.path.join(os.path.dirname(__file__), cat)
     for cat in ['6c1.txt','6c2.txt','6c3.txt','6c4.txt','6c5_1.txt','6c5_2.txt']]
 _sixccat = None
 

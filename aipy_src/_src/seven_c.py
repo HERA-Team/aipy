@@ -36,7 +36,7 @@ class SevenCCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=0.151))
         self.add_srcs(addsrcs)
 
-SEVENCFILE = os.path.dirname(__file__) + os.sep + '7c.txt'
+SEVENCFILE = os.path.join(os.path.dirname(__file__), '7c.txt')
 _sevenccat = None
 
 def get_srcs(srcs=None, cutoff=None):

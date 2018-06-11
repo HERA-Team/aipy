@@ -25,7 +25,7 @@ class MRTCatalog(a.fit.SrcCatalog):
                 jys=float(jys), index=0, mfreq=.150))
         self.add_srcs(addsrcs)
 
-MRTFILE = os.path.dirname(__file__) + os.sep + 'CatalogueMRTa.txt'
+MRTFILE = os.path.join(os.path.dirname(__file__), 'CatalogueMRTa.txt')
 _mrtcat = None
 
 def get_srcs(srcs=None, cutoff=None):

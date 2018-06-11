@@ -36,7 +36,7 @@ class ThreeCRCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=0.178))
         self.add_srcs(addsrcs)
 
-THREECRFILE = os.path.dirname(__file__) + os.sep + '3cr.txt'
+THREECRFILE = os.path.join(os.path.dirname(__file__), '3cr.txt')
 _threecrcat = None
 
 def get_srcs(srcs=None, cutoff=None):

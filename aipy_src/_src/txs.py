@@ -38,7 +38,7 @@ class TXSCatalog(a.fit.SrcCatalog):
                 jys=jys, index=index, mfreq=0.365))
         self.add_srcs(addsrcs)
 
-TXSFILE = os.path.dirname(__file__) + os.sep + 'txs.txt'
+TXSFILE = os.path.join(os.path.dirname(__file__), 'txs.txt')
 _txscat = None
 
 def get_srcs(srcs=None, cutoff=None):

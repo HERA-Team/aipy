@@ -36,7 +36,7 @@ class WenssCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=0.330))
         self.add_srcs(addsrcs)
 
-WENSSFILE = os.path.dirname(__file__) + os.sep + 'wenss.txt'
+WENSSFILE = os.path.join(os.path.dirname(__file__), 'wenss.txt')
 _wensscat = None
 
 def get_srcs(srcs=None, cutoff=None):

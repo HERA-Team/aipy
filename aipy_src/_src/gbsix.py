@@ -36,7 +36,7 @@ class GBSixCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=4.85))
         self.add_srcs(addsrcs)
             
-GBSIXFILE = os.path.dirname(__file__) + os.sep + 'gb6.txt'
+GBSIXFILE = os.path.join(os.path.dirname(__file__), 'gb6.txt')
 _gbsixcat = None
 
 def get_srcs(srcs=None, cutoff=None):

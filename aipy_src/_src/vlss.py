@@ -36,7 +36,7 @@ class VLSSCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=0.074))
         self.add_srcs(addsrcs)
 
-VLSSFILE = os.path.dirname(__file__) + os.sep + 'vlss.txt'
+VLSSFILE = os.path.join(os.path.dirname(__file__), 'vlss.txt')
 _vlsscat = None
 
 def get_srcs(srcs=None, cutoff=None):
