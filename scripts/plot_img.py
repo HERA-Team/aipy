@@ -1,4 +1,8 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 This is a general-purpose script for plotting simple FITS images.
 """
@@ -32,18 +36,18 @@ else:
     m1 = int(math.ceil(float(len(args)) / m2))
 
 for cnt, filename in enumerate(args):
-    print filename
+    print(filename)
     if opts.batch:
         cnt = 0
         outfile = filename+'.png'
         if os.path.exists(outfile):
-            print 'Output file exists... skipping.'
+            print('Output file exists... skipping.')
             continue
     # Gather data
     d, kwds = a.img.from_fits(filename)
-    print d.shape
-    print kwds
-    print '-----------------------------------------------------------'
+    print(d.shape)
+    print(kwds)
+    print('-----------------------------------------------------------')
 
     # Parse command-line options
     compress_axes = []
@@ -104,7 +108,7 @@ for cnt, filename in enumerate(args):
     p.title(filename)
 
     if opts.batch:
-        print 'Saving to', outfile
+        print('Saving to', outfile)
         p.savefig(outfile)
         p.clf()
         
@@ -123,13 +127,13 @@ def click(event):
         ypx = np.around((event.ydata-1-dy1) / (dy2 - dy1) * d.shape[1] - .5)
         flx = d[ypx,xpx]
         if opts.mode.startswith('log'): flx = 10**flx
-        print '#%d (RA,DEC): (%s, %s), PX: (%d,%d) Jy: %f' % (cnt, ra, dec, xpx, ypx, flx)
+        print('#%d (RA,DEC): (%s, %s), PX: (%d,%d) Jy: %f' % (cnt, ra, dec, xpx, ypx, flx))
     else:
         xpx = np.around(event.xdata)
         ypx = np.around(event.ydata)
         flx = d[ypx,xpx]
         if opts.mode.startswith('log'): flx = 10**flx
-        print '#%d PX: (%d,%d) Jy: %f' % (cnt, xpx, ypx, flx)
+        print('#%d PX: (%d,%d) Jy: %f' % (cnt, xpx, ypx, flx))
     cnt += 1
 
 #register this function with the event handler
@@ -137,6 +141,6 @@ p.connect('button_press_event', click)
 
 if not opts.batch:
     if opts.outfile != '':
-        print 'Saving to', opts.outfile
+        print('Saving to', opts.outfile)
         p.savefig(opts.outfile)
     else: p.show()

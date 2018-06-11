@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 A script for fitting parameters of a measurement equation given 
 starting parameters in a cal file and a list of sources.  The fitter used
@@ -102,14 +106,14 @@ def fit_func(prms, filelist, decimate, decphs):
                 prms[k2][sp] = prms[k][sp]
     if not opts.quiet:
         a.fit.print_params(prms)
-        print prms
+        print(prms)
     aa.set_params(prms)
     cat.set_params(prms)
     a1,a2,th = cat.get('srcshape')
     score,nsamples = 0.,0.
     # Cache data from file to avoid hitting disk excessively
     if dbuf is None:
-        if not opts.quiet: print 'Caching data...'
+        if not opts.quiet: print('Caching data...')
         dbuf = {}
         for uvfile in filelist:
             sys.stdout.write('.') ; sys.stdout.flush()
@@ -134,10 +138,10 @@ def fit_func(prms, filelist, decimate, decphs):
                     samp += len(dbuf[t][bl][pol][1])
                     vsamp += np.logical_not(dbuf[t][bl][pol][1]).astype(np.int).sum()
                     wgts += dbuf[t][bl][pol][2]
-            print 'Cache summary:'
-            print '   %d samples' % samp
-            print '   %d valid' % vsamp
-            print '   %f sum weights' %  wgts
+            print('Cache summary:')
+            print('   %d samples' % samp)
+            print('   %d valid' % vsamp)
+            print('   %f sum weights' %  wgts)
             sys.stdout.flush()
     # Process data from cache
     for t in dbuf:
@@ -165,10 +169,10 @@ def fit_func(prms, filelist, decimate, decphs):
     score = np.sqrt(score / nsamples)
     if first_fit is None: first_fit = score
     if not opts.quiet:
-        print
-        print 'Score:', score, 
-        print '(%2.2f%% of %f)' % (100 * score / first_fit, first_fit)
-        print '-' * 70
+        print()
+        print('Score:', score, )
+        print('(%2.2f%% of %f)' % (100 * score / first_fit, first_fit))
+        print('-' * 70)
     return score / first_fit
 
 # Call the optimizer
@@ -177,18 +181,18 @@ if opts.daemon:
     class TCPServer(SocketServer.TCPServer):
         allow_reuse_address = True
     class FitHandler(SocketServer.BaseRequestHandler):
-        def setup(self): print self.client_address, 'connected'
-        def finish(self): print self.client_address, 'disconnected'
+        def setup(self): print(self.client_address, 'connected')
+        def finish(self): print(self.client_address, 'disconnected')
         def handle(self):
             data = self.request.recv(struct.calcsize('d')*len(prm_list))
             data = struct.unpack('<%dd' % (len(prm_list)), data)
             score, nsamples = fit_func(data, args, opts.decimate, opts.decphs)
-            print 'Returning score=%f, nsamples=%f' % (score, nsamples)
+            print('Returning score=%f, nsamples=%f' % (score, nsamples))
             rv = struct.pack('<dd', score, nsamples)
             self.request.send(rv)
             sys.stdout.flush()
     s = TCPServer(('', opts.baseport + opts.daemon), FitHandler)
-    print 'Starting daemon on TCP port %d' % (opts.baseport + opts.daemon)
+    print('Starting daemon on TCP port %d' % (opts.baseport + opts.daemon))
     sys.stdout.flush()
     s.serve_forever()
 elif opts.master:
@@ -214,19 +218,19 @@ elif opts.master:
             data = sock.recv(1024)
             scr, nsp = struct.unpack('<dd', data)
             score += scr; nsamples += nsp
-            if not opts.quiet: print score, nsamples
+            if not opts.quiet: print(score, nsamples)
         score = np.sqrt(score / nsamples)
         if nsamples == 0:
             first_fit = 0.
             return 0.
         if first_fit is None: first_fit = score
         if not opts.quiet:
-            print
-            print 'Score:', score, 
-            print '(%2.2f%% of %f)' % (100 * score / first_fit, first_fit)
-            print '-' * 70
+            print()
+            print('Score:', score, )
+            print('(%2.2f%% of %f)' % (100 * score / first_fit, first_fit))
+            print('-' * 70)
         return score / first_fit
-    print 'Starting in master mode...'
+    print('Starting in master mode...')
     rv = a.optimize.fmin(
         fit_func, prm_list,
         #args=(args, opts.decimate, opts.decphs),
@@ -236,11 +240,11 @@ elif opts.master:
     )
     prms,score = rv[:2]
     prms = a.fit.reconstruct_prms(prms, key_list)
-    print
+    print()
     a.fit.print_params(prms)
-    print 'Score:', score * first_fit, 
-    print '(%2.2f%% of %f)' % (100 * score, first_fit)
-    print '------------------------------------------------------------'
+    print('Score:', score * first_fit, )
+    print('(%2.2f%% of %f)' % (100 * score, first_fit))
+    print('------------------------------------------------------------')
             
     
 
@@ -254,11 +258,11 @@ elif not opts.snap:
     )
     prms,score = rv[:2]
     prms = a.fit.reconstruct_prms(prms, key_list)
-    print
+    print()
     a.fit.print_params(prms)
-    print 'Score:', score * first_fit, 
-    print '(%2.2f%% of %f)' % (100 * score, first_fit)
-    print '------------------------------------------------------------'
+    print('Score:', score * first_fit, )
+    print('(%2.2f%% of %f)' % (100 * score, first_fit))
+    print('------------------------------------------------------------')
 else:
     for uvfile in args:
         # Figure out what times are in the file
@@ -273,8 +277,8 @@ else:
         decimate = len(times) * opts.decimate
         # Fit each time separately
         for cnt, t in enumerate(times):
-            print 'Time:', t
-            print 'Iter: %d / %d' % (cnt+1, len(times))
+            print('Time:', t)
+            print('Iter: %d / %d' % (cnt+1, len(times)))
             first_fit,dbuf = None,None
             rv = a.optimize.fmin(
                 fit_func, prm_list,
@@ -285,10 +289,10 @@ else:
             )
             prms,score = rv[:2]
             prms = a.fit.reconstruct_prms(prms, key_list)
-            print
-            print prms
+            print()
+            print(prms)
             a.fit.print_params(prms)
-            print 'Score:', score * first_fit, 
-            print '(%2.2f%% of %f)' % (100 * score, first_fit)
-            print '------------------------------------------------------------'
+            print('Score:', score * first_fit, )
+            print('(%2.2f%% of %f)' % (100 * score, first_fit))
+            print('------------------------------------------------------------')
             if opts.remember: prm_list, key_list = a.fit.flatten_prms(prms)

@@ -1,4 +1,8 @@
 #!/usr/bin/python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 Detect and flag RFI related effects in UV files.  Uses statistical thresholding
 to identify outliers in power and narrowness of features.  Does an improved
@@ -53,9 +57,9 @@ del(uv)
 
 for uvfile in args:
     uvofile = uvfile+'r'
-    print uvfile,'->',uvofile
+    print(uvfile,'->',uvofile)
     if os.path.exists(uvofile):
-        print uvofile, 'exists, skipping.'
+        print(uvofile, 'exists, skipping.')
         continue
     uvi = a.miriad.UV(uvfile)
     (uvw,jd,(i,j)),d,f = uvi.read(raw=True)

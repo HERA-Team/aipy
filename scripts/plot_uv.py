@@ -1,4 +1,8 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 Creates waterfall plots from Miriad UV files.  Can tile multiple plots
 on one window, or plot just a single baseline.  When taking the delay
@@ -130,7 +134,7 @@ plots = {}
 plt_data = {}
 
 for uvfile in args:
-    print 'Reading', uvfile
+    print('Reading', uvfile)
     uv = a.miriad.UV(uvfile)
     if not opts.cal is None:
         aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
@@ -197,7 +201,7 @@ def sort_func(a, b):
     return 1
 bls.sort(cmp=sort_func)
 if len(bls) == 0:
-    print 'No data to plot.'
+    print('No data to plot.')
     sys.exit(0)
 m2 = int(np.sqrt(len(bls)))
 m1 = int(np.ceil(float(len(bls)) / m2))
@@ -329,7 +333,7 @@ for cnt, bl in enumerate(bls):
                 drates = np.fft.fftfreq(len(plot_t['cnt']), 1./len(plot_t['cnt']))
                 xlabel = 'Delay-Rate (bins)'
             else:
-                print inttime, len(plot_t['cnt'])
+                print(inttime, len(plot_t['cnt']))
                 drates = np.fft.fftfreq(len(plot_t['cnt']), inttime) * 1e3 # mHz
                 xlabel = 'Delay-Rate (milliHz)'
             plot_times = np.fft.fftshift(drates)
@@ -372,7 +376,7 @@ if not opts.nolegend and (not is_time_range or not is_chan_range):
 if opts.out_file != '': p.savefig(opts.out_file)
 else:
     def click(event):
-        print [event.key]
+        print([event.key])
         if event.key == 'm':
             mode = raw_input('Enter new mode: ')
             for k in plots:
@@ -380,7 +384,7 @@ else:
                     d = data_mode(plt_data[k], mode)
                     plots[k].set_data(d)
                 except(ValueError):
-                    print 'Unrecognized plot mode'
+                    print('Unrecognized plot mode')
             p.draw()
         elif event.key == 'd':
             max = raw_input('Enter new max: ')
@@ -396,7 +400,7 @@ else:
                     if _max is None: _max = d.max()
                     if _drng is None: _drng = _max - d.min()
                 plots[k].set_clim(vmin=_max-_drng, vmax=_max)
-            print 'Replotting...'
+            print('Replotting...')
             p.draw()
     p.connect('key_press_event', click)
     p.show()

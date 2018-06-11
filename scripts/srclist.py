@@ -1,4 +1,8 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 A script for listing sources (and optionally source parameters) from
 catalogs.
@@ -102,7 +106,7 @@ if opts.dec_rng != None:
 # We're done selecting sources now.  Time to print information
 srcs.sort()
 if opts.prms == None:
-    print opts.divstr.join(srcs)
+    print(opts.divstr.join(srcs))
 else:
     if not opts.fitprms:
         prms = opts.prms.split(',')
@@ -126,4 +130,4 @@ else:
                 else: outstring += prm
             if scount<snum-1:outstring += "),"
             else: outstring += ")"
-        print outstring
+        print(outstring)

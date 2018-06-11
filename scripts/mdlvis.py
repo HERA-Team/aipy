@@ -1,4 +1,8 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 Models visibilities for various catalog sources and creates a new Miriad UV
 file containing either the simulated data, or the residual when the model
@@ -144,9 +148,9 @@ if len(args) > 0:
     # Run mdl on all files
     for filename in args:
         uvofile = filename + 's'
-        print filename,'->',uvofile
+        print(filename,'->',uvofile)
         if os.path.exists(uvofile):
-            print 'File exists: skipping'
+            print('File exists: skipping')
             continue
         uvi = a.miriad.UV(filename)
         a.scripting.uv_selector(uvi, opts.ant)
@@ -198,7 +202,7 @@ else:
     # Now start generating data
     times = np.arange(opts.startjd, opts.endjd, opts.inttime/a.const.s_per_day)
     for cnt,t in enumerate(times):
-        print 'Timestep %d / %d' % (cnt+1, len(times))
+        print('Timestep %d / %d' % (cnt+1, len(times)))
         aa.set_jultime(t)
         uv['lst'] = aa.sidereal_time()
         uv['ra'] = aa.sidereal_time()

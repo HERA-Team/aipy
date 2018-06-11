@@ -1,4 +1,8 @@
 #!/usr/bin/python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 Parse large data files by antenna number. Keep antenna 0 in all of them as a phase reference.
 """
@@ -15,9 +19,9 @@ opts,args = o.parse_args(sys.argv[1:])
 for filename in args:
 
     outfile = filename+'P'
-    print filename,'-->',outfile
+    print(filename,'-->',outfile)
     if os.path.exists(outfile):
-        print 'File exists, skipping'
+        print('File exists, skipping')
         continue
 
     pols2use = opts.pols.split(',')

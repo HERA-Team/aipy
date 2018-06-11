@@ -1,7 +1,12 @@
 #!/usr/bin/env python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 Rotate linearly polarized data into Stokes' I,Q,U,V
 """
+
 import aipy as a
 import numpy as np
 import optparse,sys,os
@@ -17,9 +22,9 @@ for uvfile in args:
     infile = uvfile
     outfile = infile+'S'
     
-    print infile,'-->',outfile
+    print(infile,'-->',outfile)
     if os.path.exists(outfile):
-        print 'File exists, skipping'
+        print('File exists, skipping')
         continue
 
     uv = a.pol.UV(uvfile)
@@ -38,24 +43,24 @@ for uvfile in args:
     
     def mfunc(uv,p,d,f):
         uvw,t,bl = p
-        print uvi['pol']
+        print(uvi['pol'])
         plzn = uvi.read_pol()
-        print bl,plzn 
+        print(bl,plzn )
         if plzn == 'xx':
             uvo.write_pol('I')
-            print '-->',uvo.read_pol()
+            print('-->',uvo.read_pol())
             return p,DD[bl][t]['I'],f
         if plzn == 'xy': 
             uvo.write_pol('Q')
-            print '-->',uvo.read_pol()
+            print('-->',uvo.read_pol())
             return p,DD[bl][t]['Q'],f
         if plzn == 'yx': 
             uvo.write_pol('U')
-            print '-->',uvo.read_pol()
+            print('-->',uvo.read_pol())
             return p,DD[bl][t]['U'],f
         if plzn == 'yy': 
             uvo.write_pol('V')
-            print '-->',uvo.read_pol()
+            print('-->',uvo.read_pol())
             return p,DD[bl][t]['V'],f
     
     uvi = a.pol.UV(infile)

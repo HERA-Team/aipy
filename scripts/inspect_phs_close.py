@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 Do one iteration of a delay-solving algorithm.
 """
@@ -36,7 +39,7 @@ exec('from %s import prms' % opts.cal)
 DD = {}
 AntNos = []
 for uvfile in args:
-    print 'Reading',uvfile
+    print('Reading',uvfile)
     uv = a.miriad.UV(uvfile)
     for (uvw,t,(i,j)),d in uv.all():
         if i == j: continue
@@ -137,14 +140,14 @@ for pol in pols:
                 if k <= j: continue
                 CC[pol][(i,j,k)] = Phi_ij[pol][(i,j)] + Phi_ij[pol][(j,k)] - Phi_ij[pol][(i,k)]
 
-print 'Computing time =', time() - t0,'s for',Nbl,'baselines.'
+print('Computing time =', time() - t0,'s for',Nbl,'baselines.')
 
 #Print delays:
 for pol in pols:
     for i,d in enumerate(Tau[pol]):
         badstr = ''
         if np.abs(d-np.average(Tau[pol])) >= 2.*np.std(Tau[pol]): badstr = '!!!'
-        print 'Antenna',AntNos[i],pol[0],':',d,'ns',badstr
+        print('Antenna',AntNos[i],pol[0],':',d,'ns',badstr)
 
 
 #Generate plots:

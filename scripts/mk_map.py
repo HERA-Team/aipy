@@ -1,4 +1,8 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 This is a general-purpose script for making faceted, spherical maps (stored in
 Healpix FITS format) from individual "flat" maps stored in FITS files.
@@ -42,11 +46,11 @@ for i, filename in enumerate(args):
     # the ra/dec axes of the epoch of the image.
     s = ephem.Equatorial(s, epoch=kwds['obs_date'])
     ra, dec = s.get()
-    print '-----------------------------------------------------------'
-    print 'Reading file %s (%d / %d)' % (filename, i + 1, len(args))
-    print kwds
-    print 'Pointing (ra, dec):', ra, dec
-    print 'Image Power:', np.abs(img).sum()
+    print('-----------------------------------------------------------')
+    print('Reading file %s (%d / %d)' % (filename, i + 1, len(args)))
+    print(kwds)
+    print('Pointing (ra, dec):', ra, dec)
+    print('Image Power:', np.abs(img).sum())
     if prev_dra != kwds['d_ra']:
         prev_dra = kwds['d_ra']
         DIM = img.shape[0]

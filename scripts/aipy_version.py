@@ -1,4 +1,8 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 Helps you figure out which version of AIPY you have installed.
 Lists:
@@ -8,20 +12,20 @@ Lists:
     branch
 """
 import aipy
-print "AIPY base version in use:",
+print("AIPY base version in use:", end='')
 try:
-    print aipy.__version__
+    print(aipy.__version__)
 except(AttributeError):
-    print "Version number not Found"
-print "Install location:",aipy.__file__
-print "Last Git commit log:"
+    print("Version number not Found")
+print("Install location:", aipy.__file__)
+print("Last Git commit log:")
 try:
-    print aipy.__gitlog__
+    print(aipy.__gitlog__)
 except(AttributeError):
-    print "     Gitlog not found"
-print "Branch:",
+    print("Gitlog not found")
+print("Branch:")
 try:
-    print aipy.__branch__
+    print(aipy.__branch__)
 except(AttributeError):
-    print "Branch Unknown"
+    print("Branch Unknown")
 

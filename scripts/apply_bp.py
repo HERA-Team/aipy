@@ -1,4 +1,8 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 Apply the bandpass function in a UV file to the raw data, and then write
 to a new UV file which will not have a bandpass file.  Has the (recommended)
@@ -132,7 +136,7 @@ cpolys = {'null':null_cpoly, 'digi':digi_cpoly,
 
 cpoly = cpolys[opts.linearization]
 
-print 'Using %s quantization correction' % opts.linearization
+print('Using %s quantization correction' % opts.linearization)
 
 # These are all the items which should be removed once bandpass applied.
 ignore_vars = ['bandpass', 'freqs', 'ngains', 'nspect0', 
@@ -140,9 +144,9 @@ ignore_vars = ['bandpass', 'freqs', 'ngains', 'nspect0',
 
 # Process all files passed from the command line.
 for filename in args:
-    print filename,'->',filename+'b'
+    print(filename,'->',filename+'b')
     if os.path.exists(filename+'b'):
-        print 'File exists: skipping'
+        print('File exists: skipping')
         continue
     uvi = a.miriad.UV(filename)
     uvo = a.miriad.UV(filename+'b', status='new')
@@ -153,11 +157,11 @@ for filename in args:
         # If there is a bandpass item, we're going apply it to data
         bp = uvi['bandpass'].real   # Sync'd with pocket_corr.py in corr pkg.
         bp.shape = (nants, nchan)
-        print
+        print()
     except:
-        print 'No bandpass found'
+        print('No bandpass found')
         bp = np.ones((nants, nchan))
-        print '.'
+        print('.')
     def f(uv, preamble, data, flags):
         uvw, t, (i,j) = preamble
         if i == j: data = np.polyval(cpoly, data)

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 """
 Get a first-pass gain calibration by enforcing amplitude closure.
 """
@@ -40,16 +43,16 @@ else:
     cat.compute(aa)
     flx_list = cat.get_jys()
     flx = 0.
-    print "Setting Jansky levels to the following sources:"
+    print("Setting Jansky levels to the following sources:")
     for i,src in enumerate(srclist):
-        print ' '*5,src,flx_list[i].squeeze(),'Jys'
+        print(' '*5,src,flx_list[i].squeeze(),'Jys')
         flx += flx_list[i].squeeze()
 
 #Read in Data:
 DD,cnt,bl_len,AntNos = {},{},{},[]
 
 for uvfile in args:
-    print 'Reading',uvfile
+    print('Reading',uvfile)
     uv = a.miriad.UV(uvfile)
     for (uvw,t,(i,j)),d,f in uv.all(raw=True):
         pol = a.miriad.pol2str[uv['pol']]
@@ -114,21 +117,21 @@ for pol in pols:
     G[pol] = 10**np.dot(np.linalg.inv(np.dot(np.dot(A.T,W),A)),np.dot(np.dot(A.T,W),b))
     G[pol] /= flx*np.mean(G[pol])
 
-print "'amps' : {"
+print("'amps' : {")
 for i,ant in enumerate(AntNos):
     ampstr = str(ant)+' : {'
     for pol in pols:
         ampstr += "'"+pol[0]+"' : "+str(G[pol][i])
         if pol != pols[-1]: ampstr += ', '
     ampstr += ' },'
-    print ampstr
-print '},'
+    print(ampstr)
+print('},')
 
 t1 = time()
-print 'Computation time =',t1-t0,'s'
+print('Computation time =',t1-t0,'s')
 
 if opts.plots:
-    print 'Generating plots... this may take a while...'
+    print('Generating plots... this may take a while...')
     AntNos = np.array(AntNos)
     figcnt = 0
 
