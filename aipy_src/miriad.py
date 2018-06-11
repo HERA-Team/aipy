@@ -96,7 +96,7 @@ class UV(_miriad.UV):
         return vartable
     def vars(self):
         """Return a list of available variables."""
-        return self.vartable.keys()
+        return list(self.vartable.keys())
     def items(self):
         """Return a list of available header items."""
         items = []

@@ -73,8 +73,8 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
         for line in srclines:
             srcname = line[:9]
             srcs[srcname] = line[35:57]
-            if not self.ncomp.has_key(srcname): self.ncomp[srcname] = int(line[33])
-            if not self.metadata.has_key(srcname): self.metadata[srcname] = []
+            if srcname not in self.ncomp: self.ncomp[srcname] = int(line[33])
+            if srcname not in self.metadata: self.metadata[srcname] = []
             md = (float(line[58:64])/1e3,float(line[65:73]),float(line[74:81]))
             self.metadata[srcname].append(md)
         for s in srcs:

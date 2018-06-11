@@ -24,8 +24,7 @@ def flatten_prms(prms, prm_list=None):
     if prm_list is None: prm_list = []
     key_list = {}
     keys = prms.keys()
-    keys.sort()
-    for k in keys:
+    for k in sorted(keys):
         if type(prms[k]) == dict:
             prm_list, new_key_list = flatten_prms(prms[k], prm_list)
             key_list[k] = new_key_list
@@ -54,8 +53,7 @@ def reconstruct_prms(prm_list, key_list):
 def print_params(prms, indent='', grad=None):
     """Print nice looking representation of a parameter dictionary."""
     keys = prms.keys()
-    keys.sort()
-    for k in keys:
+    for k in sorted(keys):
         v = prms[k]
         if (type(v) is dict and v == {}) or v is None or \
                 (type(v) is list and v == []):

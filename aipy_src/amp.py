@@ -304,8 +304,8 @@ class AntennaArray(phs.AntennaArray):
         p1, p2 = pol[0], pol[-1]
         # Check that we have cached results needed.  If not, cache them.
         for c,p in zip([i,j], [p1,p2]):
-            if not self._cache.has_key(c): self._cache[c] = {}
-            if not self._cache[c].has_key(p):
+            if c not in self._cache: self._cache[c] = {}
+            if p not in self._cache[c]:
                 x,y,z = self._cache['s_top']
                 resp = self[c].bm_response((x,y,z), pol=p).transpose()
                 self._cache[c][p] = resp

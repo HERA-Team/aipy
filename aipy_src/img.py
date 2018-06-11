@@ -282,7 +282,7 @@ class ImgW(Img):
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
             #print(j, len(sqrt_w))
             id = np.round(np.average(sqrt_w[i:j]) / self.wres) * self.wres
-            if not self.wcache.has_key(id):
+            if id not in self.wcache:
                 avg_w = np.average(w_[i:j])
                 if self.verbose:
                     print('Caching W plane ID=', id)
@@ -465,20 +465,14 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     phdu.update_header()
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra'):
-             if kwds.has_key('ra'): val=kwds['ra']
-             else: val=None
-             if kwds.has_key('d_ra'):delta = kwds['d_ra']
-             else: delta=None
+             val   = kwds['ra'  ] if 'ra'   in kwds else None
+             delta = kwds['d_ra'] if 'd_ra' in kwds else None
         elif ax.lower().startswith('dec'):
-             if kwds.has_key('dec'): val=kwds['dec']
-             else: val=None
-             if kwds.has_key('d_dec'):delta = kwds['d_dec']
-             else: delta=None
+             val   = kwds['dec'  ] if 'dec'   in kwds else None
+             delta = kwds['d_dec'] if 'd_dec' in kwds else None
         elif ax.lower().startswith('freq'):
-             if kwds.has_key('freq'): val=kwds['freq']
-             else: val=None
-             if kwds.has_key('d_freq'):delta = kwds['d_freq']
-             else: delta=None
+             val   = kwds['freq'  ] if 'freq'   in kwds else None
+             delta = kwds['d_freq'] if 'd_freq' in kwds else None
         else: val,delta = None,None
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
