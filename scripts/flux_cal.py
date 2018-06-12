@@ -36,9 +36,9 @@ if opts.srcflux:
     srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
     cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
     s = cat.values()[0]
-    print('Calibrating for source with',)
-    print('strength', s._jys,)
-    print('measured at', s.mfreq, 'GHz',)
+    print('Calibrating for source with', end='')
+    print('strength', s._jys, end='')
+    print('measured at', s.mfreq, 'GHz', end='')
     print('with index', s.index)
     src_spec = None
 else: src_spec = 1

@@ -100,7 +100,7 @@ for srcname in cat:
     print('--------------------------------------------------')
     src.update_jys(afreq)
     strength = src.get_jys()[0] * opts.sscale
-    print('Adding', srcname, 'with strength %f Jy' % strength,)
+    print('Adding', srcname, 'with strength %f Jy' % strength, end='')
     print('and index', src.index)
     print('Source shape: a1=%f, a2=%f, th=%f' % (a1, a2, th))
     da1 = dras*np.cos(th) - ddecs*np.sin(th)

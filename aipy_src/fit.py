@@ -63,7 +63,7 @@ def print_params(prms, indent='', grad=None):
             if grad is None: print_params(v, indent + '  ')
             else: print_params(v, indent + '  ', grad[k])
         else:
-            print(indent, k)
+            print(indent, k, end='')
             if grad is None:
                 if not type(v) is list:
                     try: v = [list(v)]

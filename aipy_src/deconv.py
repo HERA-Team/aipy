@@ -221,13 +221,12 @@ def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
         else: v = var / (1.5**cnt)
         while cnt < 0 or v < var * (1.5**cnt):
             if verbose:
-                print('Trying var=', v)
+                print('Trying var=', v, end='')
                 sys.stdout.flush()
             c, i = maxent(im, ker, v, mdl=mdl, gain=gain, tol=tol,
                 maxiter=maxiter, lower=lower, upper=upper, verbose=False)
             if verbose:
-                print('success %d,' % i['success'])
-                print('term: %s,' % i['term'], 'score:' , i['score'])
+                print('success %d,' % i['success'], 'term: %s,' % i['term'], 'score:', i['score'])
             # Check if fit converged
             if i['success'] and (maxiterok or i['term'] == 'tol'):
                 cl, info = c, i
