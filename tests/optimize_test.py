@@ -49,16 +49,19 @@ class TestOptimize(unittest.TestCase):
 
 class TestAnneal(unittest.TestCase):
     def test_cauchy(self):
+        """Test optimize.anneal with the cauchy schedule"""
         func = lambda x: n.cos(14.5*x-0.3) + (x+0.2)*x
         fit = o.anneal(func,1.0,full_output=1,upper=3.0,lower=-3.0,feps=1e-4,maxiter=2000,schedule='cauchy')
         self.assertAlmostEqual(-0.195, fit[0], 3)
         
     def test_fast(self):
+        """Test optimize.anneal with the fast schedule"""
         func = lambda x: n.cos(14.5*x-0.3) + (x+0.2)*x
         fit = o.anneal(func,1.0,full_output=1,upper=3.0,lower=-3.0,feps=1e-4,maxiter=2000,schedule='fast')
         self.assertAlmostEqual(-0.195, fit[0], 3)
         
     def test_boltzmann(self):
+        """Test optimize.anneal with the boltzmann schedule"""
         func = lambda x: n.cos(14.5*x-0.3) + (x+0.2)*x
         fit = o.anneal(func,1.0,full_output=1,upper=3.0,lower=-3.0,feps=1e-4,maxiter=2000,schedule='boltzmann')
         self.assertAlmostEqual(-0.195, fit[0], 3)
