@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Get a first-pass gain calibration by enforcing amplitude closure.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a
 import numpy as np
@@ -37,7 +36,7 @@ aa = a.cal.get_aa(opts.cal,np.array([0.15]))
 
 #Find source Flux:
 if opts.src == None: flx = 1.
-else: 
+else:
     srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src,'helm,misc')
     cat = a.cal.get_catalog(opts.cal,srclist,cutoff,catalogs)
     cat.compute(aa)
@@ -64,10 +63,10 @@ for uvfile in args:
         if not (i,j) in bl_len.keys(): bl_len[(i,j)] = uvlen(aa.get_baseline(i,j))
         if bl_len[(i,j)]*0.15 <= opts.minuv: continue
         #Populate arrays:
-        if not pol in DD.keys(): 
+        if not pol in DD.keys():
             DD[pol] = {}
             cnt[pol] = {}
-        if not (i,j) in DD[pol].keys(): 
+        if not (i,j) in DD[pol].keys():
             DD[pol][(i,j)] = np.zeros(uv['nchan'],dtype=np.complex)
             cnt[pol][(i,j)] = np.zeros(uv['nchan'])
         DD[pol][(i,j)] += np.abs(d)
@@ -102,7 +101,7 @@ for pol in pols:
     A = np.zeros((Nbl,Nant))
     W = np.zeros((Nbl,Nbl))
     b = np.zeros(Nbl)
-    
+
     #populatin the countryside...
     index = 0
     for i,ant1 in enumerate(AntNos):
@@ -148,7 +147,7 @@ if opts.plots:
         pl.title('Gains by baseline, polarization %s'%pol[0])
         pl.draw()
         figcnt += 1
-    
+
     if opts.wgt != 'equal':
         for pol in pols:
             pl.figure(figcnt)
@@ -162,7 +161,7 @@ if opts.plots:
             pl.colorbar()
             pl.title('Weights for each baseline, polarization %s'%pol[0])
             pl.draw()
-            figcnt += 1 
+            figcnt += 1
 
     pl.figure(figcnt)
     for pol in pols:
@@ -174,4 +173,3 @@ if opts.plots:
     figcnt += 1
 
     pl.show()
-

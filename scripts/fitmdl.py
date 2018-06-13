@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
-A script for fitting parameters of a measurement equation given 
+A script for fitting parameters of a measurement equation given
 starting parameters in a cal file and a list of sources.  The fitter used
 here is a steepest-decent filter and does not make use of priors.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, os, optparse
 
@@ -32,9 +31,9 @@ o.add_option('--remem', dest='remember', action='store_true',
     help='Remember values from last fit when fitting in snapshot mode.')
 o.add_option('--baseport', dest='baseport', type='int', default=53000,
     help="Base port # to use for tx/rx.  Each daemon adds it's daemon id to this to determine the actual port used for TCP transactions.")
-o.add_option('--daemon', dest='daemon', type='int', 
+o.add_option('--daemon', dest='daemon', type='int',
     help='Operate in daemon mode, opening a TCP Server to handle requests on the specified increment to the base port.')
-o.add_option('--master', dest='master', 
+o.add_option('--master', dest='master',
     help='Operate in master mode, employing daemon-mode servers to do the work and collecting the results.  Should be a comma delimited list of host:daemonid pairs to contact.  Daemon ID will be added to baseport to determine actual port used for TCP transactions.')
 o.add_option('--sim_autos', dest='sim_autos', action='store_true',
     help='Use auto-correlations in fitting.  Default is to use only cross-correlations.')
@@ -83,7 +82,7 @@ for obj in start_prms:
     for prm in start_prms[obj]:
         if prms[obj][prm][0] != None:
             start_prms[obj][prm] = prms[obj][prm][0]
-        
+
 prm_list, key_list = a.fit.flatten_prms(start_prms)
 
 first_fit = None    # Used to normalize fit values to the starting fit
@@ -150,7 +149,7 @@ def fit_func(prms, filelist, decimate, decphs):
         eqs = cat.get_crds('eq', ncrd=3)
         flx = cat.get_jys()
         dra,ddec = cat.get('ionref')
-        aa.sim_cache(eqs, flx, mfreqs=mfq, 
+        aa.sim_cache(eqs, flx, mfreqs=mfq,
             ionrefs=(dra,ddec), srcshapes=(a1,a2,th))
         for bl in dbuf[t]:
             i,j = a.miriad.bl2ij(bl)
@@ -235,7 +234,7 @@ elif opts.master:
         fit_func, prm_list,
         #args=(args, opts.decimate, opts.decphs),
         full_output=1, disp=0,
-        maxfun=opts.maxiter, maxiter=np.Inf, 
+        maxfun=opts.maxiter, maxiter=np.Inf,
         ftol=opts.ftol, xtol=opts.xtol
     )
     prms,score = rv[:2]
@@ -245,15 +244,15 @@ elif opts.master:
     print('Score:', score * first_fit, )
     print('(%2.2f%% of %f)' % (100 * score, first_fit))
     print('------------------------------------------------------------')
-            
-    
+
+
 
 elif not opts.snap:
     rv = a.optimize.fmin(
         fit_func, prm_list,
         args=(args, opts.decimate, opts.decphs),
         full_output=1, disp=0,
-        maxfun=opts.maxiter, maxiter=np.Inf, 
+        maxfun=opts.maxiter, maxiter=np.Inf,
         ftol=opts.ftol, xtol=opts.xtol
     )
     prms,score = rv[:2]
@@ -284,7 +283,7 @@ else:
                 fit_func, prm_list,
                 args=([uvfile], decimate, opts.decimate*cnt + opts.decphs),
                 full_output=1, disp=0,
-                maxfun=opts.maxiter, maxiter=np.Inf, 
+                maxfun=opts.maxiter, maxiter=np.Inf,
                 ftol=opts.ftol, xtol=opts.xtol
             )
             prms,score = rv[:2]

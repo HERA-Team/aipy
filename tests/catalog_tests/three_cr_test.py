@@ -1,3 +1,5 @@
+from __future__ import print_function, division, absolute_import
+
 import unittest, aipy._src.three_cr as h, aipy as a, numpy as n
 
 class TestThreeCRCatalog(unittest.TestCase):

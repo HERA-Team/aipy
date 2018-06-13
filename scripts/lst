@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Output LST, Julian date, and Sun position at the provided location
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, optparse, ephem
 
@@ -38,4 +37,3 @@ for jd in map(float, args):
         print(src, '\tALT=%11s' % cat[src].alt, )
         print('\tNEXT TRANSIT=%9.5f' % a.phs.ephem2juldate(aa.next_transit(cat[src])))
     print('-' * 70)
-

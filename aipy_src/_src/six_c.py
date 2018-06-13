@@ -1,6 +1,3 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 The 6C (Sixth Cambridge) Catalog.
 
@@ -13,6 +10,8 @@ txt file.  Copy files to "6c1.txt", "6c2.txt", "6c3.txt", "6c4.txt", "6c5_1.txt"
 and "6c5_2.txt" (for the 5 fields) in the _src directory of your AIPY
 installation.
 """
+
+from __future__ import print_function, division, absolute_import
 
 try:
     import aipy as a
@@ -29,8 +28,8 @@ class SixCCatalog(a.fit.SrcCatalog):
             if len(text) <= 4: continue
             try: int(text[0][0])
             except(ValueError): continue
-            ra = text[0].replace(' ',':') 
-            dec = text[1].replace(' ',':') 
+            ra = text[0].replace(' ',':')
+            dec = text[1].replace(' ',':')
             name = '%s_%s' % (ra,dec)
             jys = float(text[4])
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,

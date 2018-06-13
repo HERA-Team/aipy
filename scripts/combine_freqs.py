@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 A script for reducing the number of channels in a UV data set by coherently
 adding adjacent channels together.
@@ -12,6 +9,8 @@ Date: 6/03/07
 Revisions:
     12/11/07    arp Ported to new miriad file interface
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, sys, os, numpy as np, optparse
 
@@ -35,7 +34,7 @@ for uvfile in args:
     sfreq,sdf,nchan = uvi['sfreq'], uvi['sdf'], uvi['nchan']
     newsfreq = sfreq + ((nchan/opts.nchan) * sdf) / 2
     newsdf = sdf * (nchan/opts.nchan)
-    
+
     if uvo is None:
         uvofile = uvfile+'m'
         if os.path.exists(uvofile):
@@ -43,8 +42,8 @@ for uvfile in args:
             continue
         uvo = a.miriad.UV(uvofile, status='new')
         if nchan != opts.nchan:
-            uvo.init_from_uv(uvi, override={'nchan':opts.nchan, 
-                'sfreq':newsfreq, 'sdf':newsdf, 'nschan':opts.nchan, 
+            uvo.init_from_uv(uvi, override={'nchan':opts.nchan,
+                'sfreq':newsfreq, 'sdf':newsdf, 'nschan':opts.nchan,
                 'freq':newsfreq, 'nchan0':opts.nchan, },)
         else: uvo.init_from_uv(uvi)
 
@@ -64,10 +63,9 @@ for uvfile in args:
             append2hist='COMB_FREQ: nchan=%d careful=%s dont=%s unify=%s\n' % \
                 (opts.nchan, opts.careful_flag, opts.dont_flag, opts.unify))
     else:
-        uvo.pipe(uvi, 
+        uvo.pipe(uvi,
             append2hist='COMB_FREQ: nchan=%d careful=%s dont=%s unify=%s\n' % \
                 (opts.nchan, opts.careful_flag, opts.dont_flag, opts.unify))
     if not opts.unify:
         del(uvo)
         uvo = None
-    

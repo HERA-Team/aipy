@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Python3 compatibility
 from __future__ import print_function, division, absolute_import
 
 import unittest
@@ -22,7 +21,7 @@ class TestDeconv(unittest.TestCase):
         self.d = n.abs(n.fft.ifft2(n.fft.fft2(i) * n.fft.fft2(self.b)))
         ns = n.random.normal(scale=NOISE, size=i.shape)
         self.d = n.abs(self.d + ns)
-        
+
     def test_clean(self):
         """Test that the standard clean deconvolution runs"""
         #print 'Clean'
@@ -38,7 +37,7 @@ class TestDeconv(unittest.TestCase):
         c,info = a.deconv.lsq(self.d, self.b, verbose=False)
         #p.title('LSQ')
         #p.imshow(n.log10(c), vmin=-5, vmax=1)
-        
+
     def test_mem(self):
         """Test the maximum entropy deconvolution runs"""
         #print 'MEM'

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Python3 compatibility
 from __future__ import print_function, division, absolute_import
 
 import unittest
@@ -109,7 +108,7 @@ class TestAntenna(unittest.TestCase):
 #        beam = amp.Beam(freqs)
 #        ants = [amp.Antenna(0,0,0,beam) for i in range(100)]
 #        while True: aa = amp.AntennaArray(('0:00','0:00'), ants)
-        
+
 class TestSuite(unittest.TestSuite):
     """A unittest.TestSuite class which contains all of the aipy.amp unit tests."""
 

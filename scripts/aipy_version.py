@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Helps you figure out which version of AIPY you have installed.
 Lists:
@@ -11,6 +8,9 @@ Lists:
     last commit
     branch
 """
+
+from __future__ import print_function, division, absolute_import
+
 import aipy
 print("AIPY base version in use: ", end='')
 try:
@@ -28,4 +28,3 @@ try:
     print(aipy.__branch__)
 except(AttributeError):
     print("unknown")
-

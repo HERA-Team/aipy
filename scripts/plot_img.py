@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 This is a general-purpose script for plotting simple FITS images.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, sys, optparse, os
 import numpy as np, ephem, math
@@ -19,7 +18,7 @@ o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plot mode can be log (logrithmic), lin (linear), phs (phase), real, or imag.')
 o.add_option('-o', '--outfile', dest='outfile', default='',
     help='If provided, will save the figure to the specified file instead of popping up a window.')
-o.add_option('-p', '--pol', dest='pol', type='int', default=0, 
+o.add_option('-p', '--pol', dest='pol', type='int', default=0,
     help='Polarization index if FITS file has multiple polarizations.  Default 0.')
 o.add_option('--batch', dest='batch', action='store_true',
     help='Process files in batch mode (one plot each) and output to a <input file>.png file')
@@ -111,7 +110,7 @@ for cnt, filename in enumerate(args):
         print('Saving to', outfile)
         p.savefig(outfile)
         p.clf()
-        
+
 
 # Add right-click functionality for finding locations/strengths in map.
 cnt = 1

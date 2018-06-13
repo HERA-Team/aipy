@@ -1,13 +1,12 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
-Provides interfaces to Healpix_cxx, which was developed at the 
-Max-Planck-Institut fuer Astrophysik and financially supported by the 
+Provides interfaces to Healpix_cxx, which was developed at the
+Max-Planck-Institut fuer Astrophysik and financially supported by the
 Deutsches Zentrum fuer Luft- und Raumfahrt (DLR).
 Adds data to the HealpixBase class using numpy arrays, and interfaces to
 FITS files using astropy/pyfits.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
 from . import utils
@@ -19,7 +18,7 @@ from ._healpix import HealpixBase
 from ._alm import Alm
 
 default_fits_format_codes = {
-    np.bool_:'L', np.uint8:'B', np.int16:'I', np.int32:'J', np.int64:'K', 
+    np.bool_:'L', np.uint8:'B', np.int16:'I', np.int32:'J', np.int64:'K',
     np.float32:'E', np.float64:'D', np.complex64:'C', np.complex128:'M'
 }
 
@@ -28,7 +27,7 @@ def mk_arr(val, dtype=np.double):
     return np.array(val, dtype=dtype).flatten()
 
 class HealpixMap(HealpixBase):
-    """Collection of utilities for mapping data on a sphere.  Adds a data map 
+    """Collection of utilities for mapping data on a sphere.  Adds a data map
     to the infrastructure in _healpix.HealpixBase."""
     def __init__(self, *args, **kwargs):
         dtype = kwargs.pop('dtype', np.double)
@@ -166,4 +165,3 @@ class HealpixMap(HealpixBase):
         self._set_fits_header(tbhdu.header)
         hdulist = pyfits.HDUList([hdu0, tbhdu])
         hdulist.writeto(filename,clobber=clobber)
-

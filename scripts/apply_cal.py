@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Apply calibration parameters to a data set.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a
 import optparse, sys, os

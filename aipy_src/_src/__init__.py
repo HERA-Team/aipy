@@ -1,4 +1,3 @@
-# Python3 compatibility
 from __future__ import print_function, division, absolute_import
 
 from . import helm, misc, culgoora, gbsix, mrt, nvss, parkes, txs, wenss

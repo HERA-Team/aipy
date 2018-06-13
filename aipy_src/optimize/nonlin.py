@@ -1,6 +1,3 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Nonlinear solvers
 =================
@@ -38,7 +35,7 @@ details.
                            it remembers how to construct it using vectors, and
                            when computing inv(J)*F, it uses those vectors to
                            compute this product, thus avoding the expensive NxN
-                           matrix multiplication.  
+                           matrix multiplication.
    broyden_generalized --  Generalized Broyden's method, the same as broyden2,
                            but instead of approximating the full NxN Jacobian,
                            it construct it at every iteration in a way that
@@ -60,6 +57,8 @@ details.
    norm --  Returns an L2 norm of the vector
 
 """
+
+from __future__ import print_function, division, absolute_import
 
 import math
 
@@ -127,7 +126,7 @@ def broyden3(F, xin, iter=10, alpha=0.4, verbose = False):
     """Broyden's second method.
 
     Updates inverse Jacobian by an optimal formula.
-    The NxN matrix multiplication is avoided. 
+    The NxN matrix multiplication is avoided.
 
     The best norm |F(x)|=0.003 achieved in ~20 iterations.
 
@@ -376,7 +375,7 @@ def broyden1_modified(F, xin, iter=10, alpha=0.1, verbose = False):
     """
     def inv(A,u,v):
 
-        #interesting is that this 
+        #interesting is that this
         #return (A.I+u*v.T).I
         #is more stable than
         #return A-A*u*v.T*A/float(1+v.T*A*u)
@@ -395,7 +394,7 @@ def broyden1_modified(F, xin, iter=10, alpha=0.1, verbose = False):
         deltaFxm/=norm(deltaxm)
         deltaxm/=norm(deltaxm)
         Jm=inv(Jm+deltaxm*deltaxm.T*Jm,-deltaFxm,deltaxm)
-        
+
         if verbose:
             print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm
@@ -425,7 +424,7 @@ def vackar(F, xin, iter=10, alpha=0.1, verbose = False):
 
 def linearmixing(F,xin, iter=10, alpha=0.1, verbose = False):
     """J=-1/alpha
-    
+
     The best norm |F(x)|=0.005 achieved in ~140 iterations.
     """
     def myF(F,xm):
@@ -445,7 +444,7 @@ def linearmixing(F,xin, iter=10, alpha=0.1, verbose = False):
 
 def excitingmixing(F,xin,iter=10,alpha=0.1,alphamax=1.0, verbose = False):
     """J=-1/alpha
-    
+
     The best norm |F(x)|=0.005 achieved in ~140 iterations.
     """
     def myF(F,xm):

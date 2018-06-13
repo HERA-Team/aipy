@@ -1,11 +1,10 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 A package for interfacing to Miriad: the Multichannel Image Reconstruction
 Image Analysis and Display package for reducing interferometric data for
 radio telescopes.
 """
+
+from __future__ import print_function, division, absolute_import
 
 __version__ = '0.1.2'
 
@@ -65,14 +64,14 @@ data_types = {
 
 #  _   ___     __
 # | | | \ \   / /
-# | | | |\ \ / / 
-# | |_| | \ V /  
-#  \___/   \_/   
+# | | | |\ \ / /
+# | |_| | \ V /
+#  \___/   \_/
 
 class UV(_miriad.UV):
     """Top-level interface to a Miriad UV data set."""
     def __init__(self, filename, status='old', corrmode='r'):
-        """Open a miriad file.  status can be ('old','new','append').  
+        """Open a miriad file.  status can be ('old','new','append').
         corrmode can be 'r' (float32 data storage) or 'j' (int16 with shared exponent).  Default is 'r'."""
         assert(status in ['old', 'new', 'append'])
         assert(corrmode in ['r', 'j'])
@@ -196,7 +195,7 @@ class UV(_miriad.UV):
         except(KeyError):
             self._wrhd(name,val)
     def select(self, name, n1, n2, include=1):
-        """Choose which data are returned by read().  
+        """Choose which data are returned by read().
             name    This can be: 'decimate','time','antennae','visibility',
                     'uvrange','pointing','amplitude','window','or','dra',
                     'ddec','uvnrange','increment','ra','dec','and', 'clear',
@@ -216,7 +215,7 @@ class UV(_miriad.UV):
             n1 += 1; n2 += 1
         self._select(name, float(n1), float(n2), int(include))
     def read(self, raw=False):
-        """Return the next data record.  Calling this function causes 
+        """Return the next data record.  Calling this function causes
         vars to change to reflect the record which this function returns.
         'raw' causes data and flags to be returned seperately."""
         preamble, data, flags, nread = self.raw_read(self.nchan)
@@ -225,7 +224,7 @@ class UV(_miriad.UV):
         if raw: return preamble, data, flags
         return preamble, np.ma.array(data, mask=flags)
     def all(self, raw=False):
-        """Provide an iterator over preamble, data.  Allows constructs like: 
+        """Provide an iterator over preamble, data.  Allows constructs like:
         for preamble, data in uv.all(): ..."""
         curtime = None
         while True:
@@ -233,7 +232,7 @@ class UV(_miriad.UV):
             except(IOError): return
     def write(self, preamble, data, flags=None):
         """Write the next data record.  data must be a complex, masked
-        array.  preamble must be (uvw, t, (i,j)), where uvw is an array of 
+        array.  preamble must be (uvw, t, (i,j)), where uvw is an array of
         u,v,w, t is the Julian date, and (i,j) is an antenna pair."""
         if data is None: return
         if not flags is None: flags = np.logical_not(flags)
@@ -246,8 +245,8 @@ class UV(_miriad.UV):
             data = data.data
         self.raw_write(preamble,data.astype(np.complex64),flags.astype(np.int32))
     def init_from_uv(self, uv, override={}, exclude=[]):
-        """Initialize header items and variables from another UV.  Those in 
-        override will be overwritten by override[k], and tracking will be 
+        """Initialize header items and variables from another UV.  Those in
+        override will be overwritten by override[k], and tracking will be
         turned off (meaning they will not be updated in pipe()).  Those in
         exclude are omitted completely."""
         for k in uv.items():
@@ -266,12 +265,12 @@ class UV(_miriad.UV):
             else:
                 self.vartable[k] = uv.vartable[k]
                 self._wrvr(k, uv.vartable[k], uv[k])
-                uv.trackvr(k, 'c') # Set to copy when copyvr() called 
+                uv.trackvr(k, 'c') # Set to copy when copyvr() called
     def pipe(self, uv, mfunc=echo, append2hist='', raw=False):
         """Pipe in data from another UV through the function
-        mfunc(uv,preamble,data), which should return (preamble,data).  If 
-        mfunc is not provided, the dataset will just be cloned, and if the 
-        returned data is None, it will be omitted.  The string 'append2hist' 
+        mfunc(uv,preamble,data), which should return (preamble,data).  If
+        mfunc is not provided, the dataset will just be cloned, and if the
+        returned data is None, it will be omitted.  The string 'append2hist'
         will be appended to history."""
         self._wrhd('history', self['history'] + append2hist)
         # Pipe all data through mfunc
@@ -303,4 +302,3 @@ def ij2bl(i, j):
     if i > j: i,j = j,i
     if j + 1 < 256: return 256*(i+1) + (j+1)
     else: return 2048*(i+1) + (j+1) + 65536
-

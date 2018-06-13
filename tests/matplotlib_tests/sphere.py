@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+from __future__ import print_function, division, absolute_import
+
 import numpy as n, aipy as a, random, sys
 from matplotlib import pylab as p
 try: from mpl_toolkits.basemap import Basemap

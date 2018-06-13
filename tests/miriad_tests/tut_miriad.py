@@ -1,3 +1,5 @@
+from __future__ import print_function, division, absolute_import
+
 # --------------------------------------------------------------------
 
 import aipy
@@ -5,14 +7,14 @@ uv = aipy.miriad.UV('test.uv')
 print uv.items()
 # ['vartable', 'obstype', 'history']
 print uv['history']
-# C2M (Python): Version=0.1.1.Fixed bandpass inversion & ordering, and pol 
-# label.APPLY_BP: version=0.0.1, corr type = combXRFI: version 0.0.2XTALK2: 
+# C2M (Python): Version=0.1.1.Fixed bandpass inversion & ordering, and pol
+# label.APPLY_BP: version=0.0.1, corr type = combXRFI: version 0.0.2XTALK2:
 # version 0.0.1 Miniaturized...
 print uv.vars()
-# ['latitud', 'npol', 'nspect', 'obsdec', 'vsource', 'ischan', 'operator', 
-# 'nants', 'baseline', 'sfreq', 'inttime', 'source', 'epoch', 'version', 
-# 'ra', 'restfreq', 'nschan', 'sdf', 'corr', 'freq', 'longitu', 'nchan', 
-# 'tscale', 'antpos', 'telescop', 'pol', 'coord', 'veldop', 'lst', 'time', 
+# ['latitud', 'npol', 'nspect', 'obsdec', 'vsource', 'ischan', 'operator',
+# 'nants', 'baseline', 'sfreq', 'inttime', 'source', 'epoch', 'version',
+# 'ra', 'restfreq', 'nschan', 'sdf', 'corr', 'freq', 'longitu', 'nchan',
+# 'tscale', 'antpos', 'telescop', 'pol', 'coord', 'veldop', 'lst', 'time',
 # 'dec', 'obsra']
 print uv['nchan']
 # 64
@@ -132,4 +134,3 @@ for p, d in uv.all():
 # [1j (2+0j) -- (4+0j)]
 
 # --------------------------------------------------------------------
-

@@ -1,4 +1,3 @@
-# Python3 compatibility
 from __future__ import print_function, division, absolute_import
 
 try:
@@ -45,10 +44,10 @@ def get_srcs(srcs=None, cutoff=None):
             try: len(srcshape)
             except(TypeError): srcshape = (srcshape, srcshape, 0.)
             if s in specials:
-                srclist.append(a.fit.RadioSpecial(s, st, mfreq=mfreq, 
+                srclist.append(a.fit.RadioSpecial(s, st, mfreq=mfreq,
                     index=index, srcshape=srcshape))
             else:
-                srclist.append(a.fit.RadioFixedBody(ra, dec, jys=st, mfreq=mfreq, 
+                srclist.append(a.fit.RadioFixedBody(ra, dec, jys=st, mfreq=mfreq,
                     index=index, name=s, srcshape=srcshape))
         _misccat.add_srcs(srclist)
     if srcs is None:
@@ -64,4 +63,3 @@ def get_srcs(srcs=None, cutoff=None):
         try: srclist.append(_misccat[s])
         except(KeyError): pass
     return srclist
-

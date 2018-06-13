@@ -1,10 +1,9 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import numpy as np, time
 from . import utils, coord
@@ -19,7 +18,7 @@ deg2rad = np.pi / 180.
 rad2deg = 180. / np.pi
 
 def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
-    """ 
+    """
     word wrapping function.
         string: the string to wrap
         width: the column number to wrap at
@@ -64,7 +63,7 @@ def convolve2d(a, b):
     return np.fft.ifft2(np.fft.fft2(a) * np.fft.fft2(b))
 
 def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
-    """Return a 2D gaussian.  Normalized to area under curve = 'amp'.  
+    """Return a 2D gaussian.  Normalized to area under curve = 'amp'.
     Down by 1/e at distance 'sigma' from 'center'."""
     if type(shape) == type(0): shape = np.array([2, 2]) * sigma
     def gaussian(x, y):
@@ -82,7 +81,7 @@ class Img:
     """Class for gridding uv data, recording the synthesized beam profile,
     and performing transforms into image domain."""
     def __init__(self, size=100, res=1, mf_order=0):
-        """size = number of wavelengths which the UV matrix spans (this 
+        """size = number of wavelengths which the UV matrix spans (this
         determines the image resolution).
         res = resolution of the UV matrix (determines image field of view)."""
         self.res = float(res)
@@ -137,7 +136,7 @@ class Img:
             bm = [np.zeros_like(i) for i in self.bm]
         if not USEDSP:
             inds = self.get_indices(u,v)
-            
+
             ok = np.logical_and(np.abs(inds[:,0]) < self.shape[0],
                 np.abs(inds[:,1]) < self.shape[1])
             data = data.compress(ok)
@@ -146,7 +145,7 @@ class Img:
         else:
             u,v = self.get_indices(u,v)
             _dsp.grid2D_c(uv, u, v, data.astype(uv.dtype))
-        
+
         for i,wgt in enumerate(wgts):
             if not USEDSP:
                 wgt = wgt.compress(ok)
@@ -190,7 +189,7 @@ class Img:
         for i,wgt in enumerate(wgts): wgts[i] = np.concatenate([wgt,wgt],axis=0)
         return (u,v,w), data, wgts
     def _gen_img(self, data, center=(0,0)):
-        """Return the inverse FFT of the provided data, with the 0,0 point 
+        """Return the inverse FFT of the provided data, with the 0,0 point
         moved to 'center'.  Up=North, Right=East."""
         return recenter(np.fft.ifft2(data).real.astype(np.float32), center)
     def image(self, center=(0,0)):
@@ -211,7 +210,7 @@ class Img:
         z = np.sqrt(1 - x**2 - y**2)
         return x,y,z
     def get_eq(self, ra=0, dec=0, center=(0,0)):
-        """Return the equatorial coordinates of each pixel in the image, 
+        """Return the equatorial coordinates of each pixel in the image,
         assuming the image is centered on the provided ra, dec (in radians)."""
         x,y,z = self.get_top(center)
         shape,mask = x.shape, x.mask
@@ -286,7 +285,7 @@ class ImgW(Img):
                 avg_w = np.average(w_[i:j])
                 if self.verbose:
                     print('Caching W plane ID=', id)
-                projker = np.fromfunction(lambda us,vs: self.conv_invker(us,vs,-avg_w), 
+                projker = np.fromfunction(lambda us,vs: self.conv_invker(us,vs,-avg_w),
                     self.uv.shape).astype(np.complex64)
                 uv_wproj = np.fft.ifft2(np.fft.fft2(self.uv) * projker).astype(np.complex64)
                 bm_wproj = np.fft.ifft2(np.fft.fft2(self.bm[0]) * projker).astype(np.complex64) # is this right to convolve?
@@ -329,17 +328,17 @@ default_fits_format_codes = {
 def to_fits(filename, data, clobber=False,
         axes=('ra--sin','dec--sin'),
         object='', telescope='', instrument='', observer='', origin='AIPY',
-        obs_date=time.strftime('%D'), cur_date=time.strftime('%D'), 
-        ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000., 
+        obs_date=time.strftime('%D'), cur_date=time.strftime('%D'),
+        ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000.,
         freq=0, d_freq=0, bscale=0, bzero=0,history=''):
     """Write image data to a FITS file.  Follows convention of VLA image
     headers.  "axes" describes dimensions of "data" provided.  (ra,dec) are
-    the degree coordinates of image center in the specified "epoch". 
-    (d_ra,d_dec) are approximate pixel-deltas for ra,dec (approximate because 
-    if sine projections of these coordinates are specified--e.g. 
-    "ra---sin"--then the deltas change away from the image center).  If a 
-    "freq" axis is specified, then "freq" is the frequency of the first entry 
-    (in Hz), and "d_freq" is the width of the channel.  The rest are pretty 
+    the degree coordinates of image center in the specified "epoch".
+    (d_ra,d_dec) are approximate pixel-deltas for ra,dec (approximate because
+    if sine projections of these coordinates are specified--e.g.
+    "ra---sin"--then the deltas change away from the image center).  If a
+    "freq" axis is specified, then "freq" is the frequency of the first entry
+    (in Hz), and "d_freq" is the width of the channel.  The rest are pretty
     self-explanitory/can be used however you want."""
     data = data.squeeze()
 #    data.shape = (1,) * (len(axes) - len(data.shape)) + data.shape
@@ -352,7 +351,7 @@ def to_fits(filename, data, clobber=False,
     phdu.header.update('TELESCOP', telescope)
     phdu.header.update('INSTRUME', instrument)
     phdu.header.update('OBSERVER', observer)
-    phdu.header.update('DATE-OBS', obs_date, 
+    phdu.header.update('DATE-OBS', obs_date,
         comment='OBSERVATION START DATE DD/MM/YY')
     phdu.header.update('BSCALE ', bscale,
         comment='REAL = FITS_VALUE * BSCALE + BZERO')
@@ -400,7 +399,7 @@ def from_fits(filename):
     to deduce each keyword listed in to_fits() from the FITS header, but is
     accepting of differences.  Returns values in "kwds" dictionary."""
     phdu = pyfits.open(filename)[0]
-   
+
     try:
         if phdu.header['TRANSPOS']:
             data = phdu.data.transpose()
@@ -454,7 +453,7 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
         axes.append(phdu.header.get(type))
     print(axes)
     data.shape = data.shape #+ (1,) * (len(axes) - len(data.shape))
-#    try: 
+#    try:
 #        if phdu.header['TRANSPOS']:
 #            data = phdu.data.transpose() #for backwards compatibility
 #            phdu.header.update('TRANSPOS',0)
@@ -476,7 +475,7 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
         else: val,delta = None,None
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
-            phdu.header.update('CRPIX%d' % (i+1), 
+            phdu.header.update('CRPIX%d' % (i+1),
                     round(data.shape[-(i+1)]/2.))
         else:
             phdu.header.update('CRPIX%d' % (i+1), 1)
@@ -487,7 +486,7 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     for k,v in kwds.iteritems():
         try:
             phdu.header.update(k,v)
-        except(ValueError): 
+        except(ValueError):
             continue
     if history is None:history = "from_fits_to_fits: from %s to %s"%(infile,
                 outfile)

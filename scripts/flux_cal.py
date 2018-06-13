@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
-A script for dividing out the passband, primary beam, and/or source spectrum 
+A script for dividing out the passband, primary beam, and/or source spectrum
 scaling.  When dividing by a primary beam or source spectrum, it is recommended
 a single source have been isolated in the data set.
 
 Author: Aaron Parsons
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, os, sys, optparse, pickle
 from matplotlib import pylab as p
@@ -79,6 +78,6 @@ for filename in args:
     uvi = a.miriad.UV(filename)
     uvo = a.miriad.UV(uvofile, status='new')
     uvo.init_from_uv(uvi)
-    uvo.pipe(uvi, mfunc=mfunc, raw=True, 
+    uvo.pipe(uvi, mfunc=mfunc, raw=True,
         append2hist='FLUXCAL: srcs=%s passband=%s beam=%s srcflux=%s\n' % \
         (opts.src, opts.passband, opts.beam, opts.srcflux))

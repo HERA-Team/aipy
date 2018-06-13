@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 A script for filtering using a delay/delay-rate transform.  If a source
 is specified, will remove/extract that source.  If none is specified,
 will filter/extract in absolute terms.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, os, sys, optparse, math
 
@@ -128,7 +127,7 @@ for uvfile in args:
                 x1, x2 = opts.drw, -opts.drw+1
                 if x2 == 0: x2 = d.shape[0]
                 d[x1:x2,:] = 0
-            if opts.dw != -1: 
+            if opts.dw != -1:
                 y1, y2 = opts.dw, -opts.dw
                 if y2 == 0: y2 = d.shape[1]
             else: y1, y2 = filters[pol][bl]

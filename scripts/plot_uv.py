@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Creates waterfall plots from Miriad UV files.  Can tile multiple plots
 on one window, or plot just a single baseline.  When taking the delay
@@ -14,6 +11,8 @@ output plot (i.e. as specified by --chan_axis and --time_axis).
 
 Author: Aaron Parsons, Griffin Foster
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, optparse
 from matplotlib import pylab as p
@@ -237,7 +236,7 @@ for cnt, bl in enumerate(bls):
         label = ''
     else:
         pol = a.miriad.pol2str[pol]
-        label = '%d%s,%d%s ' % (i,pol[0],j,pol[-1]) 
+        label = '%d%s,%d%s ' % (i,pol[0],j,pol[-1])
     if is_chan_range and is_time_range:
         if opts.fringe:
             if opts.time_axis == 'index':
@@ -288,7 +287,7 @@ for cnt, bl in enumerate(bls):
         elif dmin is None: dmin = d.min()
         else: dmin = min(dmin,d.min())
         plots[cnt+1] = p.imshow(d, extent=(c1,c2,t2,t1), origin='upper',
-            aspect='auto', interpolation='nearest', 
+            aspect='auto', interpolation='nearest',
             vmax=dmax, vmin=dmin, cmap=cmap)
         p.colorbar(shrink=0.5)
         p.xlabel(xlabel); p.ylabel(ylabel)
@@ -367,9 +366,9 @@ for cnt, bl in enumerate(bls):
     else: raise ValueError('Either time or chan needs to be a range.')
     if not opts.share:
         pol = a.miriad.pol2str[pol]
-        title = '%d%s,%d%s ' % (i,pol[0],j,pol[-1]) 
+        title = '%d%s,%d%s ' % (i,pol[0],j,pol[-1])
         p.title(title)
-if not opts.nolegend and (not is_time_range or not is_chan_range): 
+if not opts.nolegend and (not is_time_range or not is_chan_range):
     p.legend(loc='best')
 
 # Save to a file or pop up a window

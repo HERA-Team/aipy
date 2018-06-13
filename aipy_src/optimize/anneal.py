@@ -1,9 +1,7 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 # Original Author: Travis Oliphant 2002
 # Bug-fixes in 2006 by Tim Leslie
 
+from __future__ import print_function, division, absolute_import
 
 import numpy
 from numpy import asarray, tan, exp, ones, squeeze, sign, \

@@ -1,9 +1,8 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Module for detecting and flaging RFI related effects.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
 from . import optimize
@@ -46,7 +45,7 @@ def flag_by_int(preflagged_auto, nsig=1, raw=False):
     mask = pwr_vs_t.mask
     if raw:
         spikey_pwr_vs_t = pwr_vs_t
-    else: 
+    else:
         spikey_pwr_vs_t = np.abs(pwr_vs_t - remove_spikes(pwr_vs_t, mask.copy()))
     hi_thr, lo_thr = gen_rfi_thresh(spikey_pwr_vs_t, cnt_per_bin=20, nsig=nsig)
     spikey_pwr_vs_t = spikey_pwr_vs_t.filled(hi_thr)
@@ -72,4 +71,3 @@ def remove_spikes(data, mask=None, order=6, iter=3, return_poly=False):
             iter=iter-1, return_poly=True)
     if return_poly: return p
     else: return np.polyval(p, xs)
-

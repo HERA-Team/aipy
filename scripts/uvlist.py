@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Print headers/variables in a Miriad UV file.  If no keywords are provided,
 will print a list of available keywords.
 
 Author: Aaron Parsons
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, sys, optparse
 

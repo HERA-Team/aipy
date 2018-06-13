@@ -1,6 +1,3 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 The Culgoora Catalog.
 
@@ -13,6 +10,8 @@ txt file.  Copy this file to "culgoora.txt" in the _src directory of your AIPY
 installation.
 """
 
+from __future__ import print_function, division, absolute_import
+
 try:
     import aipy as a
 except ImportError:
@@ -24,7 +23,7 @@ class CulgooraCatalog(a.fit.SrcCatalog):
     def get_metadata(self):
         '''Return the actual 80 MHz and 160 MHz measurements used to compute
         the spectral index in the Culgoora catalog. Returns dictionary with
-        source names linked to (S80, S160, index) triplets.  In cases where 
+        source names linked to (S80, S160, index) triplets.  In cases where
         measurements are unavailable, values are entered as None.'''
         return self.metadata
     def fromfile(self,filename):

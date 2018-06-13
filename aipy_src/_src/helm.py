@@ -1,9 +1,8 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 This module interfaces to the Helmboldt catalog (http://arxiv.org/abs/0707.3418)
 """
+
+from __future__ import print_function, division, absolute_import
 
 try:
     import aipy as a
@@ -53,14 +52,14 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
     rms = {}
     def get_rms(self):
         """Return a dictionary giving the Helmboldt fit rms for each source.
-        rms is only computed where enought data below 325MHz is available to 
+        rms is only computed where enought data below 325MHz is available to
         compute a spectral index or Kuehr fit. Null value is indicated with
         a rms=-1. Must first run get_catalog to retrieve data."""
         return self.rms
     ncomp = {}
     def get_ncomp(self):
         """Return a dictionary giving the Helmboldt fit rms for each source.
-        rms is only computed where enought data below 325MHz is available to 
+        rms is only computed where enought data below 325MHz is available to
         compute a spectral index or Kuehr fit. Null value is indicated with
         a rms=-1. Must first run get_catalog to retrieve data."""
         return self.ncomp
@@ -83,7 +82,7 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
             srcs[s] = [ra, dec]
         # Read spectral data
         srclines = [L for L in open(fitfile).readlines() if L.startswith('J')]
-        for line in srclines: 
+        for line in srclines:
             srcs[line[:9]].append(list(map(float, line[13:62].split())))
             try: self.rms[line[:9]] = float(line[63:70])
             except(ValueError): self.rms[line[:9]]=-1
@@ -102,7 +101,7 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
                 srctype = HelmboldtFixedBody
                 ABCD = spec[3:]
                 jys,index = 10**ABCD[0], ABCD[1:]
-            addsrcs.append(srctype(ra, dec, name=s, 
+            addsrcs.append(srctype(ra, dec, name=s,
                 jys=jys, index=index, mfreq=.074))
         self.add_srcs(addsrcs)
 

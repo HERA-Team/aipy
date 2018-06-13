@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Removes crosstalk from PAPER data by modeling it over the course of a day
 as a static per-channel cross-coupling that rises and falls uniformly across
 the band with changing input amplitude.  Steps for crosstalk removal are:
 run "xtalk3.py -o" on 1 day of UV files (which should be flagged for RFI, and
-if possible, have a sky model removed) to 
-generate *.xtalk.npz files.  Then run "xtalk3.py -r" on same UV files to 
-reprocess *.xtalk.npz files, separating them into static shape/uniform gain 
-terms that are stored in *.xtalk.rep.npz files.  Finally, run "xtalk3.py -i" on 
+if possible, have a sky model removed) to
+generate *.xtalk.npz files.  Then run "xtalk3.py -r" on same UV files to
+reprocess *.xtalk.npz files, separating them into static shape/uniform gain
+terms that are stored in *.xtalk.rep.npz files.  Finally, run "xtalk3.py -i" on
 UV files from the same JD (but which need not have RFI flagged or a sky model
-removed) to use the *.xtalk.rep.npz model to remove crosstalk from the visibility 
+removed) to use the *.xtalk.rep.npz model to remove crosstalk from the visibility
 data.
 
 Author: Aaron Parsons
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, os, optparse
 

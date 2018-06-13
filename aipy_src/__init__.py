@@ -1,6 +1,3 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 This package collects together tools for radio astronomical interferometry.
 In addition to pure-python phasing, calibration, imaging, and
@@ -12,6 +9,8 @@ All code provided is released under the GNU General Public License
 
 Author: Aaron Parsons
 """
+
+from __future__ import print_function, division, absolute_import
 
 from . import phs, const, coord, deconv
 from . import fit, healpix, img

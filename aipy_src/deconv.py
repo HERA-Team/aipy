@@ -1,6 +1,3 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 A module implementing various techniques for deconvolving an image by a
 kernel.  Currently implemented are Clean, Least-Squares, Maximum Entropy,
@@ -15,23 +12,25 @@ lower = lower bound of pixel values in deconvolved image
 upper = upper bound of pixel values in deconvolved image
 """
 
+from __future__ import print_function, division, absolute_import
+
 import numpy as np
 import sys
 from . import _deconv
 
 # Find smallest representable # > 0 for setting clip level
-lo_clip_lev = np.finfo(np.float).tiny 
+lo_clip_lev = np.finfo(np.float).tiny
 
-def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3, 
+def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3,
         stop_if_div=True, verbose=False, pos_def=False):
-    """This standard Hoegbom clean deconvolution algorithm operates on the 
-    assumption that the image is composed of point sources.  This makes it a 
-    poor choice for images with distributed flux.  In each iteration, a point 
-    is added to the model at the location of the maximum residual, with a 
-    fraction (specified by 'gain') of the magnitude.  The convolution of that 
-    point is removed from the residual, and the process repeats.  Termination 
-    happens after 'maxiter' iterations, or when the clean loops starts 
-    increasing the magnitude of the residual.  This implementation can handle 
+    """This standard Hoegbom clean deconvolution algorithm operates on the
+    assumption that the image is composed of point sources.  This makes it a
+    poor choice for images with distributed flux.  In each iteration, a point
+    is added to the model at the location of the maximum residual, with a
+    fraction (specified by 'gain') of the magnitude.  The convolution of that
+    point is removed from the residual, and the process repeats.  Termination
+    happens after 'maxiter' iterations, or when the clean loops starts
+    increasing the magnitude of the residual.  This implementation can handle
     1 and 2 dimensional data that is real valued or complex.
     gain: The fraction of a residual used in each iteration.  If this is too
         low, clean takes unnecessarily long.  If it is too high, clean does
@@ -52,9 +51,9 @@ def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3,
         area = np.ones(im.shape, dtype=np.int)
     else:
         area = area.astype(np.int)
-        
+
     iter = _deconv.clean(res, ker, mdl, area,
-            gain=gain, maxiter=maxiter, tol=tol, 
+            gain=gain, maxiter=maxiter, tol=tol,
             stop_if_div=int(stop_if_div), verbose=int(verbose),
             pos_def=int(pos_def))
     score = np.sqrt(np.average(np.abs(res)**2))
@@ -77,20 +76,20 @@ def recenter(a, c):
     a2 = np.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
     return a2
 
-def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200, 
+def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200,
         lower=lo_clip_lev, upper=np.Inf, verbose=False):
-    """This simple least-square fitting procedure for deconvolving an image 
+    """This simple least-square fitting procedure for deconvolving an image
     saves computing by assuming a diagonal pixel-pixel gradient of the fit.
     In essence, this assumes that the convolution kernel is a delta-function.
-    This works for small kernels, but not so well for large ones.  See Cornwell 
-    and Evans, 1984 "A Simple Maximum Entropy Deconvolution Algorithm" for more 
-    information about this approximation.  Unlike maximum entropy, lsq makes 
+    This works for small kernels, but not so well for large ones.  See Cornwell
+    and Evans, 1984 "A Simple Maximum Entropy Deconvolution Algorithm" for more
+    information about this approximation.  Unlike maximum entropy, lsq makes
     no promises about maximizing smoothness, but needs no information
-    about noise levels.  Structure can be introduced for which there is no 
-    evidence in the original image.  Termination happens when the fractional 
+    about noise levels.  Structure can be introduced for which there is no
+    evidence in the original image.  Termination happens when the fractional
     score change is less than 'tol' between iterations.
     gain: The fraction of the step size (calculated from the gradient) taken
-        in each iteration.  If this is too low, the fit takes unnecessarily 
+        in each iteration.  If this is too low, the fit takes unnecessarily
         long.  If it is too high, the fit process can oscillate."""
     if mdl is None:
         #mdl = np.zeros_like(im)
@@ -132,28 +131,28 @@ def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200,
         'score': score, 'iter':i+1})
     return x, info
 
-def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200, 
+def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200,
         lower=lo_clip_lev, upper=np.Inf, verbose=False):
     """Maximum entropy deconvolution (MEM) (see Cornwell and Evans 1984
     "A Simple Maximum Entropy Deconvolution Algorithm" and Sault 1990
     "A Modification of the Cornwell and Evans Maximum Entropy Algorithm")
     is similar to lsq, but the fit is only optimized to within the specified
-    variance (var0) and then "smoothness" is maximized.  This has several 
+    variance (var0) and then "smoothness" is maximized.  This has several
     desirable effects including uniqueness of solution, equal weighting of
-    Fourier components, and absence of spurious structure.  The same 
+    Fourier components, and absence of spurious structure.  The same
     delta-kernel approximation (see lsq) is made here.
     var0: The estimated variance (noise power) in the image.  If none is
         provided, a quick lsq is used to estimate the variance of the residual.
     gain: The fraction of the step size (calculated from the gradient) taken
-        in each iteration.  If this is too low, the fit takes unnecessarily 
+        in each iteration.  If this is too low, the fit takes unnecessarily
         long.  If it is too high, the fit process can oscillate."""
     d_i = im.flatten()
     q = np.sqrt((ker**2).sum())
     minus_two_q = -2*q
     two_q_sq = 2*q**2
     if mdl is None:
-         #mdl = np.ones_like(im) * np.average(im) / ker.sum() 
-         mdl = np.ones(im.shape, dtype=im.dtype) * np.average(im) / ker.sum() 
+         #mdl = np.ones_like(im) * np.average(im) / ker.sum()
+         mdl = np.ones(im.shape, dtype=im.dtype) * np.average(im) / ker.sum()
     #if mdl is None: mdl = np.ones_like(im) * np.average(im) / q
     Nvar0 = d_i.size * var0
     inv_ker = np.fft.fft2(ker)
@@ -197,12 +196,12 @@ def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200,
         'score': score, 'alpha': alpha, 'iter':i+1})
     return b_i, info
 
-def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3, 
-        maxiter=200, lower=lo_clip_lev, upper=np.Inf, verbose=False, 
+def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
+        maxiter=200, lower=lo_clip_lev, upper=np.Inf, verbose=False,
         maxiterok=False):
     """This frontend to maxent tries to find a variance for which maxent will
     converge.  If the starting variance (var) is not specified, it will be
-    estimated as a fraction (f_var0) of the variance of the residual of a 
+    estimated as a fraction (f_var0) of the variance of the residual of a
     lsq deconvolution, and then a search algorithm tests an ever-widening
     range around that value.  This function will search until it succeeds."""
     cl, info, cnt = None, None, -1
@@ -241,15 +240,15 @@ def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
 def anneal(im, ker, mdl=None, maxiter=1000, lower=lo_clip_lev, upper=np.Inf,
         cooling=lambda i,x: 1e+1*(1-np.cos(i/50.))*(x**2), verbose=False):
     """Annealing takes a non-deterministic approach to deconvolution by
-    randomly perturbing the model and selecting perturbations that improve the 
-    residual.  By slowly reducing the temperature of the perturbations, 
+    randomly perturbing the model and selecting perturbations that improve the
+    residual.  By slowly reducing the temperature of the perturbations,
     annealing attempts to settle into a global minimum.  Annealing is slower
-    than lsq for a known gradient, but is less sensitive to gradient errors 
-    (it can solve for wider kernels). Faster cooling speeds terminate more 
-    quickly, but are less likely to find the global minimum.  This 
-    implementation assigns a temperature to each pixel proportional to the 
+    than lsq for a known gradient, but is less sensitive to gradient errors
+    (it can solve for wider kernels). Faster cooling speeds terminate more
+    quickly, but are less likely to find the global minimum.  This
+    implementation assigns a temperature to each pixel proportional to the
     magnitude of the residual in that pixel and the global cooling speed.
-    cooling: A function accepting (iteration,residuals) that returns a 
+    cooling: A function accepting (iteration,residuals) that returns a
         vector of standard deviation for noise in the respective pixels.
         Picking the scaling of this function correctly is vital for annealing
         to work."""

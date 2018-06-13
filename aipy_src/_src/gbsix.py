@@ -1,8 +1,4 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
-"""
-The GB6 Catalog.
+"""The GB6 Catalog.
 
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
@@ -12,6 +8,8 @@ for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy this file to "gb6.txt" in the _src directory of your AIPY
 installation.
 """
+
+from __future__ import print_function, division, absolute_import
 
 try:
     import aipy as a
@@ -35,7 +33,7 @@ class GBSixCatalog(a.fit.SrcCatalog):
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,
                 jys=jys, index=0, mfreq=4.85))
         self.add_srcs(addsrcs)
-            
+
 GBSIXFILE = os.path.join(os.path.dirname(__file__), 'gb6.txt')
 _gbsixcat = None
 

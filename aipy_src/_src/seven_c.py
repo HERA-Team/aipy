@@ -1,6 +1,3 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 The 7C (Seventh Cambridge) Catalog.
 
@@ -12,6 +9,8 @@ for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy this file to "7c.txt" in the _src directory of your AIPY
 installation.
 """
+
+from __future__ import print_function, division, absolute_import
 
 try:
     import aipy as a
@@ -56,4 +55,3 @@ def get_srcs(srcs=None, cutoff=None):
         try: srclist.append(_sevenccat[s])
         except(KeyError): pass
     return srclist
-

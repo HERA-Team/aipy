@@ -1,9 +1,8 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 #
 # optimize - Optimization Tools
 #
+
+from __future__ import print_function, division, absolute_import
 
 from .info import __doc__
 

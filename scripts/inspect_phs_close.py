@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Do one iteration of a delay-solving algorithm.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a
 import numpy as np
@@ -33,7 +32,7 @@ if opts.flag:
         FlagAnt.append(int(antstr))
 
 exec('from %s import prms' % opts.cal)
-        
+
 
 #Read in Data
 DD = {}
@@ -94,7 +93,7 @@ if opts.fixdelay == 'all':
         try: FixDelay[pol] = [prms['delays'][i][pol] for i in AntNos]
         except(KeyError): FixDelay[pol] = [prms['delays'][i] for i in AntNos]
         FixDelayIndex[pi] = range(len(AntNos))
-else: 
+else:
     FixDelay = {}
     FixDelayIndex = []
     for pol in pols:
@@ -104,11 +103,11 @@ else:
                 try: FixDelay[pol].append(prms['delays'][ant][pol])
                 except(KeyError): FixDelay[pol].append(prms['delays'][ant])
                 if not i in FixDelayIndex: FixDelayIndex.append(i)
-            
+
 Tau = {}
 CC = {}
 for pol in pols:
-    
+
     A,b = {},{}
     A = np.zeros((Nbl+len(FixDelay[pol])+1,Nant))
     b = np.zeros(Nbl+len(FixDelay[pol])+1)
@@ -122,7 +121,7 @@ for pol in pols:
         for j,ant2 in enumerate(AntNos):
             if j <= i: continue
             b[index] = Phi_ij[pol][(ant1,ant2)]
-            A[index,i],A[index,j] = 1.,-1.    
+            A[index,i],A[index,j] = 1.,-1.
             index += 1
     #Set Constraints
     for i,Di in enumerate(FixDelayIndex):
@@ -181,4 +180,3 @@ if opts.plots:
             pl.xlabel('Closure phase (ns)')
             pl.ylabel('Number')
             pl.show()
-            

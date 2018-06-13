@@ -1,6 +1,3 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Optimization Tools
 ==================
@@ -56,7 +53,7 @@ Optimization Tools
                            it remembers how to construct it using vectors, and
                            when computing inv(J)*F, it uses those vectors to
                            compute this product, thus avoding the expensive NxN
-                           matrix multiplication.  
+                           matrix multiplication.
    broyden_generalized --  Generalized Broyden's method, the same as broyden2,
                            but instead of approximating the full NxN Jacobian,
                            it construct it at every iteration in a way that
@@ -75,3 +72,4 @@ Optimization Tools
                      techniques.
 """
 
+from __future__ import print_function, division, absolute_import

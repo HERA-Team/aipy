@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Python3 compatibility
 from __future__ import print_function, division, absolute_import
 
 import unittest, numpy as n
@@ -14,7 +13,7 @@ class TestOptimize(unittest.TestCase):
         self.assertAlmostEqual(1.0, fit[0], 4)
         self.assertAlmostEqual(1.0, fit[1], 4)
         self.assertAlmostEqual(1.0, fit[2], 4)
-        
+
     def test_fmin_powell(self):
         """Test optimize.fmin_powell"""
         x0 = [0.8, 1.2, 0.7]
@@ -22,7 +21,7 @@ class TestOptimize(unittest.TestCase):
         self.assertAlmostEqual(1.0, fit[0], 6)
         self.assertAlmostEqual(1.0, fit[1], 6)
         self.assertAlmostEqual(1.0, fit[2], 6)
-        
+
     def test_fmin_ncg(self):
         """Test optimize.fmin_ncg"""
         x0 = [0.8, 1.2, 0.7]
@@ -30,7 +29,7 @@ class TestOptimize(unittest.TestCase):
         self.assertAlmostEqual(1.0, fit[0], 6)
         self.assertAlmostEqual(1.0, fit[1], 6)
         self.assertAlmostEqual(1.0, fit[2], 6)
-        
+
     def test_fmin_ncg_hess_prod(self):
         """Test optimize.fmin_ncg with Hessian product"""
         x0 = [0.8, 1.2, 0.7]
@@ -38,7 +37,7 @@ class TestOptimize(unittest.TestCase):
         self.assertAlmostEqual(1.0, fit[0], 6)
         self.assertAlmostEqual(1.0, fit[1], 6)
         self.assertAlmostEqual(1.0, fit[2], 6)
-        
+
     def test_fmin_ncg_hess_full(self):
         """Test optimize.fmin_ncg with full Hessian"""
         x0 = [0.8, 1.2, 0.7]
@@ -53,31 +52,31 @@ class TestAnneal(unittest.TestCase):
         func = lambda x: n.cos(14.5*x-0.3) + (x+0.2)*x
         fit = o.anneal(func,1.0,full_output=1,upper=3.0,lower=-3.0,feps=1e-4,maxiter=2000,schedule='cauchy')
         self.assertAlmostEqual(-0.195, fit[0], 2)
-        
+
     def test_fast(self):
         """Test optimize.anneal with the fast schedule"""
         func = lambda x: n.cos(14.5*x-0.3) + (x+0.2)*x
         fit = o.anneal(func,1.0,full_output=1,upper=3.0,lower=-3.0,feps=1e-4,maxiter=2000,schedule='fast')
         self.assertAlmostEqual(-0.195, fit[0], 2)
-        
+
     def test_boltzmann(self):
         """Test optimize.anneal with the boltzmann schedule"""
         func = lambda x: n.cos(14.5*x-0.3) + (x+0.2)*x
         fit = o.anneal(func,1.0,full_output=1,upper=3.0,lower=-3.0,feps=1e-4,maxiter=2000,schedule='boltzmann')
         self.assertAlmostEqual(-0.195, fit[0], 2)
-        
+
     #def test_cauchy_twovar(self):
     #    func = lambda x: n.cos(14.5*x[0]-0.3) + (x[1]+0.2)*x[1] + (x[0]+0.2)*x[0]
     #    fit = o.anneal(func,[1.0, 1.0],full_output=1,upper=[3.0, 3.0],lower=[-3.0, -3.0],feps=1e-4,maxiter=2000,schedule='cauchy')
     #    self.assertAlmostEqual(-0.195, fit[0][0], 2)
     #    self.assertAlmostEqual(-0.100, fit[0][1], 2)
-        
+
     #def test_fast_twovar(self):
     #    func = lambda x: n.cos(14.5*x[0]-0.3) + (x[1]+0.2)*x[1] + (x[0]+0.2)*x[0]
     #    fit = o.anneal(func,[1.0, 1.0],full_output=1,upper=[3.0, 3.0],lower=[-3.0, -3.0],feps=1e-4,maxiter=2000,schedule='fast')
     #    self.assertAlmostEqual(-0.195, fit[0][0], 2)
     #    self.assertAlmostEqual(-0.100, fit[0][1], 2)
-        
+
     #def test_boltzmann_twovar(self):
     #    func = lambda x: n.cos(14.5*x[0]-0.3) + (x[1]+0.2)*x[1] + (x[0]+0.2)*x[0]
     #    fit = o.anneal(func,[1.0, 1.0],full_output=1,upper=[3.0, 3.0],lower=[-3.0, -3.0],feps=1e-4,maxiter=2000,schedule='boltzmann')
@@ -95,7 +94,7 @@ class TestNonlin(unittest.TestCase):
         fit = o.broyden1(F,[1,1,1,1,1])
         for i in range(5):
             self.assertAlmostEqual(0.0, fit[i], 0)
-            
+
     def test_broyden2(self):
         """Test optimize.broyden2"""
         def F(x):
@@ -106,7 +105,7 @@ class TestNonlin(unittest.TestCase):
         fit = o.broyden2(F,[1,1,1,1,1])
         for i in range(5):
             self.assertAlmostEqual(0.0, fit[i], 4)
-            
+
     def test_broyden3(self):
         """Test optimize.broyden3"""
         def F(x):

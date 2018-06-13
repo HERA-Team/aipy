@@ -1,6 +1,3 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 The VLSS Catalog.
 
@@ -13,12 +10,14 @@ txt file.  Copy this file to "vlss.txt" in the _src directory of your AIPY
 installation.
 """
 
+from __future__ import print_function, division, absolute_import
+
 try:
     import aipy as a
 except ImportError:
     import aipy_src as a
 import numpy as np, os
-    
+
 class VLSSCatalog(a.fit.SrcCatalog):
     def fromfile(self, filename):
         f = open(filename)

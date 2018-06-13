@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Tarball and compress (using bz2) Miriad UV files.
 Author: Aaron Parsons
 Date: 8/14/07
 """
+
+from __future__ import print_function, division, absolute_import
 
 import sys, os
 from optparse import OptionParser

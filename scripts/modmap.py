@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
 from __future__ import print_function, division, absolute_import
 
 import aipy as a, ephem as e, numpy as np, sys, optparse, os

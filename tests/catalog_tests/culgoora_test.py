@@ -1,3 +1,5 @@
+from __future__ import print_function, division, absolute_import
+
 import unittest, aipy._src.culgoora as h, aipy as a, numpy as n
 
 class TestCulgooraCatalog(unittest.TestCase):
@@ -23,7 +25,7 @@ class TestCulgooraCatalog(unittest.TestCase):
                 self.assertNotEqual(jy080, None)
                 self.assertNotEqual(jy160, None)
                 #self.assertAlmostEqual(index, n.log2(jy160/jy080), 1)
-                
+
 
 if __name__ == '__main__':
     unittest.main()

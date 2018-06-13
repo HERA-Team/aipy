@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 This is a general-purpose script for making images from MIRIAD UV files.  Data
 (optionally selected for baseline, channel) are read from the file, phased
 to a provided position, normalized for passband/primary beam effects, gridded
 to a UV matrix, and imaged
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, optparse, ephem, os
 
@@ -74,12 +73,12 @@ outputs = opts.output.split(',')
 if opts.src == 'zen':
     srcs = [a.phs.RadioFixedBody(aa.sidereal_time(), aa.lat, name='zen')]
     cat = a.phs.SrcCatalog(srcs)
-elif not opts.src is None: 
+elif not opts.src is None:
     srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
     cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
 else:
     ras,decs = a.map.facet_centers(opts.facets, ncrd=2)
-    srcs = [a.phs.RadioFixedBody(ra,dec,name=str(i)) 
+    srcs = [a.phs.RadioFixedBody(ra,dec,name=str(i))
         for i,(ra,dec) in enumerate(zip(ras,decs))]
     cat = a.phs.SrcCatalog(srcs)
 
@@ -90,7 +89,7 @@ if opts.list_facets:
         cen = ephem.Equatorial(src.ra, src.dec, epoch=aa.epoch)
         cen = ephem.Equatorial(cen, epoch=ephem.J2000)
         print('# %3d >  RA=%s  DEC=%s  (%f, %f in deg)' % \
-            (cnt, cen.ra, cen.dec, 
+            (cnt, cen.ra, cen.dec,
             a.img.rad2deg*cen.ra, a.img.rad2deg*cen.dec))
 
 # Generate the image object that will be used.
@@ -202,7 +201,7 @@ for srccnt, s in enumerate(cat.values()):
                       else:
                           im = a.img.ImgW(opts.size, opts.res, mf_order=0, wres=opts.wres)
                       if opts.src == 'zen':
-                          s = a.phs.RadioFixedBody(aa.sidereal_time(), 
+                          s = a.phs.RadioFixedBody(aa.sidereal_time(),
                               aa.lat, name='zen')
                           src = a.fit.SrcCatalog([s])
               curtime = t
@@ -224,7 +223,7 @@ for srccnt, s in enumerate(cat.values()):
           if not opts.skip_bm:
               # Calculate beam strength for weighting purposes
               wgt = aa.bm_response(i,j).squeeze()
-              # Optimal SNR: down-weight beam-attenuated data 
+              # Optimal SNR: down-weight beam-attenuated data
               # by another factor of the beam response.
               d *= wgt; wgt *= wgt
           else: wgt = np.ones(d.shape, dtype=np.float)
@@ -257,5 +256,3 @@ for srccnt, s in enumerate(cat.values()):
         im = a.img.Img(opts.size, opts.res, mf_order=0)
     else:
         im = a.img.ImgW(opts.size, opts.res, mf_order=0, wres=opts.wres)
-    
-

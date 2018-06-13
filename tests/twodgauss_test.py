@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Python3 compatibility
 from __future__ import print_function, division, absolute_import
 
 import unittest, numpy as n
@@ -9,7 +8,7 @@ import aipy.twodgauss as g
 class TestTwodgauss(unittest.TestCase):
     def test_moments(self):
         """Test twodgauss.moments"""
-        
+
         a0 = 2.0
         x0, y0 = 5.0, 7.0
         wx, wy = 1.0, 1.0
@@ -22,10 +21,10 @@ class TestTwodgauss(unittest.TestCase):
         self.assertAlmostEqual(y0, params[3], 3)
         #self.assertAlmostEqual(wx, params[4], 3)	# Why not?
         #self.assertAlmostEqual(wy, params[5], 3)	# Why not?
-        
+
     def test_twodgaussian(self):
         """Test twodgauss.twodgaussian"""
-        
+
         a0 = 2.0
         x0, y0 = 5.0, 7.0
         wx, wy = 1.0, 1.0

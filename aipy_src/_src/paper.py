@@ -1,17 +1,16 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
-The PAPER catalog here is derived by experimental methods in either facets or 
+The PAPER catalog here is derived by experimental methods in either facets or
 healpix maps.
 """
+
+from __future__ import print_function, division, absolute_import
 
 try:
     import aipy as a
 except ImportError:
     import aipy_src as a
 import numpy as np, os
-    
+
 class PAPERCatalog(a.fit.SrcCatalog):
     def fromfile(self, filename):
         f = open(filename)

@@ -1,10 +1,9 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Module adding simulation support to RadioBodys and AntennaArrays.
 Mostly, this means adding gain/amplitude information vs. frequency.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
 import ephem
@@ -12,12 +11,12 @@ from . import phs
 from . import coord
 from . import healpix
 
-#  ____           _ _       ____            _       
-# |  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _ 
+#  ____           _ _       ____            _
+# |  _ \ __ _  __| (_) ___ | __ )  ___   __| |_   _
 # | |_) / _` |/ _` | |/ _ \|  _ \ / _ \ / _` | | | |
 # |  _ < (_| | (_| | | (_) | |_) | (_) | (_| | |_| |
 # |_| \_\__,_|\__,_|_|\___/|____/ \___/ \__,_|\__, |
-#                                             |___/ 
+#                                             |___/
 
 class RadioBody:
     """Class defining flux and spectral index of a celestial source."""
@@ -36,12 +35,12 @@ class RadioBody:
         """Return the fluxes vs. freq that should be used for simulation."""
         return self.jys
 
-#  ____           _ _       _____ _              _ ____            _       
-# |  _ \ __ _  __| (_) ___ |  ___(_)_  _____  __| | __ )  ___   __| |_   _ 
+#  ____           _ _       _____ _              _ ____            _
+# |  _ \ __ _  __| (_) ___ |  ___(_)_  _____  __| | __ )  ___   __| |_   _
 # | |_) / _` |/ _` | |/ _ \| |_  | \ \/ / _ \/ _` |  _ \ / _ \ / _` | | | |
 # |  _ < (_| | (_| | | (_) |  _| | |>  <  __/ (_| | |_) | (_) | (_| | |_| |
 # |_| \_\__,_|\__,_|_|\___/|_|   |_/_/\_\___|\__,_|____/ \___/ \__,_|\__, |
-#                                                                    |___/ 
+#                                                                    |___/
 
 class RadioFixedBody(phs.RadioFixedBody, RadioBody):
     """Class representing a source at fixed RA,DEC.  Adds flux information to
@@ -59,12 +58,12 @@ class RadioFixedBody(phs.RadioFixedBody, RadioBody):
         RadioBody.__init__(self, jys, index)
     def __str__(self):
         outstr = phs.RadioFixedBody.__str__(self)
-        try: outstr = outstr +'\t'+ str(self._jys) 
+        try: outstr = outstr +'\t'+ str(self._jys)
         except(AttributeError): outstr = outstr + '\t'
         try: outstr += '\t' + str(self.index)
-        except(AttributeError): outstr += '\t'  
+        except(AttributeError): outstr += '\t'
         outstr += '\t'+str(self.mfreq)
-        try: outstr = outstr +'\t'+ str(self.jys[0]) 
+        try: outstr = outstr +'\t'+ str(self.jys[0])
         except(AttributeError): outstr = outstr + '\t'
         outstr += '\t'+str(self.afreqs[0])
         return outstr
@@ -72,12 +71,12 @@ class RadioFixedBody(phs.RadioFixedBody, RadioBody):
         phs.RadioFixedBody.compute(self, observer)
         RadioBody.update_jys(self, observer.get_afreqs())
 
-#  ____           _ _      ____                  _       _ 
+#  ____           _ _      ____                  _       _
 # |  _ \ __ _  __| (_) ___/ ___| _ __   ___  ___(_) __ _| |
 # | |_) / _` |/ _` | |/ _ \___ \| '_ \ / _ \/ __| |/ _` | |
 # |  _ < (_| | (_| | | (_) |__) | |_) |  __/ (__| | (_| | |
 # |_| \_\__,_|\__,_|_|\___/____/| .__/ \___|\___|_|\__,_|_|
-#                               |_|                        
+#                               |_|
 
 class RadioSpecial(phs.RadioSpecial, RadioBody):
     """Class representing moving sources (Sun,Moon,planets).  Adds flux
@@ -94,8 +93,8 @@ class RadioSpecial(phs.RadioSpecial, RadioBody):
         phs.RadioSpecial.compute(self, observer)
         RadioBody.update_jys(self, observer.get_afreqs())
 
-#  ____            ____      _        _             
-# / ___| _ __ ___ / ___|__ _| |_ __ _| | ___   __ _ 
+#  ____            ____      _        _
+# / ___| _ __ ___ / ___|__ _| |_ __ _| | ___   __ _
 # \___ \| '__/ __| |   / _` | __/ _` | |/ _ \ / _` |
 #  ___) | | | (__| |__| (_| | || (_| | | (_) | (_| |
 # |____/|_|  \___|\____\__,_|\__\__,_|_|\___/ \__, |
@@ -124,7 +123,7 @@ class Beam(phs.Beam):
         return np.ones((self.afreqs.size, x.size))
 
 class Beam2DGaussian(phs.Beam):
-    """Representation of a 2D Gaussian beam pattern, with default setting for 
+    """Representation of a 2D Gaussian beam pattern, with default setting for
     a flat beam."""
     def __init__(self, freqs, xwidth=np.Inf, ywidth=np.Inf):
         """xwidth = angular width (radians) in EW direction
@@ -132,8 +131,8 @@ class Beam2DGaussian(phs.Beam):
         phs.Beam.__init__(self, freqs)
         self.xwidth, self.ywidth = xwidth, ywidth
     def response(self, xyz):
-        """Return beam response across active band for specified topocentric 
-        coordinates: (x=E,y=N,z=UP). x,y,z may be arrays of multiple 
+        """Return beam response across active band for specified topocentric
+        coordinates: (x=E,y=N,z=UP). x,y,z may be arrays of multiple
         coordinates.  Returns 'x' linear polarization (rotate pi/2 for 'y')."""
         x,y,z = xyz
         x,y = np.arcsin(x)/self.xwidth, np.arcsin(y)/self.ywidth
@@ -145,7 +144,7 @@ class BeamPolynomial(phs.Beam):
     """Representation of a gaussian beam model whose width varies with azimuth
     angle and with frequency."""
     def __init__(self, freqs, poly_azfreq=np.array([[.5]])):
-        """poly_azfreq = a 2D polynomial in cos(2*n*az) for first axis and 
+        """poly_azfreq = a 2D polynomial in cos(2*n*az) for first axis and
         in freq**n for second axis."""
         self.poly = poly_azfreq
         phs.Beam.__init__(self, freqs)
@@ -163,8 +162,8 @@ class BeamPolynomial(phs.Beam):
         phs.Beam.update(self)
         self._update_sigma()
     def response(self, top):
-        """Return beam response across active band for specified topocentric 
-        coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  
+        """Return beam response across active band for specified topocentric
+        coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.
         Returns 'x' pol (rotate pi/2 for 'y')."""
         az,alt = coord.top2azalt(top)
         zang = np.pi/2 - alt
@@ -180,14 +179,14 @@ class BeamPolynomial(phs.Beam):
 
 class BeamAlm(phs.Beam):
     """Representation of a beam model where each pointing has a response
-    defined as a polynomial in frequency, and the spatial distributions of 
+    defined as a polynomial in frequency, and the spatial distributions of
     these coefficients decomposed into spherical harmonics."""
     def __init__(self, freqs, lmax=8, mmax=8, deg=7, nside=64, coeffs={}):
         """lmax = maximum spherical harmonic term
         mmax = maximum spherical harmonic term in the z direction
         deg = order of polynomial to used for mapping response of each pointing
         nside = resolution of underlying HealpixMap to use
-        coeffs = dictionary of polynomial term (integer) and corresponding Alm 
+        coeffs = dictionary of polynomial term (integer) and corresponding Alm
         coefficients (see healpix.py doc)."""
         phs.Beam.__init__(self, freqs)
         self.alm = [healpix.Alm(lmax,mmax) for i in range(deg+1)]
@@ -200,13 +199,13 @@ class BeamAlm(phs.Beam):
         for c,alm in enumerate(self.alm): self.hmap[c].from_alm(self.alm[c])
     def update(self):
         """Update beam model using new set of coefficients.
-        coeffs = dictionary of polynomial term (integer) and corresponding Alm 
+        coeffs = dictionary of polynomial term (integer) and corresponding Alm
         coefficients (see healpix.py doc)."""
         phs.Beam.update(self)
         self._update_hmap()
     def response(self, top):
-        """Return beam response across active band for specified topocentric 
-        coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.  
+        """Return beam response across active band for specified topocentric
+        coordinates (x=E,y=N,z=UP). x,y,z may be multiple coordinates.
         Returns 'x' pol (rotate pi/2 for 'y')."""
         top = [healpix.mk_arr(c, dtype=np.double) for c in top]
         px,wgts = self.hmap[0].crd2px(*top, **{'interpolate':1})
@@ -214,14 +213,14 @@ class BeamAlm(phs.Beam):
         rv = np.polyval(poly, np.reshape(self.afreqs, (self.afreqs.size, 1)))
         return rv
 
-#     _          _                         
-#    / \   _ __ | |_ ___ _ __  _ __   __ _ 
+#     _          _
+#    / \   _ __ | |_ ___ _ __  _ __   __ _
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` |
 #  / ___ \| | | | ||  __/ | | | | | | (_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
 
 class Antenna(phs.Antenna):
-    """Representation of physical location and beam pattern of individual 
+    """Representation of physical location and beam pattern of individual
     antenna in array."""
     def __init__(self, x, y, z, beam, phsoff=[0.,0.], bp_r=np.array([1]),
             bp_i=np.array([0]), amp=1, pointing=(0.,np.pi/2,0), **kwargs):
@@ -262,7 +261,7 @@ class Antenna(phs.Antenna):
     def bm_response(self, top, pol='x'):
         """Return response of beam for specified polarization."""
         top = np.array(top)
-        top = {'x':np.dot(self.rot_pol_x, top), 
+        top = {'x':np.dot(self.rot_pol_x, top),
                'y':np.dot(self.rot_pol_y, top)}[pol]
         x,y,z = top
         return self.beam.response((x,y,z))
@@ -270,12 +269,12 @@ class Antenna(phs.Antenna):
         if conj: return np.conjugate(self._gain)
         else: return self._gain
 
-#     _          _                            _                         
-#    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
+#     _          _                            _
+#    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |
 #  / ___ \| | | | ||  __/ | | | | | | (_| |/ ___ \| |  | | | (_| | |_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
-#                                                                 |___/ 
+#                                                                 |___/
 
 class AntennaArray(phs.AntennaArray):
     """Representation of location and time of observation, and response of
@@ -313,14 +312,14 @@ class AntennaArray(phs.AntennaArray):
     def sim_cache(self, s_eqs, jys=np.array([1.]), mfreqs=0.150,
             ionrefs=(0.,0.), srcshapes=(0,0,0)):
         """Cache intermediate computations given catalog information to speed
-        simulation for multiple baselines.  For efficiency, should only be 
+        simulation for multiple baselines.  For efficiency, should only be
         called once per time setting.  MUST be called before sim().
         s_eqs = array of equatorial vectors for all celestial sources
         jys = array of janskies vs. freq for all celestial sources
         mfreqs = array of frequencies where ionrefs were measured
         ionrefs = (dra,ddec), angular offsets in radians for ra/dec at the
             frequency `mfreq'.
-        srcshapes = (a1,a2,th) where a1,a2 are angular sizes along the 
+        srcshapes = (a1,a2,th) where a1,a2 are angular sizes along the
             semimajor, semiminor axes, and th is the angle (in radians) of
             the semimajor axis from E."""
         # Get topocentric coordinates of all srcs
@@ -357,8 +356,8 @@ class AntennaArray(phs.AntennaArray):
                 'i_ref': (dra,ddec),
             }
     def sim(self, i, j):
-        """Simulate visibilites for the specified (i,j) baseline and 
-        polarization (set with AntennaArray.set_active_pol).  sim_cache() 
+        """Simulate visibilites for the specified (i,j) baseline and
+        polarization (set with AntennaArray.set_active_pol).  sim_cache()
         must be called at each time step before this returns valid results."""
         if self._cache is None:
             raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')

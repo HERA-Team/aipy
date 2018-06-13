@@ -1,9 +1,8 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Module for mapping and modeling the entire sky.
 """
+
+from __future__ import print_function, division, absolute_import
 
 from .  import healpix, coord, img
 import numpy as np, random
@@ -19,7 +18,7 @@ deg2rad = np.pi / 180.
 rad2deg = 180. / np.pi
 
 def pack_sphere(N):
-    """Clever formula for putting N points nearly equally spaced on 
+    """Clever formula for putting N points nearly equally spaced on
     the sphere.  Return xyz coordinates of each point in order from S to N."""
     dz = 2. / N
     z = np.arange(-1+dz/2,1, dz)
@@ -56,7 +55,7 @@ def _local_shuffle(L, width=2):
 def facet_centers(N, ncrd=2):
     """Return the coordinates of N points equally spaced around the sphere.
     Will return xyz or ra,dec depending on ncrd.  Shuffles the order of the
-    pointing centers wrt pack_sphere so that widely spaced points are done 
+    pointing centers wrt pack_sphere so that widely spaced points are done
     first, and then the gaps between them, and then the gaps between those.."""
     assert(ncrd == 2 or ncrd == 3)
     ind1 = np.arange(N); _local_shuffle(ind1)
@@ -116,7 +115,7 @@ class Map(object):
         """Initialize this Map with data from another."""
         self.map.from_hpm(map.map)
         self.wgt.from_hpm(map.wgt)
-        for i in range(min(len(self.ind), len(map.ind))): 
+        for i in range(min(len(self.ind), len(map.ind))):
             self.ind[i].from_hpm(map.ind[i])
     def __getattr__(self, attr):
         try: object.__getatr__(self, attr)
@@ -164,5 +163,5 @@ class Map(object):
                             hdulist[0].header.add_history(subline)
                     else:
                         for subline in img.word_wrap(line,70,5,10,'#').split("\n"):
-                            hdulist[0].header.add_history(subline)       
+                            hdulist[0].header.add_history(subline)
         hdulist.writeto(filename, clobber=clobber)

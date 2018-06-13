@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
-This is a general-purpose script for deconvolving dirty images by a 
+This is a general-purpose script for deconvolving dirty images by a
 corresponding PSF to produce a clean image.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, optparse, ephem, os
 
@@ -75,7 +74,7 @@ for cnt, k in enumerate(keys):
     uvs,bms = np.fft.fft2(dim), np.fft.fft2(dbm)
     if opts.rewgt.startswith('natural'): pass
     else:
-        if opts.rewgt.startswith('uniform'): 
+        if opts.rewgt.startswith('uniform'):
             level = float(opts.rewgt.split('(')[-1][:-1])
             abms = np.abs(bms)
             thresh = abms.max() * level
@@ -104,7 +103,7 @@ for cnt, k in enumerate(keys):
     if opts.maxuv > 0: mask *= np.exp(-r**2/opts.maxuv**2)
     dim = np.fft.ifft2(uvs * mask).real
     dbm = np.fft.ifft2(bms * mask).real
-    
+
     dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
     bm_gain = a.img.beam_gain(dbm)
     print('Gain of dirty beam:', bm_gain)
@@ -112,18 +111,18 @@ for cnt, k in enumerate(keys):
         cim,info = a.deconv.maxent_findvar(dim, dbm, f_var0=opts.var,
             maxiter=opts.maxiter, verbose=True, tol=opts.tol, maxiterok=True)
     elif opts.deconv == 'lsq':
-        cim,info = a.deconv.lsq(dim, dbm, 
+        cim,info = a.deconv.lsq(dim, dbm,
             maxiter=opts.maxiter, verbose=True, tol=opts.tol)
     elif opts.deconv == 'cln':
-        cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
-            maxiter=opts.maxiter, stop_if_div=not opts.div, 
+        cim,info = a.deconv.clean(dim, dbm, gain=opts.gain,
+            maxiter=opts.maxiter, stop_if_div=not opts.div,
             verbose=True, tol=opts.tol,pos_def=not opts.pos_def)
     elif opts.deconv == 'ann':
-        cim,info = a.deconv.anneal(dim, dbm, maxiter=opts.maxiter, 
+        cim,info = a.deconv.anneal(dim, dbm, maxiter=opts.maxiter,
             cooling=lambda i,x: opts.tol*(1-np.cos(i/50.))*(x**2), verbose=True)
     else:
         cim,info = np.zeros_like(dim), {'res':dim}
-    
+
     #Fit a 2d Gaussian to the dirty beam and convolve that with the clean components.
     dbm_fit = np.fft.fftshift(dbm)
     DIM = dbm.shape[0]
@@ -142,10 +141,8 @@ for cnt, k in enumerate(keys):
 
         rim = info['res']
 
-        bim = rim / bm_gain + cimc 
-    
+        bim = rim / bm_gain + cimc
+
     for ftag in ['cim','rim','bim','cimc']:
         print(ftag)
         if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
-    
-

@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Unit test suite for the AIPY package.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import unittest
 

@@ -1,6 +1,3 @@
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 The Mauritius Radio Telescope catalog.
 
@@ -8,6 +5,8 @@ Can be downloaded from
 http://www.rri.res.in/surveys/MRT/Catalogues/CatalogueMRTa.txt Copy this file
 to "CatalogueMRTa.txt" in the _src directory of your AIPY installation.
 """
+
+from __future__ import print_function, division, absolute_import
 
 try:
     import aipy as a
@@ -46,4 +45,3 @@ def get_srcs(srcs=None, cutoff=None):
         try: srclist.append(_mrtcat[s])
         except(KeyError): pass
     return srclist
-

@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Models visibilities for various catalog sources and creates a new Miriad UV
 file containing either the simulated data, or the residual when the model
@@ -10,6 +7,9 @@ is removed from measured data.
 
 Author: Aaron Parsons
 """
+
+from __future__ import print_function, division, absolute_import
+
 import numpy as np, aipy as a, optparse, os, sys, ephem
 
 o = optparse.OptionParser()
@@ -22,7 +22,7 @@ o.add_option('-f', '--flag', dest='flag', action='store_true',
     help='If outputting a simulated data set, mimic the data flagging of the original dataset.')
 #o.add_option('-m', '--map', dest='map',
 #    help='The Healpix map to use for simulation input.')
-#o.add_option('--iepoch', dest='iepoch', default=ephem.J2000, 
+#o.add_option('--iepoch', dest='iepoch', default=ephem.J2000,
 #    help='The epoch of coordinates in the map. Default J2000.')
 #o.add_option('--freq', dest='freq', default=.150, type='float',
 #    help='Frequency of flux data in map.')
@@ -40,7 +40,7 @@ o.add_option('--startjd', dest='startjd', default=2454600., type='float',
     help='Julian Date to start observation if no input data to mimic.  Default is 2454600')
 o.add_option('--endjd', dest='endjd', default=2454601., type='float',
     help='Julian Date to end observation if no input data to mimic.  Default is 2454601')
-o.add_option('--pol', dest='pol', 
+o.add_option('--pol', dest='pol',
     help='Polarizations to simulate (xx,yy,xy,yx) if starting file from scratch.')
 opts, args = o.parse_args(sys.argv[1:])
 
@@ -123,7 +123,7 @@ def mdl(uv, p, d, f):
         #eqs = np.concatenate(eqs, axis=-1)
         #flx = np.concatenate(flx)
         #ind = np.concatenate(ind)
-        aa.sim_cache(eqs, flx, mfreqs=mfq, 
+        aa.sim_cache(eqs, flx, mfreqs=mfq,
             ionrefs=(dras,ddecs), srcshapes=(a1s,a2s,ths))
     aa.set_active_pol(pol)
     sd = aa.sim(i, j)

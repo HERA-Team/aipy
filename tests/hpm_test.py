@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-# Python3 compatibility
 from __future__ import print_function, division, absolute_import
 
 # -*- coding: utf-8 -*-

@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Script for displaying a projection of a spherical (Healpix) data set stored
 in a *.fits file.
 
 Author: Aaron Parsons
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, os, ephem, optparse
 from matplotlib import pylab as p
@@ -61,14 +60,14 @@ class Basemap:
 
 # Try to import basemap module, but on failure use the above class
 try: from mpl_toolkits.basemap import Basemap
-except(ImportError): 
+except(ImportError):
     try: from matplotlib.toolkits.basemap import Basemap
     except(ImportError): pass
 
 o = optparse.OptionParser()
 o.set_usage('plot_map.py [options] mapfile')
 o.set_description(__doc__)
-a.scripting.add_standard_options(o, cal=True, src=True, 
+a.scripting.add_standard_options(o, cal=True, src=True,
     cmap=True, max=True, drng=True)
 o.add_option('-p', '--projection', dest='projection', default='moll',
     help='Map projection to use: moll (default), mill, cyl, robin, sinu.')
@@ -76,9 +75,9 @@ o.add_option('-m', '--mode', dest='mode', default='log',
     help='Plotting mode, can be log (default), lin.')
 o.add_option('--interpolation', dest='interpolation', default='nearest',
     help='Sub-pixel interpolation.  Can be "nearest" or "bicubic".  Default nearest.')
-o.add_option('-c', '--cen', dest='cen', type='float', 
+o.add_option('-c', '--cen', dest='cen', type='float',
     help="Center longitude/right ascension (in degrees) of map.  Default is 0 for galactic coordinate output, 180 for equatorial.")
-o.add_option('-j', '--juldate', dest='juldate', type='float', 
+o.add_option('-j', '--juldate', dest='juldate', type='float',
     help='Julian date used for locating moving sources.')
 o.add_option('--src_mark', dest='src_mark', default='',
     help='Marker to put on src locations.  Can be: ".,o,+,x,^,v".  Default no marker.')
@@ -132,7 +131,7 @@ h.set_interpol(opts.interpolation != 'nearest')
 
 if opts.osys == 'eq': crd = a.coord.radec2eq(np.array([lons.flatten(), lats.flatten()]))
 else: crd = a.coord.radec2eq(np.array([-lons.flatten(), lats.flatten()]))
-m = a.coord.convert_m(opts.osys, opts.isys, 
+m = a.coord.convert_m(opts.osys, opts.isys,
     iepoch=opts.oepoch, oepoch=opts.iepoch)
 x,y,z = np.dot(m, crd)
 try: data, indices = h[x,y,z]
@@ -227,7 +226,7 @@ else:
     cnt = 1
     def click(event):
         global cnt
-        if event.button == 3: 
+        if event.button == 3:
             lon,lat = map(event.xdata, event.ydata, inverse=True)
             if opts.osys == 'eq': lon = (360 - lon) % 360
             lon *= a.img.deg2rad; lat *= a.img.deg2rad
@@ -249,7 +248,7 @@ else:
             print('#%d (RA,DEC): (%s, %s), Jy: %f (4px sum)' % (cnt, ra, dec, flx))
             cnt += 1
         else: return
-            
+
 
 
     #register this function with the event handler

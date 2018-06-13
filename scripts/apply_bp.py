@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# Python3 compatibility
-from __future__ import print_function, division, absolute_import
-
 """
 Apply the bandpass function in a UV file to the raw data, and then write
 to a new UV file which will not have a bandpass file.  Has the (recommended)
@@ -18,6 +15,8 @@ Revisions:
     12/11/07 arp    Updated to new miriad file interface
     05/12/08 arp    Sped up reading w/ "raw" mode
 """
+
+from __future__ import print_function, division, absolute_import
 
 __version__ = '0.0.1'
 
