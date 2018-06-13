@@ -11,14 +11,8 @@ Optimization Tools
                      (uses only function calls)
    fmin_powell --  Powell's (modified) level set method (uses only
                      function calls)
-   fmin_cg     --  Non-linear (Polak-Ribiere) conjugate gradient algorithm
-                     (can use function and gradient).
-   fmin_bfgs   --  Quasi-Newton method (Broydon-Fletcher-Goldfarb-Shanno); 
-                     (can use function and gradient)
    fmin_ncg    --  Line-search Newton Conjugate Gradient (can use
                      function, gradient and Hessian).
-   leastsq     --  Minimize the sum of squares of M equations in
-                     N unknowns given a starting estimate.
 
   Global Optimizers
 
