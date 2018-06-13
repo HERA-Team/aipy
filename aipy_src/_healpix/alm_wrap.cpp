@@ -19,19 +19,19 @@
 // Some macros...
 #define QUOTE(a) # a
 
-#define IND1(a,i,type) *((type *)(a->data + i*a->strides[0]))
-#define IND2(a,i,j,type) *((type *)(a->data+i*a->strides[0]+j*a->strides[1]))
+#define IND1(a,i,type) *((type *)((char *)PyArray_DATA(a) + i*PyArray_STRIDES(a)[0]))
+#define IND2(a,i,j,type) *((type *)((char *)PyArray_DATA(a)+i*PyArray_STRIDES(a)[0]+j*PyArray_STRIDES(a)[1]))
 
-#define TYPE(a) a->descr->type_num
+#define TYPE(a) PyArray_DESCR(a)->type_num
 #define CHK_ARRAY_TYPE(a,type) \
     if (TYPE(a) != type) { \
         PyErr_Format(PyExc_ValueError, "type(%s) != %s", \
         QUOTE(a), QUOTE(type)); \
         return NULL; }
 
-#define DIM(a,i) a->dimensions[i]
+#define DIM(a,i) PyArray_DIM(a, i)
 
-#define RANK(a) a->nd
+#define RANK(a) PyArray_NDIM(a)
 #define CHK_ARRAY_RANK(a,r) \
     if (RANK(a) != r) { \
         PyErr_Format(PyExc_ValueError, "rank(%s) != %s", \
@@ -219,7 +219,7 @@ static PyObject * AlmObject_to_map(AlmObject *self, PyObject *args) {
         alm2map<double>(self->alm, map);
         // Transfer map contents into numpy array
         npix = map.Npix();
-        rv = (PyArrayObject *) PyArray_SimpleNew(1, &npix, PyArray_DOUBLE);
+        rv = (PyArrayObject *) PyArray_SimpleNew(1, &npix, NPY_DOUBLE);
         CHK_NULL(rv);
         for (int i=0; i < npix; i++) IND1(rv,i,double) = map[i];
         return PyArray_Return(rv);
@@ -287,8 +287,8 @@ static PyObject * AlmObject_lm_indices(AlmObject *self) {
     int lmax = self->alm.Lmax(), mmax = self->alm.Mmax();
     npy_intp num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
     int cnt=0;
-    L = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, PyArray_INT);
-    M = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, PyArray_INT);
+    L = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, NPY_INT);
+    M = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, NPY_INT);
     CHK_NULL(L); CHK_NULL(M);
     for (int l=0; l<=lmax; ++l) {
         for (int m=0; m<=mmax; ++m) {
@@ -308,14 +308,14 @@ static PyObject * AlmObject_get_data(AlmObject *self) {
     npy_intp num_alms = ((mmax+1)*(mmax+2))/2 + (mmax+1)*(lmax-mmax);
     xcomplex<double> c;
     int cnt=0;
-    rv = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, PyArray_CDOUBLE);
+    rv = (PyArrayObject *) PyArray_SimpleNew(1, &num_alms, NPY_CDOUBLE);
     CHK_NULL(rv);
     for (int l=0; l<=lmax; ++l) {
         for (int m=0; m<=mmax; ++m) {
             if (m > l) break;
             c = self->alm(l,m);
-            *((double *)(rv->data + cnt*rv->strides[0])) = (double) c.real();
-            *((double *)(rv->data + cnt*rv->strides[0] + sizeof(double))) = (double) c.imag();
+            *((double *)((char *) PyArray_DATA(rv) + cnt*PyArray_STRIDES(rv)[0])) = (double) c.real();
+            *((double *)((char *) PyArray_DATA(rv) + cnt*PyArray_STRIDES(rv)[0] + sizeof(double))) = (double) c.imag();
             cnt++;
         }
     }
@@ -331,15 +331,15 @@ static PyObject * AlmObject_set_data(AlmObject *self, PyObject *args) {
     xcomplex<double> c;
     if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &data)) return NULL;
     if (RANK(data) != 1 || DIM(data,0) != num_alms) {
-        PyErr_Format(PyExc_ValueError, "%s", "data must have length %d.", num_alms);
+        PyErr_Format(PyExc_ValueError, "data must have length %d.", num_alms);
         return NULL;
     }
     CHK_ARRAY_TYPE(data, NPY_CDOUBLE);
     for (int l=0; l<=lmax; ++l) {
         for (int m=0; m<=mmax; ++m) {
             if (m > l) break;
-            c.Set(*((double *)(data->data + cnt*data->strides[0])),
-             *((double *)(data->data + cnt*data->strides[0] + sizeof(double))));
+            c.Set(*((double *)((char *) PyArray_DATA(data) + cnt*PyArray_STRIDES(data)[0])),
+                  *((double *)((char *) PyArray_DATA(data) + cnt*PyArray_STRIDES(data)[0] + sizeof(double))));
             self->alm(l,m) = c;
             cnt++;
         }

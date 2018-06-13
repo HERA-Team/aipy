@@ -48,7 +48,7 @@ Copyright 1984, 1995 by Stephen L. Moshier
 double log(), frexp();
 int signbit();
 #endif
-extern double NEGZERO, INFINITY, MAXNUM, MAXLOG, MINLOG, LOGE2;
+extern double NEGZERO, CEPHES_INFINITY, MAXNUM, MAXLOG, MINLOG, LOGE2;
 
 double powi( x, nn )
 double x;
@@ -63,7 +63,7 @@ if( x == 0.0 )
 	if( nn == 0 )
 		return( 1.0 );
 	else if( nn < 0 )
-	    return( INFINITY );
+	    return(CEPHES_INFINITY );
 	else
 	  {
 	    if( nn & 1 )
@@ -121,7 +121,7 @@ else
 if( s > MAXLOG )
 	{
 	mtherr( "powi", OVERFLOW );
-	y = INFINITY;
+	y = CEPHES_INFINITY;
 	goto done;
 	}
 

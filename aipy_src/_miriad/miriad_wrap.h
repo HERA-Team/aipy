@@ -1,11 +1,8 @@
 #ifndef _MIRIAD_WRAP_H_
 #define _MIRIAD_WRAP_H_
 
-/* You have to import miriad.h first, otherwise python and miriad disagree
- * about sizeof(off_t) which leads to lots of painfully concealed errors.
- */
-#include "miriad.h"
 #include <Python.h>
+#include "miriad.h"
 #include "numpy/arrayobject.h"
 #include <string>
 #include "hio.h"
@@ -28,16 +25,16 @@
 
 // Some numpy macros...
 #define QUOTE(a) # a
-#define IND1(a,i,type) *((type *)(a->data + i*a->strides[0]))
-#define IND2(a,i,j,type) *((type *)(a->data+i*a->strides[0]+j*a->strides[1]))
-#define TYPE(a) a->descr->type_num
+#define IND1(a,i,type) *((type *)((char *)PyArray_DATA(a) + i*PyArray_STRIDES(a)[0]))
+#define IND2(a,i,j,type) *((type *)((char *)PyArray_DATA(a)+i*PyArray_STRIDES(a)[0]+j*PyArray_STRIDES(a)[1]))
+#define TYPE(a) PyArray_DESCR(a)->type_num
 #define CHK_ARRAY_TYPE(a,type) \
     if (TYPE(a) != type) { \
         PyErr_Format(PyExc_ValueError, "type(%s) != %s", \
         QUOTE(a), QUOTE(type)); \
         return NULL; }
-#define DIM(a,i) a->dimensions[i]
-#define RANK(a) a->nd
+#define DIM(a,i) PyArray_DIM(a, i)
+#define RANK(a) PyArray_NDIM(a)
 #define CHK_ARRAY_RANK(a,r) \
     if (RANK(a) != r) { \
         PyErr_Format(PyExc_ValueError, "rank(%s) != %s", \

@@ -1,11 +1,11 @@
 #include "miriad_wrap.h"
 
-#define MAXVAR 8192
+#define MAXVAR 32768
 
-/*____                           _                    _    
+/*____                           _                    _
  / ___|_ __ ___  _   _ _ __   __| |_      _____  _ __| | __
 | |  _| '__/ _ \| | | | '_ \ / _` \ \ /\ / / _ \| '__| |/ /
-| |_| | | | (_) | |_| | | | | (_| |\ V  V / (_) | |  |   < 
+| |_| | | | (_) | |_| | | | | (_| |\ V  V / (_) | |  |   <
  \____|_|  \___/ \__,_|_| |_|\__,_| \_/\_/ \___/|_|  |_|\_\
 */
 
@@ -51,7 +51,7 @@ static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
     switch (corrmode[0]) {
         case 'r': case 'j': break;
         default:
-            PyErr_Format(PyExc_ValueError, "%s", "UV corrmode must be 'r' or 'j' (got '%c')", corrmode[0]);
+            PyErr_Format(PyExc_ValueError, "UV corrmode must be 'r' or 'j' (got '%c')", corrmode[0]);
             return -1;
     }
     // Setup an error handler so MIRIAD doesn't just exit
@@ -69,12 +69,12 @@ static int UVObject_init(UVObject *self, PyObject *args, PyObject *kwds) {
     return 0;
 }
 
-/* ___  _     _           _     __  __      _   _               _     
-  / _ \| |__ (_) ___  ___| |_  |  \/  | ___| |_| |__   ___   __| |___ 
+/* ___  _     _           _     __  __      _   _               _
+  / _ \| |__ (_) ___  ___| |_  |  \/  | ___| |_| |__   ___   __| |___
  | | | | '_ \| |/ _ \/ __| __| | |\/| |/ _ \ __| '_ \ / _ \ / _` / __|
  | |_| | |_) | |  __/ (__| |_  | |  | |  __/ |_| | | | (_) | (_| \__ \
   \___/|_.__// |\___|\___|\__| |_|  |_|\___|\__|_| |_|\___/ \__,_|___/
-           |__/                                                       
+           |__/
 */
 
 // Thin wrapper over uvrewind_c
@@ -97,15 +97,15 @@ PyObject * UVObject_read(UVObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "i", &n2read)) return NULL;
     // Make numpy arrays to hold the results
     npy_intp data_dims[1] = {n2read};
-    data = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, PyArray_CFLOAT);
+    data = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, NPY_CFLOAT);
     CHK_NULL(data);
-    flags = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, PyArray_INT);
+    flags = (PyArrayObject *) PyArray_SimpleNew(1, data_dims, NPY_INT);
     CHK_NULL(flags);
     while (1) {
         // Here is the MIRIAD call
         try {
             uvread_c(self->tno, preamble,
-                (float *)data->data, (int *)flags->data, n2read, &nread);
+                     (float *)PyArray_DATA(data), (int *)PyArray_DATA(flags), n2read, &nread);
         } catch (MiriadError &e) {
             PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
             return NULL;
@@ -120,7 +120,7 @@ PyObject * UVObject_read(UVObject *self, PyObject *args) {
     }
     // Now we build a return value of ((uvw,t,(i,j)), data, flags, nread)
     npy_intp uvw_dims[1] = {3};
-    uvw = (PyArrayObject *) PyArray_SimpleNew(1, uvw_dims, PyArray_DOUBLE);
+    uvw = (PyArrayObject *) PyArray_SimpleNew(1, uvw_dims, NPY_DOUBLE);
     CHK_NULL(uvw);
     IND1(uvw,0,double) = preamble[0];
     IND1(uvw,1,double) = preamble[1];
@@ -143,12 +143,11 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
     int i, j;
     double preamble[PREAMBLE_SIZE], t;
     // Parse arguments and typecheck
-    if (!PyArg_ParseTuple(args, "(O!d(ii))O!O!", 
+    if (!PyArg_ParseTuple(args, "(O!d(ii))O!O!",
         &PyArray_Type, &uvw, &t, &i, &j,
         &PyArray_Type, &data, &PyArray_Type, &flags)) return NULL;
     if (RANK(uvw) != 1 || DIM(uvw,0) != 3) {
-        PyErr_Format(PyExc_ValueError, "%s", 
-            "uvw must have shape (3,) %d", RANK(uvw));
+        PyErr_Format(PyExc_ValueError, "uvw must have shape (3,) %d", RANK(uvw));
         return NULL;
     } else if (RANK(data)!=1 || RANK(flags)!=1 || DIM(data,0)!=DIM(flags,0)) {
         PyErr_Format(PyExc_ValueError,
@@ -160,7 +159,7 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
     // Check for both int,long, b/c label of 32b number is platform dependent
     if (TYPE(flags) != NPY_INT && \
             (sizeof(int) == sizeof(long) && TYPE(flags) != NPY_LONG)) {
-        PyErr_Format(PyExc_ValueError, "%s", "type(flags) != NPY_LONG or NPY_INT");
+        PyErr_Format(PyExc_ValueError, "type(flags) != NPY_LONG or NPY_INT");
         return NULL;
     }
     // Fill up the preamble
@@ -172,7 +171,7 @@ PyObject * UVObject_write(UVObject *self, PyObject *args) {
     // Here is the MIRIAD call
     try {
         uvwrite_c(self->tno, preamble,
-            (float *)data->data, (int *)flags->data, DIM(data,0));
+            (float *)PyArray_DATA(data), (int *)PyArray_DATA(flags), DIM(data,0));
     } catch (MiriadError &e) {
         PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
         return NULL;
@@ -208,14 +207,14 @@ PyObject * UVObject_trackvr(UVObject *self, PyObject *args) {
     Py_INCREF(Py_None);
     return Py_None;
 }
-                
+
 #define RET_IA(htype,pyconstructor,type1,type2,npy_type) \
     if (length == 1) { \
         uvgetvr_c(self->tno,htype,name,value,length); \
         return pyconstructor((type1) ((type2 *)value)[0]); } \
     rv = (PyArrayObject *) PyArray_SimpleNew(1,dims,npy_type); \
     CHK_NULL(rv); \
-    uvgetvr_c(self->tno,htype,name,(char *)(rv->data),length);\
+    uvgetvr_c(self->tno,htype,name,(char *)(PyArray_DATA(rv)),length);\
     return PyArray_Return(rv);
 
 /* rdvr is responsible for reading variables of all types.  It wraps the
@@ -226,8 +225,44 @@ PyObject * UVObject_rdvr(UVObject *self, PyObject *args) {
     int length, updated;
     npy_intp dims[1];
     PyArrayObject *rv;
-    if (!PyArg_ParseTuple(args, "ss", &name, &type)) return NULL;
+    int elem_size;
+
+    if (!PyArg_ParseTuple(args, "ss", &name, &type))
+        return NULL;
+
+
     uvprobvr_c(self->tno, name, value, &length, &updated);
+
+    switch (type[0]) {
+    case 'a':
+        elem_size = 1;
+        break;
+    case 'j':
+        elem_size = 2;
+        break;
+    case 'i':
+        elem_size = 4;
+        break;
+    case 'r':
+        elem_size = 4;
+        break;
+    case 'd':
+        elem_size = 8;
+        break;
+    case 'c':
+        elem_size = 8;
+        break;
+    default:
+        PyErr_Format(PyExc_ValueError, "unknown type of UV variable \"%s\": %c", name, type[0]);
+        return NULL;
+    }
+
+    if (length * elem_size > MAXVAR) {
+        PyErr_Format(PyExc_ValueError, "UV variable \"%s\" too big for aipy's "
+                     "internal buffers", name);
+        return NULL;
+    }
+
     dims[0] = length;
     try {
         switch (type[0]) {
@@ -238,30 +273,29 @@ PyObject * UVObject_rdvr(UVObject *self, PyObject *args) {
                 uvgetvr_c(self->tno,H_INT2,name,value,length);
                 if (length == 1)
                     return PyInt_FromLong((long) ((short *)value)[0]);
-                rv = (PyArrayObject *) PyArray_SimpleNew(1, dims, PyArray_INT);
+                rv = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_INT);
                 CHK_NULL(rv);
                 for (int i=0; i < length; i++)
                     IND1(rv,i,int) = ((short *)value)[i];
                 return PyArray_Return(rv);
             case 'i':
-                RET_IA(H_INT,PyInt_FromLong,long,int,PyArray_INT);
+                RET_IA(H_INT,PyInt_FromLong,long,int,NPY_INT);
             case 'r':
-                RET_IA(H_REAL,PyFloat_FromDouble,double,float,PyArray_FLOAT);
+                RET_IA(H_REAL,PyFloat_FromDouble,double,float,NPY_FLOAT);
             case 'd':
-                RET_IA(H_DBLE,PyFloat_FromDouble,double,double,PyArray_DOUBLE);
+                RET_IA(H_DBLE,PyFloat_FromDouble,double,double,NPY_DOUBLE);
             case 'c':
                 if (length == 1) {
                     uvgetvr_c(self->tno,H_CMPLX,name,value,length);
-                    return PyComplex_FromDoubles(((double *)value)[0], 
+                    return PyComplex_FromDoubles(((double *)value)[0],
                                                  ((double *)value)[1]);
                 }
-                rv = (PyArrayObject *) PyArray_SimpleNew(1,dims,PyArray_CDOUBLE);
+                rv = (PyArrayObject *) PyArray_SimpleNew(1,dims,NPY_CDOUBLE);
                 CHK_NULL(rv);
-                uvgetvr_c(self->tno,H_CMPLX,name,(char *)rv->data,length);
+                uvgetvr_c(self->tno,H_CMPLX,name,(char *)PyArray_DATA(rv),length);
                 return PyArray_Return(rv);
             default:
-                PyErr_Format(PyExc_ValueError, "%s", "unknown var type: %c",type[0]);
-                return NULL;
+                return NULL; /* can't happen with previous switch */
         }
     } catch (MiriadError &e) {
         PyErr_Format(PyExc_RuntimeError, "%s", e.get_message());
@@ -272,7 +306,7 @@ PyObject * UVObject_rdvr(UVObject *self, PyObject *args) {
 #define STORE_IA(npy_type,htype,chk_type,type,pyconverter) \
     if (PyArray_Check(wr_val)) { \
         CHK_ARRAY_TYPE(wr_arr,npy_type); \
-        uvputvr_c(self->tno,htype,name,(char *)wr_arr->data,DIM(wr_arr,0)); \
+        uvputvr_c(self->tno,htype,name,(char *) PyArray_DATA(wr_arr),DIM(wr_arr,0)); \
     } else { \
         chk_type(wr_val); \
         ((type *)value)[0] = (type) pyconverter(wr_val); \
@@ -312,7 +346,7 @@ PyObject * UVObject_wrvr(UVObject *self, PyObject *args) {
             case 'c':
                 if (PyArray_Check(wr_val)) {
                     CHK_ARRAY_TYPE(wr_arr,NPY_CDOUBLE);
-                    uvputvr_c(self->tno,H_CMPLX,name,(char *)wr_arr->data,
+                    uvputvr_c(self->tno,H_CMPLX,name,(char *)PyArray_DATA(wr_arr),
                         DIM(wr_arr,0));
                 } else {
                     CHK_COMPLEX(wr_val);
@@ -322,7 +356,7 @@ PyObject * UVObject_wrvr(UVObject *self, PyObject *args) {
                 }
                 break;
             default:
-                PyErr_Format(PyExc_ValueError, "%s", "unknown var type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "unknown UV variable type: %c", type[0]);
                 return NULL;
         }
         Py_INCREF(Py_None);
@@ -404,7 +438,7 @@ PyObject * WRAP_hwrite_init(PyObject *self, PyObject *args) {
             case 'd': INIT(dble_item,H_DBLE_SIZE); break;
             case 'c': INIT(cmplx_item,H_CMPLX_SIZE); break;
             default:
-                PyErr_Format(PyExc_ValueError, "%s", "unknown item type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "unknown item type: %c", type[0]);
                 return NULL;
         }
         return PyInt_FromLong(offset);
@@ -519,7 +553,7 @@ PyObject * WRAP_hwrite(PyObject *self, PyObject *args) {
                 offset = H_CMPLX_SIZE;
                 break;
             default:
-                PyErr_Format(PyExc_ValueError, "unknown item type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "unknown item type: %c", type[0]);
                 return NULL;
         }
         return PyInt_FromLong(offset);
@@ -572,7 +606,7 @@ PyObject * WRAP_hread(PyObject *self, PyObject *args) {
                 Py_DECREF(val);
                 return rv;
             default:
-                PyErr_Format(PyExc_ValueError, "unknown item type: %c",type[0]);
+                PyErr_Format(PyExc_ValueError, "unknown item type: %c", type[0]);
                 return NULL;
         }
     } catch (MiriadError &e) {
@@ -581,12 +615,12 @@ PyObject * WRAP_hread(PyObject *self, PyObject *args) {
     }
 }
 
-/*_        __                     _               _   _       
- \ \      / / __ __ _ _ __  _ __ (_)_ __   __ _  | | | |_ __  
-  \ \ /\ / / '__/ _` | '_ \| '_ \| | '_ \ / _` | | | | | '_ \ 
+/*_        __                     _               _   _
+ \ \      / / __ __ _ _ __  _ __ (_)_ __   __ _  | | | |_ __
+  \ \ /\ / / '__/ _` | '_ \| '_ \| | '_ \ / _` | | | | | '_ \
    \ V  V /| | | (_| | |_) | |_) | | | | | (_| | | |_| | |_) |
-    \_/\_/ |_|  \__,_| .__/| .__/|_|_| |_|\__, |  \___/| .__/ 
-                     |_|   |_|            |___/        |_|    
+    \_/\_/ |_|  \__,_| .__/| .__/|_|_| |_|\__, |  \___/| .__/
+                     |_|   |_|            |___/        |_|
 */
 // Bind methods to object
 static PyMethodDef UVObject_methods[] = {
@@ -684,4 +718,3 @@ PyMODINIT_FUNC init_miriad(void) {
     PyModule_AddObject(m, "UV", (PyObject *)&UVType);
     PyModule_AddIntConstant(m, "MAXCHAN", MAXCHAN);
 }
-

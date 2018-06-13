@@ -513,7 +513,7 @@ return( p * SQ2OPI / sqrt(x) );
 #define PIO4 .78539816339744830962
 #define SQ2OPI .79788456080286535588
 */
-extern double INFINITY, NAN;
+extern double CEPHES_INFINITY, CEPHES_NAN;
 
 double y0(x)
 double x;
@@ -524,10 +524,10 @@ if( x <= 5.0 )
 	{
 	if (x == 0.0) {
 		mtherr("y0", SING);
-		return -INFINITY;
+		return -CEPHES_INFINITY;
 	} else if (x < 0.0) {
 		mtherr("y0", DOMAIN);
-		return NAN;
+		return CEPHES_NAN;
 	}
 	z = x * x;
 	w = polevl( z, YP, 7) / p1evl( z, YQ, 7 );

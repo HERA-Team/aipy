@@ -41,6 +41,7 @@
        03-jan-05  pjt/rjs   hreada/hwritea off_t -> size_t for length 
 */
 
+#include <Python.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -76,7 +77,7 @@
 #define RDWR_RDWR    2
 
 typedef struct {          /* buffer for I/O operations */
-  off_t  offset;
+  off64_t  offset;
   size_t length;
   int    state; 
   char   *buf;
@@ -85,9 +86,9 @@ typedef struct {          /* buffer for I/O operations */
 typedef struct item {	
   char *name;
   int handle,flags,fd,last;
-  off_t size;
+  off64_t size;
   size_t bsize;       /* bsize can technicall be an int, since it's an internal buffer size */
-  off_t offset;
+  off64_t offset;
   struct tree *tree;
   IOB io[2];
   struct item *fwd;
@@ -134,7 +135,7 @@ private int first=TRUE;
 
 static void hinit_c(void);
 static int hfind_nl(char *buf, int len);
-static void hcheckbuf_c(ITEM *item, off_t next, int *iostat);
+static void hcheckbuf_c(ITEM *item, off64_t next, int *iostat);
 static void hwrite_fill_c(ITEM *item, IOB *iob, int next, int *iostat);
 static void hcache_create_c(TREE *t, int *iostat);
 static void hcache_read_c(TREE *t, int *iostat);
@@ -722,7 +723,7 @@ int hexists_c(int tno,Const char *keyword)
 {
   char path[MAXPATH];
   int iostat,fd;
-  off_t size;
+  off64_t size;
   ITEM *item;
   TREE *t;
 
@@ -817,7 +818,7 @@ void hdaccess_c(int ihandle,int *iostat)
   }
 }
 /************************************************************************/
-off_t hsize_c(int ihandle)
+off64_t hsize_c(int ihandle)
 /**hsize -- Determine the size (in bytes) of an item. 			*/
 /*&pjt									*/
 /*:low-level-i/o							*/
@@ -841,7 +842,7 @@ off_t hsize_c(int ihandle)
 }
 /************************************************************************/
 void hio_c(int ihandle,int dowrite,int type,char *buf,
-	   off_t offset, size_t length,int *iostat)
+	   off64_t offset, size_t length,int *iostat)
 /**hread,hwrite -- Read and write items.	 			*/
 /*&pjt									*/
 /*:low-level-i/o							*/
@@ -927,7 +928,7 @@ void hio_c(int ihandle,int dowrite,int type,char *buf,
 {
   char *s;
   int b;              /* 0 or 1, pointing in one of two IOB buffers */
-  off_t next, off;
+  off64_t next, off;
   size_t size, len;
   IOB *iob1,*iob2;
   ITEM *item;
@@ -937,7 +938,7 @@ void hio_c(int ihandle,int dowrite,int type,char *buf,
 
 /* Check various end-of-file conditions and for adequate buffers. */
 
-  next = offset + (off_t) (!dowrite && type == H_TXT ? 1 : length );
+  next = offset + (off64_t) (!dowrite && type == H_TXT ? 1 : length );
 /*  if(!dowrite && type == H_TXT) length = min(length, item->size - offset); */
   *iostat = -1;
   if(!dowrite && next > item->size)return;
@@ -1125,7 +1126,7 @@ private int hfind_nl(char *buf,int len)
   return(len);
 }
 /************************************************************************/
-private void hcheckbuf_c(ITEM *item,off_t next,int *iostat)
+private void hcheckbuf_c(ITEM *item,off64_t next,int *iostat)
 /*
   Check to determine that we have adequate buffer space, and a file,
   if needed.
@@ -1201,7 +1202,7 @@ private void hwrite_fill_c(ITEM *item,IOB *iob,int next,int *iostat)
   iob->length += length;
 }
 /************************************************************************/
-void hseek_c(int ihandle,off_t offset)
+void hseek_c(int ihandle,off64_t offset)
 /**hseek -- Set default offset (in bytes) of an item. 			*/
 /*&pjt									*/
 /*:low-level-i/o							*/
@@ -1225,7 +1226,7 @@ void hseek_c(int ihandle,off_t offset)
   item->offset = offset;
 }
 /************************************************************************/
-off_t htell_c(int ihandle)
+off64_t htell_c(int ihandle)
 /**htell -- Return the default offset (in bytes) of an item.		*/
 /*&pjt									*/
 /*:low-level-i/o							*/

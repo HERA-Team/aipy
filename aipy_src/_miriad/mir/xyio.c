@@ -40,7 +40,7 @@ static struct {
   char *mask;
   int image;
   int naxis,axes[MAXNAX],mask_exists,image_exists;
-  off_t offset;
+  off64_t offset;
 } images[MAXOPEN];
 
 #define Strcpy (void)strcpy
@@ -176,7 +176,7 @@ This flushes any changes to an image to disk.
 /*----------------------------------------------------------------------*/
 {
   int iostat,i;
-  off_t offset;
+  off64_t offset;
   size_t nbytes, length;
   float buf[MAXDIM];
 
@@ -250,7 +250,7 @@ void xyread_c(int thandle,int index,float *array)
     array	The read row. NAXIS1 elements are returned.		*/
 /*----------------------------------------------------------------------*/
 {
-  off_t offset;
+  off64_t offset;
   size_t length;
   int iostat;
 
@@ -279,7 +279,7 @@ void xywrite_c(int thandle,int index,Const float *array)
     array	The read row. NAXIS1 elements are written.		*/
 /*----------------------------------------------------------------------*/
 {
-  off_t offset;
+  off64_t offset;
   size_t length;
   int iostat;
 
@@ -314,7 +314,7 @@ void xymkrd_c(int thandle,int index,int *runs,int n,int *nread)
     nread	The number of "runs" read.				*/
 /*----------------------------------------------------------------------*/
 {
-  off_t offset;
+  off64_t offset;
   size_t length;
 
   if(images[thandle].mask == NULL && images[thandle].mask_exists)
@@ -354,7 +354,7 @@ void xymkwr_c(int thandle,int index,Const int *runs,int n)
 		good, whereas pixels runs(2*i) to runs(2*i+1) are bad.	*/
 /*----------------------------------------------------------------------*/
 {
-  off_t offset;
+  off64_t offset;
   size_t length;
 
   if(images[thandle].mask == NULL) xymkopen_c(thandle,NEW);
@@ -384,7 +384,7 @@ void xyflgwr_c(int thandle,int index,Const int *flags)
 		that the pixel is good.					*/
 /*----------------------------------------------------------------------*/
 {
-  off_t offset;
+  off64_t offset;
   size_t length;
 
   if(images[thandle].mask == NULL)xymkopen_c(thandle,NEW);
@@ -415,7 +415,7 @@ void xyflgrd_c(int thandle,int index,int *flags)
 /*----------------------------------------------------------------------*/
 {
   int n,i;
-  off_t offset;
+  off64_t offset;
   size_t length;
 
   if(images[thandle].mask == NULL && images[thandle].mask_exists)

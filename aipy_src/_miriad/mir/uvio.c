@@ -260,6 +260,7 @@
 #define CKMS 299792.458
 #define PI   3.141592653589793
 
+#include <Python.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -459,13 +460,13 @@ typedef struct {
 typedef struct {
 	char *handle;
 	int nflags,*flags,exists,init;
-        off_t offset;
+        off64_t offset;
 } FLAGS;
 
 typedef struct {
 	int item;
 	int nvar,saved_nvar,tno,flags,callno,maxvis,mark;
-        off_t offset, max_offset;
+        off64_t offset, max_offset;
 	int presize,gflag;
 	FLAGS corr_flags,wcorr_flags;
 	VARIABLE *coord,*corr,*time,*bl,*tscale,*nschan,*axisrms;
@@ -501,21 +502,41 @@ static AMP noamp;
 static int first=TRUE;
 
 /* void uvputvr_c(); */
-private void uvinfo_chan(),uvinfo_variance(),uvbasant_c();
-private void uv_init(),uv_freeuv(),uv_free_select();
-private void uvread_defline(),uvread_init(),uvread_velocity(),uvread_flags();
-private void uvread_defvelline();
-private void uvread_updated_planet(),uvread_reference();
-private void uvread_updated_uvw(),uvread_preamble();
-private void uv_vartable_out(),uv_vartable_in();
-private void uvset_coord(),uvset_linetype(),uvset_planet();
-private void uvset_selection(),uvset_preamble();
-private void uv_addopers(),uv_override();
-private UV *uv_getuv();
-private VARIABLE *uv_mkvar(),*uv_locvar(),*uv_checkvar();
-private int uv_scan(),uvread_line(),uvread_select(),uvread_maxvis();
-private int uvread_shadowed(),uvread_match();
-private double uv_getskyfreq();
+private void uvinfo_chan(UV *uv,double *data,int mode);
+private void uvinfo_variance(UV *uv,double *data);
+private void uvbasant_c(int baseline,int *i1,int *i2);
+private void uv_init(void);
+private void uv_freeuv(UV *uv);
+private void uv_free_select(SELECT *sel);
+private void uvread_defline(int tno);
+private void uvread_init(int tno);
+private void uvread_velocity(UV *uv,LINE_INFO *line,float *data, int *flags,int nsize,LINE_INFO *actual);
+private void uvread_flags(UV *uv,VARIABLE *v,FLAGS *flag_info,int nchan);
+private void uvread_defvelline(UV* uv,LINE_INFO *line,WINDOW *win);
+private void uvread_updated_planet(UV *uv);
+private void uvread_reference(UV *uv, float *data, int *flags,int n);
+private void uvread_updated_uvw(UV *uv);
+private void uvread_preamble(UV *uv, double *preamble);
+private void uv_vartable_out(UV *uv);
+private void uv_vartable_in(UV *uv);
+private void uvset_coord(UV *uv, const char *type);
+private void uvset_linetype(LINE_INFO *line, const char *type, int n, double start,double width,double step);
+private void uvset_planet(UV *uv, double p1,double p2,double p3);
+private void uvset_selection(UV *uv, const char *type, int n);
+private void uvset_preamble(UV *uv, const char *type);
+private void uv_addopers(SELECT *sel,int type,int discard,double p1,double p2,const char *ps);
+private void uv_override(UV *uv);
+private UV *uv_getuv(int tno);
+private VARIABLE *uv_mkvar(int tno,char *name,int type);
+private VARIABLE *uv_locvar(int tno,char *name);
+private VARIABLE *uv_checkvar(int tno,char *varname,int type);
+private int uv_scan(UV *uv, VARIABLE *vt);
+private int uvread_line(UV *uv,LINE_INFO *line,float *data, int nsize,int *flags,LINE_INFO *actual);
+private int uvread_select(UV *uv);
+private int uvread_maxvis(SELECT *sel);
+private int uvread_shadowed(UV *uv,double diameter);
+private int uvread_match(char *s1,char *s2, int length);
+private double uv_getskyfreq(UV *uv,WINDOW *win);
 
 /************************************************************************/
 #ifdef TESTBED
@@ -576,7 +597,7 @@ my_uvlist(int tno,char *fname)
     float *fp;
     short *sp;
     int iostat, intsize, extsize, i, *ip, eor_count=0;
-    off_t offset;
+    off64_t offset;
     VARIABLE *v;
     UV *uv;
     char s[UV_HDR_SIZE], *b, buffer[128];
@@ -725,7 +746,9 @@ void uvopen_c(int *tno,Const char *name,Const char *status)
 #ifdef MIR4
     /* figure out if to read old MIR3 or new MIR4 */
     if (1) {
-      rdhdl_c(*tno,"vislen",&(uv->max_offset),hsize_c(uv->item));
+        int8 vislen;
+      rdhdl_c(*tno,"vislen",&vislen,hsize_c(uv->item));
+      uv->max_offset = (off64_t) vislen;
     } else {
       int old_vislen;
       rdhdi_c(*tno,"vislen",&old_vislen,hsize_c(uv->item));
@@ -770,7 +793,9 @@ void uvopen_c(int *tno,Const char *name,Const char *status)
 #ifdef MIR4
     /* figure out if to read old MIR3 or new MIR4 */
     if (1) {
-      rdhdl_c(*tno,"vislen",&(uv->offset),hsize_c(uv->item));
+        int8 vislen;
+      rdhdl_c(*tno,"vislen",&vislen,hsize_c(uv->item));
+      uv->offset = (off64_t) vislen;
     } else {
       int old_vislen;
       rdhdi_c(*tno,"vislen",&old_vislen,hsize_c(uv->item));
@@ -790,8 +815,13 @@ void uvopen_c(int *tno,Const char *name,Const char *status)
     rdhda_c(*tno,"obstype",line,"",MAXLINE);
     if(!strcmp(line,"autocorrelation"))		uv->flags |= UVF_AUTO;
     else if(!strcmp(line,"crosscorrelation"))	uv->flags |= UVF_CROSS;
-    rdhdl_c(*tno,"ncorr",&(uv->corr_flags.offset),-1);
-    rdhdl_c(*tno,"nwcorr",&(uv->wcorr_flags.offset),-1);
+    {
+        int8 n;
+        rdhdl_c(*tno,"ncorr",&n,-1);
+        uv->corr_flags.offset = n;
+        rdhdl_c(*tno,"nwcorr",&n,-1);
+        uv->wcorr_flags.offset = n;
+    }
     if(uv->corr_flags.offset < 0 || uv->wcorr_flags.offset < 0)
       BUG('f',"Cannot append to uv file without 'ncorr' and/or 'nwcorr' items");
 
@@ -904,7 +934,7 @@ void uvflush_c(int tno)
   CHECK(iostat,(message,"Error calling hflush, in UVFLSH"));
 }
 /************************************************************************/
-private void uv_init()
+private void uv_init(void)
 /*
   Initalise everything imaginable.
 ------------------------------------------------------------------------*/
@@ -1167,7 +1197,7 @@ private void uv_vartable_in(UV *uv)
 {
   int item;
   char line[MAXLINE],name[MAXNAM+1],ctype;
-  int iostat,type;
+  int iostat,type = 0;
 
   haccess_c(uv->tno,&item,"vartable","read",&iostat);
   CHECK(iostat,(message,"Error opening vartable, in UVOPEN(vartable_in)"));
@@ -1837,7 +1867,7 @@ private int uv_scan(UV *uv, VARIABLE *vt)
 ------------------------------------------------------------------------*/
 {
   int iostat,intsize,extsize,terminate,found,changed,i;
-  off_t offset;
+  off64_t offset;
   VARIABLE *v;
   char s[UV_HDR_SIZE],*b;
 
@@ -1856,7 +1886,7 @@ private int uv_scan(UV *uv, VARIABLE *vt)
 
     changed = FALSE;
     if(*(s+2) != VAR_EOR){
-      v = &uv->variable[*s];       /*  warning: array subscript has type `char' */
+      v = &uv->variable[(int) *s];       /*  warning: array subscript has type `char' */
       intsize = internal_size[v->type];
       extsize = external_size[v->type];
     }
@@ -2495,7 +2525,7 @@ void uvselect_c(int tno,Const char *object,double p1,double p2,int datasel)
   }
 }
 /************************************************************************/
-private void uv_addopers(SELECT *sel,int type,int discard,double p1,double p2,char *ps)
+private void uv_addopers(SELECT *sel,int type,int discard,double p1,double p2,const char *ps)
 {
   int n,i;
   OPERS *oper;
@@ -2600,7 +2630,7 @@ void uvset_c(int tno,Const char *object,Const char *type,
   }
 }
 /************************************************************************/
-private void uvset_preamble(UV *uv, char *type)
+private void uvset_preamble(UV *uv, const char *type)
 /*
   Set the preamble that the user wants to use.
 ------------------------------------------------------------------------*/
@@ -2649,7 +2679,7 @@ private void uvset_preamble(UV *uv, char *type)
   }
 }
 /************************************************************************/
-private void uvset_selection(UV *uv, char *type, int n)
+private void uvset_selection(UV *uv, const char *type, int n)
 /*
   Set the way the uvselect routine works.
 ------------------------------------------------------------------------*/
@@ -2674,7 +2704,7 @@ private void uvset_planet(UV *uv, double p1,double p2,double p3)
   uv->need_planet = TRUE;
 }
 /************************************************************************/
-private void uvset_coord(UV *uv, char *type)
+private void uvset_coord(UV *uv, const char *type)
 /*
   Set the flags to do with the processing of uv coordinates.
 
@@ -2695,7 +2725,7 @@ private void uvset_coord(UV *uv, char *type)
   }
 }
 /************************************************************************/
-private void uvset_linetype(LINE_INFO *line, char *type, int n, 
+private void uvset_linetype(LINE_INFO *line, const char *type, int n, 
 			    double start,double width,double step)
 /*
   Decode the line type.
@@ -2742,8 +2772,7 @@ private void uvset_linetype(LINE_INFO *line, char *type, int n,
 }
 
 /************************************************************************/
-int uvdim_c(tno)
-int tno;
+int uvdim_c(int tno)
 /**uvdim - Number of channels.						*/
 /*&rjs                                                                  */
 /*:uv-i/o								*/
@@ -2866,7 +2895,7 @@ private void uvread_preamble(UV *uv, double *preamble)
 ------------------------------------------------------------------------*/
 {
   VARIABLE *v;
-  double scale,uu,vv,ww,*coord;
+  double scale,uu,vv,ww = 0.,*coord;
   int bl,i1,i2,i;
 
 
@@ -4116,11 +4145,11 @@ private void uvread_velocity(UV *uv,LINE_INFO *line,float *data,
 {
   float idv,idv2,odv2,dv2,scale,wt,v,vobs,temp;
   double *sfreq,*sdf,*restfreq;
-  int nspect,first,last,fout,lout,i,j,n;
+  int nspect,first,last,fout = 0,lout = 0,i,j,n;
   int *nschan,*flagin,*flagin1,*flagout,*wins,doint2;
   float *wts,*dataout;
-  int *di,*di1;
-  float *df,*df1;
+  int *di = NULL,*di1 = NULL;
+  float *df = NULL,*df1 = NULL;
 
 /* Set the default line if needed. */
 
@@ -4398,7 +4427,7 @@ void uvflgwr_c(int tno, Const int *flags)
 /*----------------------------------------------------------------------*/
 {
   int nchan,width,step,n,i;
-  off_t offset;
+  off64_t offset;
   UV *uv;
   VARIABLE *v;
   FLAGS *flags_info;
@@ -4455,7 +4484,7 @@ void uvwflgwr_c(int tno,Const int *flags)
 /*----------------------------------------------------------------------*/
 {
   int nchan;
-  off_t offset;
+  off64_t offset;
   UV *uv;
   VARIABLE *v;
   FLAGS *flags_info;
@@ -4606,11 +4635,11 @@ private void uvinfo_variance(UV *uv,double *data)
 ------------------------------------------------------------------------*/
 {
   double *restfreq,*tab;
-  float bw,inttime,jyperk,*syst,*t1,*t2,factor;
+  float bw = 0.0,inttime,jyperk,*syst,*t1,*t2,factor;
   int i,j,bl,i1,i2,nants,nsyst,*nschan,start;
-  off_t offset;
+  off64_t offset = 0;
   LINE_INFO *line;
-  VARIABLE *tsys;
+  VARIABLE *tsys = NULL;
 
 /* Miscellaneous. */
 
@@ -4732,7 +4761,7 @@ private void uvinfo_chan(UV *uv,double *data,int mode)
 {
   LINE_INFO *line;
   int n,i,j,step;
-  off_t offset;
+  off64_t offset;
   double temp,fdash;
   float *wfreq,*wwide,vobs;
   int *nschan;

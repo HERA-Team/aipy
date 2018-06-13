@@ -31,6 +31,7 @@
 /*  pjt  6sep06   read integers via rdhdi                               */
 /************************************************************************/
 
+#include <Python.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -41,6 +42,15 @@
 #define check(iostat) if(iostat)bugno_c('f',iostat)
 #define MAXSIZE 1024
 #define MAXLINE 80
+
+char 	binary_item[ITEM_HDR_SIZE]	= {0,0,0,0},
+		real_item[ITEM_HDR_SIZE]	= {0,0,0,H_REAL},
+		int_item[ITEM_HDR_SIZE]		= {0,0,0,H_INT},
+		int2_item[ITEM_HDR_SIZE]	= {0,0,0,H_INT2},
+		int8_item[ITEM_HDR_SIZE]	= {0,0,0,H_INT8},
+		char_item[ITEM_HDR_SIZE]	= {0,0,0,H_BYTE},
+		dble_item[ITEM_HDR_SIZE]	= {0,0,0,H_DBLE},
+		cmplx_item[ITEM_HDR_SIZE]	= {0,0,0,H_CMPLX};
 
 
 static int history[MAXOPEN];

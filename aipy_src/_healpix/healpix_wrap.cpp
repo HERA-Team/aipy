@@ -25,19 +25,19 @@
 // Some macros...
 #define QUOTE(a) # a
 
-#define IND1(a,i,type) *((type *)(a->data + i*a->strides[0]))
-#define IND2(a,i,j,type) *((type *)(a->data+i*a->strides[0]+j*a->strides[1]))
+#define IND1(a,i,type) *((type *)((char *)PyArray_DATA(a) + i*PyArray_STRIDES(a)[0]))
+#define IND2(a,i,j,type) *((type *)((char *)PyArray_DATA(a)+i*PyArray_STRIDES(a)[0]+j*PyArray_STRIDES(a)[1]))
 
-#define TYPE(a) a->descr->type_num
+#define TYPE(a) PyArray_DESCR(a)->type_num
 #define CHK_ARRAY_TYPE(a,type) \
     if (TYPE(a) != type) { \
         PyErr_Format(PyExc_ValueError, "type(%s) != %s", \
         QUOTE(a), QUOTE(type)); \
         return NULL; }
 
-#define DIM(a,i) a->dimensions[i]
+#define DIM(a,i) PyArray_DIM(a, i)
 
-#define RANK(a) a->nd
+#define RANK(a) PyArray_NDIM(a)
 #define CHK_ARRAY_RANK(a,r) \
     if (RANK(a) != r) { \
         PyErr_Format(PyExc_ValueError, "rank(%s) != %s", \
@@ -87,8 +87,8 @@ static int HPBObject_init(HPBObject *self, PyObject *args, PyObject *kwds) {
     int nside=-1;
     Healpix_Ordering_Scheme scheme = RING;
     PyObject *scheme_str=NULL;
-    static char *kwlist[] = {"nside", "scheme", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"|iO", kwlist, \
+    static const char *kwlist[] = {"nside", "scheme", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"|iO", (char **) kwlist, \
             &nside, &scheme_str))
         return -1;
     if (scheme_str == NULL) scheme = RING;
@@ -186,9 +186,9 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
     vec3 v;
     PyArrayObject *crd1, *crd2, *crd3=NULL, *rv, *wgt=NULL;
     PyObject *rv2;
-    static char *kwlist[] = {"crd1", "crd2", "crd3", "interpolate", NULL};
+    static const char *kwlist[] = {"crd1", "crd2", "crd3", "interpolate", NULL};
     // Parse and check input arguments
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!O!|O!i", kwlist, 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!O!|O!i", (char **) kwlist, 
             &PyArray_Type, &crd1, &PyArray_Type, &crd2, &PyArray_Type, &crd3,
             &interpolate))
         return NULL;
@@ -206,12 +206,12 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
     // Make array(s) to hold the results
     if (interpolate == 0) {
         npy_intp dimens[1] = {sz};
-        rv = (PyArrayObject *) PyArray_SimpleNew(1, dimens, PyArray_LONG);
+        rv = (PyArrayObject *) PyArray_SimpleNew(1, dimens, NPY_LONG);
         CHK_NULL(rv);
     } else {
         npy_intp dimens[2] = {sz, 4};
-        rv = (PyArrayObject *) PyArray_SimpleNew(2, dimens, PyArray_LONG);
-        wgt = (PyArrayObject *) PyArray_SimpleNew(2, dimens, PyArray_DOUBLE);
+        rv = (PyArrayObject *) PyArray_SimpleNew(2, dimens, NPY_LONG);
+        wgt = (PyArrayObject *) PyArray_SimpleNew(2, dimens, NPY_DOUBLE);
         CHK_NULL(rv);
         CHK_NULL(wgt);
     }     
@@ -260,9 +260,9 @@ static PyObject * HPBObject_px2crd(HPBObject *self,
     vec3 v;
     int ncrd=3;
     PyArrayObject *px, *crd1, *crd2, *crd3;
-    static char *kwlist[] = {"px", "ncrd", NULL};
+    static const char *kwlist[] = {"px", "ncrd", NULL};
     // Parse and check input arguments
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!|i", kwlist, 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!|i", (char **) kwlist, 
             &PyArray_Type, &px, &ncrd))
         return NULL;
     if (ncrd != 2 && ncrd != 3) {
@@ -272,10 +272,10 @@ static PyObject * HPBObject_px2crd(HPBObject *self,
     CHK_ARRAY_RANK(px,1);
     CHK_ARRAY_TYPE(px,NPY_LONG);
     // Make an array to hold the results
-    int sz = px->dimensions[0];
+    int sz = PyArray_DIM(px, 0);
     npy_intp dimens[1] = {sz};
-    crd1 = (PyArrayObject *) PyArray_SimpleNew(1, dimens, PyArray_DOUBLE);
-    crd2 = (PyArrayObject *) PyArray_SimpleNew(1, dimens, PyArray_DOUBLE);
+    crd1 = (PyArrayObject *) PyArray_SimpleNew(1, dimens, NPY_DOUBLE);
+    crd2 = (PyArrayObject *) PyArray_SimpleNew(1, dimens, NPY_DOUBLE);
     CHK_NULL(crd1);
     CHK_NULL(crd2);
     if (ncrd == 2) {
@@ -286,7 +286,7 @@ static PyObject * HPBObject_px2crd(HPBObject *self,
         }
         return Py_BuildValue("(OO)",PyArray_Return(crd1),PyArray_Return(crd2));
     } else {
-        crd3 = (PyArrayObject *) PyArray_SimpleNew(1, dimens, PyArray_DOUBLE);
+        crd3 = (PyArrayObject *) PyArray_SimpleNew(1, dimens, NPY_DOUBLE);
         for (int i=0; i < sz; i++) {
             p = self->hpb.pix2ang(IND1(px,i,int));
             v = p.to_vec3();

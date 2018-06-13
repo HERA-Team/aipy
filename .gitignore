@@ -1,5 +1,6 @@
 *.pyc
 .coverage
+/aipy.egg-info/
 /build/
 /dist/
 /aipy_src/__branch__.py

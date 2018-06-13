@@ -165,7 +165,7 @@ Copyright 1984, 1987, 1995 by Stephen L. Moshier
 double incbet(), incbi();
 #endif
 
-extern double NAN;
+extern double CEPHES_NAN;
 
 double fdtrc( a, b, x )
 double a, b;
@@ -176,7 +176,7 @@ double w;
 if( (a < 1.0) || (b < 1.0) || (x < 0.0) )
 	{
 	mtherr( "fdtrc", DOMAIN );
-	return( NAN );
+	return(CEPHES_NAN );
 	}
 w = b / (b + a * x);
 return( incbet( 0.5*b, 0.5*a, w ) );
@@ -191,7 +191,7 @@ double w;
 if( (a < 1.0) || (b < 1.0) || (x < 0.0) )
 	{
 	mtherr( "fdtr", DOMAIN );
-	return( NAN );
+	return(CEPHES_NAN );
 	}
 w = a * x;
 w = w / (b + w);
@@ -208,7 +208,7 @@ double w, x;
 if( (a < 1.0) || (b < 1.0) || (y <= 0.0) || (y > 1.0) )
 	{
 	mtherr( "fdtri", DOMAIN );
-	return( NAN );
+	return(CEPHES_NAN );
 	}
 y = 1.0-y;
 a = a;
