@@ -19,6 +19,7 @@ from . import optimize_test
 from . import phs_test
 from . import phs_benchmark
 from . import scripting_test
+from . import twodgauss_test
 
 class TestSuite(unittest.TestSuite):
         """A unittest.TestSuite class which contains all of the package unit tests."""
@@ -38,6 +39,7 @@ class TestSuite(unittest.TestSuite):
                 self.addTest(phs_test.TestSuite())
                 self.addTest(phs_benchmark.TestSuite())
                 self.addTest(scripting_test.TestSuite())
+                self.addTest(twodgauss_test.TestSuite())
 
 def main(opts=None, args=None):
     """Function to call all of the lsl tests."""

@@ -52,37 +52,71 @@ class TestAnneal(unittest.TestCase):
         """Test optimize.anneal with the cauchy schedule"""
         func = lambda x: n.cos(14.5*x-0.3) + (x+0.2)*x
         fit = o.anneal(func,1.0,full_output=1,upper=3.0,lower=-3.0,feps=1e-4,maxiter=2000,schedule='cauchy')
-        self.assertAlmostEqual(-0.195, fit[0], 3)
+        self.assertAlmostEqual(-0.195, fit[0], 2)
         
     def test_fast(self):
         """Test optimize.anneal with the fast schedule"""
         func = lambda x: n.cos(14.5*x-0.3) + (x+0.2)*x
         fit = o.anneal(func,1.0,full_output=1,upper=3.0,lower=-3.0,feps=1e-4,maxiter=2000,schedule='fast')
-        self.assertAlmostEqual(-0.195, fit[0], 3)
+        self.assertAlmostEqual(-0.195, fit[0], 2)
         
     def test_boltzmann(self):
         """Test optimize.anneal with the boltzmann schedule"""
         func = lambda x: n.cos(14.5*x-0.3) + (x+0.2)*x
         fit = o.anneal(func,1.0,full_output=1,upper=3.0,lower=-3.0,feps=1e-4,maxiter=2000,schedule='boltzmann')
-        self.assertAlmostEqual(-0.195, fit[0], 3)
+        self.assertAlmostEqual(-0.195, fit[0], 2)
         
     #def test_cauchy_twovar(self):
     #    func = lambda x: n.cos(14.5*x[0]-0.3) + (x[1]+0.2)*x[1] + (x[0]+0.2)*x[0]
     #    fit = o.anneal(func,[1.0, 1.0],full_output=1,upper=[3.0, 3.0],lower=[-3.0, -3.0],feps=1e-4,maxiter=2000,schedule='cauchy')
-    #    self.assertAlmostEqual(-0.195, fit[0][0], 3)
-    #    self.assertAlmostEqual(-0.100, fit[0][1], 3)
+    #    self.assertAlmostEqual(-0.195, fit[0][0], 2)
+    #    self.assertAlmostEqual(-0.100, fit[0][1], 2)
         
     #def test_fast_twovar(self):
     #    func = lambda x: n.cos(14.5*x[0]-0.3) + (x[1]+0.2)*x[1] + (x[0]+0.2)*x[0]
     #    fit = o.anneal(func,[1.0, 1.0],full_output=1,upper=[3.0, 3.0],lower=[-3.0, -3.0],feps=1e-4,maxiter=2000,schedule='fast')
-    #    self.assertAlmostEqual(-0.195, fit[0][0], 3)
-    #    self.assertAlmostEqual(-0.100, fit[0][1], 3)
+    #    self.assertAlmostEqual(-0.195, fit[0][0], 2)
+    #    self.assertAlmostEqual(-0.100, fit[0][1], 2)
         
     #def test_boltzmann_twovar(self):
     #    func = lambda x: n.cos(14.5*x[0]-0.3) + (x[1]+0.2)*x[1] + (x[0]+0.2)*x[0]
     #    fit = o.anneal(func,[1.0, 1.0],full_output=1,upper=[3.0, 3.0],lower=[-3.0, -3.0],feps=1e-4,maxiter=2000,schedule='boltzmann')
-    #    self.assertAlmostEqual(-0.195, fit[0][0], 3)
-    #    self.assertAlmostEqual(-0.100, fit[0][1], 3)
+    #    self.assertAlmostEqual(-0.195, fit[0][0], 2)
+    #    self.assertAlmostEqual(-0.100, fit[0][1], 2)
+
+class TestNonlin(unittest.TestCase):
+    def test_broyden1(self):
+        """Test optimize.broyden1"""
+        def F(x):
+            "Should converge to x=[0,0,0,0,0]"
+            d = n.array([3,2,1.5,1,0.5])
+            c = 0.01
+            return -d*n.array(x)-c*n.array(x)**3
+        fit = o.broyden1(F,[1,1,1,1,1])
+        for i in range(5):
+            self.assertAlmostEqual(0.0, fit[i], 0)
+            
+    def test_broyden2(self):
+        """Test optimize.broyden2"""
+        def F(x):
+            "Should converge to x=[0,0,0,0,0]"
+            d = n.array([3,2,1.5,1,0.5])
+            c = 0.01
+            return -d*n.array(x)-c*n.array(x)**3
+        fit = o.broyden2(F,[1,1,1,1,1])
+        for i in range(5):
+            self.assertAlmostEqual(0.0, fit[i], 4)
+            
+    def test_broyden3(self):
+        """Test optimize.broyden3"""
+        def F(x):
+            "Should converge to x=[0,0,0,0,0]"
+            d = n.array([3,2,1.5,1,0.5])
+            c = 0.01
+            return -d*n.array(x)-c*n.array(x)**3
+        fit = o.broyden3(F,[1,1,1,1,1])
+        for i in range(5):
+            self.assertAlmostEqual(0.0, fit[i], 4)
 
 class TestSuite(unittest.TestSuite):
     """A unittest.TestSuite class which contains all of the aipy.phs unit tests."""
@@ -93,6 +127,7 @@ class TestSuite(unittest.TestSuite):
         loader = unittest.TestLoader()
         self.addTests(loader.loadTestsFromTestCase(TestOptimize))
         self.addTests(loader.loadTestsFromTestCase(TestAnneal))
+        self.addTests(loader.loadTestsFromTestCase(TestNonlin))
 
 if __name__ == '__main__':
     unittest.main()
