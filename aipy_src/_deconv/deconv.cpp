@@ -1,6 +1,6 @@
 /*
  * Some additional deconvolution functions for AIPY, written in C++.  These are
- * mostly for speed-critical applications. 
+ * mostly for speed-critical applications.
  *
  * Author: Aaron Parsons
  */
@@ -8,26 +8,7 @@
 #include <Python.h>
 #include <cmath>
 #include "numpy/arrayobject.h"
-
-// Python3 compatibility
-#if PY_MAJOR_VERSION >= 3
-	#define PyCapsule_Type PyCObject_Type
-	#define PyInt_AsLong PyLong_AsLong
-	#define PyInt_FromLong PyLong_FromLong
-	#define PyString_FromString PyUnicode_FromString
-char* PyString_AsString(PyObject *ob) {
-	PyObject *enc;
-	char *cstr;
-	enc = PyUnicode_AsEncodedString(ob, "utf-8", "Error");
-	if( enc == NULL ) {
-		PyErr_Format(PyExc_ValueError, "Cannot encode string");
-		return NULL;
-	}
-	cstr = PyBytes_AsString(enc);
-	Py_XDECREF(enc);
-	return cstr;
-}
-#endif
+#include "aipy_compat.h"
 
 #define QUOTE(s) # s
 
@@ -65,16 +46,16 @@ char* PyString_AsString(PyObject *ob) {
 // A template for implementing addition loops for different data types
 template<typename T> struct Clean {
 
-    //   ____ _                  ____     _      
-    //  / ___| | ___  __ _ _ __ |___ \ __| |_ __ 
+    //   ____ _                  ____     _
+    //  / ___| | ___  __ _ _ __ |___ \ __| |_ __
     // | |   | |/ _ \/ _` | '_ \  __) / _` | '__|
-    // | |___| |  __/ (_| | | | |/ __/ (_| | |   
-    //  \____|_|\___|\__,_|_| |_|_____\__,_|_|   
+    // | |___| |  __/ (_| | | | |/ __/ (_| | |
+    //  \____|_|\___|\__,_|_| |_|_____\__,_|_|
     // Does a 2d real-valued clean
     static int clean_2d_r(PyArrayObject *res, PyArrayObject *ker,
-            PyArrayObject *mdl, PyArrayObject *area, double gain, int maxiter, 
+            PyArrayObject *mdl, PyArrayObject *area, double gain, int maxiter,
             double tol, int stop_if_div, int verb, int pos_def) {
-        T score=-1, nscore, best_score=-1; 
+        T score=-1, nscore, best_score=-1;
         T max=0, mmax, val, mval, step, q=0, mq=0;
         T firstscore=-1;
         int argmax1=0, argmax2=0, nargmax1=0, nargmax2=0;
@@ -123,7 +104,7 @@ template<typename T> struct Clean {
             if (verb != 0)
                 printf("Iter %d: Max=(%d,%d,%f), Score=%f, Prev=%f, Delta=%f\n", \
                        i, nargmax1, nargmax2, (double) max, (double) (nscore/firstscore), \
-                    (double) (score/firstscore), 
+                    (double) (score/firstscore),
                        (double) (std::abs(score - nscore) / firstscore));
             if (score > 0 && nscore > score) {
                 if (stop_if_div) {
@@ -169,17 +150,17 @@ template<typename T> struct Clean {
                     IND2(res,n1,n2,T) = best_res[n1*dim2+n2];
                 }
             }
-        }   
+        }
         if (best_mdl != NULL) { free(best_mdl); free(best_res); }
         return maxiter;
     }
-    //   ____ _                  _     _      
-    //  / ___| | ___  __ _ _ __ / | __| |_ __ 
+    //   ____ _                  _     _
+    //  / ___| | ___  __ _ _ __ / | __| |_ __
     // | |   | |/ _ \/ _` | '_ \| |/ _` | '__|
-    // | |___| |  __/ (_| | | | | | (_| | |   
-    //  \____|_|\___|\__,_|_| |_|_|\__,_|_|   
+    // | |___| |  __/ (_| | | | | | (_| | |
+    //  \____|_|\___|\__,_|_| |_|_|\__,_|_|
     // Does a 1d real-valued clean
-    static int clean_1d_r(PyArrayObject *res, PyArrayObject *ker, 
+    static int clean_1d_r(PyArrayObject *res, PyArrayObject *ker,
             PyArrayObject *mdl, PyArrayObject *area, double gain, int maxiter, double tol,
             int stop_if_div, int verb, int pos_def) {
         T score=-1, nscore, best_score=-1;
@@ -262,14 +243,14 @@ template<typename T> struct Clean {
                 IND1(mdl,n,T) = best_mdl[n];
                 IND1(res,n,T) = best_res[n];
             }
-        }   
+        }
         if (best_mdl != NULL) { free(best_mdl); free(best_res); }
         return maxiter;
     }
-    //   ____ _                  ____     _      
-    //  / ___| | ___  __ _ _ __ |___ \ __| | ___ 
+    //   ____ _                  ____     _
+    //  / ___| | ___  __ _ _ __ |___ \ __| | ___
     // | |   | |/ _ \/ _` | '_ \  __) / _` |/ __|
-    // | |___| |  __/ (_| | | | |/ __/ (_| | (__ 
+    // | |___| |  __/ (_| | | | |/ __/ (_| | (__
     //  \____|_|\___|\__,_|_| |_|_____\__,_|\___|
     // Does a 2d complex-valued clean
     static int clean_2d_c(PyArrayObject *res, PyArrayObject *ker,
@@ -385,17 +366,17 @@ template<typename T> struct Clean {
                     CIND2I(res,n1,n2,T) = best_res[2*(n1*dim2+n2)+1];
                 }
             }
-        }   
+        }
         if (best_mdl != NULL) { free(best_mdl); free(best_res); }
         return maxiter;
     }
-    //   ____ _                  _     _      
-    //  / ___| | ___  __ _ _ __ / | __| | ___ 
+    //   ____ _                  _     _
+    //  / ___| | ___  __ _ _ __ / | __| | ___
     // | |   | |/ _ \/ _` | '_ \| |/ _` |/ __|
-    // | |___| |  __/ (_| | | | | | (_| | (__ 
+    // | |___| |  __/ (_| | | | | | (_| | (__
     //  \____|_|\___|\__,_|_| |_|_|\__,_|\___|
     // Does a 1d complex-valued clean
-    static int clean_1d_c(PyArrayObject *res, PyArrayObject *ker, 
+    static int clean_1d_c(PyArrayObject *res, PyArrayObject *ker,
             PyArrayObject *mdl, PyArrayObject *area, double gain, int maxiter, double tol,
             int stop_if_div, int verb, int pos_def) {
         T maxr=0, maxi=0, valr, vali, stepr, stepi, qr=0, qi=0;
@@ -496,18 +477,18 @@ template<typename T> struct Clean {
                 CIND1R(res,n,T) = best_res[2*n+0];
                 CIND1I(res,n,T) = best_res[2*n+1];
             }
-        }   
+        }
         if (best_mdl != NULL) { free(best_mdl); free(best_res); }
         return maxiter;
     }
 };  // END TEMPLATE
 
-// __        __                               
-// \ \      / / __ __ _ _ __  _ __   ___ _ __ 
+// __        __
+// \ \      / / __ __ _ _ __  _ __   ___ _ __
 //  \ \ /\ / / '__/ _` | '_ \| '_ \ / _ \ '__|
-//   \ V  V /| | | (_| | |_) | |_) |  __/ |   
-//    \_/\_/ |_|  \__,_| .__/| .__/ \___|_|   
-//                     |_|   |_|              
+//   \ V  V /| | | (_| | |_) | |_) |  __/ |
+//    \_/\_/ |_|  \__,_| .__/| .__/ \___|_|
+//                     |_|   |_|
 
 // Clean wrapper that handles all different data types and dimensions
 PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
@@ -518,8 +499,8 @@ PyObject *clean(PyObject *self, PyObject *args, PyObject *kwargs) {
                              "maxiter", "tol", "stop_if_div", "verbose","pos_def", NULL};
     // Parse arguments and perform sanity check
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!O!O!O!|didiii", (char **) kwlist, \
-            &PyArray_Type, &res, &PyArray_Type, &ker, &PyArray_Type, &mdl, &PyArray_Type, &area, 
-            &gain, &maxiter, &tol, &stop_if_div, &verb, &pos_def)) 
+            &PyArray_Type, &res, &PyArray_Type, &ker, &PyArray_Type, &mdl, &PyArray_Type, &area,
+            &gain, &maxiter, &tol, &stop_if_div, &verb, &pos_def))
         return NULL;
     if (RANK(res) == 1) {
         rank = 1;
@@ -594,37 +575,17 @@ static PyMethodDef DeconvMethods[] = {
     {NULL, NULL}
 };
 
-#ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-
-#if PY_MAJOR_VERSION >= 3
-	#define MOD_ERROR_VAL NULL
-	#define MOD_SUCCESS_VAL(val) val
-	#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
-	#define MOD_DEF(ob, name, methods, doc) \
-	   static struct PyModuleDef moduledef = { \
-	      PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
-	   ob = PyModule_Create(&moduledef);
-#else
-	#define MOD_ERROR_VAL
-	#define MOD_SUCCESS_VAL(val)
-	#define MOD_INIT(name) PyMODINIT_FUNC init##name(void)
-	#define MOD_DEF(ob, name, methods, doc) \
-	   ob = Py_InitModule3(name, methods, doc);
-#endif
-
 MOD_INIT(_deconv) {
     PyObject* m;
-    
+
     Py_Initialize();
-    
+
     // Module definitions and functions
     MOD_DEF(m, "_deconv", DeconvMethods, "Deconvolution module");
-    if( m == NULL ) {
+    if (m == NULL)
         return MOD_ERROR_VAL;
-    }
+
     import_array();
-    
+
     return MOD_SUCCESS_VAL(m);
 };

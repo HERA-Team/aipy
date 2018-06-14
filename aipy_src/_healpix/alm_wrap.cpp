@@ -11,31 +11,10 @@
 #include "healpix_map.h"
 #include "alm_map_tools.h"
 #include "xcomplex.h"
+#include "aipy_compat.h"
 
 #if PY_VERSION_HEX < 0x02050000
 #define lenfunc inquiry
-#endif
-
-// Python3 compatibility
-#if PY_MAJOR_VERSION >= 3
-	#define PyCapsule_Type PyCObject_Type
-	#define PyInt_AsLong PyLong_AsLong
-	#define PyInt_FromLong PyLong_FromLong
-	#define PyInt_Check PyLong_Check
-	#define PyString_Check PyUnicode_Check
-	#define PyString_FromString PyUnicode_FromString
-char* PyString_AsString(PyObject *ob) {
-	PyObject *enc;
-	char *cstr;
-	enc = PyUnicode_AsEncodedString(ob, "utf-8", "Error");
-	if( enc == NULL ) {
-		PyErr_Format(PyExc_ValueError, "Cannot encode string");
-		return NULL;
-	}
-	cstr = PyBytes_AsString(enc);
-	Py_XDECREF(enc);
-	return cstr;
-}
 #endif
 
 // Some macros...
@@ -91,7 +70,7 @@ void option_err(char *options[]) {
     strcat(errstr, "]");
     PyErr_Format(PyExc_ValueError, "%s", errstr);
 }
-    
+
 int get_option(char *options[], PyObject *choice) {
     // Return index of choice in options, -1 if failure.  Defaults to 0.
     int i = 0;
@@ -111,10 +90,10 @@ int get_option(char *options[], PyObject *choice) {
 }
 
 
-/*____                           _                    _    
+/*____                           _                    _
  / ___|_ __ ___  _   _ _ __   __| |_      _____  _ __| | __
 | |  _| '__/ _ \| | | | '_ \ / _` \ \ /\ / / _ \| '__| |/ /
-| |_| | | | (_) | |_| | | | | (_| |\ V  V / (_) | |  |   < 
+| |_| | | | (_) | |_| | | | | (_| |\ V  V / (_) | |  |   <
  \____|_|  \___/ \__,_|_| |_|\__,_| \_/\_/ \___/|_|  |_|\_\
 */
 // Python object that holds instance of Healpix_Base
@@ -129,7 +108,7 @@ static void AlmObject_dealloc(AlmObject *self) {
 }
 
 // Allocate memory for Python object
-static PyObject *AlmObject_new(PyTypeObject *type, 
+static PyObject *AlmObject_new(PyTypeObject *type,
         PyObject *args, PyObject *kwds) {
     AlmObject *self;
     self = (AlmObject *) type->tp_alloc(type, 0);
@@ -152,12 +131,12 @@ static int AlmObject_init(AlmObject *self, PyObject *args, PyObject *kwds) {
     return 0;
 }
 
-/* ___  _     _           _     __  __      _   _               _     
-  / _ \| |__ (_) ___  ___| |_  |  \/  | ___| |_| |__   ___   __| |___ 
+/* ___  _     _           _     __  __      _   _               _
+  / _ \| |__ (_) ___  ___| |_  |  \/  | ___| |_| |__   ___   __| |___
  | | | | '_ \| |/ _ \/ __| __| | |\/| |/ _ \ __| '_ \ / _ \ / _` / __|
  | |_| | |_) | |  __/ (__| |_  | |  | |  __/ |_| | | | (_) | (_| \__ \
   \___/|_.__// |\___|\___|\__| |_|  |_|\___|\__|_| |_|\___/ \__,_|___/
-           |__/                                                       
+           |__/
 */
 // Get a coefficient
 static PyObject * AlmObject_get(AlmObject *self, PyObject *args) {
@@ -370,12 +349,12 @@ static PyObject * AlmObject_set_data(AlmObject *self, PyObject *args) {
     return Py_None;
 }
 
-/*_        __                     _               _   _       
- \ \      / / __ __ _ _ __  _ __ (_)_ __   __ _  | | | |_ __  
-  \ \ /\ / / '__/ _` | '_ \| '_ \| | '_ \ / _` | | | | | '_ \ 
+/*_        __                     _               _   _
+ \ \      / / __ __ _ _ __  _ __ (_)_ __   __ _  | | | |_ __
+  \ \ /\ / / '__/ _` | '_ \| '_ \| | '_ \ / _` | | | | | '_ \
    \ V  V /| | | (_| | |_) | |_) | | | | | (_| | | |_| | |_) |
-    \_/\_/ |_|  \__,_| .__/| .__/|_|_| |_|\__, |  \___/| .__/ 
-                     |_|   |_|            |___/        |_|    
+    \_/\_/ |_|  \__,_| .__/| .__/|_|_| |_|\__, |  \___/| .__/
+                     |_|   |_|            |___/        |_|
 */
 // Bind methods to object
 static PyMethodDef AlmObject_methods[] = {
@@ -450,48 +429,26 @@ static PyMethodDef _alm_methods[] = {
     {NULL}  /* Sentinel */
 };
 
-#ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-
-#if PY_MAJOR_VERSION >= 3
-	#define MOD_ERROR_VAL NULL
-	#define MOD_SUCCESS_VAL(val) val
-	#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
-	#define MOD_DEF(ob, name, methods, doc) \
-	   static struct PyModuleDef moduledef = { \
-	      PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
-	   ob = PyModule_Create(&moduledef);
-#else
-	#define MOD_ERROR_VAL
-	#define MOD_SUCCESS_VAL(val)
-	#define MOD_INIT(name) PyMODINIT_FUNC init##name(void)
-	#define MOD_DEF(ob, name, methods, doc) \
-	   ob = Py_InitModule3(name, methods, doc);
-#endif
-
 // Module init
 MOD_INIT(_alm) {
     PyObject* m;
-    
+
     Py_Initialize();
-    
+
     AlmType.tp_new = PyType_GenericNew;
-    if( PyType_Ready(&AlmType) < 0 ) {
+    if (PyType_Ready(&AlmType) < 0)
         return MOD_ERROR_VAL;
-    }
-    
+
     // Module definitions and functions
     MOD_DEF(m, "_alm", _alm_methods, \
             "This is a hand-written wrapper (by Aaron Parsons) for Healpix_cxx, which was developed at the Max-Planck-Institut fuer Astrophysik and financially supported by the Deutsches Zentrum fuer Luft- und Raumfahrt (DLR).");
-    if( m == NULL ) {
+    if (m == NULL)
         return MOD_ERROR_VAL;
-    }
+
     import_array();
-    
+
     Py_INCREF(&AlmType);
     PyModule_AddObject(m, "Alm", (PyObject *)&AlmType);
-    
+
     return MOD_SUCCESS_VAL(m);
 }
-

@@ -1,31 +1,7 @@
 #include <Python.h>
 #include "numpy/arrayobject.h"
 #include <string>
-
-// Python3 compatibility
-#if PY_MAJOR_VERSION >= 3
-	#define PyCapsule_Type PyCObject_Type
-	#define PyInt_AsLong PyLong_AsLong
-	#define PyInt_FromLong PyLong_FromLong
-	#define PyInt_Check PyLong_Check
-	#define PyString_Check PyUnicode_Check
-	#define PyString_Size PyUnicode_GET_LENGTH
-	#define PyString_FromStringAndSize PyUnicode_FromStringAndSize
-char* PyString_AsString(PyObject *ob) {
-	PyObject *enc;
-	char *cstr;
-	enc = PyUnicode_AsEncodedString(ob, "utf-8", "Error");
-	if( enc == NULL ) {
-		PyErr_Format(PyExc_ValueError, "Cannot encode string");
-		return NULL;
-	}
-	cstr = PyBytes_AsString(enc);
-	Py_XDECREF(enc);
-	return cstr;
-}
-#endif
-
-
+#include "aipy_compat.h"
 #include "miriad_wrap.h"
 
 #define MAXVAR 32768
@@ -734,48 +710,27 @@ static PyMethodDef _miriad_methods[] = {
     {NULL}  /* Sentinel */
 };
 
-#ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-
-#if PY_MAJOR_VERSION >= 3
-	#define MOD_ERROR_VAL NULL
-	#define MOD_SUCCESS_VAL(val) val
-	#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
-	#define MOD_DEF(ob, name, methods, doc) \
-	   static struct PyModuleDef moduledef = { \
-	      PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
-	   ob = PyModule_Create(&moduledef);
-#else
-	#define MOD_ERROR_VAL
-	#define MOD_SUCCESS_VAL(val)
-	#define MOD_INIT(name) PyMODINIT_FUNC init##name(void)
-	#define MOD_DEF(ob, name, methods, doc) \
-	   ob = Py_InitModule3(name, methods, doc);
-#endif
-
 // Module init
 MOD_INIT(_miriad) {
     PyObject* m;
-    
+
     Py_Initialize();
-    
+
     UVType.tp_new = PyType_GenericNew;
-    if( PyType_Ready(&UVType) < 0 ) {
+    if (PyType_Ready(&UVType) < 0)
         return MOD_ERROR_VAL;
-    }
-    
+
     // Module definitions and functions
     MOD_DEF(m, "_miriad", _miriad_methods, \
             "This is a hand-written Python wrapper (by Aaron Parsons) for MIRIAD.");
-    if( m == NULL ) {
+    if (m == NULL)
         return MOD_ERROR_VAL;
-    }
+
     import_array();
-    
+
     Py_INCREF(&UVType);
     PyModule_AddObject(m, "UV", (PyObject *)&UVType);
     PyModule_AddObject(m, "MAXCHAN", PyInt_FromLong(MAXCHAN));
-    
+
     return MOD_SUCCESS_VAL(m);
 }
