@@ -3,7 +3,7 @@
 from __future__ import print_function, division, absolute_import
 
 import unittest, numpy as n
-import aipy.optimize as o
+import scipy.optimize as o
 
 class TestOptimize(unittest.TestCase):
     def test_fmin(self):
