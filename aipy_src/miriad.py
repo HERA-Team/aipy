@@ -298,3 +298,52 @@ def ij2bl(i, j):
     if j + 1 < 256: return 256*(i+1) + (j+1)
     else: return 2048*(i+1) + (j+1) + 65536
 
+def read_files(filenames, antstr, polstr, decimate=1, decphs=0, verbose=False, recast_as_array=True):
+    '''Read in miriad uv files.
+       Parameters
+       ---------
+       filenames : list of files
+       antstr    : string
+            list of antennas and or baselines. e.g. 9_10,5_3,...etc.
+       polstr    : string
+            polarization to extract.
+
+       Returns 
+       -------
+       info      : dict. 
+            the lsts and jd's of the data
+       data      : dict
+            the data in dictionary format. data[(i,j,pol)] for antennas i,j and string pol.
+       flgs      : dict
+            corresponding flags to data. Same format. 
+    '''
+    import scripting, cal
+    info = {'lsts':[], 'times':[]}
+    data, flgs = {}, {}
+    if type(filenames) == 'str': filenames = [filenames]
+    for filename in filenames:
+        if verbose: print '   Reading', filename
+        uv = UV(filename)
+        scripting.uv_selector(uv, antstr, polstr)
+        if decimate > 1: uv.select('decimate', decimate, decphs)
+        for (crd,t,(i,j)),d,f in uv.all(raw=True):
+            if len(info['times']) == 0 or info['times'][-1] != t:
+                info['times'].append(t)
+                info['lsts'].append(uv['lst'])
+            pol = pol2str[uv['pol']]
+            key = (i,j,pol)
+            data[key] = data.get(key,[]) + [d]
+            flgs[key] = flgs.get(key,[]) + [f]
+    info['freqs'] = cal.get_freqs(uv['sdf'], uv['sfreq'], uv['nchan'])
+    if recast_as_array:
+        # This option helps reduce memory footprint, but it shouldn't
+        # be necessary: the replace below should free RAM as quickly
+        # as it is allocated.  Unfortunately, it doesn't seem to...
+        for key in data:
+            data[key] = np.array(data[key])
+            flgs[key] = np.array(flgs[key])
+        info['lsts'] = np.array(info['lsts'])
+        info['times'] = np.array(info['times'])
+    info['inttime'] = uv['inttime']
+    info['sdf'] = uv['sdf']
+    return info, data, flgs
