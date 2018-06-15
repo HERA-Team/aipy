@@ -94,12 +94,6 @@ setup(name = 'aipy',
         Extension('aipy.utils', ['aipy_src/utils/utils.cpp'],
             define_macros = global_macros,
             include_dirs = [numpy.get_include(), 'aipy_src/_common']),
-        Extension('aipy._cephes',
-            ['aipy_src/_cephes/_cephesmodule.c', 'aipy_src/_cephes/ufunc_extras.c'] + \
-            glob.glob('aipy_src/_cephes/cephes/*.c') + \
-            glob.glob('aipy_src/_cephes/c_misc/*.c'),
-            define_macros = global_macros,
-            include_dirs = [numpy.get_include(), 'aipy_src/_common']),
     ],
     scripts=glob.glob('scripts/*'),
     package_data = {'aipy': ['aipy_src/_src/*.txt']},

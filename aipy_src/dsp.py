@@ -1,7 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
 import numpy as np
-from ._cephes import i0
+from scipy.special import i0
 from ._dsp import *
 
 
