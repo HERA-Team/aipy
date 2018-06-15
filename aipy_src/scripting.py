@@ -1,14 +1,17 @@
 """
-Module containing utilities (like parsing of certain command-line arguments) 
+Module containing utilities (like parsing of certain command-line arguments)
 for writing scripts.
 """
 
-import miriad, fit, src, numpy as np, re,phs
+from __future__ import print_function, division, absolute_import
 
-def add_standard_options(optparser, ant=False, pol=False, chan=False, 
-        cal=False, src=False, prms=False, dec=False, cmap=False, 
+from . import miriad, fit, src, phs
+import numpy as np, re
+
+def add_standard_options(optparser, ant=False, pol=False, chan=False,
+        cal=False, src=False, prms=False, dec=False, cmap=False,
         max=False, drng=False):
-    """Add standard command-line options to an optparse.OptionParser() on an 
+    """Add standard command-line options to an optparse.OptionParser() on an
     opt in basis (i.e. specify =True for each option to be added)."""
     if ant: optparser.add_option ('-a', '--ant', dest='ant', default='cross',
          help='Select ant_pol/baselines to include.  Examples: all (all baselines) auto (of active baselines, only i=j) cross (only i!=j) 0,1,2 (any baseline involving listed ants) 0_2,0_3 (only listed baselines) "(0,1)_(2,3)" (same as 0_2,0_3,1_2,2_3. Quotes help bash deal with parentheses) "(-0,1)_(2,-3)" (exclude 0_2,0_3,1_3 include 1_2).  Default is "cross". Select pol by adding appropriate x or y eg 5x_6y.')
@@ -16,7 +19,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
         help='Choose polarization (xx, yy, xy, yx) to include.')
     if chan: optparser.add_option('-c', '--chan', dest='chan', default='all',
         help='Select channels (after any delay/delay-rate transforms) to include.  Examples: all (all channels), 0_10 (channels from 0 to 10, including 0 and 10) 0_10_2 (channels from 0 to 10, counting by 2), 0,10,20_30 (mix of individual channels and ranges).  Default is "all".')
-    if cal: optparser.add_option('-C', '--cal', dest='cal', 
+    if cal: optparser.add_option('-C', '--cal', dest='cal',
         help='Use specified <cal>.py for calibration information.')
     if src:
         optparser.add_option('-s', '--src', dest='src',
@@ -26,10 +29,10 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
     if prms: optparser.add_option('-P', '--prms', dest='prms',
         help='Parameters (for fitting, usually), can be specified as can be: "obj=prm", "obj=prm/val", "obj=prm/val/sig", "(obj1/obj2)=prm/(val1/val2)/sig", "obj=(prm1/prm2)/val/(sig1/sig2)", comma separated versions of the above, and so on.')
     if dec:
-        optparser.add_option('-x', '--decimate', dest='decimate', 
+        optparser.add_option('-x', '--decimate', dest='decimate',
             default=1, type='int',
             help='Use only every Nth integration.  Default is 1.')
-        optparser.add_option('--dphs', dest='decphs', 
+        optparser.add_option('--dphs', dest='decphs',
             default=0, type='int',
             help='Offset to use when decimating (i.e. start counting integrations at this number for the purpose of decimation).  Default is 0.')
     if cmap: optparser.add_option('--cmap', dest='cmap', default='jet',
@@ -70,7 +73,7 @@ def parse_ants(ant_str, nants):
             for i in ais:
                 if type(i) == str and i.startswith('-'):
                      i = i[1:] #nibble the - off the string
-                     include_i = 0 
+                     include_i = 0
                 else: include_i = 1
                 for j in ajs:
                     include = None
@@ -97,7 +100,7 @@ def parse_ants(ant_str, nants):
                         bl = miriad.ij2bl(abs(int(ai[0])),abs(int(aj[0])))
                         for p in pol:
                             rv.append((bl,include,p))
-                    else: 
+                    else:
                         bl = miriad.ij2bl(abs(int(i)),abs(int(j)))
                         rv.append((bl,include,-1))
     return rv
@@ -135,7 +138,7 @@ def parse_chans(chan_str, nchan, concat=True):
     else:
         chanopt = []
         for co in chan_str.split(','):
-            co = map(int, co.split('_'))
+            co = list(map(int, co.split('_')))
             assert(len(co) in [1,2,3])
             if len(co) == 1: chanopt.append(np.array(co))
             elif len(co) == 2: chanopt.append(np.arange(co[0],co[1]+1))
@@ -150,7 +153,7 @@ def parse_srcs(src_str, cat_str):
     cats = cat_str.split(',')
     if src_str.startswith('all'): return None, None, cats
     if src_str.find('/') != -1:
-        cutoff = map(float, src_str.split('/'))
+        cutoff = list(map(float, src_str.split('/')))
         return None, cutoff, cats
     src_opt = src_str.split(',')
     for i, s in enumerate(src_opt):
@@ -171,10 +174,10 @@ prm = r'(%s=%s(/(%s)?(/%s)?)?)' % tuple([grp]*4)
 prm_rgx = re.compile(prm)
 def parse_prms(prm_str):
     """Return a dict of the form: {'obj': {'prm':(val,sig),...}...} where
-    val is a starting value and sig is a known error associated with that 
+    val is a starting value and sig is a known error associated with that
     start value.  Both default to None if a value is not provided.  The
-    string to be parsed can be: "obj=prm", "obj=prm/val", 
-    "obj=prm/val/sig", "(obj1/obj2)=prm/(val1/val2)/sig", 
+    string to be parsed can be: "obj=prm", "obj=prm/val",
+    "obj=prm/val/sig", "(obj1/obj2)=prm/(val1/val2)/sig",
     "obj=(prm1/prm2)/val/(sig1/sig2)", comma separated versions of the above,
     and so on."""
     prms = {}
@@ -186,10 +189,10 @@ def parse_prms(prm_str):
         if g[8]: plist = [g[8]]
         else: plist = g[9].split('/')
         if g[16]: ival = [float(g[16])]
-        elif g[17]: ival = map(float, g[17].split('/'))
+        elif g[17]: ival = list(map(float, g[17].split('/')))
         else: ival = [None]
         if g[23]: sval = [float(g[23])]
-        elif g[24]: sval = map(float, g[24].split('/'))
+        elif g[24]: sval = list(map(float, g[24].split('/')))
         else: sval = [None]
         if len(obj) != 1:
             if len(plist) != 1:
@@ -212,7 +215,7 @@ def parse_prms(prm_str):
             ival = [ival]
             sval = [sval]
         for o,il,sl in zip(obj,ival,sval):
-            if not prms.has_key(o): prms[o] = {}
+            if o not in prms: prms[o] = {}
             for p,i,s in zip(plist,il,sl):
                 prms[o][p] = (i,s)
     return prms

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+from __future__ import print_function, division, absolute_import
+
 import unittest, ephem, random
 import aipy as a, numpy as n
 
@@ -190,7 +193,7 @@ class TestAntenna(unittest.TestCase):
         self.ant.select_chans(chans)
         self.assertTrue(n.all(self.bm.chans == chans))
         self.assertTrue(n.all(self.ant.phsoff == 1))
-        
+
 class TestArrayLocation(unittest.TestCase):
     def setUp(self):
         self.aa = a.phs.ArrayLocation(('0','0'))
@@ -255,7 +258,7 @@ class TestAntennaArray(unittest.TestCase):
                 self.assertFalse(n.all(bl_rnd == ant.pos))
         src = a.phs.RadioFixedBody('12:00', '0:00')
         src.compute(self.aa)
-        self.assertRaises(a.phs.PointingError, 
+        self.assertRaises(a.phs.PointingError,
             lambda: self.aa.get_baseline(0,1,src))
         for t in n.random.random((10,)):
             self.aa.set_jultime(2454555. + t)
@@ -294,7 +297,7 @@ class TestAntennaArray(unittest.TestCase):
             src = a.phs.RadioFixedBody(self.aa.sidereal_time(), self.aa.lat,
                 epoch=self.aa.epoch)
             src.compute(self.aa)
-            if t > .5: 
+            if t > .5:
                 seq = src.get_crds('eq', ncrd=3)
                 if t > .75: seq = n.array([seq,seq]).transpose()
             else: seq = src
@@ -308,7 +311,7 @@ class TestAntennaArray(unittest.TestCase):
             phs = n.round(self.aa.gen_phs(src, 0, 3, mfreq=.1), 3)
             self.assertTrue(n.all(phs == 1+0j))
         phs1 = self.aa.gen_phs(src, 0, 2, mfreq=.1, ionref=(.001,.001))
-        phs2 = self.aa.gen_phs(src, 0, 2, mfreq=.1, srcshape=(.01,.01,0), 
+        phs2 = self.aa.gen_phs(src, 0, 2, mfreq=.1, srcshape=(.01,.01,0),
             resolve_src=True)
         self.assertTrue(n.all(phs1 != 1+0j))
         self.assertTrue(n.all(phs2 != 1+0j))

@@ -2,6 +2,8 @@
 Module for fitting 2d Gaussians to things.
 """
 
+from __future__ import print_function, division, absolute_import
+
 import numpy as np
 
 def moments(data):
@@ -43,8 +45,8 @@ def twodgaussian(inpars,shape=None):
     def rotgauss(x,y):
         xp = x
         yp = y
-        g = amplitude*np.exp( 
-            -(((rcen_x-xp)/width_x)**2 + 
+        g = amplitude*np.exp(
+            -(((rcen_x-xp)/width_x)**2 +
             ((rcen_y-yp)/width_y)**2)/2.)
         return g
     if shape is not None:

@@ -1,3 +1,7 @@
+#include <Python.h>
+#include "numpy/arrayobject.h"
+#include <string>
+#include "aipy_compat.h"
 #include "miriad_wrap.h"
 
 #define MAXVAR 32768
@@ -20,9 +24,9 @@ typedef struct {
 } UVObject;
 
 // Deallocate memory when Python object is deleted
-static void UVObject_dealloc(UVObject* self) {
+static void UVObject_dealloc(UVObject *self) {
     if (self->tno != -1) uvclose_c(self->tno);
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 // Allocate memory for Python object and Healpix_Base (__new__)
@@ -577,7 +581,11 @@ PyObject * WRAP_hread(PyObject *self, PyObject *args) {
             case 'a':
                 hreadb_c(item_hdl, st, offset, H_BYTE_SIZE, &iostat);
                 CHK_IO(iostat);
+#if PY_MAJOR_VERSION >= 3
+                return Py_BuildValue("yi", st, H_BYTE_SIZE);
+#else
                 return Py_BuildValue("si", st, H_BYTE_SIZE);
+#endif
             case 'i':
                 hreadi_c(item_hdl, &in, offset, H_INT_SIZE, &iostat);
                 CHK_IO(iostat);
@@ -646,8 +654,8 @@ static PyMethodDef UVObject_methods[] = {
 };
 
 PyTypeObject UVType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
+//     0,                         /*ob_size*/
     "_miriad.UV", /*tp_name*/
     sizeof(UVObject), /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -702,19 +710,27 @@ static PyMethodDef _miriad_methods[] = {
     {NULL}  /* Sentinel */
 };
 
-#ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-
 // Module init
-PyMODINIT_FUNC init_miriad(void) {
+MOD_INIT(_miriad) {
     PyObject* m;
+
+    Py_Initialize();
+
     UVType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&UVType) < 0) return;
-    m = Py_InitModule3("_miriad", _miriad_methods,
-    "This is a hand-written Python wrapper (by Aaron Parsons) for MIRIAD.");
+    if (PyType_Ready(&UVType) < 0)
+        return MOD_ERROR_VAL;
+
+    // Module definitions and functions
+    MOD_DEF(m, "_miriad", _miriad_methods, \
+            "This is a hand-written Python wrapper (by Aaron Parsons) for MIRIAD.");
+    if (m == NULL)
+        return MOD_ERROR_VAL;
+
     import_array();
+
     Py_INCREF(&UVType);
     PyModule_AddObject(m, "UV", (PyObject *)&UVType);
-    PyModule_AddIntConstant(m, "MAXCHAN", MAXCHAN);
+    PyModule_AddObject(m, "MAXCHAN", PyInt_FromLong(MAXCHAN));
+
+    return MOD_SUCCESS_VAL(m);
 }

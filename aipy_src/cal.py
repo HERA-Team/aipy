@@ -1,5 +1,9 @@
-"""Load calibration information contained in specified calibration
-modules."""
+"""
+Load calibration information contained in specified calibration
+modules.
+"""
+
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
 import os
@@ -11,10 +15,10 @@ def get_freqs(sdf, sfreq, nchan):
 
 def get_aa(*args):
     '''Return the AntennaArray specified by cal_key, which should be the
-    name of a module somewhere in Python's path that implements a 
-    "get_aa(freqs)" function.  That function should return an AntennaArray 
-    initialized with appropriate calibration parameters.  This function simply 
-    attempts to import that function, and then performs a simple conversion 
+    name of a module somewhere in Python's path that implements a
+    "get_aa(freqs)" function.  That function should return an AntennaArray
+    initialized with appropriate calibration parameters.  This function simply
+    attempts to import that function, and then performs a simple conversion
     between sdf (channel width in GHz), sfreq (starting frequency), nchan (#
     of channels) --> freqs (an array of channel centers).'''
     if len(args) == 2: cal_key,freqs = args

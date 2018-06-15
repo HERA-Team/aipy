@@ -1,8 +1,18 @@
-'''The Mauritius Radio Telescope catalog.  Can be downloaded from
-http://www.rri.res.in/surveys/MRT/Catalogues/CatalogueMRTa.txt Copy this file
-to "CatalogueMRTa.txt" in the _src directory of your AIPY installation.'''
+"""
+The Mauritius Radio Telescope catalog.
 
-import aipy as a, numpy as np, os
+Can be downloaded from
+http://www.rri.res.in/surveys/MRT/Catalogues/CatalogueMRTa.txt Copy this file
+to "CatalogueMRTa.txt" in the _src directory of your AIPY installation.
+"""
+
+from __future__ import print_function, division, absolute_import
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 class MRTCatalog(a.fit.SrcCatalog):
     def fromfile(self, filename):
@@ -14,7 +24,7 @@ class MRTCatalog(a.fit.SrcCatalog):
                 jys=float(jys), index=0, mfreq=.150))
         self.add_srcs(addsrcs)
 
-MRTFILE = os.path.dirname(__file__) + os.sep + 'CatalogueMRTa.txt'
+MRTFILE = os.path.join(os.path.dirname(__file__), 'CatalogueMRTa.txt')
 _mrtcat = None
 
 def get_srcs(srcs=None, cutoff=None):
@@ -35,4 +45,3 @@ def get_srcs(srcs=None, cutoff=None):
         try: srclist.append(_mrtcat[s])
         except(KeyError): pass
     return srclist
-

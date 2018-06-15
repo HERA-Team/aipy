@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+from __future__ import print_function, division, absolute_import
+
 import tempfile
 import unittest, numpy as np, os
 import aipy.miriad as m, aipy._miriad as _m

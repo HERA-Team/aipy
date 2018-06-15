@@ -1,3 +1,5 @@
+from __future__ import print_function, division, absolute_import
+
 import unittest, aipy._src.four_c as h, aipy as a, numpy as n
 
 class TestFourCCatalog(unittest.TestCase):

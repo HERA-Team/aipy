@@ -1,7 +1,11 @@
 #!/usr/bin/python
+
 """
 Diagnose RFI and RFI removal strategies by plotting either maximum amplitude per channel or fraction of flagged data per channel.
 """
+
+from __future__ import print_function, division, absolute_import
+
 import numpy as np
 import aipy as a
 from matplotlib import pylab as p
@@ -34,9 +38,9 @@ hi_bl,med_bl,lo_bl = '','',''
 freqs = []
 
 for uvfile in args:
-	print 'Reading',uvfile
+	print('Reading',uvfile)
 	uv = a.miriad.UV(uvfile)
-	a.scripting.uv_selector(uv,opts.ant,opts.pol)	
+	a.scripting.uv_selector(uv,opts.ant,opts.pol)
 	if uvfile == args[0]:
 		freqs = 1000.*np.linspace(uv['sfreq'],uv['sfreq']+uv['nchan']*uv['sdf'],uv['nchan']) #Units are sensible Megahertz.
 	if uvfile[-1] == 'r' or uvfile[-1] == 'R': opts.strategy = 'none'
@@ -59,17 +63,17 @@ for uvfile in args:
 				mask[bl] = {}
 			#create data array, mask.
 			data[bl][t] = d
-			mask[bl][t] = f	
+			mask[bl][t] = f
 		if not opts.max_hold and not opts.dwell:
-			print 'Please indicate whether you want max-hold (-m) or dwell-time (-d) plots'
+			print('Please indicate whether you want max-hold (-m) or dwell-time (-d) plots')
 			sys.exit(0)
-	
+
 	if opts.dwell:
-		for bl in data: #This is a blatant rip-off of xrfi_simple.py, but that's kind of what we want...	
+		for bl in data: #This is a blatant rip-off of xrfi_simple.py, but that's kind of what we want...
 			data_times = data[bl].keys()
-			data_times.sort()	
-			rfi_counter = np.array([mask[bl][t] for t in data_times]) 
-			
+			data_times.sort()
+			rfi_counter = np.array([mask[bl][t] for t in data_times])
+
 			if opts.strategy == 'simple':
 				d = np.array([data[bl][t] for t in data_times])
 				#find sigma for frequency.
@@ -85,18 +89,18 @@ for uvfile in args:
 				sigt = np.sqrt(np.median(ddt2,axis=1))
 				sigt.shape = (sigt.size,1)
 				rfi_counter[0,:] += 1;rfi_counter[-1,:] += 1
-				rfi_counter[1:-1,:] += np.where(ddt2/sigt**2 > 4.**2,1,0)			
-	
+				rfi_counter[1:-1,:] += np.where(ddt2/sigt**2 > 4.**2,1,0)
+
 				rfi_counter = np.where(rfi_counter > 0,1,0)
-	
+
 			if opts.strategy == 'naive':
 				ad = np.abs(d)
 				med = np.median(ad)
 				sig = np.sqrt(np.median(np.abs(ad-med)**2))
 				rfi_counter += np.where(ad > med +2.*sig,1,0)
-				
+
 				rfi_counter = np.where(rfi_counter > 0,1,0) #Don't want to count twice!!!
-			
+
 			if opts.strategy == 'normal':
 				d = np.ma.array([data[bl][t] for t in data_times],mask=[mask[bl][t] for t in data_times])
 				hi,low = a.rfi.gen_rfi_thresh(d)
@@ -106,14 +110,14 @@ for uvfile in args:
 				ch_msk = np.where(ch_cnt > ch_cnt.max()*0.33,1,0)
 				for I,t in enumerate(rfi_counter):
 					if rfi_counter[I].sum() > rfi_counter[I].size*0.33: rfi_counter[I] += np.ones(uv['nchan'])
-					else: rfi_counter[I] += ch_msk		
+					else: rfi_counter[I] += ch_msk
 				if i == j:
 					bad_ints = a.rfi.flag_by_int(d)
 					for I in np.where(bad_ints)[0]:
-						rfi_counter[I] += np.ones(uv['nchan'])			
-				
+						rfi_counter[I] += np.ones(uv['nchan'])
+
 				rfi_counter = np.where(rfi_counter > 0,1,0)
-			
+
 			if opts.strategy == 'none':
 				pass
 
@@ -123,9 +127,9 @@ for uvfile in args:
 				total[bl] = np.zeros(uv['nchan'])
 			for ct in range(len(rfi_counter)):
 				infected[bl] += rfi_counter[ct]
-				total[bl] += np.ones(uv['nchan'])	
+				total[bl] += np.ones(uv['nchan'])
 
-	del(uv)	
+	del(uv)
 
 if opts.dwell:
 	for bl in infected:
@@ -135,10 +139,10 @@ if opts.dwell:
 #Housekeeping...
 
 #Do some conversion of the frequency axis.
-if opts.x_axis == 'freq': 
+if opts.x_axis == 'freq':
 	plot_x = freqs
 	xlabel = 'Frequency (MHz)'
-if opts.x_axis == 'z': 
+if opts.x_axis == 'z':
 	plot_x = (1427.1/freqs)-1.
 	xlabel = 'Redshift of EoR'
 if opts.x_axis == 'chan':
@@ -147,7 +151,7 @@ if opts.x_axis == 'chan':
 
 bls = plot_y.keys() #This keeps track of all the baselines.
 if len(bls) == 0:
-        print 'No data to plot'
+        print('No data to plot')
         sys.exit(0)
 
 def sort_func(a,b): #This guy will make sure that your baselines always show up in order.

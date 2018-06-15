@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+from __future__ import print_function, division, absolute_import
+
 import unittest, aipy._healpix as h, numpy as n
 
 class TestHealpix(unittest.TestCase):

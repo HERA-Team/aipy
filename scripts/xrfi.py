@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 """
 Detect and flag RFI related effects in UV files.  Uses statistical thresholding
 to identify outliers in power and narrowness of features.  Does an improved
@@ -6,12 +7,14 @@ job of identifying low-level interference if sky model and crosstalk are
 removed from the data first.
 """
 
+from __future__ import print_function, division, absolute_import
+
 import numpy as np, aipy as a, os, sys, pickle, optparse
 
 o = optparse.OptionParser()
 o.set_usage('xrfi.py [options] *.uv')
 o.set_description(__doc__)
-o.add_option('-c', '--chan', dest='chan', 
+o.add_option('-c', '--chan', dest='chan',
     help='Manually flag channels before xrfi processing.  Options are "<chan1 #>,..." (a list of channels), or "<chan1 #>_<chan2 #>" (a range of channels).  Default is None.')
 o.add_option('-n', '--nsig', dest='nsig', default=2., type='float',
     help='Number of standard deviations above mean to flag.  Default 2.')
@@ -53,9 +56,9 @@ del(uv)
 
 for uvfile in args:
     uvofile = uvfile+'r'
-    print uvfile,'->',uvofile
+    print(uvfile,'->',uvofile)
     if os.path.exists(uvofile):
-        print uvofile, 'exists, skipping.'
+        print(uvofile, 'exists, skipping.')
         continue
     uvi = a.miriad.UV(uvfile)
     (uvw,jd,(i,j)),d,f = uvi.read(raw=True)
@@ -76,7 +79,7 @@ for uvfile in args:
         if opts.reflag: f = np.zeros_like(f)
         f = np.where(np.abs(d) == 0, 1, f)
         if i != j:
-            if window is None: 
+            if window is None:
                 window = d.size/2 - abs(np.arange(d.size) - d.size/2)
             d = np.fft.fft(np.fft.ifft(d) * window)
         # Manually flagged channels
@@ -98,7 +101,7 @@ for uvfile in args:
             hi_thr, lo_thr = a.rfi.gen_rfi_thresh(d, nsig=opts.nsig)
             m = np.where(np.abs(d) > hi_thr,1,0)
             for i, t in enumerate(data_times): mask[pol][bl][t] |= m[i]
-            # If more than ch_thresh of the data in a channel or 
+            # If more than ch_thresh of the data in a channel or
             # integration is flagged, flag the whole thing
             ch_cnt = np.array([mask[pol][bl][t] for t in data_times]).sum(axis=0)
             ch_msk = np.where(ch_cnt > ch_cnt.max()*opts.ch_thresh,1,0)
@@ -109,7 +112,7 @@ for uvfile in args:
                 else: mask[pol][bl][t] |= ch_msk
 
     # Use autocorrelations to flag entire integrations which have
-    # anomalous powers.  At least 2 antennas must agree for a 
+    # anomalous powers.  At least 2 antennas must agree for a
     # integration to get flagged.
     if opts.flagmode in ['int', 'both']:
         for pol in data:

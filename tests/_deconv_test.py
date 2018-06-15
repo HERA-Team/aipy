@@ -1,3 +1,5 @@
+from __future__ import print_function, division, absolute_import
+
 import unittest, ephem, random
 import aipy as a, numpy as n
 
@@ -62,7 +64,7 @@ class TestClean(unittest.TestCase):
         mdl = n.zeros(dim.shape, dtype=dim.dtype)
         area = n.ones(dim.shape, dtype=n.int)
         rv = a._deconv.clean(dim, dbm, mdl, area, gain=.1, tol=1e-2, stop_if_div=0, maxiter=100)
-    
+
 
 if __name__ == '__main__':
     unittest.main()

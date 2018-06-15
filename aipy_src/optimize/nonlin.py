@@ -35,7 +35,7 @@ details.
                            it remembers how to construct it using vectors, and
                            when computing inv(J)*F, it uses those vectors to
                            compute this product, thus avoding the expensive NxN
-                           matrix multiplication.  
+                           matrix multiplication.
    broyden_generalized --  Generalized Broyden's method, the same as broyden2,
                            but instead of approximating the full NxN Jacobian,
                            it construct it at every iteration in a way that
@@ -57,6 +57,8 @@ details.
    norm --  Returns an L2 norm of the vector
 
 """
+
+from __future__ import print_function, division, absolute_import
 
 import math
 
@@ -117,14 +119,14 @@ def broyden2(F, xin, iter=10, alpha=0.4, verbose = False):
         Fxm=Fxm1
         Gm=Gm+(deltaxm-Gm*deltaFxm)*deltaFxm.T/norm(deltaFxm)**2
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n+1, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n+1, norm(Fxm)))
     return xm.flat
 
 def broyden3(F, xin, iter=10, alpha=0.4, verbose = False):
     """Broyden's second method.
 
     Updates inverse Jacobian by an optimal formula.
-    The NxN matrix multiplication is avoided. 
+    The NxN matrix multiplication is avoided.
 
     The best norm |F(x)|=0.003 achieved in ~20 iterations.
 
@@ -153,7 +155,7 @@ def broyden3(F, xin, iter=10, alpha=0.4, verbose = False):
         #Gm=Gm+(deltaxm-Gm*deltaFxm)*deltaFxm.T/norm(deltaFxm)**2
         updateG(deltaxm-Gmul(deltaFxm),deltaFxm/norm(deltaFxm)**2)
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n+1, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n+1, norm(Fxm)))
     return xm.flat
 
 def broyden_generalized(F, xin, iter=10, alpha=0.1, M=5, verbose = False):
@@ -201,7 +203,7 @@ def broyden_generalized(F, xin, iter=10, alpha=0.1, M=5, verbose = False):
             gamma=a.I*dFF
 
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def anderson(F, xin, iter=10, alpha=0.1, M=5, w0=0.01, verbose = False):
@@ -248,10 +250,10 @@ def anderson(F, xin, iter=10, alpha=0.1, M=5, w0=0.01, verbose = False):
             for k in range(n+1-MM,n+1):
                 dFF[k-(n+1-MM)]=dFxm[k].T*Fxm
             gamma=solve(a,dFF)
-#            print gamma
+#            print(gamma)
 
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def anderson2(F, xin, iter=10, alpha=0.1, M=5, w0=0.01, verbose = False):
@@ -294,10 +296,10 @@ def anderson2(F, xin, iter=10, alpha=0.1, M=5, w0=0.01, verbose = False):
             for k in range(n+1-MM,n+1):
                 dFF[k-(n+1-MM)]=(Fxm-dFxm[k]).T*Fxm
             theta=solve(a,dFF)
-#            print gamma
+#            print(gamma)
 
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def broyden_modified(F, xin, iter=10, alpha=0.35, w0=0.01, wl=5, verbose = False):
@@ -335,7 +337,7 @@ def broyden_modified(F, xin, iter=10, alpha=0.35, w0=0.01, wl=5, verbose = False
         betta=(w0**2*numpy.matrix(numpy.identity(n+1))+a).I
 
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def broyden1(F, xin, iter=10, alpha=0.1, verbose = False):
@@ -360,7 +362,7 @@ def broyden1(F, xin, iter=10, alpha=0.1, verbose = False):
         Fxm=Fxm1
         Jm=Jm+(deltaFxm-Jm*deltaxm)*deltaxm.T/norm(deltaxm)**2
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm.flat
 
 def broyden1_modified(F, xin, iter=10, alpha=0.1, verbose = False):
@@ -373,7 +375,7 @@ def broyden1_modified(F, xin, iter=10, alpha=0.1, verbose = False):
     """
     def inv(A,u,v):
 
-        #interesting is that this 
+        #interesting is that this
         #return (A.I+u*v.T).I
         #is more stable than
         #return A-A*u*v.T*A/float(1+v.T*A*u)
@@ -388,13 +390,13 @@ def broyden1_modified(F, xin, iter=10, alpha=0.1, verbose = False):
         Fxm1=myF(F,xm)
         deltaFxm=Fxm1-Fxm
         Fxm=Fxm1
-#        print "-------------",norm(deltaFxm),norm(deltaxm)
+#        print("-------------",norm(deltaFxm),norm(deltaxm))
         deltaFxm/=norm(deltaxm)
         deltaxm/=norm(deltaxm)
         Jm=inv(Jm+deltaxm*deltaxm.T*Jm,-deltaFxm,deltaxm)
-        
+
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm
 
 def vackar(F, xin, iter=10, alpha=0.1, verbose = False):
@@ -417,12 +419,12 @@ def vackar(F, xin, iter=10, alpha=0.1, verbose = False):
         Fxm=Fxm1
         d=d-(deltaFxm+d*deltaxm)*deltaxm/norm(deltaxm)**2
         if verbose:
-            print "%d:  |F(x)|=%.3f"%(n, norm(Fxm))
+            print("%d:  |F(x)|=%.3f"%(n, norm(Fxm)))
     return xm
 
 def linearmixing(F,xin, iter=10, alpha=0.1, verbose = False):
     """J=-1/alpha
-    
+
     The best norm |F(x)|=0.005 achieved in ~140 iterations.
     """
     def myF(F,xm):
@@ -436,13 +438,13 @@ def linearmixing(F,xin, iter=10, alpha=0.1, verbose = False):
         deltaFxm=Fxm1-Fxm
         Fxm=Fxm1
         if verbose:
-            print "%d: |F(x)|=%.3f" %(n,norm(Fxm))
+            print("%d: |F(x)|=%.3f" %(n,norm(Fxm)))
 
     return xm
 
 def excitingmixing(F,xin,iter=10,alpha=0.1,alphamax=1.0, verbose = False):
     """J=-1/alpha
-    
+
     The best norm |F(x)|=0.005 achieved in ~140 iterations.
     """
     def myF(F,xm):
@@ -464,6 +466,6 @@ def excitingmixing(F,xin,iter=10,alpha=0.1,alphamax=1.0, verbose = False):
                 beta[i]=alpha
         Fxm=Fxm1
         if verbose:
-            print "%d: |F(x)|=%.3f" %(n,norm(Fxm))
+            print("%d: |F(x)|=%.3f" %(n,norm(Fxm)))
 
     return xm

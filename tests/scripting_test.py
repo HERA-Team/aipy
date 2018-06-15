@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+from __future__ import print_function, division, absolute_import
+
 import unittest, aipy as a, numpy as n, re
 from aipy.miriad import ij2bl
 
@@ -24,14 +27,14 @@ class TestParseAnts(unittest.TestCase):
             '0,1,all': [],
         }
         for i in range(nants):
-            cases[str(i)] = map(lambda x: (ij2bl(x,i),1), range(nants))
-            cases['-'+str(i)] = map(lambda x: (ij2bl(x,i),0), range(nants))
+            cases[str(i)] = list(map(lambda x: (ij2bl(x,i),1), range(nants)))
+            cases['-'+str(i)] = list(map(lambda x: (ij2bl(x,i),0), range(nants)))
         # inelegantly paste on the new pol parsing flag on the above tests
         # XXX really should add some new tests for the new pol parsing
         for k in cases:
             cases[k] = [(v+(-1,))[:3] for v in cases[k]]
         for ant_str in cases:
-            self.assertEqual(a.scripting.parse_ants(ant_str, nants), 
+            self.assertEqual(a.scripting.parse_ants(ant_str, nants),
                 cases[ant_str])
         self.assertRaises(ValueError, a.scripting.parse_ants, '(0_1)_2', nants)
 
@@ -134,7 +137,7 @@ class TestParsePrms(unittest.TestCase):
         self.assertEqual(prms['src14']['index'], (None,1.))
         self.assertEqual(prms['src15']['jys'], (None,1.))
         self.assertEqual(prms['src15']['index'], (None,1.))
-        self.assertRaises(AssertionError, 
+        self.assertRaises(AssertionError,
             a.scripting.parse_prms,'(a/b)=(c/d)/(1/2)/(3/4)')
         t = '(1/2/3)=jys,(2/3)=index'
         prms = a.scripting.parse_prms(t)
@@ -158,4 +161,3 @@ class TestSuite(unittest.TestSuite):
 
 if __name__ == '__main__':
     unittest.main()
-

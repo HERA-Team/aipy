@@ -1,7 +1,11 @@
 #!/usr/bin/env python
+
 """
 Rotate linearly polarized data into Stokes' I,Q,U,V
 """
+
+from __future__ import print_function, division, absolute_import
+
 import aipy as a
 import numpy as np
 import optparse,sys,os
@@ -13,13 +17,13 @@ opts,args = o.parse_args(sys.argv[1:])
 
 
 for uvfile in args:
-    
+
     infile = uvfile
     outfile = infile+'S'
-    
-    print infile,'-->',outfile
+
+    print(infile,'-->',outfile)
     if os.path.exists(outfile):
-        print 'File exists, skipping'
+        print('File exists, skipping')
         continue
 
     uv = a.pol.UV(uvfile)
@@ -31,33 +35,33 @@ for uvfile in args:
         if not plzn in DD[bl][t].keys():
             DD[bl][t][plzn] = np.ma.array(d,mask=f)
     del(uv)
-    
+
     for bl in DD:
         for t in DD[bl]:
             DD[bl][t] = a.pol.xy2stokes(DD[bl][t])
-    
+
     def mfunc(uv,p,d,f):
         uvw,t,bl = p
-        print uvi['pol']
+        print(uvi['pol'])
         plzn = uvi.read_pol()
-        print bl,plzn 
+        print(bl,plzn )
         if plzn == 'xx':
             uvo.write_pol('I')
-            print '-->',uvo.read_pol()
+            print('-->',uvo.read_pol())
             return p,DD[bl][t]['I'],f
-        if plzn == 'xy': 
+        if plzn == 'xy':
             uvo.write_pol('Q')
-            print '-->',uvo.read_pol()
+            print('-->',uvo.read_pol())
             return p,DD[bl][t]['Q'],f
-        if plzn == 'yx': 
+        if plzn == 'yx':
             uvo.write_pol('U')
-            print '-->',uvo.read_pol()
+            print('-->',uvo.read_pol())
             return p,DD[bl][t]['U'],f
-        if plzn == 'yy': 
+        if plzn == 'yy':
             uvo.write_pol('V')
-            print '-->',uvo.read_pol()
+            print('-->',uvo.read_pol())
             return p,DD[bl][t]['V'],f
-    
+
     uvi = a.pol.UV(infile)
     uvo = a.pol.UV(outfile,status='new')
     uvo.init_from_uv(uvi)

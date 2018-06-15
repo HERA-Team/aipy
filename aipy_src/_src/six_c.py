@@ -1,4 +1,6 @@
-'''The 6C (Sixth Cambridge) Catalog.
+"""
+The 6C (Sixth Cambridge) Catalog.
+
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
@@ -6,8 +8,16 @@ the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy files to "6c1.txt", "6c2.txt", "6c3.txt", "6c4.txt", "6c5_1.txt",
 and "6c5_2.txt" (for the 5 fields) in the _src directory of your AIPY
-installation.'''
-import aipy as a, numpy as np, os
+installation.
+"""
+
+from __future__ import print_function, division, absolute_import
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 class SixCCatalog(a.fit.SrcCatalog):
     def fromfile(self,filename):
@@ -18,15 +28,15 @@ class SixCCatalog(a.fit.SrcCatalog):
             if len(text) <= 4: continue
             try: int(text[0][0])
             except(ValueError): continue
-            ra = text[0].replace(' ',':') 
-            dec = text[1].replace(' ',':') 
+            ra = text[0].replace(' ',':')
+            dec = text[1].replace(' ',':')
             name = '%s_%s' % (ra,dec)
             jys = float(text[4])
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,
                 jys=jys, index=0, mfreq=.151))
         self.add_srcs(addsrcs)
 
-SIXCFILES = [os.path.dirname(__file__) + os.sep + cat 
+SIXCFILES = [os.path.join(os.path.dirname(__file__), cat)
     for cat in ['6c1.txt','6c2.txt','6c3.txt','6c4.txt','6c5_1.txt','6c5_2.txt']]
 _sixccat = None
 

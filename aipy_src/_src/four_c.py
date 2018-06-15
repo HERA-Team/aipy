@@ -1,12 +1,22 @@
-'''The 4C (Fourth Cambridge) Catalog.
+"""
+The 4C (Fourth Cambridge) Catalog.
+
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy this file to "4c.txt" in the _src directory of your AIPY
-installation.'''
-import aipy as a, numpy as np, os
+installation.
+"""
+
+from __future__ import print_function, division, absolute_import
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 class FourCCatalog(a.fit.SrcCatalog):
     def fromfile(self,filename):
@@ -25,7 +35,7 @@ class FourCCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=0.178))
         self.add_srcs(addsrcs)
 
-FOURCFILE = os.path.dirname(__file__) + os.sep + '4c.txt'
+FOURCFILE = os.path.join(os.path.dirname(__file__), '4c.txt')
 _fourccat = None
 
 def get_srcs(srcs=None, cutoff=None):

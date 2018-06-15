@@ -1,14 +1,23 @@
-'''The VLSS Catalog.
+"""
+The VLSS Catalog.
+
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy this file to "vlss.txt" in the _src directory of your AIPY
-installation.'''
+installation.
+"""
 
-import aipy as a, numpy as np, os
-    
+from __future__ import print_function, division, absolute_import
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
+
 class VLSSCatalog(a.fit.SrcCatalog):
     def fromfile(self, filename):
         f = open(filename)
@@ -26,7 +35,7 @@ class VLSSCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=0.074))
         self.add_srcs(addsrcs)
 
-VLSSFILE = os.path.dirname(__file__) + os.sep + 'vlss.txt'
+VLSSFILE = os.path.join(os.path.dirname(__file__), 'vlss.txt')
 _vlsscat = None
 
 def get_srcs(srcs=None, cutoff=None):

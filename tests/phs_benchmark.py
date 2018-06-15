@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-import sys
+
+from __future__ import print_function, division, absolute_import
+
 import unittest
 import timeit
 
@@ -24,7 +26,7 @@ s_eqs = n.array([[0,1,0]]*100).transpose()
 aa.gen_phs(s_eqs,0,1,)
 '''
         t = timeit.Timer(expr, setup=setup)
-        sys.stderr.write("%.3f ms ... " % ((t.timeit(number=10)/ 10) * 1e3))
+        print("%.3f ms ... " % ((t.timeit(number=10)/ 10) * 1e3))
 
 class TestSuite(unittest.TestSuite):
     """A unittest.TestSuite class which contains all of the aipy.phs unit tests."""

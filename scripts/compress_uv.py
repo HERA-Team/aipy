@@ -1,7 +1,12 @@
-#! /usr/bin/env python
-"""Tarball and compress (using bz2) Miriad UV files.
+#!/usr/bin/env python
+
+"""
+Tarball and compress (using bz2) Miriad UV files.
 Author: Aaron Parsons
-Date: 8/14/07"""
+Date: 8/14/07
+"""
+
+from __future__ import print_function, division, absolute_import
 
 import sys, os
 from optparse import OptionParser
@@ -17,14 +22,14 @@ p.add_option('-x', '--expand', dest='expand', action='store_true',
 opts, args = p.parse_args(sys.argv[1:])
 
 for i in args:
-    print i
+    print(i)
     if opts.expand:
         rv = os.system('tar xjf %s' % i)
         if rv != 0: break
         continue
     cmp_name = i + '.tar.bz2'
     if os.path.exists(cmp_name):
-        print cmp_name, 'exists; skipping...'
+        print(cmp_name, 'exists; skipping...')
         continue
     rv = os.system('tar jcf %s %s' % (cmp_name, i))
     # If tar fails, delete malformed tarball and then exit

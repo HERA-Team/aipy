@@ -1,8 +1,11 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
 """
-Add or subtract the data in the second UV file from the data in the 
+Add or subtract the data in the second UV file from the data in the
 first UV file.  They'll need to have corresponding integrations/data order.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, optparse, os
 
@@ -27,10 +30,10 @@ def mfunc(uv, p, d, f):
 if opts.sub: filename = args[0] + 'd'
 else: filename = args[0] + 'a'
 if os.path.exists(filename):
-    print 'File exists: skipping'
+    print('File exists: skipping')
     sys.exit(0)
-print args[0], '->', filename
+print(args[0], '->', filename)
 uvo = a.miriad.UV(filename, status='new')
 uvo.init_from_uv(uv1)
-uvo.pipe(uv1, mfunc=mfunc, raw=True, 
+uvo.pipe(uv1, mfunc=mfunc, raw=True,
     append2hist='UVADDSUB: --sub=%s file=%s\n' % (opts.sub, args[1]))

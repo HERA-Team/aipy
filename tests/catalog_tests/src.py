@@ -1,5 +1,8 @@
-'''This module provides a front-end interface for accessing sources in 
+'''This module provides a front-end interface for accessing sources in
 all catalogs in the _src module of AIPY.'''
+
+from __future__ import print_function, division, absolute_import
+
 import fit, _src
 
 def get_catalog(srcs=None, cutoff=None, catalogs=['helm','misc']):

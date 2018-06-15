@@ -1,9 +1,12 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
 """
 A script for filtering using a delay/delay-rate transform.  If a source
 is specified, will remove/extract that source.  If none is specified,
 will filter/extract in absolute terms.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, os, sys, optparse, math
 
@@ -61,14 +64,14 @@ for uvfile in args:
     if src is None: uvofile = uvfile + 'f'
     elif opts.extract: uvofile = uvfile+'.e_'+opts.src
     else: uvofile = uvfile+'.f_'+opts.src
-    print uvfile,'->',uvofile
+    print(uvfile,'->',uvofile)
     if os.path.exists(uvofile):
-        print uvofile, 'exists, skipping.'
+        print(uvofile, 'exists, skipping.')
         continue
     uvi = a.miriad.UV(uvfile)
 
     curtime = None
-    print '    Performing delay transform and cleaning...'
+    print('    Performing delay transform and cleaning...')
     src_up = False
     for (uvw,t,(i,j)),d,f in uvi.all(raw=True):
         pol = a.miriad.pol2str[uvi['pol']]
@@ -102,7 +105,7 @@ for uvfile in args:
         except(KeyError): phs_dat[pol][bl] = [d]
 
     if opts.drw != -1:
-        print '    Performing delay-rate transform and cleaning...'
+        print('    Performing delay-rate transform and cleaning...')
     for pol in phs_dat:
         for bl in phs_dat[pol]:
             d = np.array(phs_dat[pol][bl])
@@ -124,7 +127,7 @@ for uvfile in args:
                 x1, x2 = opts.drw, -opts.drw+1
                 if x2 == 0: x2 = d.shape[0]
                 d[x1:x2,:] = 0
-            if opts.dw != -1: 
+            if opts.dw != -1:
                 y1, y2 = opts.dw, -opts.dw
                 if y2 == 0: y2 = d.shape[1]
             else: y1, y2 = filters[pol][bl]
@@ -164,7 +167,7 @@ for uvfile in args:
         if opts.extract: return p, np.ma.array(data, mask=d.mask)
         else: return p, d - data
 
-    print '    Writing out filtered data...'
+    print('    Writing out filtered data...')
     uvi.rewind()
     uvo = a.miriad.UV(uvofile, status='new')
     uvo.init_from_uv(uvi)

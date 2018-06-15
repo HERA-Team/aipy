@@ -1,12 +1,22 @@
-'''The 7C (Seventh Cambridge) Catalog.
+"""
+The 7C (Seventh Cambridge) Catalog.
+
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy this file to "7c.txt" in the _src directory of your AIPY
-installation.'''
-import aipy as a, numpy as np, os
+installation.
+"""
+
+from __future__ import print_function, division, absolute_import
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 class SevenCCatalog(a.fit.SrcCatalog):
     def fromfile(self, filename):
@@ -25,7 +35,7 @@ class SevenCCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=0.151))
         self.add_srcs(addsrcs)
 
-SEVENCFILE = os.path.dirname(__file__) + os.sep + '7c.txt'
+SEVENCFILE = os.path.join(os.path.dirname(__file__), '7c.txt')
 _sevenccat = None
 
 def get_srcs(srcs=None, cutoff=None):
@@ -45,4 +55,3 @@ def get_srcs(srcs=None, cutoff=None):
         try: srclist.append(_sevenccat[s])
         except(KeyError): pass
     return srclist
-

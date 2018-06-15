@@ -2,14 +2,18 @@
 Module for reading and setting parameters in components of an AntennaArray
 simulation for purpose of fitting.
 """
-import amp, numpy as np
 
-#  _   _ _   _ _ _ _           _____                 _   _                 
-# | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
+from __future__ import print_function, division, absolute_import
+
+from . import amp
+import numpy as np
+
+#  _   _ _   _ _ _ _           _____                 _   _
+# | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___
 # | | | | __| | | | __| | | | | |_ | | | | '_ \ / __| __| |/ _ \| '_ \/ __|
 # | |_| | |_| | | | |_| |_| | |  _|| |_| | | | | (__| |_| | (_) | | | \__ \
 #  \___/ \__|_|_|_|\__|\__, | |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
-#                      |___/        
+#                      |___/
 
 def flatten_prms(prms, prm_list=None):
     """Generate list of parameters suitable for passing to fitting
@@ -19,8 +23,7 @@ def flatten_prms(prms, prm_list=None):
     if prm_list is None: prm_list = []
     key_list = {}
     keys = prms.keys()
-    keys.sort()
-    for k in keys:
+    for k in sorted(keys):
         if type(prms[k]) == dict:
             prm_list, new_key_list = flatten_prms(prms[k], prm_list)
             key_list[k] = new_key_list
@@ -49,42 +52,41 @@ def reconstruct_prms(prm_list, key_list):
 def print_params(prms, indent='', grad=None):
     """Print nice looking representation of a parameter dictionary."""
     keys = prms.keys()
-    keys.sort()
-    for k in keys:
+    for k in sorted(keys):
         v = prms[k]
         if (type(v) is dict and v == {}) or v is None or \
                 (type(v) is list and v == []):
             continue
         if type(v) == dict:
-            print indent, k
+            print(indent, k)
             if grad is None: print_params(v, indent + '  ')
             else: print_params(v, indent + '  ', grad[k])
         else:
-            print indent, k,
+            print(indent, k, end='')
             if grad is None:
                 if not type(v) is list:
                     try: v = [list(v)]
                     except(TypeError): v = [v]
-                if len(v) == 1: print v[0]
+                if len(v) == 1: print(v[0])
                 else:
-                    print
-                    for i in v: print indent, ' ', i
+                    print()
+                    for i in v: print(indent, ' ', i)
             else:
-                print
-                print indent, v, '\t<', grad[k], '>'
+                print()
+                print(indent, v, '\t<', grad[k], '>')
                 if not type(v) is list:
                     try: v = [list(v)]
                     except(TypeError): v = [v]
                 for i in len(v):
-                    print indent, ' ', v[i], '\t<', grad[k][i], '>'
+                    print(indent, ' ', v[i], '\t<', grad[k][i], '>')
 
 
-#  ____           _ _       _____ _              _ ____            _       
-# |  _ \ __ _  __| (_) ___ |  ___(_)_  _____  __| | __ )  ___   __| |_   _ 
+#  ____           _ _       _____ _              _ ____            _
+# |  _ \ __ _  __| (_) ___ |  ___(_)_  _____  __| | __ )  ___   __| |_   _
 # | |_) / _` |/ _` | |/ _ \| |_  | \ \/ / _ \/ _` |  _ \ / _ \ / _` | | | |
 # |  _ < (_| | (_| | | (_) |  _| | |>  <  __/ (_| | |_) | (_) | (_| | |_| |
 # |_| \_\__,_|\__,_|_|\___/|_|   |_/_/\_\___|\__,_|____/ \___/ \__,_|\__, |
-#                                                                    |___/ 
+#                                                                    |___/
 
 class RadioFixedBody(amp.RadioFixedBody):
     """Class representing a source at fixed RA,DEC.  Adds get_params() and
@@ -130,15 +132,15 @@ class RadioFixedBody(amp.RadioFixedBody):
         try: self.ionref[1] = prms['ddec']
         except(KeyError): pass
 
-#  ____           _ _      ____                  _       _ 
+#  ____           _ _      ____                  _       _
 # |  _ \ __ _  __| (_) ___/ ___| _ __   ___  ___(_) __ _| |
 # | |_) / _` |/ _` | |/ _ \___ \| '_ \ / _ \/ __| |/ _` | |
 # |  _ < (_| | (_| | | (_) |__) | |_) |  __/ (__| | (_| | |
 # |_| \_\__,_|\__,_|_|\___/____/| .__/ \___|\___|_|\__,_|_|
-#                               |_|                        
+#                               |_|
 
 class RadioSpecial(amp.RadioSpecial):
-    """Class representing moving sources (Sun,Moon,planets). Adds get_params() 
+    """Class representing moving sources (Sun,Moon,planets). Adds get_params()
     and set_params() to amp.RadioSpecial."""
     def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
@@ -174,12 +176,12 @@ class RadioSpecial(amp.RadioSpecial):
         try: self.ionref[1] = prms['ddec']
         except(KeyError): pass
 
-#  ____            ____      _        _             
-# / ___| _ __ ___ / ___|__ _| |_ __ _| | ___   __ _ 
+#  ____            ____      _        _
+# / ___| _ __ ___ / ___|__ _| |_ __ _| | ___   __ _
 # \___ \| '__/ __| |   / _` | __/ _` | |/ _ \ / _` |
 #  ___) | | | (__| |__| (_| | || (_| | | (_) | (_| |
 # |____/|_|  \___|\____\__,_|\__\__,_|_|\___/ \__, |
-#                                             |___/ 
+#                                             |___/
 
 class SrcCatalog(amp.SrcCatalog):
     """Class for holding a catalog of celestial sources.  Adds get_params()
@@ -216,7 +218,7 @@ class Beam(amp.Beam):
         return False
 
 class Beam2DGaussian(amp.Beam2DGaussian):
-    """Representation of a 2D Gaussian beam pattern, with default setting for 
+    """Representation of a 2D Gaussian beam pattern, with default setting for
     a flat beam."""
     def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
@@ -252,7 +254,7 @@ class BeamPolynomial(amp.BeamPolynomial):
     def set_params(self, prms):
         """Set all parameters from a dictionary."""
         changed = False
-        try: 
+        try:
             poly_azfreq = prms['bm_poly']
             poly_azfreq.shape = self.poly.shape
             self.poly = poly_azfreq
@@ -263,7 +265,7 @@ class BeamPolynomial(amp.BeamPolynomial):
 
 class BeamAlm(amp.BeamAlm):
     """Representation of a beam model where each pointing has a response
-    defined as a polynomial in frequency, and the spatial distributions of 
+    defined as a polynomial in frequency, and the spatial distributions of
     these coefficients decomposed into spherical harmonics."""
     def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
@@ -292,19 +294,19 @@ class BeamAlm(amp.BeamAlm):
         if changed: self.update()
         return changed
 
-#     _          _                         
-#    / \   _ __ | |_ ___ _ __  _ __   __ _ 
+#     _          _
+#    / \   _ __ | |_ ___ _ __  _ __   __ _
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` |
 #  / ___ \| | | | ||  __/ | | | | | | (_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
 
 class Antenna(amp.Antenna):
-    """Representation of physical location and beam pattern of individual 
+    """Representation of physical location and beam pattern of individual
     antenna in array.  Adds get_params() and set_params() to amp.Antenna."""
     def get_params(self, prm_list=['*']):
         """Return all fitable parameters in a dictionary."""
         x,y,z = self.pos
-        aprms = {'x':x, 'y':y, 'z':z, 'dly':self._phsoff[-2], 
+        aprms = {'x':x, 'y':y, 'z':z, 'dly':self._phsoff[-2],
             'off':self._phsoff[-1], 'phsoff':self._phsoff}
         aprms['bp_r'] = list(self.bp_r)
         aprms['bp_i'] = list(self.bp_i)
@@ -341,12 +343,12 @@ class Antenna(amp.Antenna):
         if changed: self.update()
         return changed
 
-#     _          _                            _                         
-#    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
+#     _          _                            _
+#    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |
 #  / ___ \| | | | ||  __/ | | | | | | (_| |/ ___ \| |  | | | (_| | |_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
-#                                                                 |___/ 
+#                                                                 |___/
 
 class AntennaArray(amp.AntennaArray):
     """Representation of location and time of observation, and response of

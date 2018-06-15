@@ -1,11 +1,14 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
 """
-A script for dividing out the passband, primary beam, and/or source spectrum 
+A script for dividing out the passband, primary beam, and/or source spectrum
 scaling.  When dividing by a primary beam or source spectrum, it is recommended
 a single source have been isolated in the data set.
 
 Author: Aaron Parsons
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, os, sys, optparse, pickle
 from matplotlib import pylab as p
@@ -32,10 +35,10 @@ if opts.srcflux:
     srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
     cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
     s = cat.values()[0]
-    print 'Calibrating for source with',
-    print 'strength', s._jys,
-    print 'measured at', s.mfreq, 'GHz',
-    print 'with index', s.index
+    print('Calibrating for source with', end='')
+    print('strength', s._jys, end='')
+    print('measured at', s.mfreq, 'GHz', end='')
+    print('with index', s.index)
     src_spec = None
 else: src_spec = 1
 
@@ -68,13 +71,13 @@ if opts.beam: ext += 'b'
 if opts.srcflux: ext += 'f'
 for filename in args:
     uvofile = filename + ext
-    print filename,'->',uvofile
+    print(filename,'->',uvofile)
     if os.path.exists(uvofile):
-        print 'File exists: skipping'
+        print('File exists: skipping')
         continue
     uvi = a.miriad.UV(filename)
     uvo = a.miriad.UV(uvofile, status='new')
     uvo.init_from_uv(uvi)
-    uvo.pipe(uvi, mfunc=mfunc, raw=True, 
+    uvo.pipe(uvi, mfunc=mfunc, raw=True,
         append2hist='FLUXCAL: srcs=%s passband=%s beam=%s srcflux=%s\n' % \
         (opts.src, opts.passband, opts.beam, opts.srcflux))

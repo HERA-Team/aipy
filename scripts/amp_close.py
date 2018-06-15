@@ -4,6 +4,8 @@
 Get a first-pass gain calibration by enforcing amplitude closure.
 """
 
+from __future__ import print_function, division, absolute_import
+
 import aipy as a
 import numpy as np
 from matplotlib import pylab as pl
@@ -34,22 +36,22 @@ aa = a.cal.get_aa(opts.cal,np.array([0.15]))
 
 #Find source Flux:
 if opts.src == None: flx = 1.
-else: 
+else:
     srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src,'helm,misc')
     cat = a.cal.get_catalog(opts.cal,srclist,cutoff,catalogs)
     cat.compute(aa)
     flx_list = cat.get_jys()
     flx = 0.
-    print "Setting Jansky levels to the following sources:"
+    print("Setting Jansky levels to the following sources:")
     for i,src in enumerate(srclist):
-        print ' '*5,src,flx_list[i].squeeze(),'Jys'
+        print(' '*5,src,flx_list[i].squeeze(),'Jys')
         flx += flx_list[i].squeeze()
 
 #Read in Data:
 DD,cnt,bl_len,AntNos = {},{},{},[]
 
 for uvfile in args:
-    print 'Reading',uvfile
+    print('Reading',uvfile)
     uv = a.miriad.UV(uvfile)
     for (uvw,t,(i,j)),d,f in uv.all(raw=True):
         pol = a.miriad.pol2str[uv['pol']]
@@ -61,10 +63,10 @@ for uvfile in args:
         if not (i,j) in bl_len.keys(): bl_len[(i,j)] = uvlen(aa.get_baseline(i,j))
         if bl_len[(i,j)]*0.15 <= opts.minuv: continue
         #Populate arrays:
-        if not pol in DD.keys(): 
+        if not pol in DD.keys():
             DD[pol] = {}
             cnt[pol] = {}
-        if not (i,j) in DD[pol].keys(): 
+        if not (i,j) in DD[pol].keys():
             DD[pol][(i,j)] = np.zeros(uv['nchan'],dtype=np.complex)
             cnt[pol][(i,j)] = np.zeros(uv['nchan'])
         DD[pol][(i,j)] += np.abs(d)
@@ -99,7 +101,7 @@ for pol in pols:
     A = np.zeros((Nbl,Nant))
     W = np.zeros((Nbl,Nbl))
     b = np.zeros(Nbl)
-    
+
     #populatin the countryside...
     index = 0
     for i,ant1 in enumerate(AntNos):
@@ -114,21 +116,21 @@ for pol in pols:
     G[pol] = 10**np.dot(np.linalg.inv(np.dot(np.dot(A.T,W),A)),np.dot(np.dot(A.T,W),b))
     G[pol] /= flx*np.mean(G[pol])
 
-print "'amps' : {"
+print("'amps' : {")
 for i,ant in enumerate(AntNos):
     ampstr = str(ant)+' : {'
     for pol in pols:
         ampstr += "'"+pol[0]+"' : "+str(G[pol][i])
         if pol != pols[-1]: ampstr += ', '
     ampstr += ' },'
-    print ampstr
-print '},'
+    print(ampstr)
+print('},')
 
 t1 = time()
-print 'Computation time =',t1-t0,'s'
+print('Computation time =',t1-t0,'s')
 
 if opts.plots:
-    print 'Generating plots... this may take a while...'
+    print('Generating plots... this may take a while...')
     AntNos = np.array(AntNos)
     figcnt = 0
 
@@ -145,7 +147,7 @@ if opts.plots:
         pl.title('Gains by baseline, polarization %s'%pol[0])
         pl.draw()
         figcnt += 1
-    
+
     if opts.wgt != 'equal':
         for pol in pols:
             pl.figure(figcnt)
@@ -159,7 +161,7 @@ if opts.plots:
             pl.colorbar()
             pl.title('Weights for each baseline, polarization %s'%pol[0])
             pl.draw()
-            figcnt += 1 
+            figcnt += 1
 
     pl.figure(figcnt)
     for pol in pols:
@@ -171,4 +173,3 @@ if opts.plots:
     figcnt += 1
 
     pl.show()
-

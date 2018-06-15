@@ -11,6 +11,7 @@
 #include "healpix_map.h"
 #include "alm_map_tools.h"
 #include "xcomplex.h"
+#include "aipy_compat.h"
 
 #if PY_VERSION_HEX < 0x02050000
 #define lenfunc inquiry
@@ -69,7 +70,7 @@ void option_err(char *options[]) {
     strcat(errstr, "]");
     PyErr_Format(PyExc_ValueError, "%s", errstr);
 }
-    
+
 int get_option(char *options[], PyObject *choice) {
     // Return index of choice in options, -1 if failure.  Defaults to 0.
     int i = 0;
@@ -89,10 +90,10 @@ int get_option(char *options[], PyObject *choice) {
 }
 
 
-/*____                           _                    _    
+/*____                           _                    _
  / ___|_ __ ___  _   _ _ __   __| |_      _____  _ __| | __
 | |  _| '__/ _ \| | | | '_ \ / _` \ \ /\ / / _ \| '__| |/ /
-| |_| | | | (_) | |_| | | | | (_| |\ V  V / (_) | |  |   < 
+| |_| | | | (_) | |_| | | | | (_| |\ V  V / (_) | |  |   <
  \____|_|  \___/ \__,_|_| |_|\__,_| \_/\_/ \___/|_|  |_|\_\
 */
 // Python object that holds instance of Healpix_Base
@@ -102,12 +103,12 @@ typedef struct {
 } AlmObject;
 
 // Deallocate memory when Python object is deleted
-static void AlmObject_dealloc(AlmObject* self) {
-    self->ob_type->tp_free((PyObject*)self);
+static void AlmObject_dealloc(AlmObject *self) {
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 // Allocate memory for Python object
-static PyObject *AlmObject_new(PyTypeObject *type, 
+static PyObject *AlmObject_new(PyTypeObject *type,
         PyObject *args, PyObject *kwds) {
     AlmObject *self;
     self = (AlmObject *) type->tp_alloc(type, 0);
@@ -130,12 +131,12 @@ static int AlmObject_init(AlmObject *self, PyObject *args, PyObject *kwds) {
     return 0;
 }
 
-/* ___  _     _           _     __  __      _   _               _     
-  / _ \| |__ (_) ___  ___| |_  |  \/  | ___| |_| |__   ___   __| |___ 
+/* ___  _     _           _     __  __      _   _               _
+  / _ \| |__ (_) ___  ___| |_  |  \/  | ___| |_| |__   ___   __| |___
  | | | | '_ \| |/ _ \/ __| __| | |\/| |/ _ \ __| '_ \ / _ \ / _` / __|
  | |_| | |_) | |  __/ (__| |_  | |  | |  __/ |_| | | | (_) | (_| \__ \
   \___/|_.__// |\___|\___|\__| |_|  |_|\___|\__|_| |_|\___/ \__,_|___/
-           |__/                                                       
+           |__/
 */
 // Get a coefficient
 static PyObject * AlmObject_get(AlmObject *self, PyObject *args) {
@@ -348,12 +349,12 @@ static PyObject * AlmObject_set_data(AlmObject *self, PyObject *args) {
     return Py_None;
 }
 
-/*_        __                     _               _   _       
- \ \      / / __ __ _ _ __  _ __ (_)_ __   __ _  | | | |_ __  
-  \ \ /\ / / '__/ _` | '_ \| '_ \| | '_ \ / _` | | | | | '_ \ 
+/*_        __                     _               _   _
+ \ \      / / __ __ _ _ __  _ __ (_)_ __   __ _  | | | |_ __
+  \ \ /\ / / '__/ _` | '_ \| '_ \| | '_ \ / _` | | | | | '_ \
    \ V  V /| | | (_| | |_) | |_) | | | | | (_| | | |_| | |_) |
-    \_/\_/ |_|  \__,_| .__/| .__/|_|_| |_|\__, |  \___/| .__/ 
-                     |_|   |_|            |___/        |_|    
+    \_/\_/ |_|  \__,_| .__/| .__/|_|_| |_|\__, |  \___/| .__/
+                     |_|   |_|            |___/        |_|
 */
 // Bind methods to object
 static PyMethodDef AlmObject_methods[] = {
@@ -383,45 +384,44 @@ static PyMappingMethods AlmObject_as_mapping = {
 };
 
 static PyTypeObject AlmType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
-    "_alm.Alm", /*tp_name*/
-    sizeof(AlmObject), /*tp_basicsize*/
-    0,                         /*tp_itemsize*/
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_alm.Alm",                    /*tp_name*/
+    sizeof(AlmObject),             /*tp_basicsize*/
+    0,                             /*tp_itemsize*/
     (destructor)AlmObject_dealloc, /*tp_dealloc*/
-    0,                         /*tp_print*/
-    0,                         /*tp_getattr*/
-    0,                         /*tp_setattr*/
-    0,                         /*tp_compare*/
-    0,                         /*tp_repr*/
-    0,                         /*tp_as_number*/
-    0,                         /*tp_as_sequence*/
-    &AlmObject_as_mapping,     /*tp_as_mapping*/
-    0,                         /*tp_hash */
-    0,                         /*tp_call*/
-    0,                         /*tp_str*/
-    0,                         /*tp_getattro*/
-    0,                         /*tp_setattro*/
-    0,                         /*tp_as_buffer*/
+    0,                             /*tp_print*/
+    0,                             /*tp_getattr*/
+    0,                             /*tp_setattr*/
+    0,                             /*tp_compare*/
+    0,                             /*tp_repr*/
+    0,                             /*tp_as_number*/
+    0,                             /*tp_as_sequence*/
+    &AlmObject_as_mapping,         /*tp_as_mapping*/
+    0,                             /*tp_hash */
+    0,                             /*tp_call*/
+    0,                             /*tp_str*/
+    0,                             /*tp_getattro*/
+    0,                             /*tp_setattro*/
+    0,                             /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,        /*tp_flags*/
     "Alm(lmax,mmax)\n Holds coefficients for spherical harmonics up to the specified order, and generates a real-valued HealpixMap from them.  Individual (l,m) coefficients can be accessed by alm[l,m].",       /* tp_doc */
-    0,                     /* tp_traverse */
-    0,                     /* tp_clear */
-    0,                     /* tp_richcompare */
-    0,                     /* tp_weaklistoffset */
-    0,                     /* tp_iter */
-    0,                     /* tp_iternext */
+    0,                             /* tp_traverse */
+    0,                             /* tp_clear */
+    0,                             /* tp_richcompare */
+    0,                             /* tp_weaklistoffset */
+    0,                             /* tp_iter */
+    0,                             /* tp_iternext */
     AlmObject_methods,             /* tp_methods */
-    0,                     /* tp_members */
-    0,                         /* tp_getset */
-    0,                         /* tp_base */
-    0,                         /* tp_dict */
-    0,                         /* tp_descr_get */
-    0,                         /* tp_descr_set */
-    0,                         /* tp_dictoffset */
-    (initproc)AlmObject_init,  /* tp_init */
-    0,                         /* tp_alloc */
-    AlmObject_new,       /* tp_new */
+    0,                             /* tp_members */
+    0,                             /* tp_getset */
+    0,                             /* tp_base */
+    0,                             /* tp_dict */
+    0,                             /* tp_descr_get */
+    0,                             /* tp_descr_set */
+    0,                             /* tp_dictoffset */
+    (initproc)AlmObject_init,      /* tp_init */
+    0,                             /* tp_alloc */
+    AlmObject_new,                 /* tp_new */
 };
 
 // Module methods
@@ -429,19 +429,26 @@ static PyMethodDef _alm_methods[] = {
     {NULL}  /* Sentinel */
 };
 
-#ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-
 // Module init
-PyMODINIT_FUNC init_alm(void) {
+MOD_INIT(_alm) {
     PyObject* m;
+
+    Py_Initialize();
+
     AlmType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&AlmType) < 0) return;
-    m = Py_InitModule3("_alm", _alm_methods,
-    "This is a hand-written wrapper (by Aaron Parsons) for Healpix_cxx, which was developed at the Max-Planck-Institut fuer Astrophysik and financially supported by the Deutsches Zentrum fuer Luft- und Raumfahrt (DLR).");
+    if (PyType_Ready(&AlmType) < 0)
+        return MOD_ERROR_VAL;
+
+    // Module definitions and functions
+    MOD_DEF(m, "_alm", _alm_methods, \
+            "This is a hand-written wrapper (by Aaron Parsons) for Healpix_cxx, which was developed at the Max-Planck-Institut fuer Astrophysik and financially supported by the Deutsches Zentrum fuer Luft- und Raumfahrt (DLR).");
+    if (m == NULL)
+        return MOD_ERROR_VAL;
+
     import_array();
+
     Py_INCREF(&AlmType);
     PyModule_AddObject(m, "Alm", (PyObject *)&AlmType);
-}
 
+    return MOD_SUCCESS_VAL(m);
+}

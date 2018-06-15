@@ -1,9 +1,9 @@
 
 /* Cephes module version 1.5
  *  This module defines the functions in the cephes and amos libraries as
- *   Numerical python ufunc objects so that they can operate on arbitrary 
+ *   Numerical python ufunc objects so that they can operate on arbitrary
  *   NumPy arrays with broadcasting and typecasting rules implemented.
- *  
+ *
  *  Copyright 1999  Travis E. Oliphant
  * Revisions 2002 (added functions from cdflib)
  * Revisions 2008 Aaron Parsons: stripped out fortran routines
@@ -11,7 +11,7 @@
 
 #include <Python.h>
 #include "numpy/arrayobject.h"
-#include "numpy/ufuncobject.h" 
+#include "numpy/ufuncobject.h"
 #include "ufunc_extras.h"
 #include "abstract.h"
 #include "cephes.h"
@@ -19,9 +19,9 @@
 
 /* Defined in mtherr in the cephes library */
 extern int scipy_special_print_error_messages;
- 
-#include "cephes_doc.h"
 
+#include "cephes_doc.h"
+#include "aipy_compat.h"
 
 static PyUFuncGenericFunction cephes1_functions[] = { NULL, NULL, };
 static PyUFuncGenericFunction cephes1rc_functions[] = { NULL, NULL, NULL, NULL};
@@ -162,7 +162,7 @@ static char cephes_3_types[] = { NPY_FLOAT,  NPY_FLOAT,  NPY_FLOAT,   NPY_DOUBLE
 static char cephes_2_types[] = { NPY_FLOAT,  NPY_FLOAT,  NPY_DOUBLE,  NPY_DOUBLE,  };
 
 
-/* Some functions needed from ufunc object, so that Py_complex's aren't being returned 
+/* Some functions needed from ufunc object, so that Py_complex's aren't being returned
 between code possibly compiled with different compilers.
 */
 
@@ -253,7 +253,7 @@ static void Cephes_InitOperators(PyObject *dictionary) {
         cephes4a_2_functions[1] = PyUFunc_dddd_dd_As_dddi_dd;
         cephes5_2_functions[0] = PyUFunc_fffff_ff_As_ddddd_dd;
         cephes5_2_functions[1] = PyUFunc_ddddd_dd;
-	
+
 	/* Create function objects for each function call and insert
 	   them in the dictionary */
 	f = PyUFunc_FromFuncAndData(cephes3a_functions, bdtrc_data, cephes_4_types, 2, 3, 1, PyUFunc_None, "bdtrc", bdtrc_doc, 0);
@@ -522,7 +522,7 @@ static void Cephes_InitOperators(PyObject *dictionary) {
 	PyDict_SetItemString(dictionary, "besselpoly", f);
 	Py_DECREF(f);
 
-        
+
 
 
 
@@ -550,25 +550,26 @@ static PyObject *errprint_func(PyObject *self, PyObject *args)
   int oldflag = 0;
   if (!PyArg_ParseTuple ( args, "|i;cephes.errprint", &inflag)) return NULL;
 
-  oldflag = scipy_special_print_error_messages;  
+  oldflag = scipy_special_print_error_messages;
   if (inflag != -37) {
     scipy_special_print_error_messages = (inflag != 0);
   }
   return PyInt_FromLong((long) oldflag);
 }
 
-  
+
 static struct PyMethodDef methods[] = {
   {"errprint", errprint_func, METH_VARARGS, errprint_doc},
   {NULL,		NULL, 0}		/* sentinel */
 };
 
+MOD_INIT(_cephes) {
+  PyObject *m, *d;
 
-PyMODINIT_FUNC init_cephes(void) {
-  PyObject *m, *d, *s;
-  
   /* Create the module and add the functions */
-  m = Py_InitModule("_cephes", methods); 
+  MOD_DEF(m, "_cephes", methods, "_cephes module");
+  if (m == NULL)
+    return MOD_ERROR_VAL;
 
   /* Import the ufunc objects */
   import_array();
@@ -576,19 +577,20 @@ PyMODINIT_FUNC init_cephes(void) {
 
   /* Add some symbolic constants to the module */
   d = PyModule_GetDict(m);
+  if (d == NULL)
+    return MOD_ERROR_VAL;
 
-  s = PyString_FromString("2.0");
-  PyDict_SetItemString(d, "__version__", s);
-  Py_DECREF(s);
+  PyDict_SetItemString(d, "__version__", PyString_FromString("2.0"));
 
   /* Add scipy_special_print_error_message global variable */
   /*  No, instead acessible through errprint */
 
   /* Load the cephes operators into the array module's namespace */
-  Cephes_InitOperators(d); 
-  
+  Cephes_InitOperators(d);
+
   /* Check for errors */
   if (PyErr_Occurred())
     Py_FatalError("can't initialize module _cephes");
-}
 
+  return MOD_SUCCESS_VAL(m);
+}

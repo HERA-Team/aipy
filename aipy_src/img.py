@@ -3,19 +3,22 @@ Module for gridding UVW data (including W projection), forming images,
 and combining (mosaicing) images into spherical maps.
 """
 
-import numpy as np, utils, coord, time
+from __future__ import print_function, division, absolute_import
+
+import numpy as np, time
+from . import utils, coord
 try:
     from astropy.io import fits as pyfits
 except ImportError:
     import pyfits
 USEDSP = True
-if USEDSP: import _dsp
+if USEDSP: from . import _dsp
 
 deg2rad = np.pi / 180.
 rad2deg = 180. / np.pi
 
 def word_wrap(string, width=80, ind1=0, ind2=0, prefix=''):
-    """ 
+    """
     word wrapping function.
         string: the string to wrap
         width: the column number to wrap at
@@ -60,12 +63,12 @@ def convolve2d(a, b):
     return np.fft.ifft2(np.fft.fft2(a) * np.fft.fft2(b))
 
 def gaussian_beam(sigma, shape=0, amp=1., center=(0,0)):
-    """Return a 2D gaussian.  Normalized to area under curve = 'amp'.  
+    """Return a 2D gaussian.  Normalized to area under curve = 'amp'.
     Down by 1/e at distance 'sigma' from 'center'."""
     if type(shape) == type(0): shape = np.array([2, 2]) * sigma
     def gaussian(x, y):
-        nx = np.where(x > shape[0] / 2, x - shape[0], x)
-        ny = np.where(y > shape[1] / 2, y - shape[1], y)
+        nx = np.where(x > shape[0] // 2, x - shape[0], x)
+        ny = np.where(y > shape[1] // 2, y - shape[1], y)
         return np.exp(-(nx**2 + ny**2) / sigma**2)
     g = np.fromfunction(gaussian, shape)
     g *= amp
@@ -78,7 +81,7 @@ class Img:
     """Class for gridding uv data, recording the synthesized beam profile,
     and performing transforms into image domain."""
     def __init__(self, size=100, res=1, mf_order=0):
-        """size = number of wavelengths which the UV matrix spans (this 
+        """size = number of wavelengths which the UV matrix spans (this
         determines the image resolution).
         res = resolution of the UV matrix (determines image field of view)."""
         self.res = float(res)
@@ -93,7 +96,7 @@ class Img:
         """Get the (l,m) image coordinates for an inverted UV matrix."""
         dim = self.shape[0]
         M,L = np.indices(self.shape)
-        L,M = np.where(L > dim/2, dim-L, -L), np.where(M > dim/2, M-dim, M)
+        L,M = np.where(L > dim//2, dim-L, -L), np.where(M > dim//2, M-dim, M)
         L,M = L.astype(np.float32)/dim/self.res, M.astype(np.float32)/dim/self.res
         mask = np.where(L**2 + M**2 >= 1, 1, 0)
         L,M = np.ma.array(L, mask=mask), np.ma.array(M, mask=mask)
@@ -109,16 +112,17 @@ class Img:
     def get_uv(self):
         """Return the u,v indices of the pixels in the uv matrix."""
         u,v = np.indices(self.shape)
-        u = np.where(u < self.shape[0]/2, u, u - self.shape[0])
-        v = np.where(v < self.shape[1]/2, v, v - self.shape[1])
+        u = np.where(u < self.shape[0]//2, u, u - self.shape[0])
+        v = np.where(v < self.shape[1]//2, v, v - self.shape[1])
         return u*self.res, v*self.res
-    def put(self, (u,v,w), data, wgts=None, apply=True):
+    def put(self, uvw, data, wgts=None, apply=True):
         """Grid uv data (w is ignored) onto a UV plane.  Data should already
         have the phase due to w removed.  Assumes the Hermitian conjugate
         data is in uvw already (i.e. the conjugate points are not placed for
         you).  If wgts are not supplied, default is 1 (normal weighting).
         If apply is false, returns uv and bm data without applying it do
         the internally stored matrices."""
+        u,v,w = uvw
         if wgts is None:
             wgts = []
             for i in range(len(self.bm)):
@@ -132,7 +136,7 @@ class Img:
             bm = [np.zeros_like(i) for i in self.bm]
         if not USEDSP:
             inds = self.get_indices(u,v)
-            
+
             ok = np.logical_and(np.abs(inds[:,0]) < self.shape[0],
                 np.abs(inds[:,1]) < self.shape[1])
             data = data.compress(ok)
@@ -141,7 +145,7 @@ class Img:
         else:
             u,v = self.get_indices(u,v)
             _dsp.grid2D_c(uv, u, v, data.astype(uv.dtype))
-        
+
         for i,wgt in enumerate(wgts):
             if not USEDSP:
                 wgt = wgt.compress(ok)
@@ -149,10 +153,11 @@ class Img:
             else:
                 _dsp.grid2D_c(bm[i], u, v, wgt.astype(bm[0].dtype))
         if not apply: return uv, bm
-    def get(self, (u,v,w), uv=None, bm=None):
+    def get(self, uvw, uv=None, bm=None):
         """Generate data as would be observed at the provided (u,v,w) based on
         this Img's current uv data.  Phase due to 'w' will be applied to data
         before returning."""
+        u,v,w = uvw
         u,v = u.flatten(), v.flatten()
         if uv is None: uv,bm = self.uv, self.bm[0]
         if not USEDSP:
@@ -170,9 +175,10 @@ class Img:
             #data = uvdat.sum() / bmdat.sum()
             data = uvdat / bmdat
         return data
-    def append_hermitian(self, (u,v,w), data, wgts=None):
+    def append_hermitian(self, uvw, data, wgts=None):
         """Append to (uvw, data, [wgts]) the points (-uvw, conj(data), [wgts]).
         This is standard practice to get a real-valued image."""
+        u,v,w = uvw
         u = np.concatenate([u, -u], axis=0)
         v = np.concatenate([v, -v], axis=0)
         w = np.concatenate([w, -w], axis=0)
@@ -183,7 +189,7 @@ class Img:
         for i,wgt in enumerate(wgts): wgts[i] = np.concatenate([wgt,wgt],axis=0)
         return (u,v,w), data, wgts
     def _gen_img(self, data, center=(0,0)):
-        """Return the inverse FFT of the provided data, with the 0,0 point 
+        """Return the inverse FFT of the provided data, with the 0,0 point
         moved to 'center'.  Up=North, Right=East."""
         return recenter(np.fft.ifft2(data).real.astype(np.float32), center)
     def image(self, center=(0,0)):
@@ -204,7 +210,7 @@ class Img:
         z = np.sqrt(1 - x**2 - y**2)
         return x,y,z
     def get_eq(self, ra=0, dec=0, center=(0,0)):
-        """Return the equatorial coordinates of each pixel in the image, 
+        """Return the equatorial coordinates of each pixel in the image,
         assuming the image is centered on the provided ra, dec (in radians)."""
         x,y,z = self.get_top(center)
         shape,mask = x.shape, x.mask
@@ -218,14 +224,16 @@ class Img:
 class ImgW(Img):
     """A subclass of Img adding W projection functionality (see Cornwell
     et al. 2005 "Widefield Imaging Problems in Radio Astronomy")."""
-    def __init__(self, size=100, res=1, wres=.5, mf_order=0):
+    def __init__(self, size=100, res=1, wres=.5, mf_order=0, verbose=True):
         """wres: the gridding resolution of sqrt(w) when projecting to w=0."""
         Img.__init__(self, size=size, res=res, mf_order=mf_order)
         self.wres = wres
         self.wcache = {}
-    def put(self, (u,v,w), data, wgts=None, invker2=None):
+        self.verbose = verbose
+    def put(self, uvw, data, wgts=None, invker2=None):
         """Same as Img.put, only now the w component is projected to the w=0
         plane before applying the data to the UV matrix."""
+        u,v,w = uvw
         if len(u) == 0: return
         if wgts is None:
             wgts = []
@@ -246,7 +254,8 @@ class ImgW(Img):
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
-            print '%d/%d datums' % (j, len(w))
+            if self.verbose:
+                print('%d/%d datums' % (j, len(w)))
             avg_w = np.average(w[i:j])
             # Put all uv's down on plane for this gridded w point
             wgtsij = [wgt[i:j] for wgt in wgts]
@@ -261,7 +270,8 @@ class ImgW(Img):
                 self.bm[b] += np.fft.ifft2(np.fft.fft2(bm[b]) * invker)
             if j >= len(w): break
             i = j
-    def get(self, (u,v,w)):
+    def get(self, uvw):
+        u,v,w = uvw
         order = np.argsort(w.flat)
         u_,v_,w_ = u.take(order).squeeze(), v.take(order).squeeze(), w.take(order).squeeze()
         sqrt_w = np.sqrt(np.abs(w_)) * np.sign(w_)
@@ -269,17 +279,19 @@ class ImgW(Img):
         while True:
             # Grab a chunk of uvw's that grid w to same point.
             j = sqrt_w.searchsorted(sqrt_w[i]+self.wres)
-            #print j, len(sqrt_w)
+            #print(j, len(sqrt_w))
             id = np.round(np.average(sqrt_w[i:j]) / self.wres) * self.wres
-            if not self.wcache.has_key(id):
+            if id not in self.wcache:
                 avg_w = np.average(w_[i:j])
-                print 'Caching W plane ID=', id
-                projker = np.fromfunction(lambda us,vs: self.conv_invker(us,vs,-avg_w), 
+                if self.verbose:
+                    print('Caching W plane ID=', id)
+                projker = np.fromfunction(lambda us,vs: self.conv_invker(us,vs,-avg_w),
                     self.uv.shape).astype(np.complex64)
                 uv_wproj = np.fft.ifft2(np.fft.fft2(self.uv) * projker).astype(np.complex64)
                 bm_wproj = np.fft.ifft2(np.fft.fft2(self.bm[0]) * projker).astype(np.complex64) # is this right to convolve?
                 self.wcache[id] = (uv_wproj, bm_wproj)
-                print '%d W planes cached' % (len(self.wcache))
+                if self.verbose:
+                    print('%d W planes cached' % (len(self.wcache)))
             # Put all uv's down on plane for this gridded w point
             uv_wproj, bm_wproj = self.wcache[id]
             # Could think about improving this by interpolating between w planes.
@@ -316,17 +328,17 @@ default_fits_format_codes = {
 def to_fits(filename, data, clobber=False,
         axes=('ra--sin','dec--sin'),
         object='', telescope='', instrument='', observer='', origin='AIPY',
-        obs_date=time.strftime('%D'), cur_date=time.strftime('%D'), 
-        ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000., 
+        obs_date=time.strftime('%D'), cur_date=time.strftime('%D'),
+        ra=0, dec=0, d_ra=0, d_dec=0, epoch=2000.,
         freq=0, d_freq=0, bscale=0, bzero=0,history=''):
     """Write image data to a FITS file.  Follows convention of VLA image
     headers.  "axes" describes dimensions of "data" provided.  (ra,dec) are
-    the degree coordinates of image center in the specified "epoch". 
-    (d_ra,d_dec) are approximate pixel-deltas for ra,dec (approximate because 
-    if sine projections of these coordinates are specified--e.g. 
-    "ra---sin"--then the deltas change away from the image center).  If a 
-    "freq" axis is specified, then "freq" is the frequency of the first entry 
-    (in Hz), and "d_freq" is the width of the channel.  The rest are pretty 
+    the degree coordinates of image center in the specified "epoch".
+    (d_ra,d_dec) are approximate pixel-deltas for ra,dec (approximate because
+    if sine projections of these coordinates are specified--e.g.
+    "ra---sin"--then the deltas change away from the image center).  If a
+    "freq" axis is specified, then "freq" is the frequency of the first entry
+    (in Hz), and "d_freq" is the width of the channel.  The rest are pretty
     self-explanitory/can be used however you want."""
     data = data.squeeze()
 #    data.shape = (1,) * (len(axes) - len(data.shape)) + data.shape
@@ -339,7 +351,7 @@ def to_fits(filename, data, clobber=False,
     phdu.header.update('TELESCOP', telescope)
     phdu.header.update('INSTRUME', instrument)
     phdu.header.update('OBSERVER', observer)
-    phdu.header.update('DATE-OBS', obs_date, 
+    phdu.header.update('DATE-OBS', obs_date,
         comment='OBSERVATION START DATE DD/MM/YY')
     phdu.header.update('BSCALE ', bscale,
         comment='REAL = FITS_VALUE * BSCALE + BZERO')
@@ -387,7 +399,7 @@ def from_fits(filename):
     to deduce each keyword listed in to_fits() from the FITS header, but is
     accepting of differences.  Returns values in "kwds" dictionary."""
     phdu = pyfits.open(filename)[0]
-   
+
     try:
         if phdu.header['TRANSPOS']:
             data = phdu.data.transpose()
@@ -439,9 +451,9 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     for i in range(1,phdu.header.get('naxis')+1):
         type = "CTYPE"+str(i)
         axes.append(phdu.header.get(type))
-    print axes
+    print(axes)
     data.shape = data.shape #+ (1,) * (len(axes) - len(data.shape))
-#    try: 
+#    try:
 #        if phdu.header['TRANSPOS']:
 #            data = phdu.data.transpose() #for backwards compatibility
 #            phdu.header.update('TRANSPOS',0)
@@ -452,35 +464,29 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
     phdu.update_header()
     for i,ax in enumerate(axes):
         if ax.lower().startswith('ra'):
-             if kwds.has_key('ra'): val=kwds['ra']
-             else: val=None
-             if kwds.has_key('d_ra'):delta = kwds['d_ra']
-             else: delta=None
+             val   = kwds['ra'  ] if 'ra'   in kwds else None
+             delta = kwds['d_ra'] if 'd_ra' in kwds else None
         elif ax.lower().startswith('dec'):
-             if kwds.has_key('dec'): val=kwds['dec']
-             else: val=None
-             if kwds.has_key('d_dec'):delta = kwds['d_dec']
-             else: delta=None
+             val   = kwds['dec'  ] if 'dec'   in kwds else None
+             delta = kwds['d_dec'] if 'd_dec' in kwds else None
         elif ax.lower().startswith('freq'):
-             if kwds.has_key('freq'): val=kwds['freq']
-             else: val=None
-             if kwds.has_key('d_freq'):delta = kwds['d_freq']
-             else: delta=None
+             val   = kwds['freq'  ] if 'freq'   in kwds else None
+             delta = kwds['d_freq'] if 'd_freq' in kwds else None
         else: val,delta = None,None
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
-            phdu.header.update('CRPIX%d' % (i+1), 
+            phdu.header.update('CRPIX%d' % (i+1),
                     round(data.shape[-(i+1)]/2.))
         else:
             phdu.header.update('CRPIX%d' % (i+1), 1)
-        print ax,round(data.shape[-(i+1)]/2.)
+        print(ax,round(data.shape[-(i+1)]/2.))
         if not val is None: phdu.header.update('CRVAL%d' % (i+1), val);
         if not delta is None: phdu.header.update('CDELT%d' % (i+1), delta)
         phdu.header.update('CROTA%d' % (i+1), 0)
     for k,v in kwds.iteritems():
         try:
             phdu.header.update(k,v)
-        except(ValueError): 
+        except(ValueError):
             continue
     if history is None:history = "from_fits_to_fits: from %s to %s"%(infile,
                 outfile)
