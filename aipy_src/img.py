@@ -474,12 +474,12 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
         else: val,delta = None,None
         phdu.header['CTYPE%d' % (i+1)] = (ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec'):
-            phdu.header['CRPIX%d' % (i+1)]= (round(data.shape[-(i+1)]/2.))
+            phdu.header['CRPIX%d' % (i+1)] = (round(data.shape[-(i+1)]/2.))
         else:
             phdu.header['CRPIX%d' % (i+1)] = (1)
         print(ax,round(data.shape[-(i+1)]/2.))
         if not val is None:
-            phdu.header['CRVAL%d' % (i+1)] =(val)
+            phdu.header['CRVAL%d' % (i+1)] = (val)
         if not delta is None:
             phdu.header['CDELT%d' % (i+1)] = (delta)
         phdu.header['CROTA%d' % (i+1)] = (0)
@@ -488,8 +488,8 @@ def from_fits_to_fits(infile,outfile,data,kwds,history=None):
             phdu.header.update(k,v)
         except(ValueError):
             continue
-    if history is None:history = "from_fits_to_fits: from %s to %s"%(infile,
-                outfile)
+    if history is None:
+        history = "from_fits_to_fits: from %s to %s" % (infile, outfile)
     history = history.split("\n")
     for line in history:
         if len(line)>1:
