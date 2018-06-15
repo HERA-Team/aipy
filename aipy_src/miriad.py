@@ -313,14 +313,14 @@ def read_files(filenames, antstr, polstr, decimate=1, decphs=0, verbose=False, r
        polstr    : string
             polarization to extract.
 
-       Returns 
+       Returns
        -------
-       info      : dict. 
+       info      : dict.
             the lsts and jd's of the data
        data      : dict
             the data in dictionary format. data[(i,j,pol)] for antennas i,j and string pol.
        flgs      : dict
-            corresponding flags to data. Same format. 
+            corresponding flags to data. Same format.
     '''
     from . import scripting, cal
     info = {'lsts':[], 'times':[]}
