@@ -9,7 +9,7 @@ This package collects together tools for radio astronomical interferometry.
 In addition to pure-python phasing, calibration, imaging, and
 deconvolution code, this package includes interfaces to MIRIAD (a Fortran
 interferometry package) and HEALPix (a package for representing spherical
-data sets), and some math/fitting routines from SciPy.
+data sets).
 
 Instructions, documentation, and a FAQ may be found at
 [the aipy GitHub page](http://github.com/HERA-Team/aipy).

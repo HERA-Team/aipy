@@ -6,7 +6,7 @@ from __future__ import print_function, division, absolute_import
 
 import ephem, math, numpy as np
 from . import coord
-from . import const, _cephes
+from . import const
 from .miriad import ij2bl, bl2ij
 from scipy.special import j1
 
