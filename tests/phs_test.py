@@ -323,7 +323,7 @@ class TestAntennaArray(unittest.TestCase):
         self.assertAlmostEqual(amp1, amp2, 3)
         amp = self.aa.resolve_src(100., 0., srcshape=(0.001,0,0))
         x = 2*n.pi * .1
-        self.assertEqual(amp, 2*a._cephes.j1(x)/x)
+        self.assertEqual(amp, 2*a.phs.j1(x)/x)
     def test_refract(self):
         self.aa.select_chans([1,2,3])
         afreqs = self.aa[0].beam.afreqs
