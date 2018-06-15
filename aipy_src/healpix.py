@@ -14,8 +14,10 @@ try:
     from astropy.io import fits as pyfits
 except ImportError:
     import pyfits
-from ._healpix import HealpixBase
+#from ._healpix import HealpixBase
 from ._alm import Alm
+
+import healpy
 
 default_fits_format_codes = {
     np.bool_:'L', np.uint8:'B', np.int16:'I', np.int32:'J', np.int64:'K',
@@ -25,6 +27,67 @@ default_fits_format_codes = {
 def mk_arr(val, dtype=np.double):
     if type(val) is np.ndarray: return val.astype(dtype)
     return np.array(val, dtype=dtype).flatten()
+
+HEALPIX_MODES = ('RING','NEST')
+
+class HealpixBase:
+    """Functionality related to the HEALPix pixelisation."""
+    def __init__(self, nside=1, scheme='RING'):
+        self._nside = nside
+        self._scheme = scheme
+    def npix2nside(self, npix):
+        """Convert number of pixels to number of sides."""
+        return healpy.npix2nside(npix)
+    def nest_ring_conv(self, px, scheme):
+        """Translate an array of pixel numbers to index data in the scheme specified in 'scheme' ('NEST' or 'RING').  Returns px."""
+        mode = {'RING':healpy.nest2ring, 'NEST':healpy.ring2nest}
+        if scheme != self._scheme: px = mode[scheme](self._nside, px)
+        self._scheme = scheme
+        return px
+    def set_nside_scheme(self, nside=None, scheme=None):
+        """Adjust Nside and Scheme ('RING' or 'NEST')."""
+        if nside is not None:
+            pow2 = np.log2(nside)
+            assert(pow2 == np.around(pow2))
+            self._nside = nside
+        if scheme is not None:
+            assert(scheme in HEALPIX_MODES)
+            self._scheme = scheme
+    def crd2px(self, c1, c2, c3=None, interpolate=False):
+        """Convert 1 dimensional arrays of input coordinates to pixel indices. If only c1,c2 provided, then read them as th,phi.  If c1,c2,c3 provided, read them as x,y,z. If interpolate is False, return a single pixel coordinate.  If interpolate is True, return px,wgts where each entry in px contains the 4 pixels adjacent to the specified location, and wgt contains the 4 corresponding weights of those pixels."""
+        is_nest = (self._scheme == 'NEST')
+        if not interpolate:
+            if c3 is None: # th/phi angle mode
+                px = healpy.ang2pix(self._nside, c1, c2, nest=is_nest)
+            else: # x,y,z mode
+                px = healpy.vec2pix(self._nside, c1, c2, c3, nest=is_nest)
+            return px
+        else:
+            if c3 is not None: # need to translate xyz to th/phi
+                c1,c2 = healpy.vec2ang(np.array([c1,c2,c3]).T)
+            px,wgts = healpy.get_interp_weights(self._nside, c1, c2, nest=is_nest)
+            return px.T, wgts.T
+    def px2crd(self, px, ncrd=3):
+        """Convert a 1 dimensional input array of pixel numbers to the type of coordinates specified by ncrd.  If ncrd=3 (default), the returned array will have (x,y,z) for each pixel.  Otherwise if ncrd=2, the returned array will have (theta,phi) for each pixel."""
+        is_nest = (self._scheme == 'NEST')
+        assert(ncrd in (2,3))
+        if ncrd == 2: # th/phi mode
+            th,phi = healpy.pix2ang(self._nside, px, nest=is_nest)
+            return th, phi
+        else: # ncrd == 3 -> vec mode
+            x,y,z = healpy.pix2vect(self._nside, px, nest=is_nest)
+    def order(self):
+        """Return the order parameter."""
+        return healpy.nside2order(self._nside)
+    def nside(self):
+        """Return the Nside parameter."""
+        return self._nside
+    def npix(self):
+        """Return the number of pixels in the map."""
+        return healpy.nside2npix(self._nside)
+    def scheme(self):
+        """Return the scheme of the map ('NEST' or 'RING')."""
+        return self._scheme
 
 class HealpixMap(HealpixBase):
     """Collection of utilities for mapping data on a sphere.  Adds a data map
