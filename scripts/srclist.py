@@ -1,27 +1,31 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
 """
 A script for listing sources (and optionally source parameters) from
 catalogs.
 """
+
+from __future__ import print_function, division, absolute_import
+
 import aipy as a, ephem, sys, optparse,logging
 
 o = optparse.OptionParser()
 o.set_usage('srclist.py [options]')
 o.set_description(__doc__)
 a.scripting.add_standard_options(o, src=True, cal=True)
-o.add_option('-P','--prms', dest='prms', 
+o.add_option('-P','--prms', dest='prms',
     help='A comma-delimited list of parameters to print for each source.  Can be "*" to list all parameters.  If no parameters are specified, a list of the selected sources is printed.')
-o.add_option('-x','--exclude', dest='exclude', 
+o.add_option('-x','--exclude', dest='exclude',
     help='A string that is parsed similarly to "srcs", but excludes sources that may otherwise have been selected by the "srcs" parameter.')
-o.add_option('-c','--cen', dest='centers', 
+o.add_option('-c','--cen', dest='centers',
     help='A string that is parsed similarly to "srcs", but is used along with --sep to select sources near specified locations.')
 o.add_option('-j','--juldate', dest='juldate', type='float',
     help='A Julian Date to use for placing sources.')
-o.add_option('--ra',dest='ra_rng', 
+o.add_option('--ra',dest='ra_rng',
     help='A range RA1_RA2 of right-ascensions to select for.  Default: None.')
 o.add_option('--dec',dest='dec_rng',
     help='A range DEC1_DEC2 of declinations to select for.  Default: None.')
-o.add_option('--sep',dest='sep', type='float', 
+o.add_option('--sep',dest='sep', type='float',
     help='Include areas within the specified angular separation (in degrees) of any sources listed in --src.')
 o.add_option('--divstr', dest='divstr', default=' ',
     help='Divider string to use between source names when printing.  Default is " ".')
@@ -59,9 +63,9 @@ if opts.centers != None:
     else:
         ccat = a.src.get_catalog(clist, coff, catalogs)
 else: ccat = {}
-    
+
 if opts.juldate is None: date = ephem.J2000
-else: 
+else:
     date = a.phs.juldate2ephem(opts.juldate)
     aa = a.scripting.get_null_aa()
     aa.set_jultime(opts.juldate)
@@ -83,7 +87,7 @@ if opts.sep != None:
                 nsrcs.append(s1)
                 break
     srcs = nsrcs
-    
+
 
 if opts.ra_rng != None:
     ra1,ra2 = map(ephem.hours, opts.ra_rng.split('_'))
@@ -102,7 +106,7 @@ if opts.dec_rng != None:
 # We're done selecting sources now.  Time to print information
 srcs.sort()
 if opts.prms == None:
-    print opts.divstr.join(srcs)
+    print(opts.divstr.join(srcs))
 else:
     if not opts.fitprms:
         prms = opts.prms.split(',')
@@ -126,4 +130,4 @@ else:
                 else: outstring += prm
             if scount<snum-1:outstring += "),"
             else: outstring += ")"
-        print outstring
+        print(outstring)

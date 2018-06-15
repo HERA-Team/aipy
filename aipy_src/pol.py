@@ -2,7 +2,9 @@
 Module for adding polarization information to models.
 """
 
-from aipy import coord,fit,miriad
+from __future__ import print_function, division, absolute_import
+
+from . import coord,fit,miriad
 import numpy as np
 
 #  _   ___     __
@@ -16,7 +18,7 @@ def ijp2blp(i,j,pol):
     return miriad.ij2bl(i,j) * 16 + (pol + 9)
 
 def blp2ijp(blp):
-    bl,pol = int(blp) / 16, (blp % 16) - 9
+    bl,pol = int(blp) // 16, (blp % 16) - 9
     i,j = miriad.bl2ij(bl)
     return i,j,pol
 
@@ -27,16 +29,16 @@ class UV(miriad.UV):
     def write_pol(self,pol):
         """Reliably write polarization metadata."""
         try: return self._wrvr('pol','i',miriad.str2pol[pol])
-        except(KeyError): 
-            print pol,"is not a reasonable polarization value!"
+        except(KeyError):
+            print(pol,"is not a reasonable polarization value!")
             return
 
-#  _   _ _   _ _ _ _           _____                 _   _                 
-# | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___ 
+#  _   _ _   _ _ _ _           _____                 _   _
+# | | | | |_(_) (_) |_ _   _  |  ___|   _ _ __   ___| |_(_) ___  _ __  ___
 # | | | | __| | | | __| | | | | |_ | | | | '_ \ / __| __| |/ _ \| '_ \/ __|
 # | |_| | |_| | | | |_| |_| | |  _|| |_| | | | | (__| |_| | (_) | | | \__ \
 #  \___/ \__|_|_|_|\__|\__, | |_|   \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
-#                      |___/        
+#                      |___/
 
 def ParAng(ha,dec,lat):
     """
@@ -53,8 +55,8 @@ def ParAng(ha,dec,lat):
 # | |_) |  __/ (_| | | | | | |
 # |____/ \___|\__,_|_| |_| |_|
 
-#     _          _                         
-#    / \   _ __ | |_ ___ _ __  _ __   __ _ 
+#     _          _
+#    / \   _ __ | |_ ___ _ __  _ __   __ _
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` |
 #  / ___ \| | | | ||  __/ | | | | | | (_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_|
@@ -64,7 +66,7 @@ class Antenna(fit.Antenna):
     bp_r, and bp_i are dicts of {pol:value, ...}.'''
     def _update_phsoff(self):
         self.phsoff = {}
-        for pol in self._phsoff: 
+        for pol in self._phsoff:
             self.phsoff[pol] = np.polyval(self._phsoff[pol], self.beam.afreqs)
     def _update_gain(self):
         self._gain = {}
@@ -128,12 +130,12 @@ class Antenna(fit.Antenna):
         if changed: self.update()
         return changed
 
-#     _          n                            _                         
-#    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
+#     _          n                            _
+#    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |
 #  / ___ \| | | | ||  __/ | | | | | | (_| |/ ___ \| |  | | | (_| | |_| |
 # /_/   \_\_| |_|\__\___|_| |_|_| |_|\__,_/_/   \_\_|  |_|  \__,_|\__, |
-#                                                                 |___/ 
+#                                                                 |___/
 
 class AntennaArray(fit.AntennaArray):
     def set_active_pol(self, pol):

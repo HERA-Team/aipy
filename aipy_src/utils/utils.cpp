@@ -13,6 +13,7 @@
 
 #include <Python.h>
 #include "numpy/arrayobject.h"
+#include "aipy_compat.h"
 
 #define QUOTE(s) # s
 
@@ -52,7 +53,7 @@
 // A template for implementing addition loops for different data types
 template<typename T> struct AddStuff {
     // Adds data to a at indices specified in ind.  Assumes arrays are safe.
-    static int addloop(PyArrayObject *a, PyArrayObject *ind, 
+    static int addloop(PyArrayObject *a, PyArrayObject *ind,
             PyArrayObject *data) {
         char *index = NULL;
         int v;
@@ -69,7 +70,7 @@ template<typename T> struct AddStuff {
         return 0;
     }
     // CAdds data to a at indices specified in ind.  Assumes arrays are safe.
-    static int caddloop(PyArrayObject *a, PyArrayObject *ind, 
+    static int caddloop(PyArrayObject *a, PyArrayObject *ind,
             PyArrayObject *data) {
         char *index = NULL;
         int v;
@@ -165,7 +166,17 @@ static PyMethodDef UtilsMethods[] = {
     {NULL, NULL}
 };
 
-PyMODINIT_FUNC initutils(void) {
-    (void) Py_InitModule("utils", UtilsMethods);
+MOD_INIT(utils) {
+    PyObject* m;
+
+    Py_Initialize();
+
+    // Module definitions and functions
+    MOD_DEF(m, "utils", UtilsMethods, "Utilities module");
+    if (m == NULL)
+        return MOD_ERROR_VAL;
+
     import_array();
+
+    return MOD_SUCCESS_VAL(m);
 };

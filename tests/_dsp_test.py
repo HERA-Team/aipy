@@ -1,3 +1,5 @@
+from __future__ import print_function, division, absolute_import
+
 import unittest
 import aipy._dsp as _dsp
 import numpy as n

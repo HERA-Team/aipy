@@ -1,19 +1,29 @@
-'''The Culgoora Catalog.
+"""
+The Culgoora Catalog.
+
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
 txt file.  Copy this file to "culgoora.txt" in the _src directory of your AIPY
-installation.'''
-import aipy as a, numpy as np, os
+installation.
+"""
+
+from __future__ import print_function, division, absolute_import
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 class CulgooraCatalog(a.fit.SrcCatalog):
     metadata = {}
     def get_metadata(self):
         '''Return the actual 80 MHz and 160 MHz measurements used to compute
         the spectral index in the Culgoora catalog. Returns dictionary with
-        source names linked to (S80, S160, index) triplets.  In cases where 
+        source names linked to (S80, S160, index) triplets.  In cases where
         measurements are unavailable, values are entered as None.'''
         return self.metadata
     def fromfile(self,filename):
@@ -54,7 +64,7 @@ class CulgooraCatalog(a.fit.SrcCatalog):
                     jys=jys080, index=0, mfreq=0.080))
         self.add_srcs(addsrcs)
 
-CULGOORAFILE = os.path.dirname(__file__) + os.sep + 'culgoora.txt'
+CULGOORAFILE = os.path.join(os.path.dirname(__file__), 'culgoora.txt')
 _culgooracat = None
 
 def get_srcs(srcs=None, cutoff=None):

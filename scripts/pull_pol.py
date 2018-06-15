@@ -1,7 +1,10 @@
 #!/usr/bin/python
+
 """
 Parse large data files by antenna number. Keep antenna 0 in all of them as a phase reference.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a
 import sys,os,optparse
@@ -15,15 +18,15 @@ opts,args = o.parse_args(sys.argv[1:])
 for filename in args:
 
     outfile = filename+'P'
-    print filename,'-->',outfile
+    print(filename,'-->',outfile)
     if os.path.exists(outfile):
-        print 'File exists, skipping'
+        print('File exists, skipping')
         continue
 
     pols2use = opts.pols.split(',')
 
     def mfunc(uv,p,d):
-        pol = a.miriad.pol2str[uv['pol']] 
+        pol = a.miriad.pol2str[uv['pol']]
         if pol in pols2use: return p,d
         else: return None,None
 

@@ -3,6 +3,8 @@ Module for keeping track of physical constants.  All constants in cgs units.
 See description() for a dictionary of constants and their descriptions.
 """
 
+from __future__ import print_function, division, absolute_import
+
 pi = 3.141592653589793      # Pi
 c = 2.99792458e10           # Speed of Light
 G = 6.6726e-8               # Newton's Gravitational Constant

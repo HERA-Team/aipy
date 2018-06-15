@@ -1,7 +1,10 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
 """
 Apply calibration parameters to a data set.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a
 import optparse, sys, os
@@ -26,9 +29,9 @@ def mfunc(uv, p, d, f):
 
 for infile in args:
     outfile = infile+'C'
-    print infile,'-->',outfile
+    print(infile,'-->',outfile)
     if os.path.exists(outfile):
-        print 'File exists, skipping....'
+        print('File exists, skipping....')
         continue 
 
     uvi = a.miriad.UV(infile)

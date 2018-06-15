@@ -1,10 +1,16 @@
 """
-The PAPER catalog here is derived by experimental methods in either facets or 
+The PAPER catalog here is derived by experimental methods in either facets or
 healpix maps.
 """
 
-import aipy as a, numpy as np, os
-    
+from __future__ import print_function, division, absolute_import
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
+
 class PAPERCatalog(a.fit.SrcCatalog):
     def fromfile(self, filename):
         f = open(filename)
@@ -22,7 +28,7 @@ class PAPERCatalog(a.fit.SrcCatalog):
                 jys=jys, index=0, mfreq=.150))
         self.add_srcs(addsrcs)
 
-PAPERFILE = os.path.dirname(__file__) + os.sep + 'paper.txt'
+PAPERFILE = os.path.join(os.path.dirname(__file__), 'paper.txt')
 _papercat = None
 
 def get_srcs(srcs=None, cutoff=None):

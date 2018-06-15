@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+
+from __future__ import print_function, division, absolute_import
+
 import aipy as a, numpy as n
 from matplotlib import pylab as p
 

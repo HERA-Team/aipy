@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
-import unittest, aipy._alm as a, numpy as n
+
+from __future__ import print_function, division, absolute_import
+
+import unittest
+try:
+    import aipy._alm as a
+except ImportError:
+    import aipy_src._alm as a
+import numpy as n
 
 class TestAlm(unittest.TestCase):
     def test_init(self):

@@ -1,8 +1,11 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
 """
-This is a general-purpose script for deconvolving dirty images by a 
+This is a general-purpose script for deconvolving dirty images by a
 corresponding PSF to produce a clean image.
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, optparse, ephem, os
 
@@ -41,26 +44,26 @@ keys.sort()
 # Define a quick function writing an image to a FITS file
 def to_fits(prefix,ftag,i,kwds):
     filename = '%s.%s.fits' % (prefix, ftag)
-    print 'Saving data to', filename
+    print('Saving data to', filename)
     a.img.to_fits(filename, i.astype(np.float32), clobber=True, **kwds)
 
 # Loop through all specified files
 for cnt, k in enumerate(keys):
     fdim,fdbm = k+'.dim.fits', k+'.dbm.fits'
-    print '-----------------------------------------------------------'
-    print '%d / %d' % (cnt + 1, len(keys))
-    print 'Deconvolving %s by %s' % (fdim, fdbm)
+    print('-----------------------------------------------------------')
+    print('%d / %d' % (cnt + 1, len(keys)))
+    print('Deconvolving %s by %s' % (fdim, fdbm))
     if np.all([os.path.exists('%s.%s.fits' % (k,ftag)) for ftag in outputs]):
-        print 'All output files exist already... skipping.'
+        print('All output files exist already... skipping.')
         continue
     dim, kwds = a.img.from_fits(fdim)
     dbm, kwds = a.img.from_fits(fdbm)
     dim = dim.astype(np.float32)
     dbm = dbm.astype(np.float32)
     if np.all(dbm == 0):
-        print 'No data in image, so skipping.'
+        print('No data in image, so skipping.')
         continue
-    print kwds
+    print(kwds)
     size = 1/(kwds['d_ra']*a.img.deg2rad)
     res = size/dim.shape[0]
     im = a.img.Img(size=size, res=res)
@@ -71,7 +74,7 @@ for cnt, k in enumerate(keys):
     uvs,bms = np.fft.fft2(dim), np.fft.fft2(dbm)
     if opts.rewgt.startswith('natural'): pass
     else:
-        if opts.rewgt.startswith('uniform'): 
+        if opts.rewgt.startswith('uniform'):
             level = float(opts.rewgt.split('(')[-1][:-1])
             abms = np.abs(bms)
             thresh = abms.max() * level
@@ -100,26 +103,26 @@ for cnt, k in enumerate(keys):
     if opts.maxuv > 0: mask *= np.exp(-r**2/opts.maxuv**2)
     dim = np.fft.ifft2(uvs * mask).real
     dbm = np.fft.ifft2(bms * mask).real
-    
+
     dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
     bm_gain = a.img.beam_gain(dbm)
-    print 'Gain of dirty beam:', bm_gain
+    print('Gain of dirty beam:', bm_gain)
     if opts.deconv == 'mem':
         cim,info = a.deconv.maxent_findvar(dim, dbm, f_var0=opts.var,
             maxiter=opts.maxiter, verbose=True, tol=opts.tol, maxiterok=True)
     elif opts.deconv == 'lsq':
-        cim,info = a.deconv.lsq(dim, dbm, 
+        cim,info = a.deconv.lsq(dim, dbm,
             maxiter=opts.maxiter, verbose=True, tol=opts.tol)
     elif opts.deconv == 'cln':
-        cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
-            maxiter=opts.maxiter, stop_if_div=not opts.div, 
+        cim,info = a.deconv.clean(dim, dbm, gain=opts.gain,
+            maxiter=opts.maxiter, stop_if_div=not opts.div,
             verbose=True, tol=opts.tol,pos_def=not opts.pos_def)
     elif opts.deconv == 'ann':
-        cim,info = a.deconv.anneal(dim, dbm, maxiter=opts.maxiter, 
+        cim,info = a.deconv.anneal(dim, dbm, maxiter=opts.maxiter,
             cooling=lambda i,x: opts.tol*(1-np.cos(i/50.))*(x**2), verbose=True)
     else:
         cim,info = np.zeros_like(dim), {'res':dim}
-    
+
     #Fit a 2d Gaussian to the dirty beam and convolve that with the clean components.
     dbm_fit = np.fft.fftshift(dbm)
     DIM = dbm.shape[0]
@@ -138,10 +141,8 @@ for cnt, k in enumerate(keys):
 
         rim = info['res']
 
-        bim = rim / bm_gain + cimc 
-    
-    for ftag in ['cim','rim','bim','cimc']:
-        print ftag
-        if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
-    
+        bim = rim / bm_gain + cimc
 
+    for ftag in ['cim','rim','bim','cimc']:
+        print(ftag)
+        if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)

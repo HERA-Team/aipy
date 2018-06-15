@@ -1,6 +1,14 @@
-'''This module interfaces to the Helmboldt catalog (http://arxiv.org/abs/0707.3418)'''
+"""
+This module interfaces to the Helmboldt catalog (http://arxiv.org/abs/0707.3418)
+"""
 
-import aipy as a, numpy as np, os
+from __future__ import print_function, division, absolute_import
+
+try:
+    import aipy as a
+except ImportError:
+    import aipy_src as a
+import numpy as np, os
 
 class HelmboldtFixedBody(a.fit.RadioFixedBody):
     def compute(self, observer):
@@ -44,14 +52,14 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
     rms = {}
     def get_rms(self):
         """Return a dictionary giving the Helmboldt fit rms for each source.
-        rms is only computed where enought data below 325MHz is available to 
+        rms is only computed where enought data below 325MHz is available to
         compute a spectral index or Kuehr fit. Null value is indicated with
         a rms=-1. Must first run get_catalog to retrieve data."""
         return self.rms
     ncomp = {}
     def get_ncomp(self):
         """Return a dictionary giving the Helmboldt fit rms for each source.
-        rms is only computed where enought data below 325MHz is available to 
+        rms is only computed where enought data below 325MHz is available to
         compute a spectral index or Kuehr fit. Null value is indicated with
         a rms=-1. Must first run get_catalog to retrieve data."""
         return self.ncomp
@@ -64,8 +72,8 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
         for line in srclines:
             srcname = line[:9]
             srcs[srcname] = line[35:57]
-            if not self.ncomp.has_key(srcname): self.ncomp[srcname] = int(line[33])
-            if not self.metadata.has_key(srcname): self.metadata[srcname] = []
+            if srcname not in self.ncomp: self.ncomp[srcname] = int(line[33])
+            if srcname not in self.metadata: self.metadata[srcname] = []
             md = (float(line[58:64])/1e3,float(line[65:73]),float(line[74:81]))
             self.metadata[srcname].append(md)
         for s in srcs:
@@ -74,8 +82,8 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
             srcs[s] = [ra, dec]
         # Read spectral data
         srclines = [L for L in open(fitfile).readlines() if L.startswith('J')]
-        for line in srclines: 
-            srcs[line[:9]].append(map(float, line[13:62].split()))
+        for line in srclines:
+            srcs[line[:9]].append(list(map(float, line[13:62].split())))
             try: self.rms[line[:9]] = float(line[63:70])
             except(ValueError): self.rms[line[:9]]=-1
 
@@ -93,12 +101,12 @@ class HelmboldtCatalog(a.fit.SrcCatalog):
                 srctype = HelmboldtFixedBody
                 ABCD = spec[3:]
                 jys,index = 10**ABCD[0], ABCD[1:]
-            addsrcs.append(srctype(ra, dec, name=s, 
+            addsrcs.append(srctype(ra, dec, name=s,
                 jys=jys, index=index, mfreq=.074))
         self.add_srcs(addsrcs)
 
-FITFILE = os.path.dirname(__file__) + os.sep + 'helm_fit.txt'
-POSFILE = os.path.dirname(__file__) + os.sep + 'helm_pos.txt'
+FITFILE = os.path.join(os.path.dirname(__file__), 'helm_fit.txt')
+POSFILE = os.path.join(os.path.dirname(__file__), 'helm_pos.txt')
 
 _helmcat = None
 

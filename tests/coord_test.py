@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+from __future__ import print_function, division, absolute_import
+
 import unittest, ephem as e, random
 import aipy as a, numpy as n
 
@@ -106,7 +109,7 @@ class TestRot_m(unittest.TestCase):
         self.assertTrue(n.all(m == n.array([e3,e2,-e1])))
         m = n.round(a.coord.rot_m(n.pi/2, n.array([1,0,0])), 10)
         self.assertTrue(n.all(m == n.array([e1,-e3,e2])))
-        
+
 class TestXyz2thphi(unittest.TestCase):
     def testshape(self):
         """Test the x,y,z to theta,phi conversion for shape preservation"""
@@ -128,7 +131,7 @@ class TestXyz2thphi(unittest.TestCase):
         self.assertTrue(n.all(m == n.round(n.array([n.pi/2,0]), 10)))
         m = n.round(a.coord.xyz2thphi(e2), 10)
         self.assertTrue(n.all(m == n.round(n.array([n.pi/2,n.pi/2]), 10)))
-        
+
 class TestThphi2xyz(unittest.TestCase):
     def testshape(self):
         """Test the theta,phi to x,y,z conversion for shape preservation"""
@@ -149,7 +152,7 @@ class TestThphi2xyz(unittest.TestCase):
         self.assertTrue(n.all(m == e1))
         m = n.round(a.coord.thphi2xyz((n.pi/2,n.pi/2)), 10)
         self.assertTrue(n.all(m == e2))
-        
+
 class TestEq2radec(unittest.TestCase):
     def testshape(self):
         """Test the equatorial to ra,dec conversion for shape preservation"""
@@ -279,7 +282,7 @@ class TestEq2top_m(unittest.TestCase):
         self.assertTrue(n.all(m == n.array([-e1,e3,e2])))
         m = n.round(a.coord.eq2top_m(0, n.pi/2), 10)
         self.assertTrue(n.all(m == n.array([e2,-e1,e3])))
-        
+
 class TestTop2eq_m(unittest.TestCase):
     def testshape(self):
         """Test the x,y,z/equatorial rotation matrix for shape preservation"""

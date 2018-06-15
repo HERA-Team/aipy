@@ -8,9 +8,12 @@ Date: 12/12/07
 Revisions:
 """
 
-__all__ = ['interpolate', 'default_filter']
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
+
+__all__ = ['interpolate', 'default_filter']
+
 
 def subsample(a, factor):
     rv = np.zeros((a.size, factor), dtype=a.dtype)
@@ -29,7 +32,7 @@ def polyextend(y, nsamples, degree=2):
     p = np.polyfit(x[:nsamples],y[-nsamples:],degree)
     y1 = np.polyval(p, x[-nsamples:])
     return np.concatenate([y0, y, y1])
-    
+
 def default_filter(xs, freq=.25):
     """A basic smoothing filter using a Hamming window and a sinc function
     of the specified frequency.  Input a sample grid [-x,x] to get the
@@ -51,4 +54,3 @@ def interpolate(ys, factor, filter=default_filter, order=4):
     ys_ss = np.convolve(ys_ss, fir, mode='valid')
     wgts = np.convolve(wgts, fir, mode='valid')
     return ys_ss / wgts
-   

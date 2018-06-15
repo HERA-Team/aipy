@@ -1,7 +1,10 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
 """
 Output LST, Julian date, and Sun position at the provided location
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, optparse, ephem
 
@@ -23,15 +26,14 @@ for jd in map(float, args):
     aa.set_jultime(jd)
     sun.compute(aa)
     moon.compute(aa)
-    print 'LST:', aa.sidereal_time(),
-    print 'LST radians:', float( aa.sidereal_time()),
-    print '     Julian Date:', jd,
-    print '     Day:', aa.date
-    print 'Sun is at (RA, DEC):', str((str(sun.ra), str(sun.dec)))
-    print 'Moon is at (RA, DEC):', str((str(moon.ra), str(moon.dec)))
+    print('LST:', aa.sidereal_time(),)
+    print('LST radians:', float( aa.sidereal_time()),)
+    print('     Julian Date:', jd,)
+    print('     Day:', aa.date)
+    print('Sun is at (RA, DEC):', str((str(sun.ra), str(sun.dec))))
+    print('Moon is at (RA, DEC):', str((str(moon.ra), str(moon.dec))))
     cat.compute(aa)
     for src in cat:
-        print src, '\tALT=%11s' % cat[src].alt, 
-        print '\tNEXT TRANSIT=%9.5f' % a.phs.ephem2juldate(aa.next_transit(cat[src]))
-    print '-' * 70
-
+        print(src, '\tALT=%11s' % cat[src].alt, )
+        print('\tNEXT TRANSIT=%9.5f' % a.phs.ephem2juldate(aa.next_transit(cat[src])))
+    print('-' * 70)

@@ -4,6 +4,8 @@
 Do one iteration of a delay-solving algorithm.
 """
 
+from __future__ import print_function, division, absolute_import
+
 import aipy as a
 import numpy as np
 from matplotlib import pylab as pl
@@ -30,13 +32,13 @@ if opts.flag:
         FlagAnt.append(int(antstr))
 
 exec('from %s import prms' % opts.cal)
-        
+
 
 #Read in Data
 DD = {}
 AntNos = []
 for uvfile in args:
-    print 'Reading',uvfile
+    print('Reading',uvfile)
     uv = a.miriad.UV(uvfile)
     for (uvw,t,(i,j)),d in uv.all():
         if i == j: continue
@@ -91,7 +93,7 @@ if opts.fixdelay == 'all':
         try: FixDelay[pol] = [prms['delays'][i][pol] for i in AntNos]
         except(KeyError): FixDelay[pol] = [prms['delays'][i] for i in AntNos]
         FixDelayIndex[pi] = range(len(AntNos))
-else: 
+else:
     FixDelay = {}
     FixDelayIndex = []
     for pol in pols:
@@ -101,11 +103,11 @@ else:
                 try: FixDelay[pol].append(prms['delays'][ant][pol])
                 except(KeyError): FixDelay[pol].append(prms['delays'][ant])
                 if not i in FixDelayIndex: FixDelayIndex.append(i)
-            
+
 Tau = {}
 CC = {}
 for pol in pols:
-    
+
     A,b = {},{}
     A = np.zeros((Nbl+len(FixDelay[pol])+1,Nant))
     b = np.zeros(Nbl+len(FixDelay[pol])+1)
@@ -119,7 +121,7 @@ for pol in pols:
         for j,ant2 in enumerate(AntNos):
             if j <= i: continue
             b[index] = Phi_ij[pol][(ant1,ant2)]
-            A[index,i],A[index,j] = 1.,-1.    
+            A[index,i],A[index,j] = 1.,-1.
             index += 1
     #Set Constraints
     for i,Di in enumerate(FixDelayIndex):
@@ -137,14 +139,14 @@ for pol in pols:
                 if k <= j: continue
                 CC[pol][(i,j,k)] = Phi_ij[pol][(i,j)] + Phi_ij[pol][(j,k)] - Phi_ij[pol][(i,k)]
 
-print 'Computing time =', time() - t0,'s for',Nbl,'baselines.'
+print('Computing time =', time() - t0,'s for',Nbl,'baselines.')
 
 #Print delays:
 for pol in pols:
     for i,d in enumerate(Tau[pol]):
         badstr = ''
         if np.abs(d-np.average(Tau[pol])) >= 2.*np.std(Tau[pol]): badstr = '!!!'
-        print 'Antenna',AntNos[i],pol[0],':',d,'ns',badstr
+        print('Antenna',AntNos[i],pol[0],':',d,'ns',badstr)
 
 
 #Generate plots:
@@ -178,4 +180,3 @@ if opts.plots:
             pl.xlabel('Closure phase (ns)')
             pl.ylabel('Number')
             pl.show()
-            

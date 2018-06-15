@@ -1,4 +1,7 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+from __future__ import print_function, division, absolute_import
+
 import aipy as a, numpy as np
 import optparse, sys, os
 
@@ -10,15 +13,15 @@ o.add_option('-c', '--chan', dest='chan',
     help='Manually flag channels before xrfi processing.  Options are "<chan1 #>,..." (a list of channels), or "<chan1 #>_<chan2 #>" (a range of channels).  Default is None.')
 o.add_option('-n', '--nsig', dest='nsig', default=2., type='float',
     help='Number of standard deviations above mean to flag if neither --dt nor --df are specified.  Default 2.')
-o.add_option('--df', dest='df', type='float', 
+o.add_option('--df', dest='df', type='float',
     help='Number of standard deviations above mean to flag, after taking derivative of frequency axis')
 o.add_option('--dt', dest='dt', type='float',
     help='Number of standard deviations above mean to flag, after taking derivative of time axis')
 o.add_option('--combine', dest='combine', action='store_true',
     help='Use the same mask for all baselines/pols (and use thresh to decide how many concidences it takes to flag all data.')
-o.add_option('--to_npz', 
+o.add_option('--to_npz',
     help='Instead of applying mask to data, store it as npz of this name.  May only be used along with --combine.')
-o.add_option('--from_npz', 
+o.add_option('--from_npz',
     help='Apply mask to data from this npz file (generated with --to_npz).  May only be used along with --combine.')
 o.add_option('-t', '--thresh', dest='thresh', default=1, type='int',
     help='Number of flagging coincidences (baselines/pols) required to flag a time/chan.')
@@ -37,12 +40,12 @@ if opts.to_npz or opts.from_npz: assert(opts.combine)
 
 for uvfile in args:
     uvofile = uvfile+'R'
-    print uvfile,'->',uvofile
+    print(uvfile,'->',uvofile)
     if os.path.exists(uvofile):
-        print uvofile, 'exists, skipping.'
+        print(uvofile, 'exists, skipping.')
         continue
     if opts.from_npz:
-        print '    Reading flags from', opts.from_npz
+        print('    Reading flags from', opts.from_npz)
         m = np.load(opts.from_npz)
         mask = {'xx':{257:{}}} # Just use dummy values here to mimic structure of mask dictionary
         for cnt,t in enumerate(m['times']):
@@ -109,7 +112,7 @@ for uvfile in args:
         del(uvi)
 
     if opts.to_npz:
-        print '    Writing flags to', opts.to_npz
+        print('    Writing flags to', opts.to_npz)
         m = {}
         _m = mask.values()[0].values()[0]
         times = np.array(_m.keys())
@@ -131,6 +134,3 @@ for uvfile in args:
         uvo = a.miriad.UV(uvofile, status='new')
         uvo.init_from_uv(uvi)
         uvo.pipe(uvi, mfunc=rfi_mfunc, raw=True, append2hist=' '.join(sys.argv)+'\n')
-
-
-

@@ -1,3 +1,5 @@
+from __future__ import print_function, division, absolute_import
+
 import unittest, aipy._src.parkes as h, aipy as a, numpy as n
 
 class TestParkesCatalog(unittest.TestCase):

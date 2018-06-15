@@ -19,6 +19,7 @@
 #include "arr.h"
 #include "pointing.h"
 #include "vec3.h"
+#include "aipy_compat.h"
 
 #include <cmath>
 
@@ -57,10 +58,10 @@
 
 // Some helper functions
 
-/*____                           _                    _    
+/*____                           _                    _
  / ___|_ __ ___  _   _ _ __   __| |_      _____  _ __| | __
 | |  _| '__/ _ \| | | | '_ \ / _` \ \ /\ / / _ \| '__| |/ /
-| |_| | | | (_) | |_| | | | | (_| |\ V  V / (_) | |  |   < 
+| |_| | | | (_) | |_| | | | | (_| |\ V  V / (_) | |  |   <
  \____|_|  \___/ \__,_|_| |_|\__,_| \_/\_/ \___/|_|  |_|\_\
 */
 // Python object that holds instance of Healpix_Base
@@ -70,12 +71,12 @@ typedef struct {
 } HPBObject;
 
 // Deallocate memory when Python object is deleted
-static void HPBObject_dealloc(HPBObject* self) {
-    self->ob_type->tp_free((PyObject*)self);
+static void HPBObject_dealloc(HPBObject *self) {
+   Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 // Allocate memory for Python object and Healpix_Base (__new__)
-static PyObject *HPBObject_new(PyTypeObject *type, 
+static PyObject *HPBObject_new(PyTypeObject *type,
         PyObject *args, PyObject *kwds) {
     HPBObject *self;
     self = (HPBObject *) type->tp_alloc(type, 0);
@@ -108,12 +109,12 @@ static int HPBObject_init(HPBObject *self, PyObject *args, PyObject *kwds) {
     return 0;
 }
 
-/* ___  _     _           _     __  __      _   _               _     
-  / _ \| |__ (_) ___  ___| |_  |  \/  | ___| |_| |__   ___   __| |___ 
+/* ___  _     _           _     __  __      _   _               _
+  / _ \| |__ (_) ___  ___| |_  |  \/  | ___| |_| |__   ___   __| |___
  | | | | '_ \| |/ _ \/ __| __| | |\/| |/ _ \ __| '_ \ / _ \ / _` / __|
  | |_| | |_) | |  __/ (__| |_  | |  | |  __/ |_| | | | (_) | (_| \__ \
   \___/|_.__// |\___|\___|\__| |_|  |_|\___|\__|_| |_|\___/ \__,_|___/
-           |__/                                                       
+           |__/
 */
 // Thin wrapper over Healpix_Base::npix2nside
 static PyObject * HPBObject_npix2nside(HPBObject *self, PyObject *args) {
@@ -173,7 +174,7 @@ static PyObject * HPBObject_SetNside(HPBObject *self, PyObject *args) {
     Py_INCREF(Py_None);
     return Py_None;
 }
-    
+
 
 /* Wraps ang2pix, and uses arrays to do many at once. */
 static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
@@ -188,7 +189,7 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
     PyObject *rv2;
     static const char *kwlist[] = {"crd1", "crd2", "crd3", "interpolate", NULL};
     // Parse and check input arguments
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!O!|O!i", (char **) kwlist, 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!O!|O!i", (char **) kwlist,
             &PyArray_Type, &crd1, &PyArray_Type, &crd2, &PyArray_Type, &crd3,
             &interpolate))
         return NULL;
@@ -214,7 +215,7 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
         wgt = (PyArrayObject *) PyArray_SimpleNew(2, dimens, NPY_DOUBLE);
         CHK_NULL(rv);
         CHK_NULL(wgt);
-    }     
+    }
     // Interpret coordinates
     for (int i=0; i < sz; i++) {
         c1 = IND1(crd1,i,double);
@@ -248,9 +249,9 @@ static PyObject * HPBObject_crd2px(HPBObject *self, PyObject *args,
     rv2 = Py_BuildValue("(OO)", PyArray_Return(rv), PyArray_Return(wgt));
     Py_DECREF(rv); Py_DECREF(wgt);
     return rv2;
-    
+
 }
-    
+
 /* Wraps pix2ang, but adds option of vector output as well.  Similarly
  * uses array I/O to do many at once.
  */
@@ -262,7 +263,7 @@ static PyObject * HPBObject_px2crd(HPBObject *self,
     PyArrayObject *px, *crd1, *crd2, *crd3;
     static const char *kwlist[] = {"px", "ncrd", NULL};
     // Parse and check input arguments
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!|i", (char **) kwlist, 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,"O!|i", (char **) kwlist,
             &PyArray_Type, &px, &ncrd))
         return NULL;
     if (ncrd != 2 && ncrd != 3) {
@@ -298,7 +299,7 @@ static PyObject * HPBObject_px2crd(HPBObject *self,
             PyArray_Return(crd2), PyArray_Return(crd3));
     }
 }
-        
+
 // Thin wrapper over Healpix_Base::Order
 static PyObject * HPBObject_Order(HPBObject *self) {
     return PyInt_FromLong(self->hpb.Order());
@@ -321,12 +322,12 @@ static PyObject * HPBObject_Scheme(HPBObject *self) {
     return PyString_FromString("NEST");
 }
 
-/*_        __                     _               _   _       
- \ \      / / __ __ _ _ __  _ __ (_)_ __   __ _  | | | |_ __  
-  \ \ /\ / / '__/ _` | '_ \| '_ \| | '_ \ / _` | | | | | '_ \ 
+/*_        __                     _               _   _
+ \ \      / / __ __ _ _ __  _ __ (_)_ __   __ _  | | | |_ __
+  \ \ /\ / / '__/ _` | '_ \| '_ \| | '_ \ / _` | | | | | '_ \
    \ V  V /| | | (_| | |_) | |_) | | | | | (_| | | |_| | |_) |
-    \_/\_/ |_|  \__,_| .__/| .__/|_|_| |_|\__, |  \___/| .__/ 
-                     |_|   |_|            |___/        |_|    
+    \_/\_/ |_|  \__,_| .__/| .__/|_|_| |_|\__, |  \___/| .__/
+                     |_|   |_|            |___/        |_|
 */
 // Bind methods to object
 static PyMethodDef HPBObject_methods[] = {
@@ -353,45 +354,44 @@ static PyMethodDef HPBObject_methods[] = {
 };
 
 static PyTypeObject HPBType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
-    "_healpix.HPM", /*tp_name*/
-    sizeof(HPBObject), /*tp_basicsize*/
-    0,                         /*tp_itemsize*/
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_healpix.HPM",                /*tp_name*/
+    sizeof(HPBObject),             /*tp_basicsize*/
+    0,                             /*tp_itemsize*/
     (destructor)HPBObject_dealloc, /*tp_dealloc*/
-    0,                         /*tp_print*/
-    0,                         /*tp_getattr*/
-    0,                         /*tp_setattr*/
-    0,                         /*tp_compare*/
-    0,                         /*tp_repr*/
-    0,                         /*tp_as_number*/
-    0,                         /*tp_as_sequence*/
-    0,                         /*tp_as_mapping*/
-    0,                         /*tp_hash */
-    0,                         /*tp_call*/
-    0,                         /*tp_str*/
-    0,                         /*tp_getattro*/
-    0,                         /*tp_setattro*/
-    0,                         /*tp_as_buffer*/
+    0,                             /*tp_print*/
+    0,                             /*tp_getattr*/
+    0,                             /*tp_setattr*/
+    0,                             /*tp_compare*/
+    0,                             /*tp_repr*/
+    0,                             /*tp_as_number*/
+    0,                             /*tp_as_sequence*/
+    0,                             /*tp_as_mapping*/
+    0,                             /*tp_hash */
+    0,                             /*tp_call*/
+    0,                             /*tp_str*/
+    0,                             /*tp_getattro*/
+    0,                             /*tp_setattro*/
+    0,                             /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,        /*tp_flags*/
     "Functionality related to the HEALPix pixelisation.  HealpixBase() or HealpixBase(nside, scheme='RING').",       /* tp_doc */
-    0,                     /* tp_traverse */
-    0,                     /* tp_clear */
-    0,                     /* tp_richcompare */
-    0,                     /* tp_weaklistoffset */
-    0,                     /* tp_iter */
-    0,                     /* tp_iternext */
+    0,                             /* tp_traverse */
+    0,                             /* tp_clear */
+    0,                             /* tp_richcompare */
+    0,                             /* tp_weaklistoffset */
+    0,                             /* tp_iter */
+    0,                             /* tp_iternext */
     HPBObject_methods,             /* tp_methods */
-    0,                     /* tp_members */
-    0,                         /* tp_getset */
-    0,                         /* tp_base */
-    0,                         /* tp_dict */
-    0,                         /* tp_descr_get */
-    0,                         /* tp_descr_set */
-    0,                         /* tp_dictoffset */
+    0,                             /* tp_members */
+    0,                             /* tp_getset */
+    0,                             /* tp_base */
+    0,                             /* tp_dict */
+    0,                             /* tp_descr_get */
+    0,                             /* tp_descr_set */
+    0,                             /* tp_dictoffset */
     (initproc)HPBObject_init,      /* tp_init */
-    0,                         /* tp_alloc */
-    HPBObject_new,       /* tp_new */
+    0,                             /* tp_alloc */
+    HPBObject_new,                 /* tp_new */
 };
 
 // Module methods
@@ -399,19 +399,26 @@ static PyMethodDef _healpix_methods[] = {
     {NULL}  /* Sentinel */
 };
 
-#ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
-#endif
-
 // Module init
-PyMODINIT_FUNC init_healpix(void) {
+MOD_INIT(_healpix) {
     PyObject* m;
+
+    Py_Initialize();
+
     HPBType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&HPBType) < 0) return;
-    m = Py_InitModule3("_healpix", _healpix_methods,
-    "This is a hand-written wrapper (by Aaron Parsons) for Healpix_cxx, which was developed at the Max-Planck-Institut für Astrophysik and financially supported by the Deutsches Zentrum für Luft- und Raumfahrt (DLR).");
+    if (PyType_Ready(&HPBType) < 0)
+        return MOD_ERROR_VAL;
+
+    // Module definitions and functions
+    MOD_DEF(m, "_healpix", _healpix_methods, \
+           "This is a hand-written wrapper (by Aaron Parsons) for Healpix_cxx, which was developed at the Max-Planck-Institut für Astrophysik and financially supported by the Deutsches Zentrum für Luft- und Raumfahrt (DLR).");
+    if (m == NULL)
+        return MOD_ERROR_VAL;
+
     import_array();
+
     Py_INCREF(&HPBType);
     PyModule_AddObject(m, "HealpixBase", (PyObject *)&HPBType);
-}
 
+    return MOD_SUCCESS_VAL(m);
+}

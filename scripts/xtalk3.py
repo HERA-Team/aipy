@@ -1,19 +1,22 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
 """
 Removes crosstalk from PAPER data by modeling it over the course of a day
 as a static per-channel cross-coupling that rises and falls uniformly across
 the band with changing input amplitude.  Steps for crosstalk removal are:
 run "xtalk3.py -o" on 1 day of UV files (which should be flagged for RFI, and
-if possible, have a sky model removed) to 
-generate *.xtalk.npz files.  Then run "xtalk3.py -r" on same UV files to 
-reprocess *.xtalk.npz files, separating them into static shape/uniform gain 
-terms that are stored in *.xtalk.rep.npz files.  Finally, run "xtalk3.py -i" on 
+if possible, have a sky model removed) to
+generate *.xtalk.npz files.  Then run "xtalk3.py -r" on same UV files to
+reprocess *.xtalk.npz files, separating them into static shape/uniform gain
+terms that are stored in *.xtalk.rep.npz files.  Finally, run "xtalk3.py -i" on
 UV files from the same JD (but which need not have RFI flagged or a sky model
-removed) to use the *.xtalk.rep.npz model to remove crosstalk from the visibility 
+removed) to use the *.xtalk.rep.npz model to remove crosstalk from the visibility
 data.
 
 Author: Aaron Parsons
 """
+
+from __future__ import print_function, division, absolute_import
 
 import aipy as a, numpy as np, sys, os, optparse
 
@@ -39,10 +42,10 @@ if opts.reprocess:
         uv = a.miriad.UV(filename)
         (uvw,jd,(i,j)),d,f = uv.read(raw=True)
         xfile = '%f.xtalk.npz' % jd
-        print xfile
+        print(xfile)
         times.append(jd)
         if not os.path.exists(xfile):
-            print xfile, 'does not exist.  Skipping...'
+            print(xfile, 'does not exist.  Skipping...')
             continue
         xtalk = np.load(xfile)
         for bl in xtalk.files:
@@ -58,15 +61,15 @@ if opts.reprocess:
         repfile = '%f.xtalk.rep.npz' % jd
         xtalk = {}
         for bl in xsum: xtalk[bl] = gain[bl][c] * xsum[bl]
-        print 'Writing', repfile
+        print('Writing', repfile)
         np.savez(repfile, **xtalk)
     import sys; sys.exit(0)
 
 guess, cnt, xtalk = {}, {}, {}
 for filename in args:
-    print filename,'->',filename+'x'
+    print(filename,'->',filename+'x')
     if not opts.outfile and os.path.exists(filename+'x'):
-        print filename+'x', 'exists.  Skipping...'
+        print(filename+'x', 'exists.  Skipping...')
         continue
     uv = a.miriad.UV(filename)
     uv.select('auto',0, 0, include=False)
@@ -76,9 +79,9 @@ for filename in args:
         xfile = '%f.xtalk.rep.npz' % jd
         if not os.path.exists(xfile): xfile = '%f.xtalk.npz' % jd
         if not os.path.exists(xfile):
-            print xfile, 'does not exist.  Skipping...'
+            print(xfile, 'does not exist.  Skipping...')
             continue
-        print '    using', xfile
+        print('    using', xfile)
         xtalk = np.load(xfile)
     else:
         guess, cnt, xtalk = {}, {}, {}
@@ -91,7 +94,7 @@ for filename in args:
         for bl in guess: xtalk[bl] = guess[bl] / np.clip(cnt[bl], 1, np.Inf)
     if opts.outfile:
         xfile = '%f.xtalk.npz' % jd
-        print 'Writing', xfile
+        print('Writing', xfile)
         np.savez(xfile, **xtalk)
     else:
         def mfunc(uv, p, d, f):

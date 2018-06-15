@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+from __future__ import print_function, division, absolute_import
+
 import unittest, aipy.src as src
 
 class TestSrc(unittest.TestCase):
@@ -22,4 +25,4 @@ class TestSuite(unittest.TestSuite):
         self.addTest(loader.loadTestsFromTestCase(TestSrc))
 
 if __name__ == '__main__':
-    unittest.main()        
+    unittest.main()

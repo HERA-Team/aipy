@@ -1,6 +1,8 @@
+from __future__ import print_function, division, absolute_import
+
 import numpy as np
-from aipy._cephes import i0
-from _dsp import *
+from ._cephes import i0
+from ._dsp import *
 
 
 def tukey(x, L, alpha=0.5):

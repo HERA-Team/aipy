@@ -1,4 +1,7 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+from __future__ import print_function, division, absolute_import
+
 import aipy as a, ephem as e, numpy as np, sys, optparse, os
 
 o = optparse.OptionParser()
@@ -42,13 +45,13 @@ if opts.dtype != None:
 if not opts.in_map is None:
     imap = a.map.Map(fromfits=opts.in_map)
     if opts.nside is None and opts.dtype is None:
-        print 'Using data from %s' % opts.in_map
+        print('Using data from %s' % opts.in_map)
         h = imap
     else:
         if opts.dtype is None: opts.dtype = imap.get_dtype()
         if opts.nside is None: opts.nside = imap.nside()
         h = a.map.Map(nside=opts.nside,nindices=opts.nindices,dtype=opts.dtype)
-        print 'Importing data from %s' % opts.in_map
+        print('Importing data from %s' % opts.in_map)
         h.from_map(a.map.Map(fromfits=opts.in_map))
     h.map.map *= opts.mscale
     px = np.arange(h.npix())
@@ -63,12 +66,12 @@ if not opts.in_map is None:
 else:
     if opts.dtype is None: opts.dtype = np.double
     h = a.map.Map(nside=opts.nside, nindices=opts.nindices, dtype=opts.dtype)
-    print 'Starting a new map.'
-print 'NSIDE:', h.nside()
+    print('Starting a new map.')
+print('NSIDE:', h.nside())
 h.reset_wgt()
 
 if opts.src is None:
-    print 'Saving to', opts.map
+    print('Saving to', opts.map)
     h.to_fits(opts.map)
     sys.exit(0)
 
@@ -93,23 +96,23 @@ for srcname in cat:
     # Account for size of source
     a1,a2,th = src.srcshape
     dras,ddecs = ras - ra, decs - dec
-    print '--------------------------------------------------'
+    print('--------------------------------------------------')
     src.update_jys(afreq)
     strength = src.get_jys()[0] * opts.sscale
-    print 'Adding', srcname, 'with strength %f Jy' % strength,
-    print 'and index', src.index
-    print 'Source shape: a1=%f, a2=%f, th=%f' % (a1, a2, th)
+    print('Adding', srcname, 'with strength %f Jy' % strength, end='')
+    print('and index', src.index)
+    print('Source shape: a1=%f, a2=%f, th=%f' % (a1, a2, th))
     da1 = dras*np.cos(th) - ddecs*np.sin(th)
     da2 = dras*np.sin(th) + ddecs*np.cos(th)
     delta = (da1/a1)**2 + (da2/a2)**2
     px = np.where(delta <= 1)[0]
     if len(px) == 0:
-        print 'Treating as point source.'
+        print('Treating as point source.')
         eq = a.coord.radec2eq((ra,dec))
         x,y,z = np.dot(m, eq)
         px = h.crd2px(np.array([x]),np.array([y]),np.array([z]))
     str_per_px = strength / len(px)
-    print 'Putting %f in each of %d pixels' % (str_per_px, len(px))
+    print('Putting %f in each of %d pixels' % (str_per_px, len(px)))
     if opts.nindices == 0:
         for p in px:
             curflux = h[p]
@@ -119,6 +122,6 @@ for srcname in cat:
             curflux, i = h[p]
             h.put(p,1,str_per_px+curflux,[src.index])
 
-print 'Saving to', opts.map
+print('Saving to', opts.map)
 h.to_fits(opts.map)
 

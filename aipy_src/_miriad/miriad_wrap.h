@@ -1,10 +1,7 @@
 #ifndef _MIRIAD_WRAP_H_
 #define _MIRIAD_WRAP_H_
 
-#include <Python.h>
 #include "miriad.h"
-#include "numpy/arrayobject.h"
-#include <string>
 #include "hio.h"
 #include "io.h"
 #include "maxdimc.h"
