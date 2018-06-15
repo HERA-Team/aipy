@@ -2,7 +2,8 @@
 Module for detecting and flaging RFI related effects.
 """
 
-import numpy as np, optimize
+import numpy as np
+import scipy.optimize as optimize
 
 def gaussian(amp, sig, off, x):
     """Generate gaussian value at x given amplitude, sigma, and x offset."""

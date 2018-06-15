@@ -1,5 +1,5 @@
 import numpy as np
-from aipy._cephes import i0
+from scipy.special import i0
 from _dsp import *
 
 
