@@ -14,7 +14,6 @@ try:
     from astropy.io import fits as pyfits
 except ImportError:
     import pyfits
-#from ._healpix import HealpixBase
 from ._alm import Alm
 
 import healpy
@@ -30,7 +29,7 @@ def mk_arr(val, dtype=np.double):
 
 HEALPIX_MODES = ('RING','NEST')
 
-class HealpixBase:
+class HealpixBase(object):
     """Functionality related to the HEALPix pixelisation."""
     def __init__(self, nside=1, scheme='RING'):
         self._nside = nside
