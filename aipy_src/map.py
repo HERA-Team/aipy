@@ -34,7 +34,7 @@ def _bit_reverse(N, nbits=None):
     if nbits is None: nbits = int(np.floor(np.log2(N))) + 1
     ans = 0
     for bit in range(nbits):
-        ans += np.bitwise_and(N, 2**bit) * 2**(nbits-2*bit-1)
+        ans += np.bitwise_and(N.astype('int64'), 2**bit) * 2**(nbits-2*bit-1)
     return ans
 
 def _bit_reverse_order(N):

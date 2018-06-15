@@ -24,6 +24,22 @@ package repository:
 $ conda install -c conda-forge aipy
 ```
 
+## Python 3 and AIPY 3
+
+The 2.x release series of AIPY supports only Python 2. However, there is now a
+**prototype** version of **AIPY 3.0** which adds support for **Python 3**
+(while still supporting Python 2). You can install it using the following
+[pip](https://pip.pypa.io/en/stable/) command:
+
+```
+pip install git+https://github.com/HERA-Team/aipy.git@v3
+```
+
+There is not presently a Conda package of this version. Development of the 3.x
+series happens on the [v3](https://github.com/HERA-Team/aipy/commits/v3)
+branch of this repository.
+
+
 ## Documentation
 
 If you want to build HTML documentation, you'll need to have
