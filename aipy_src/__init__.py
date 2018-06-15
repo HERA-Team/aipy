@@ -15,7 +15,8 @@ from __future__ import print_function, division, absolute_import
 from . import phs, const, coord, deconv
 from . import fit, healpix, img
 from . import interp, cal, map, miriad
-from . import optimize, rfi, amp, scripting, src, _src, utils
+import scipy.optimize as optimize
+from . import rfi, amp, scripting, src, _src, utils
 from . import dsp
 from . import pol, twodgauss #added by dfm
 import ephem
