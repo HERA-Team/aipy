@@ -14,7 +14,6 @@ from . import amp_test
 from . import coord_test
 from . import deconv_test
 from . import miriad_test
-from . import optimize_test
 from . import phs_test
 from . import phs_benchmark
 from . import scripting_test
@@ -34,7 +33,6 @@ class TestSuite(unittest.TestSuite):
                 self.addTest(coord_test.TestSuite())
                 self.addTest(deconv_test.TestSuite())
                 self.addTest(miriad_test.TestSuite())
-                self.addTest(optimize_test.TestSuite())
                 self.addTest(phs_test.TestSuite())
                 self.addTest(phs_benchmark.TestSuite())
                 self.addTest(scripting_test.TestSuite())
