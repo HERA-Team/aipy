@@ -2,13 +2,13 @@
 Module for representing antenna array geometry and for generating
 phasing information.
 """
-
 from __future__ import print_function, division, absolute_import
 
 import ephem, math, numpy as np
 from . import coord
 from . import const, _cephes
 from .miriad import ij2bl, bl2ij
+from scipy.special import j1
 
 class PointingError(Exception):
     """An error to throw if a source is below the horizon."""
@@ -368,7 +368,7 @@ class AntennaArray(ArrayLocation):
         rv = a2 * (u*np.sin(th) + v*np.cos(th))
         x = 2 * np.pi * np.sqrt(ru**2 + rv**2)
         # Use first Bessel function of the first kind (J_1)
-        return np.where(x == 0, 1, 2 * _cephes.j1(x)/x).squeeze()
+        return np.where(x == 0, 1, 2 * j1(x)/x).squeeze()
     def refract(self, u_sf, v_sf, mfreq=.150, ionref=(0.,0.)):
         """Calibrate a frequency-dependent source offset by scaling measured
         offsets at a given frequency.  Generates dw, a change in the
