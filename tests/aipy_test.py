@@ -8,7 +8,7 @@ from __future__ import print_function, division, absolute_import
 
 import unittest
 
-from . import _alm_test
+from . import alm_test
 from . import healpix_test
 from . import amp_test
 from . import coord_test
@@ -27,7 +27,7 @@ class TestSuite(unittest.TestSuite):
 
                 unittest.TestSuite.__init__(self)
 
-                self.addTest(_alm_test.TestSuite())
+                self.addTest(alm_test.TestSuite())
                 self.addTest(healpix_test.TestSuite())
                 self.addTest(amp_test.TestSuite())
                 self.addTest(coord_test.TestSuite())
