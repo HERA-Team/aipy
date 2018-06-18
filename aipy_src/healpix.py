@@ -109,10 +109,12 @@ class Alm(object):
     def mmax(self):
         """Return the maximum M."""
         return self._mmax
-    def __getitem__(self, (l, m)):
+    def __getitem__(self, lm):
+        l,m = lm
         i = self._alm.getidx(self._lmax, l, m)
         return self.data[i]
-    def __setitem__(self, (l, m), val):
+    def __setitem__(self, lm, val):
+        l,m = lm
         i = self._alm.getidx(self._lmax, l, m)
         self.data[i] = val
     def to_map(self, nside, pixwin=False, fwhm=0.0, sigma=None, 
