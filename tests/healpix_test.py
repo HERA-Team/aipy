@@ -54,6 +54,7 @@ class TestHealpixBase(unittest.TestCase):
         self.assertEqual(len(px), len(th))
         self.assertEqual(wgt.shape, (len(th),4))
         n.testing.assert_allclose(px, n.array(
+            # The ordering of pixels can be healpix version dependent
               #[[    2,     3,     1,     0],
               # [ 6208,  6080,  6207,  5952],
               # [12286, 12285, 12287, 12284]]))
@@ -61,6 +62,7 @@ class TestHealpixBase(unittest.TestCase):
                [ 6207,  6080,  6208,  6209],
                [12285, 12286, 12287, 12284]]))
         n.testing.assert_allclose(wgt, n.array(
+            # The ordering of pixels can be healpix version dependent
               #[[ 0.25,  0.25,  0.25,  0.25],
               # [ 0.25,  0.25,  0.25,  0.25],
               # [ 0.25,  0.25,  0.25,  0.25]]))
@@ -74,6 +76,7 @@ class TestHealpixBase(unittest.TestCase):
         self.assertEqual(len(px), len(x))
         self.assertEqual(wgt.shape, (len(x),4))
         n.testing.assert_allclose(px, n.array(
+            # The ordering of pixels can be healpix version dependent
               #[[3984, 3856, 3855, 3728],
               # [   0,    1,    3,    2],
               # [3920, 3792, 3791, 3664]]))
@@ -81,6 +84,7 @@ class TestHealpixBase(unittest.TestCase):
                [   1,    2,    3,    0],
                [3664, 3665, 3791, 3792]]))
         n.testing.assert_allclose(wgt, n.array(
+            # The ordering of pixels can be healpix version dependent
               #[[ 0.099602,  0.215996,  0.215996,  0.468407],
               # [ 0.25    ,  0.25    ,  0.25    ,  0.25    ],
               # [ 0.099602,  0.215996,  0.215996,  0.468407]]), rtol=1e-5)
