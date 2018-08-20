@@ -1,37 +1,27 @@
-include scripts/*
-include aipy_src/*
-include tests/*.py
-include setup.py
-include VERSION
 include CHANGELOG
-include README.md
 include LICENSE
 include LICENSE-GPL
+include MANIFEST.in
+include README.md
+include VERSION
+include ez_setup.py
 include install_required.sh
 include install_recommended.sh
-include ez_setup.py
-include setup.py
+
+recursive-include aipy_src *.h
+
 include doc/Makefile
 include doc/images/*.png
 include doc/source/*
-include MANIFEST.in
-include aipy_src/_cephes/*
-include aipy_src/_cephes/cephes/*
-include aipy_src/_cephes/c_misc/*
-include aipy_src/_deconv/*
-include aipy_src/_dsp/*
-include aipy_src/_dsp/grid/*
-include aipy_src/_healpix/*
-include aipy_src/_healpix/cxx/COPYING
-include aipy_src/_healpix/cxx/cxxsupport/*.h
-include aipy_src/_healpix/cxx/cxxsupport/*.cc
-include aipy_src/_healpix/cxx/Healpix_cxx/*.h
-include aipy_src/_healpix/cxx/Healpix_cxx/*.cc
-include aipy_src/_healpix/cxx/libfftpack/*.h
-include aipy_src/_healpix/cxx/libfftpack/*.c
-include aipy_src/_miriad/*
-include aipy_src/_miriad/mir/*.c
-include aipy_src/_miriad/mir/*.h
-include aipy_src/_src/*
-include aipy_src/optimize/*
-include aipy_src/utils/*
+
+include scripts/*
+
+include tests/*.py
+
+# In-place shared libraries can pollute the source distribution:
+global-exclude *.so *.dylib
+
+# Generic files to ignore:
+global-exclude *~
+global-exclude *.pyc *.pyo __pycache__
+global-exclude .gitignore
