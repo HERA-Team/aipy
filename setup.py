@@ -28,13 +28,21 @@ open('aipy_src/__gitlog__.py','w').write('__gitlog__ = \"\"\"%s\"\"\"'%gitlog)
 
 
 def get_description():
-    lines = [L.strip() for L in open('README.md').readlines()]
-    d_start = None
-    for cnt, L in enumerate(lines):
-        if L.startswith('## Description'): d_start = cnt + 1
-        elif not d_start is None:
-            if len(L) == 0: return ' '.join(lines[d_start:cnt])
-    raise RuntimeError('Bad README')
+    def get_description_lines():
+        seen_desc = False
+
+        with open('README.md') as f:
+            for line in f:
+                if seen_desc:
+                    if line.startswith('##'):
+                        break
+                    line = line.strip()
+                    if len(line):
+                        yield line
+                elif line.startswith('## Description'):
+                    seen_desc = True
+
+    return ' '.join(get_description_lines())
 
 def indir(path, files):
     return [os.path.join(path, f) for f in files]
