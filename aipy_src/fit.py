@@ -288,7 +288,7 @@ class BeamAlm(amp.BeamAlm):
             changed = True
             data = np.array(prms[p])
             c = int(p[3:])
-            data.shape = (data.size/2, 2)
+            data.shape = (data.size//2, 2)
             data = data[:,0] + data[:,1] * 1j
             if c < len(self.alm): self.alm[-1-c].set_data(data)
         if changed: self.update()
