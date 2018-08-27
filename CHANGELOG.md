@@ -5,10 +5,10 @@
 # 3.0.0rc2 (2018 Aug 27)
 
 - Fix generation of the package description in `setup.py`
-  ((#46)[https://github.com/HERA-Team/aipy/issues/46],
-  (#47)[https://github.com/HERA-Team/aipy/issues/47])
+  ([#46](https://github.com/HERA-Team/aipy/issues/46),
+  [#47](https://github.com/HERA-Team/aipy/issues/47))
 - Fix division that should have become integer division
-  ((#48)[https://github.com/HERA-Team/aipy/issues/48])
+  ([#48](https://github.com/HERA-Team/aipy/issues/48))
 
 # 3.0.0rc1 (2018 Aug 20)
 
