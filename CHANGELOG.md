@@ -1,3 +1,19 @@
+# 3.0.0rc2 (2018 Aug 27)
+
+- Fix generation of the package description in `setup.py`
+  ((#46)[https://github.com/HERA-Team/aipy/issues/46],
+  (#47)[https://github.com/HERA-Team/aipy/issues/47])
+- Fix division that should have become integer division
+  ((#48)[https://github.com/HERA-Team/aipy/issues/48])
+
+# 3.0.0rc1 (2018 Aug 20)
+
+- Make compatible with Python 3; remove scipy and healpix borrows.
+
+# 2.x series
+
+- No changelog was maintained. Consult the Git history.
+
 1.0.0
 * Added some performance enhancements
 * Miriad.UV files can now store data as both shorts and as float32 (avoiding dynamic range problems)
@@ -17,20 +33,20 @@
 * Added a get_afreqs() method to AntennaArrays to elucidate the opaque incantation;
   "AntennaArray.ants[0].beam.afreqs."
 * Added a system support for adding source catalogs through src.py calling catalog
-  interfaces stored in the _srcs directory.  Made the Helmboldt catalog the default 
+  interfaces stored in the _srcs directory.  Made the Helmboldt catalog the default
   catalog that AIPY comes with (since it's pretty small and geared toward low frequencies).
-* Added unit tests (in "test" directory) for the most-used modules, and will continue to 
-  add them as other modules are revisited.  There is also a script called 
+* Added unit tests (in "test" directory) for the most-used modules, and will continue to
+  add them as other modules are revisited.  There is also a script called
   "script_battery.sh" that does basic exercising of most AIPY scripts.
 * In Antennas, grouped delay/offset into an array called phsoff which is a phase
   polynomial in frequency.
 * Couple of bugfixes on how objects are updated (now made explicit with "update()"
   methods) and fixed an array shape bug in Antenna.refract()
 * Fixed a bug in filter_src.py where data were zeroed when a source is below the horizon.
-* Transitioned all nomenclature from "Fringe-Rate" to "Delay-Rate" as per 
+* Transitioned all nomenclature from "Fringe-Rate" to "Delay-Rate" as per
   Parsons & Backer (2009) in AJ.
 * Changed how fit parameters are input in scripting module
-* Bugfix for when resolution effects are taken into account in 
+* Bugfix for when resolution effects are taken into account in
   AntennaArray.gen_phs.
 * Bugfix in xrfi.py for flagging by integration
 * Improved filtering in filter_src.py to use padding and optionally passband
@@ -94,7 +110,7 @@
 * Reimplemented clean in C for speed.
 
 0.8.0
-* Added resolving support for elliptical sources in resolve_src() in ant.py.  
+* Added resolving support for elliptical sources in resolve_src() in ant.py.
 * Reworked how get_baseline() and gen_uvw() functioned to facilitate elliptical
   sources.  This change required updating scripts that use gen_uvw().
 * Allowed specifying coordinate epochs for RadioFixedBody's
@@ -103,9 +119,9 @@
   source, or for equally-spaced phase centers around the sphere.  This script
   is responsible for all image generation.  mk_map.py now takes these FITS
   images as input and uses them as facet images to make a spherical Healpix
-  map.  plot_img.py is now a visualization tool (a la plot_uv.py and 
+  map.  plot_img.py is now a visualization tool (a la plot_uv.py and
   plot_map.py), and overlays appropriate ra/dec grids on the FITS images.
-* Flipped u/v order (and sign of v) in the Img class in img.py to be more 
+* Flipped u/v order (and sign of v) in the Img class in img.py to be more
   naturally compatible with FITS image conventions.  Required a change to
   Img.gen_LM() as well.
 
@@ -114,7 +130,7 @@
 * Edited script documentation for plot_map.py
 * Changed "-a" in scripting.py so that "-a 0,1,2" includes only baselines that
   involve these antennas without autos (i.e. 0_1,0_2,1_2), rather than all
-  baselines that involve any of the antennas. Listing 1 antenna will 
+  baselines that involve any of the antennas. Listing 1 antenna will
   include all baselines involving that antenna.
 * Fixed combine_freqs.py to work with new numpy masked arrays.
 * Made fitmdl.py have a --sim_auto parameter that rejects auto-correlations
@@ -124,15 +140,15 @@
 * Changed "flat" to "flatten()" in plot_img.py, as per numpy-1.2.
 * Made plot_map.py able to function (only for cyl projection) without basemap.
 * Added FITS image I/O convenience functions to img.py.  Defined standard
-  FITS format based on VLA images.  
+  FITS format based on VLA images.
 
 0.7.0
 * Moved functions from xrfi.py script into rfi module
 * Bugfix in array shape in BeamFlat response() function
 * Ported to numpy>=1.2.  Involved:
   - Update flag_by_int in rfi module for new numpy-1.2.ma behavior
-  - Update miriad_wrap.cpp, healpix_wrap.cpp, alm_wrap.cpp for new 
-    numpy-1.2 API (PyArray_SimpleNew instead of PyArray_FromDims, 
+  - Update miriad_wrap.cpp, healpix_wrap.cpp, alm_wrap.cpp for new
+    numpy-1.2 API (PyArray_SimpleNew instead of PyArray_FromDims,
     npy_intp instead of int for array dimensions)
 
 0.6.5
