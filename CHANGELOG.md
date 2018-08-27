@@ -1,3 +1,7 @@
+# Next version (not yet released)
+
+- Log changes here.
+
 # 3.0.0rc2 (2018 Aug 27)
 
 - Fix generation of the package description in `setup.py`
