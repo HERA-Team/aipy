@@ -195,7 +195,7 @@ template<typename T> struct Clean {
                 val = IND1(res,wrap_n,T);
                 mval = val * val;
                 nscore += mval;
-                if (mval > mmax && IND1(area,wrap_n,int)) {
+                if (mval > mmax && (pos_def == 0 || val > 0) && IND1(area,wrap_n,int)) {
                     nargmax = wrap_n;
                     max = val;
                     mmax = mval;
