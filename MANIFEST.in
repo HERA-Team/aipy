@@ -10,6 +10,8 @@ include install_recommended.sh
 
 recursive-include aipy_src *.h
 
+include aipy_src/_src/*.txt
+
 include doc/Makefile
 include doc/images/*.png
 include doc/source/*
