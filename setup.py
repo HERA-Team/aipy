@@ -4,7 +4,14 @@ from __future__ import absolute_import, division, print_function
 
 from setuptools import setup, Extension
 
-import os, glob, numpy, subprocess
+import os, glob, numpy, subprocess, sys
+
+PY2 = sys.version_info.major < 3
+
+if PY2:
+    MATPLOTLIB_DEP = 'matplotlib<3'
+else:
+    MATPLOTLIB_DEP = 'matplotlib'
 
 print("Generating aipy_src/__version__.py: ", end='')
 __version__ = open('VERSION').read().strip()
@@ -63,8 +70,20 @@ setup(name = 'aipy',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
-    setup_requires = ['numpy>=1.2'],
-    install_requires = ['pyephem>=3.7.3.2', 'astropy>=1.0, <2.0', 'numpy>=1.2', 'scipy>=0.19', 'healpy>=1.11'],
+
+    setup_requires = [
+        'numpy>=1.2'
+    ],
+
+    install_requires = [
+        'astropy>=1.0, <2.0',
+        'healpy>=1.11',
+        MATPLOTLIB_DEP,
+        'numpy>=1.2',
+        'pyephem>=3.7.3.2',
+        'scipy>=0.19',
+    ],
+
     package_dir = {'aipy':'aipy_src', 'aipy._src':'aipy_src/_src'},
     packages = ['aipy', 'aipy._src'],
     ext_modules = [
