@@ -10,8 +10,10 @@ PY2 = sys.version_info.major < 3
 
 if PY2:
     MATPLOTLIB_DEP = 'matplotlib<3'
+    ASTROPY_DEP = 'astropy>=1.0, <2.0'
 else:
     MATPLOTLIB_DEP = 'matplotlib'
+    ASTROPY_DEP = 'astropy>=3.0'
 
 print("Generating aipy_src/__version__.py: ", end='')
 __version__ = open('VERSION').read().strip()
@@ -76,7 +78,7 @@ setup(name = 'aipy',
     ],
 
     install_requires = [
-        'astropy>=1.0, <2.0',
+        ASTROPY_DEP,
         'healpy>=1.11',
         MATPLOTLIB_DEP,
         'numpy>=1.2',

@@ -49,7 +49,7 @@ def recenter(a, c):
     useful for making an image centered on your screen after performing an
     inverse fft of uv data."""
     s = a.shape
-    c = (c[0] % s[0], c[1] % s[1])
+    c = (int(c[0] % s[0]), int(c[1] % s[1]))
     if np.ma.isMA(a):
         a1 = np.ma.concatenate([a[c[0]:], a[:c[0]]], axis=0)
         a2 = np.ma.concatenate([a1[:,c[1]:], a1[:,:c[1]]], axis=1)
