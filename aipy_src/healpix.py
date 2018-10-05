@@ -73,7 +73,7 @@ class HealpixBase(object):
             th,phi = healpy.pix2ang(self._nside, px, nest=is_nest)
             return th, phi
         else: # ncrd == 3 -> vec mode
-            x,y,z = healpy.pix2vect(self._nside, px, nest=is_nest)
+            x,y,z = healpy.pix2vec(self._nside, px, nest=is_nest)
     def order(self):
         """Return the order parameter."""
         return healpy.nside2order(self._nside)
