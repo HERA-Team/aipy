@@ -16,10 +16,10 @@ dbm /= dbm.sum()
 
 dim = n.fft.ifft2(n.fft.fft2(aim) * n.fft.fft2(dbm)).astype(n.float)
 
-print 'REAL TEST:'
+print('REAL TEST:')
 cim, info = a.deconv.clean(dim, dbm)
-print info
-print '-----------------------------------------------------------------'
+print(info)
+print('-----------------------------------------------------------------')
 
 aim = n.zeros((SIZE,SIZE), dtype=n.complex)
 aim[10,10] = 10.
@@ -31,10 +31,10 @@ dbm /= dbm.sum()
 
 dim = n.fft.ifft2(n.fft.fft2(aim) * n.fft.fft2(dbm))
 
-print 'COMPLEX TEST:'
+print('COMPLEX TEST:')
 cim, info = a.deconv.clean(dim, dbm)
-print info
-print '-----------------------------------------------------------------'
+print(info)
+print('-----------------------------------------------------------------')
 
 p.subplot(221)
 dat = n.log(n.abs(dim))
