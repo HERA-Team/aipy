@@ -54,8 +54,8 @@ class TestHealpixBase(unittest.TestCase):
         px = n.array([0])
         x, y, z = self.hpb.px2crd(px)
         self.assertEqual(len(px), len(x))
-        n.testing.assert_allclose(x, n.array([0]))
-        n.testing.assert_allclose(y, n.array([0]))
+        n.testing.assert_allclose(x, n.array([0.018041]), rtol=1e-4)
+        n.testing.assert_allclose(y, n.array([0.018041]), rtol=1e-4)
     def test_ang2px_interp(self):
         th,ph = n.linspace(0,n.pi,3), n.linspace(-n.pi,n.pi,3)
         px,wgt = self.hpb.crd2px(th,ph,interpolate=True)
