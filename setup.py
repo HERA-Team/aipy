@@ -82,7 +82,7 @@ setup(name = 'aipy',
         'healpy>=1.11',
         MATPLOTLIB_DEP,
         'numpy>=1.2',
-        'pyephem>=3.7.3.2',
+        'ephem>=3.7.3.2',
         'scipy>=0.19',
     ],
 
