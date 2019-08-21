@@ -10,7 +10,7 @@ PY2 = sys.version_info.major < 3
 
 if PY2:
     MATPLOTLIB_DEP = 'matplotlib<3'
-    ASTROPY_DEP = 'astropy>=1.0, <2.0'
+    ASTROPY_DEP = 'astropy>=1.0'
 else:
     MATPLOTLIB_DEP = 'matplotlib'
     ASTROPY_DEP = 'astropy>=3.0'
