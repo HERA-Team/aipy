@@ -1,6 +1,7 @@
 # Next version (not yet released)
 
-- Log changes here.
+- Remove `ez_setup` installation infrastructure; it has been deprecated for a
+  long time.
 
 # 3.0.1 (2019 Aug 21)
 

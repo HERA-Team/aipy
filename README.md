@@ -24,21 +24,20 @@ package repository:
 $ conda install -c conda-forge aipy
 ```
 
-## Python 3 and AIPY 3
+As of the 3.0.x version series, AIPY supports both Python 3 and Python 2.
 
-The 2.x release series of AIPY supports only Python 2. However, there is now a
-**prototype** version of **AIPY 3.0** which adds support for **Python 3**
-(while still supporting Python 2). You can install it using the following
-[pip](https://pip.pypa.io/en/stable/) command:
+You can also install with `pip` if you wish:
 
 ```
-pip install git+https://github.com/HERA-Team/aipy.git@v3
+$ pip install aipy
 ```
 
-There is not presently a Conda package of this version. Development of the 3.x
-series happens on the [v3](https://github.com/HERA-Team/aipy/commits/v3)
-branch of this repository.
+To install the source code in development mode, use:
 
+```
+$ pip install -e .
+$ python setup.py build_ext --inplace
+```
 
 ## Documentation
 
@@ -60,10 +59,10 @@ Aaron Parsons
 
 # Package Info for Developers
 
-The miriad source code (aipy/miriad/mirsrc) was included from
-MIRIAD-4.0.5.  To update, download miriad source and copy $MIR/src/subs/*
-and $MIR/src/inc/* into aipy/miriad/mirsrc.  Not all files are used, but
-include them all anyway.
+The miriad source code (`aipy/miriad/mirsrc`) was included from MIRIAD 4.0.5.
+To update, download a MIRIAD distribution and copy `$MIR/src/subs/*` and
+`$MIR/src/inc/*` into `aipy/miriad/mirsrc`.
 
-Healpix source code (aipy/healpix/cxx) was included from Healpix-2.01.
-To update, download healpix source and copy src/cxx into aipy/healpix.
+Healpix source code (`aipy/healpix/cxx`) was included from Healpix 2.01. To
+update, download a HEALPix distribution and copy `src/cxx` into
+`aipy/healpix`.
