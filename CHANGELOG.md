@@ -1,6 +1,18 @@
-# Next version (not yet released)
+# 3.0.1 (2019 Aug 21)
 
-- Log changes here.
+- Remove Astropy version cap; it was intended to promote simultaneous Python
+  2/3 compatibility, but if someone wants to use the newer version, that's
+  fine too.
+- Fix a bug in the Healpix wrapper
+  ([#52](https://github.com/HERA-Team/aipy/pull/52)).
+- Fix some lingering Python 2/3 compatibility issues
+  ([#51](https://github.com/HERA-Team/aipy/pull/51)).
+- Honor `pos_def` in the 1D real CLEAN
+  ([#44](https://github.com/HERA-Team/aipy/issues/44))
+- Install the Helmboldt catalog data files, which were mistakenly not being
+  included in installations
+  ([#45](https://github.com/HERA-Team/aipy/issues/45))
+- Rename the package directory in the source tree from `aipy_src` to `aipy`.
 
 # 3.0.0rc2 (2018 Aug 27)
 
