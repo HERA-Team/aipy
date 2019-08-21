@@ -1,12 +1,12 @@
 """
-The 3CR (Third Cambridge, Revised) Catalog.
+The 4C (Fourth Cambridge) Catalog.
 
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
-txt file.  Copy this file to "3cr.txt" in the _src directory of your AIPY
+txt file.  Copy this file to "4c.txt" in the _src directory of your AIPY
 installation.
 """
 
@@ -15,10 +15,10 @@ from __future__ import print_function, division, absolute_import
 try:
     import aipy as a
 except ImportError:
-    import aipy_src as a
+    import aipy as a
 import numpy as np, os
 
-class ThreeCRCatalog(a.fit.SrcCatalog):
+class FourCCatalog(a.fit.SrcCatalog):
     def fromfile(self,filename):
         f = open(filename)
         addsrcs = []
@@ -30,28 +30,28 @@ class ThreeCRCatalog(a.fit.SrcCatalog):
             ra = text[0].replace(' ',':')
             dec = text[1].replace(' ',':')
             name = text[2].strip()
-            jys = float(text[7])
+            jys = float(text[5])
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,
                 jys=jys, index=0, mfreq=0.178))
         self.add_srcs(addsrcs)
 
-THREECRFILE = os.path.join(os.path.dirname(__file__), '3cr.txt')
-_threecrcat = None
+FOURCFILE = os.path.join(os.path.dirname(__file__), '4c.txt')
+_fourccat = None
 
 def get_srcs(srcs=None, cutoff=None):
-    global _threecrcat
-    if _threecrcat is None:
-        _threecrcat = ThreeCRCatalog()
-        _threecrcat.fromfile(THREECRFILE)
+    global _fourccat
+    if _fourccat is None:
+        _fourccat = FourCCatalog()
+        _fourccat.fromfile(FOURCFILE)
     if srcs is None:
-        if cutoff is None: srcs = _threecrcat.keys()
+        if cutoff is None: srcs = _fourccat.keys()
         else:
             cut, fq = cutoff
             fq = np.array([fq])
-            for s in _threecrcat.keys(): _threecrcat[s].update_jys(fq)
-            srcs = [s for s in _threecrcat.keys() if _threecrcat[s].jys[0] > cut]
+            for s in _fourccat.keys(): _fourccat[s].update_jys(fq)
+            srcs = [s for s in _fourccat.keys() if _fourccat[s].jys[0] > cut]
     srclist = []
     for s in srcs:
-        try: srclist.append(_threecrcat[s])
+        try: srclist.append(_fourccat[s])
         except(KeyError): pass
     return srclist

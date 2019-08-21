@@ -3,10 +3,7 @@
 from __future__ import print_function, division, absolute_import
 
 import unittest
-try:
-    import aipy.healpix as a
-except ImportError:
-    import aipy_src.healpix as a
+import aipy.healpix as a
 import numpy as np
 
 class TestAlm(unittest.TestCase):
