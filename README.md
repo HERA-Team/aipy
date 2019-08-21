@@ -26,6 +26,19 @@ $ conda install -c conda-forge aipy
 
 As of the 3.0.x version series, AIPY supports both Python 3 and Python 2.
 
+You can also install with `pip` if you wish:
+
+```
+$ pip install aipy
+```
+
+To install the source code in development mode, use:
+
+```
+$ pip install -e .
+$ python setup.py build_ext --inplace
+```
+
 ## Documentation
 
 If you want to build HTML documentation, you'll need to have
