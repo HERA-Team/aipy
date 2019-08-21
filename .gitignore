@@ -6,4 +6,5 @@
 /aipy/__branch__.py
 /aipy/__gitlog__.py
 /aipy/__version__.py
+/aipy/*.so
 /doc/build/
