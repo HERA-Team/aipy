@@ -3,7 +3,8 @@
 /aipy.egg-info/
 /build/
 /dist/
-/aipy_src/__branch__.py
-/aipy_src/__gitlog__.py
-/aipy_src/__version__.py
+/aipy/__branch__.py
+/aipy/__gitlog__.py
+/aipy/__version__.py
+/aipy/*.so
 /doc/build/

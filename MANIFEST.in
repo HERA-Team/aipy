@@ -8,9 +8,9 @@ include ez_setup.py
 include install_required.sh
 include install_recommended.sh
 
-recursive-include aipy_src *.h
+recursive-include aipy *.h
 
-include aipy_src/_src/*.txt
+include aipy/_src/*.txt
 
 include doc/Makefile
 include doc/images/*.png

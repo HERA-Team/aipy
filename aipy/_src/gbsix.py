@@ -1,12 +1,11 @@
-"""
-The 4C (Fourth Cambridge) Catalog.
+"""The GB6 Catalog.
 
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
-txt file.  Copy this file to "4c.txt" in the _src directory of your AIPY
+txt file.  Copy this file to "gb6.txt" in the _src directory of your AIPY
 installation.
 """
 
@@ -15,10 +14,10 @@ from __future__ import print_function, division, absolute_import
 try:
     import aipy as a
 except ImportError:
-    import aipy_src as a
+    import aipy as a
 import numpy as np, os
 
-class FourCCatalog(a.fit.SrcCatalog):
+class GBSixCatalog(a.fit.SrcCatalog):
     def fromfile(self,filename):
         f = open(filename)
         addsrcs = []
@@ -29,29 +28,29 @@ class FourCCatalog(a.fit.SrcCatalog):
             except(ValueError): continue
             ra = text[0].replace(' ',':')
             dec = text[1].replace(' ',':')
-            name = text[2].strip()
-            jys = float(text[5])
+            name = text[18].strip()
+            jys = float(text[8])/1000.
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,
-                jys=jys, index=0, mfreq=0.178))
+                jys=jys, index=0, mfreq=4.85))
         self.add_srcs(addsrcs)
 
-FOURCFILE = os.path.join(os.path.dirname(__file__), '4c.txt')
-_fourccat = None
+GBSIXFILE = os.path.join(os.path.dirname(__file__), 'gb6.txt')
+_gbsixcat = None
 
 def get_srcs(srcs=None, cutoff=None):
-    global _fourccat
-    if _fourccat is None:
-        _fourccat = FourCCatalog()
-        _fourccat.fromfile(FOURCFILE)
+    global _gbsixcat
+    if _gbsixcat is None:
+        _gbsixcat = GBSixCatalog()
+        _gbsixcat.fromfile(GBSIXFILE)
     if srcs is None:
-        if cutoff is None: srcs = _fourccat.keys()
+        if cutoff is None: srcs = _gbsixcat.keys()
         else:
             cut, fq = cutoff
             fq = np.array([fq])
-            for s in _fourccat.keys(): _fourccat[s].update_jys(fq)
-            srcs = [s for s in _fourccat.keys() if _fourccat[s].jys[0] > cut]
+            for s in _gbsixcat.keys(): _gbsixcat[s].update_jys(fq)
+            srcs = [s for s in _gbsixcat.keys() if _gbsixcat[s].jys[0] > cut]
     srclist = []
     for s in srcs:
-        try: srclist.append(_fourccat[s])
+        try: srclist.append(_gbsixcat[s])
         except(KeyError): pass
     return srclist

@@ -1,12 +1,12 @@
 """
-The NVSS Catalog.
+The 3C (Third Cambridge) Catalog.
 
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
-txt file.  Copy this file to "nvss.txt" in the _src directory of your AIPY
+txt file.  Copy this file to "3c.txt" in the _src directory of your AIPY
 installation.
 """
 
@@ -15,11 +15,11 @@ from __future__ import print_function, division, absolute_import
 try:
     import aipy as a
 except ImportError:
-    import aipy_src as a
+    import aipy as a
 import numpy as np, os
 
-class NVSSCatalog(a.fit.SrcCatalog):
-    def fromfile(self, filename):
+class ThreeCCatalog(a.fit.SrcCatalog):
+    def fromfile(self,filename):
         f = open(filename)
         addsrcs = []
         for L in [L for L in f.readlines() if not L.startswith('#')]:
@@ -27,32 +27,31 @@ class NVSSCatalog(a.fit.SrcCatalog):
             if len(text) <= 4: continue
             try: int(text[0][0])
             except(ValueError): continue
-            ra = text[3].replace(' ',':')
-            dec = text[4].replace(' ',':')
+            ra = text[0].replace(' ',':')
+            dec = text[1].replace(' ',':')
             name = text[2].strip()
-            jys = float(text[7])/1000.
+            jys = float(text[9])
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,
-                jys=jys, index=0, mfreq=1.40))
+                jys=jys, index=0, mfreq=0.159))
         self.add_srcs(addsrcs)
 
-NVSSFILE = os.path.join(os.path.dirname(__file__), 'nvss.txt')
-_nvsscat = None
+THREECFILE = os.path.join(os.path.dirname(__file__), '3c.txt')
+_threeccat = None
 
 def get_srcs(srcs=None, cutoff=None):
-    global _nvsscat
-    if _nvsscat is None:
-        _nvsscat = NVSSCatalog()
-        _nvsscat.fromfile(NVSSFILE)
+    global _threeccat
+    if _threeccat is None:
+        _threeccat = ThreeCCatalog()
+        _threeccat.fromfile(THREECFILE)
     if srcs is None:
-        if cutoff is None: srcs = _nvsscat.keys()
+        if cutoff is None: srcs = _threeccat.keys()
         else:
             cut, fq = cutoff
             fq = np.array([fq])
-            for s in _nvsscat.keys(): _nvsscat[s].update_jys(fq)
-            srcs = [s for s in _nvsscat.keys() if _nvsscat[s].jys[0] > cut]
-
+            for s in _threeccat.keys(): _threeccat[s].update_jys(fq)
+            srcs = [s for s in _threeccat.keys() if _threeccat[s].jys[0] > cut]
     srclist = []
     for s in srcs:
-        try: srclist.append(_nvsscat[s])
+        try: srclist.append(_threeccat[s])
         except(KeyError): pass
     return srclist

@@ -1,12 +1,12 @@
 """
-The 3C (Third Cambridge) Catalog.
+The TXS Catalog.
 
 Data files are in tab-separated format from Vizier.
 To download in the correct format, open a catalog online in Vizier,
 select'Tab-Separated-Values' as the Output layout in the drop-down box, set
 the maximum entries to 'unlimited', and click 'Sexagesimal' under the box
 for 'Target Name or Position'.  Submit the query, and copy the output to a
-txt file.  Copy this file to "3c.txt" in the _src directory of your AIPY
+txt file.  Copy this file to "txs.txt" in the _src directory of your AIPY
 installation.
 """
 
@@ -15,10 +15,10 @@ from __future__ import print_function, division, absolute_import
 try:
     import aipy as a
 except ImportError:
-    import aipy_src as a
+    import aipy as a
 import numpy as np, os
 
-class ThreeCCatalog(a.fit.SrcCatalog):
+class TXSCatalog(a.fit.SrcCatalog):
     def fromfile(self,filename):
         f = open(filename)
         addsrcs = []
@@ -30,28 +30,30 @@ class ThreeCCatalog(a.fit.SrcCatalog):
             ra = text[0].replace(' ',':')
             dec = text[1].replace(' ',':')
             name = text[2].strip()
-            jys = float(text[9])
+            jys = float(text[7])
+            try: index = float(text[10])
+            except(ValueError): index = 0
             addsrcs.append(a.fit.RadioFixedBody(ra, dec, name=name,
-                jys=jys, index=0, mfreq=0.159))
+                jys=jys, index=index, mfreq=0.365))
         self.add_srcs(addsrcs)
 
-THREECFILE = os.path.join(os.path.dirname(__file__), '3c.txt')
-_threeccat = None
+TXSFILE = os.path.join(os.path.dirname(__file__), 'txs.txt')
+_txscat = None
 
 def get_srcs(srcs=None, cutoff=None):
-    global _threeccat
-    if _threeccat is None:
-        _threeccat = ThreeCCatalog()
-        _threeccat.fromfile(THREECFILE)
+    global _txscat
+    if _txscat is None:
+        _txscat = TXSCatalog()
+        _txscat.fromfile(TXSFILE)
     if srcs is None:
-        if cutoff is None: srcs = _threeccat.keys()
+        if cutoff is None: srcs = _txscat.keys()
         else:
             cut, fq = cutoff
             fq = np.array([fq])
-            for s in _threeccat.keys(): _threeccat[s].update_jys(fq)
-            srcs = [s for s in _threeccat.keys() if _threeccat[s].jys[0] > cut]
+            for s in _txscat.keys(): _txscat[s].update_jys(fq)
+            srcs = [s for s in _txscat.keys() if _txscat[s].jys[0] > cut]
     srclist = []
     for s in srcs:
-        try: srclist.append(_threeccat[s])
+        try: srclist.append(_txscat[s])
         except(KeyError): pass
     return srclist

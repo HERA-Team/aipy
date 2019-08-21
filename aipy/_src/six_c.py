@@ -16,7 +16,7 @@ from __future__ import print_function, division, absolute_import
 try:
     import aipy as a
 except ImportError:
-    import aipy_src as a
+    import aipy as a
 import numpy as np, os
 
 class SixCCatalog(a.fit.SrcCatalog):
