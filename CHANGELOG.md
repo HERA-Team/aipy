@@ -1,3 +1,7 @@
+# Next version (not yet released)
+
+- Log changes here.
+
 # 3.0.1 (2019 Aug 21)
 
 - Remove Astropy version cap; it was intended to promote simultaneous Python
