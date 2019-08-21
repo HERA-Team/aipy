@@ -4,9 +4,6 @@ include LICENSE-GPL
 include MANIFEST.in
 include README.md
 include VERSION
-include ez_setup.py
-include install_required.sh
-include install_recommended.sh
 
 recursive-include aipy *.h
 
