@@ -1,330 +1,414 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2009 Aaron Parsons
+# Licensed under the GPLv3
 
-from __future__ import print_function, division, absolute_import
+import pytest
+import ephem
+import random
+import aipy
+import numpy as np
 
-import unittest, ephem as e, random
-import aipy as a, numpy as n
+def test_convert_typecheck():
+    """Test coordinate conversion types"""
+    crd2, crd3 = (0, 0), (1, 0, 0)
+    for sys in aipy.coord.sys_dict:
+        ans2 = aipy.coord.convert(crd2, sys, sys)
+        assert crd2[0] == ans2[0]
+        assert crd2[1] == ans2[1]
 
-class TestConvert(unittest.TestCase):
-    def testtypecheck(self):
-        """Test coordinate conversion types"""
-        crd2, crd3 = (0, 0), (1, 0, 0)
-        for sys in a.coord.sys_dict:
-            ans2 = a.coord.convert(crd2, sys, sys)
-            self.assertEqual(crd2[0], ans2[0])
-            self.assertEqual(crd2[1], ans2[1])
-            ans3 = a.coord.convert(crd3, sys, sys)
-            self.assertEqual(crd2[0], ans3[0])
-            self.assertEqual(crd2[1], ans3[1])
-        self.assertRaises(KeyError, a.coord.convert, crd2, 'bad','bad')
-    def testprecession(self):
-        """Test coordinate precessions for accuracy"""
-        crdpairs = [[('0:00','0:00'), ('00:02:33.77','00:16:42.1')],
-            [('6:00','0:00'), ('06:02:33.75','-00:00:05.6')],
-            [('0:00','89:00'), ('00:03:03.75','+89:16:41.7')]]
-        for b1950,j2000 in crdpairs:
-            c1 = a.coord.convert(b1950,'eq','eq',iepoch=e.B1950,oepoch=e.J2000)
-            c2 = a.coord.convert(j2000,'eq','eq',iepoch=e.J2000,oepoch=e.B1950)
-            c1_ck = e.Equatorial(j2000[0],j2000[1],epoch=e.J2000).get()
-            c2_ck = e.Equatorial(b1950[0],b1950[1],epoch=e.B1950).get()
-            self.assertAlmostEqual(c1[0], c1_ck[0], 4)
-            self.assertAlmostEqual(c1[1], c1_ck[1], 4)
-            self.assertAlmostEqual(c2[0], c2_ck[0], 4)
-            self.assertAlmostEqual(c2[1], c2_ck[1], 4)
-    def testcrdsys(self):
-        """Test coordinate conversions for accuracy"""
-        eq_ec_ga = [
-            [   ('19:59:28.3566','40:44:02.096'),
-                ('317.7054323','59.3254895'),
-                ('76.1898379','5.7554756')],
-            [   ('12:30:49.4233','12:23:28.043'),
-                ('182.0592608','14.4166861'),
-                ('283.7777978','74.4911308')],
-            [   ('13:25:27.6152','-43:01:08.805'),
-                ('217.1433477','-31.3319020'),
-                ('309.5158743','19.4173247')]]
-        for eq,ec,ga in eq_ec_ga:
-            eq_ec = a.coord.convert(eq,'eq','ec')
-            eq_ga = a.coord.convert(eq,'eq','ga')
-            ec_eq = a.coord.convert(ec,'ec','eq')
-            ec_ga = a.coord.convert(ec,'ec','ga')
-            ga_eq = a.coord.convert(ga,'ga','eq')
-            ga_ec = a.coord.convert(ga,'ga','ec')
-            eq_ck = e.Equatorial(eq[0], eq[1], epoch=e.J2000).get()
-            ec_ck = e.Ecliptic(ec[0], ec[1], epoch=e.J2000).get()
-            ga_ck = e.Galactic(ga[0], ga[1], epoch=e.J2000).get()
-            self.assertAlmostEqual(eq_ec[0], ec_ck[0], 4)
-            self.assertAlmostEqual(eq_ec[1], ec_ck[1], 4)
-            self.assertAlmostEqual(eq_ga[0], ga_ck[0], 4)
-            self.assertAlmostEqual(eq_ga[1], ga_ck[1], 4)
-            self.assertAlmostEqual(ec_eq[0], eq_ck[0], 4)
-            self.assertAlmostEqual(ec_eq[1], eq_ck[1], 4)
-            self.assertAlmostEqual(ec_ga[0], ga_ck[0], 4)
-            self.assertAlmostEqual(ec_ga[1], ga_ck[1], 4)
-            self.assertAlmostEqual(ga_eq[0], eq_ck[0], 4)
-            self.assertAlmostEqual(ga_eq[1], eq_ck[1], 4)
-            self.assertAlmostEqual(ga_ec[0], ec_ck[0], 4)
-            self.assertAlmostEqual(ga_ec[1], ec_ck[1], 4)
+        ans3 = aipy.coord.convert(crd3, sys, sys)
+        assert crd2[0] == ans3[0]
+        assert crd2[1] == ans3[1]
 
-class TestConvert_m(unittest.TestCase):
-    def testshape(self):
-        """Test conversion matrices for shape preservation"""
-        for c1 in a.coord.sys_dict:
-            for c2 in a.coord.sys_dict:
-                m = a.coord.convert_m(c1,c2)
-                self.assertEqual(len(m.shape), 2)
-                self.assertEqual(m.shape[0], 3)
-                self.assertEqual(m.shape[1], 3)
-    def testdiagonal(self):
-        """Test conversion matrices for normalcy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        for c1 in a.coord.sys_dict:
-            for c2 in a.coord.sys_dict:
-                m1 = a.coord.convert_m(c1,c2)
-                m2 = a.coord.convert_m(c2,c1)
-                m = n.round(n.dot(m1, m2), 10)
-                self.assertTrue(n.all(m == diag))
+        with pytest.raises(KeyError):
+            aipy.coord.convert(crd2, "bad", "bad")
 
-class TestRot_m(unittest.TestCase):
-    def testshape(self):
-        """Test rotation matrices for shape preservation"""
-        m = a.coord.rot_m(0, n.array([1.,0,0]))
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 3)
-        self.assertEqual(m.shape[1], 3)
-        m = a.coord.rot_m(n.array([0., 0.]), n.array([[1.,0,0],[1.,0,0]]))
-        self.assertEqual(len(m.shape), 3)
-        self.assertEqual(m.shape[0], 2)
-        self.assertEqual(m.shape[1], 3)
-        self.assertEqual(m.shape[2], 3)
-    def testaccuracy(self):
-        """Test rotation matricies for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = n.round(a.coord.rot_m(2*n.pi, n.array([1.,0,0])), 10)
-        self.assertTrue(n.all(m == diag))
-        m = n.round(a.coord.rot_m(n.pi/2, n.array([0.,0,1])), 10)
-        self.assertTrue(n.all(m == n.array([-e2,e1,e3])))
-        m = n.round(a.coord.rot_m(n.pi/2, n.array([0,1,0])), 10)
-        self.assertTrue(n.all(m == n.array([e3,e2,-e1])))
-        m = n.round(a.coord.rot_m(n.pi/2, n.array([1,0,0])), 10)
-        self.assertTrue(n.all(m == n.array([e1,-e3,e2])))
+    return
 
-class TestXyz2thphi(unittest.TestCase):
-    def testshape(self):
-        """Test the x,y,z to theta,phi conversion for shape preservation"""
-        m = a.coord.xyz2thphi((0,0,1))
-        self.assertEqual(len(m.shape), 1)
-        self.assertEqual(m.shape[0], 2)
-        m = a.coord.xyz2thphi((n.array([0.,0,0]),
-            n.array([0.,0,0]),n.array([1.,1,1])))
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 2)
-        self.assertEqual(m.shape[1], 3)
-    def testaccuracy(self):
-        """Test the x,y,z to theta,phi conversion for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = n.round(a.coord.xyz2thphi(e3), 10)
-        self.assertTrue(n.all(m == n.array([0.,0])))
-        m = n.round(a.coord.xyz2thphi(e1), 10)
-        self.assertTrue(n.all(m == n.round(n.array([n.pi/2,0]), 10)))
-        m = n.round(a.coord.xyz2thphi(e2), 10)
-        self.assertTrue(n.all(m == n.round(n.array([n.pi/2,n.pi/2]), 10)))
+def test_convert_precession():
+    """Test coordinate precessions for accuracy"""
+    crdpairs = [
+        [('0:00','0:00'), ('00:02:33.77','00:16:42.1')],
+        [('6:00','0:00'), ('06:02:33.75','-00:00:05.6')],
+        [('0:00','89:00'), ('00:03:03.75','+89:16:41.7')],
+    ]
+    for b1950, j2000 in crdpairs:
+        c1 = aipy.coord.convert(
+            b1950, 'eq', 'eq', iepoch=ephem.B1950, oepoch=ephem.J2000
+        )
+        c2 = aipy.coord.convert(
+            j2000, 'eq', 'eq', iepoch=ephem.J2000, oepoch=ephem.B1950
+        )
+        c1_ck = ephem.Equatorial(j2000[0], j2000[1], epoch=ephem.J2000).get()
+        c2_ck = ephem.Equatorial(b1950[0], b1950[1], epoch=ephem.B1950).get()
+        assert np.allclose(c1[0], c1_ck[0], atol=1e-4)
+        assert np.allclose(c1[1], c1_ck[1], atol=1e-4)
+        assert np.allclose(c2[0], c2_ck[0], atol=1e-4)
+        assert np.allclose(c2[1], c2_ck[1], atol=1e-4)
 
-class TestThphi2xyz(unittest.TestCase):
-    def testshape(self):
-        """Test the theta,phi to x,y,z conversion for shape preservation"""
-        m = a.coord.thphi2xyz((0,0))
-        self.assertEqual(len(m.shape), 1)
-        self.assertEqual(m.shape[0], 3)
-        m = a.coord.thphi2xyz((n.array([0.,0]),n.array([0.,0])))
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 3)
-        self.assertEqual(m.shape[1], 2)
-    def testaccuracy(self):
-        """Test the theta,phi to x,y,z conversion for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = n.round(a.coord.thphi2xyz((0,0)), 10)
-        self.assertTrue(n.all(m == e3))
-        m = n.round(a.coord.thphi2xyz((n.pi/2,0)), 10)
-        self.assertTrue(n.all(m == e1))
-        m = n.round(a.coord.thphi2xyz((n.pi/2,n.pi/2)), 10)
-        self.assertTrue(n.all(m == e2))
+    return
 
-class TestEq2radec(unittest.TestCase):
-    def testshape(self):
-        """Test the equatorial to ra,dec conversion for shape preservation"""
-        m = a.coord.eq2radec((0,0,1))
-        self.assertEqual(len(m.shape), 1)
-        self.assertEqual(m.shape[0], 2)
-        m = a.coord.eq2radec((n.array([0.,0,0]),
-            n.array([0.,0,0]),n.array([1.,1,1])))
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 2)
-        self.assertEqual(m.shape[1], 3)
-    def testaccuracy(self):
-        """Test the equatorial to ra,dec conversion for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = n.round(a.coord.eq2radec(e3), 10)
-        self.assertTrue(n.all(m == n.round(n.array([0.,n.pi/2]), 10)))
-        m = n.round(a.coord.eq2radec(e1), 10)
-        self.assertTrue(n.all(m == n.round(n.array([0,0]), 10)))
-        m = n.round(a.coord.eq2radec(e2), 10)
-        self.assertTrue(n.all(m == n.round(n.array([n.pi/2,0]), 10)))
+def test_convert_crdsys():
+    """Test coordinate conversions for accuracy"""
+    eq_ec_ga = [
+        [
+            ('19:59:28.3566', '40:44:02.096'),
+            ('317.7054323', '59.3254895'),
+            ('76.1898379', '5.7554756'),
+        ],
+        [
+            ('12:30:49.4233', '12:23:28.043'),
+            ('182.0592608', '14.4166861'),
+            ('283.7777978', '74.4911308'),
+        ],
+        [
+            ('13:25:27.6152', '-43:01:08.805'),
+            ('217.1433477', '-31.3319020'),
+            ('309.5158743', '19.4173247'),
+        ]
+    ]
+    for eq, ec, ga in eq_ec_ga:
+        eq_ec = aipy.coord.convert(eq,'eq','ec')
+        eq_ga = aipy.coord.convert(eq,'eq','ga')
+        ec_eq = aipy.coord.convert(ec,'ec','eq')
+        ec_ga = aipy.coord.convert(ec,'ec','ga')
+        ga_eq = aipy.coord.convert(ga,'ga','eq')
+        ga_ec = aipy.coord.convert(ga,'ga','ec')
+        eq_ck = ephem.Equatorial(eq[0], eq[1], epoch=ephem.J2000).get()
+        ec_ck = ephem.Ecliptic(ec[0], ec[1], epoch=ephem.J2000).get()
+        ga_ck = ephem.Galactic(ga[0], ga[1], epoch=ephem.J2000).get()
 
-class TestRadec2eq(unittest.TestCase):
-    def testshape(self):
-        """Test the ra,dec to equatorial conversion for shape preservation"""
-        m = a.coord.radec2eq((0,0))
-        self.assertEqual(len(m.shape), 1)
-        self.assertEqual(m.shape[0], 3)
-        m = a.coord.radec2eq((n.array([0.,0]),n.array([0.,0])))
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 3)
-        self.assertEqual(m.shape[1], 2)
-    def testaccuracy(self):
-        """Test the ra,dec to equatorial conversion for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = n.round(a.coord.radec2eq((0,0)), 10)
-        self.assertTrue(n.all(m == e1))
-        m = n.round(a.coord.radec2eq((n.pi/2,0)), 10)
-        self.assertTrue(n.all(m == e2))
-        m = n.round(a.coord.radec2eq((n.pi/2,n.pi/2)), 10)
-        self.assertTrue(n.all(m == e3))
+        assert np.allclose(eq_ec[0], ec_ck[0], atol=1e-4)
+        assert np.allclose(eq_ec[1], ec_ck[1], atol=1e-4)
+        assert np.allclose(eq_ga[0], ga_ck[0], atol=1e-4)
+        assert np.allclose(eq_ga[1], ga_ck[1], atol=1e-4)
+        assert np.allclose(ec_eq[0], eq_ck[0], atol=1e-4)
+        assert np.allclose(ec_eq[1], eq_ck[1], atol=1e-4)
+        assert np.allclose(ec_ga[0], ga_ck[0], atol=1e-4)
+        assert np.allclose(ec_ga[1], ga_ck[1], atol=1e-4)
+        assert np.allclose(ga_eq[0], eq_ck[0], atol=1e-4)
+        assert np.allclose(ga_eq[1], eq_ck[1], atol=1e-4)
+        assert np.allclose(ga_ec[0], ec_ck[0], atol=1e-4)
+        assert np.allclose(ga_ec[1], ec_ck[1], atol=1e-4)
 
-class TestLatlong2xyz(unittest.TestCase):
-    def testshape(self):
-        """Test the lat,long to x,y,z conversion for shape preservation"""
-        m = a.coord.latlong2xyz((0,0))
-        self.assertEqual(len(m.shape), 1)
-        self.assertEqual(m.shape[0], 3)
-        m = a.coord.latlong2xyz((n.array([0.,0]),n.array([0.,0])))
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 3)
-        self.assertEqual(m.shape[1], 2)
-    def testaccuracy(self):
-        """Test the lat,long to x,y,z conversion for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = n.round(a.coord.latlong2xyz((0,0)), 10)
-        self.assertTrue(n.all(m == e1))
-        m = n.round(a.coord.latlong2xyz((n.pi/2,0)), 10)
-        self.assertTrue(n.all(m == e3))
-        m = n.round(a.coord.latlong2xyz((0,n.pi/2)), 10)
-        self.assertTrue(n.all(m == e2))
+    return
 
-class TestTop2azalt(unittest.TestCase):
-    def testshape(self):
-        """Test the x,y,z to az,alt conversion for shape preservation"""
-        m = a.coord.top2azalt((0,0,1))
-        self.assertEqual(len(m.shape), 1)
-        self.assertEqual(m.shape[0], 2)
-        m = a.coord.top2azalt((n.array([0.,0,0]),
-            n.array([0.,0,0]),n.array([1.,1,1])))
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 2)
-        self.assertEqual(m.shape[1], 3)
-    def testaccuracy(self):
-        """Test the x,y,z to az,alt conversion for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = a.coord.top2azalt(e3)
-        self.assertAlmostEqual(m[1], n.pi/2, 10)
-        m = n.round(a.coord.top2azalt(e1), 10)
-        self.assertTrue(n.all(m == n.round(n.array([n.pi/2,0]), 10)))
-        m = n.round(a.coord.top2azalt(e2), 10)
-        self.assertTrue(n.all(m == n.round(n.array([0,0]), 10)))
+def test_convert_m_shape():
+    """Test conversion matrices for shape preservation"""
+    for c1 in aipy.coord.sys_dict:
+        for c2 in aipy.coord.sys_dict:
+            mat = aipy.coord.convert_m(c1,c2)
+            assert len(mat.shape) == 2
+            assert mat.shape[0] == 3
+            assert mat.shape[1] == 3
 
-class TestAzalt2top(unittest.TestCase):
-    def testshape(self):
-        """Test the az,alt to x,y,z conversion for shape preservation"""
-        m = a.coord.azalt2top((0,0))
-        self.assertEqual(len(m.shape), 1)
-        self.assertEqual(m.shape[0], 3)
-        m = a.coord.azalt2top((n.array([0.,0]),n.array([0.,0])))
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 3)
-        self.assertEqual(m.shape[1], 2)
-    def testaccuracy(self):
-        """Test the az,alt to x,y,z conversion for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = n.round(a.coord.azalt2top((0,0)), 10)
-        self.assertTrue(n.all(m == e2))
-        m = n.round(a.coord.azalt2top((n.pi/2,0)), 10)
-        self.assertTrue(n.all(m == e1))
-        m = n.round(a.coord.azalt2top((0,n.pi/2)), 10)
-        self.assertTrue(n.all(m == e3))
+    return
 
-class TestEq2top_m(unittest.TestCase):
-    def testshape(self):
-        """Test the equatorial/x,y,z rotation matrix for shape preservation"""
-        m = a.coord.eq2top_m(0, 0)
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 3)
-        self.assertEqual(m.shape[1], 3)
-        m = a.coord.eq2top_m(n.array([0., 0]), n.array([0.,0]))
-        self.assertEqual(len(m.shape), 3)
-        self.assertEqual(m.shape[0], 2)
-        self.assertEqual(m.shape[1], 3)
-        self.assertEqual(m.shape[2], 3)
-    def testaccuracy(self):
-        """Test the equatorial/x,y,z rotation matrix for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = n.round(a.coord.eq2top_m(0, 0), 10)
-        self.assertTrue(n.all(m == n.array([e2,e3,e1])))
-        m = n.round(a.coord.eq2top_m(-n.pi/2, 0.), 10)
-        self.assertTrue(n.all(m == n.array([-e1,e3,e2])))
-        m = n.round(a.coord.eq2top_m(0, n.pi/2), 10)
-        self.assertTrue(n.all(m == n.array([e2,-e1,e3])))
+def test_convert_m_diagonal():
+    """Test conversion matrices for normalcy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    for c1 in aipy.coord.sys_dict:
+        for c2 in aipy.coord.sys_dict:
+            m1 = aipy.coord.convert_m(c1, c2)
+            m2 = aipy.coord.convert_m(c2, c1)
+            mat = np.round(np.dot(m1, m2), 10)
+            assert np.allclose(mat, diag)
 
-class TestTop2eq_m(unittest.TestCase):
-    def testshape(self):
-        """Test the x,y,z/equatorial rotation matrix for shape preservation"""
-        m = a.coord.top2eq_m(0, 0)
-        self.assertEqual(len(m.shape), 2)
-        self.assertEqual(m.shape[0], 3)
-        self.assertEqual(m.shape[1], 3)
-        m = a.coord.top2eq_m(n.array([0., 0]), n.array([0.,0]))
-        self.assertEqual(len(m.shape), 3)
-        self.assertEqual(m.shape[0], 2)
-        self.assertEqual(m.shape[1], 3)
-        self.assertEqual(m.shape[2], 3)
-    def testaccuracy(self):
-        """Test the x,y,z/equatorial rotation matrix for accuracy"""
-        diag = n.array([[1,0,0],[0,1,0],[0,0,1]], dtype=n.double)
-        e1,e2,e3 = diag
-        m = n.round(a.coord.top2eq_m(0, 0), 10)
-        self.assertTrue(n.all(m == n.array([e3,e1,e2])))
-        m = n.round(a.coord.top2eq_m(-n.pi/2, 0.), 10)
-        self.assertTrue(n.all(m == n.array([-e1,e3,e2])))
-        m = n.round(a.coord.top2eq_m(0, n.pi/2), 10)
-        self.assertTrue(n.all(m == n.array([-e2,e1,e3])))
+    return
 
-class TestSuite(unittest.TestSuite):
-    """A unittest.TestSuite class which contains all of the aipy.coord unit tests."""
+def test_rot_m_shape():
+    """Test rotation matrices for shape preservation"""
+    mat = aipy.coord.rot_m(0, np.array([1., 0, 0]))
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 3
+    assert mat.shape[1] == 3
 
-    def __init__(self):
-        unittest.TestSuite.__init__(self)
+    mat = aipy.coord.rot_m(np.array([0., 0.]), np.array([[1., 0, 0], [1., 0, 0]]))
+    assert len(mat.shape) == 3
+    assert mat.shape[0] == 2
+    assert mat.shape[1] == 3
+    assert mat.shape[2] == 3
 
-        loader = unittest.TestLoader()
-        self.addTests(loader.loadTestsFromTestCase(TestConvert))
-        self.addTests(loader.loadTestsFromTestCase(TestConvert_m))
-        self.addTests(loader.loadTestsFromTestCase(TestRot_m))
-        self.addTests(loader.loadTestsFromTestCase(TestXyz2thphi))
-        self.addTests(loader.loadTestsFromTestCase(TestThphi2xyz))
-        self.addTests(loader.loadTestsFromTestCase(TestEq2radec))
-        self.addTests(loader.loadTestsFromTestCase(TestRadec2eq))
-        self.addTests(loader.loadTestsFromTestCase(TestLatlong2xyz))
-        self.addTests(loader.loadTestsFromTestCase(TestTop2azalt))
-        self.addTests(loader.loadTestsFromTestCase(TestAzalt2top))
-        self.addTests(loader.loadTestsFromTestCase(TestEq2top_m))
-        self.addTests(loader.loadTestsFromTestCase(TestTop2eq_m))
+    return
 
-if __name__ == '__main__':
-    unittest.main()
+def test_rot_m_accuracy():
+    """Test rotation matricies for accuracy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = np.round(aipy.coord.rot_m(2 * np.pi, np.array([1., 0, 0])), 10)
+    assert np.allclose(mat, diag)
+
+    mat = np.round(aipy.coord.rot_m(np.pi/2, np.array([0.,0,1])), 10)
+    assert np.allclose(mat, np.array([-e2, e1, e3]))
+
+    mat = np.round(aipy.coord.rot_m(np.pi / 2, np.array([0, 1, 0])), 10)
+    assert np.allclose(mat, np.array([e3, e2, -e1]))
+
+    mat = np.round(aipy.coord.rot_m(np.pi / 2, np.array([1, 0, 0])), 10)
+    assert np.allclose(mat, np.array([e1, -e3, e2]))
+
+    return
+
+def test_xyz2thphi_shape():
+    """Test the x,y,z to theta,phi conversion for shape preservation"""
+    mat = aipy.coord.xyz2thphi((0, 0, 1))
+    assert len(mat.shape) == 1
+    assert mat.shape[0] == 2
+
+    mat = aipy.coord.xyz2thphi(
+        (np.array([0., 0, 0]), np.array([0., 0, 0]), np.array([1., 1, 1]))
+    )
+
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 2
+    assert mat.shape[1] == 3
+
+    return
+
+def test_xyz2thphi_accuracy():
+    """Test the x,y,z to theta,phi conversion for accuracy"""
+    diag = np.array([[1,0,0],[0,1,0],[0,0,1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = np.round(aipy.coord.xyz2thphi(e3), 10)
+    assert np.allclose(mat, np.array([0.,0]))
+
+    mat = np.round(aipy.coord.xyz2thphi(e1), 10)
+    assert np.allclose(mat, np.round(np.array([np.pi / 2, 0]), 10))
+
+    mat = np.round(aipy.coord.xyz2thphi(e2), 10)
+    assert np.allclose(mat, np.round(np.array([np.pi / 2, np.pi / 2]), 10))
+
+    return
+
+def test_thphi2xyz_shape():
+    """Test the theta,phi to x,y,z conversion for shape preservation"""
+    mat = aipy.coord.thphi2xyz((0, 0))
+    assert len(mat.shape) == 1
+    assert mat.shape[0] == 3
+
+    mat = aipy.coord.thphi2xyz((np.array([0., 0]), np.array([0., 0])))
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 3
+    assert mat.shape[1] == 2
+
+    return
+
+def test_thphi2xyz_accuracy():
+    """Test the theta,phi to x,y,z conversion for accuracy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = np.round(aipy.coord.thphi2xyz((0, 0)), 10)
+    assert np.allclose(mat, e3)
+
+    mat = np.round(aipy.coord.thphi2xyz((np.pi / 2, 0)), 10)
+    assert np.allclose(mat, e1)
+
+    mat = np.round(aipy.coord.thphi2xyz((np.pi / 2, np.pi / 2)), 10)
+    assert np.allclose(mat, e2)
+
+    return
+
+def test_eq2radec_shape():
+    """Test the equatorial to ra,dec conversion for shape preservation"""
+    mat = aipy.coord.eq2radec((0, 0, 1))
+    assert len(mat.shape) == 1
+    assert mat.shape[0] == 2
+
+    mat = aipy.coord.eq2radec(
+        (np.array([0., 0, 0]), np.array([0., 0, 0]), np.array([1., 1, 1]))
+    )
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 2
+    assert mat.shape[1] == 3
+
+    return
+
+def test_eq2radec_accuracy():
+    """Test the equatorial to ra,dec conversion for accuracy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = np.round(aipy.coord.eq2radec(e3), 10)
+    assert np.allclose(mat, np.round(np.array([0., np.pi / 2]), 10))
+
+    mat = np.round(aipy.coord.eq2radec(e1), 10)
+    assert np.allclose(mat, np.round(np.array([0, 0]), 10))
+
+    mat = np.round(aipy.coord.eq2radec(e2), 10)
+    assert np.allclose(mat, np.round(np.array([np.pi / 2,0]), 10))
+
+    return
+
+def test_radec2eq_shape():
+    """Test the ra,dec to equatorial conversion for shape preservation"""
+    mat = aipy.coord.radec2eq((0, 0))
+    assert len(mat.shape) == 1
+    assert mat.shape[0] == 3
+
+
+    mat = aipy.coord.radec2eq((np.array([0., 0]), np.array([0., 0])))
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 3
+    assert mat.shape[1] == 2
+
+    return
+
+def test_radec2eq_accuracy():
+    """Test the ra,dec to equatorial conversion for accuracy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = np.round(aipy.coord.radec2eq((0, 0)), 10)
+    assert np.allclose(mat, e1)
+
+    mat = np.round(aipy.coord.radec2eq((np.pi / 2, 0)), 10)
+    assert np.allclose(mat, e2)
+
+    mat = np.round(aipy.coord.radec2eq((np.pi / 2, np.pi / 2)), 10)
+    assert np.allclose(mat, e3)
+
+    return
+
+def test_latlong2xyz_shape():
+    """Test the lat,long to x,y,z conversion for shape preservation"""
+    mat = aipy.coord.latlong2xyz((0, 0))
+    assert len(mat.shape) == 1
+    assert mat.shape[0] == 3
+
+    mat = aipy.coord.latlong2xyz((np.array([0., 0]), np.array([0., 0])))
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 3
+    assert mat.shape[1] == 2
+
+    return
+
+def test_latlong2xyz_accuracy():
+    """Test the lat,long to x,y,z conversion for accuracy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = np.round(aipy.coord.latlong2xyz((0, 0)), 10)
+    assert np.allclose(mat, e1)
+
+    mat = np.round(aipy.coord.latlong2xyz((np.pi / 2, 0)), 10)
+    assert np.allclose(mat, e3)
+
+    mat = np.round(aipy.coord.latlong2xyz((0, np.pi / 2)), 10)
+    assert np.allclose(mat, e2)
+
+    return
+
+def test_top2azalt_shape():
+    """Test the x,y,z to az,alt conversion for shape preservation"""
+    mat = aipy.coord.top2azalt((0, 0, 1))
+    assert len(mat.shape) == 1
+    assert mat.shape[0] == 2
+
+    mat = aipy.coord.top2azalt(
+        (np.array([0., 0, 0]), np.array([0., 0, 0]), np.array([1., 1, 1]))
+    )
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 2
+    assert mat.shape[1] == 3
+
+    return
+
+def test_top2azalt_accuracy():
+    """Test the x,y,z to az,alt conversion for accuracy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = aipy.coord.top2azalt(e3)
+    assert np.allclose(mat[1], np.pi / 2, atol=1e-10)
+
+    mat = np.round(aipy.coord.top2azalt(e1), 10)
+    assert np.allclose(mat, np.round(np.array([np.pi / 2, 0]), 10))
+
+    mat = np.round(aipy.coord.top2azalt(e2), 10)
+    assert np.allclose(mat, np.round(np.array([0,0]), 10))
+
+    return
+
+def test_azalt2top_shape():
+    """Test the az,alt to x,y,z conversion for shape preservation"""
+    mat = aipy.coord.azalt2top((0, 0))
+    assert len(mat.shape) == 1
+    assert mat.shape[0] == 3
+
+    mat = aipy.coord.azalt2top((np.array([0., 0]), np.array([0., 0])))
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 3
+    assert mat.shape[1] == 2
+
+    return
+
+def test_azalt2top_accuracy():
+    """Test the az,alt to x,y,z conversion for accuracy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = np.round(aipy.coord.azalt2top((0, 0)), 10)
+    assert np.allclose(mat, e2)
+
+    mat = np.round(aipy.coord.azalt2top((np.pi / 2, 0)), 10)
+    assert np.allclose(mat, e1)
+
+    mat = np.round(aipy.coord.azalt2top((0, np.pi / 2)), 10)
+    assert np.allclose(mat, e3)
+
+    return
+
+def test_eq2top_m_shape():
+    """Test the equatorial/x,y,z rotation matrix for shape preservation"""
+    mat = aipy.coord.eq2top_m(0, 0)
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 3
+    assert mat.shape[1] == 3
+
+    mat = aipy.coord.eq2top_m(np.array([0., 0]), np.array([0., 0]))
+    assert len(mat.shape) == 3
+    assert mat.shape[0] == 2
+    assert mat.shape[1] == 3
+    assert mat.shape[2] == 3
+
+    return
+
+def test_eq2top_m_accuracy():
+    """Test the equatorial/x,y,z rotation matrix for accuracy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = np.round(aipy.coord.eq2top_m(0, 0), 10)
+    assert np.allclose(mat, np.array([e2, e3, e1]))
+
+    mat = np.round(aipy.coord.eq2top_m(-np.pi / 2, 0.), 10)
+    assert np.allclose(mat, np.array([-e1, e3, e2]))
+
+    mat = np.round(aipy.coord.eq2top_m(0, np.pi / 2), 10)
+    assert np.allclose(mat, np.array([e2, -e1, e3]))
+
+    return
+
+def test_top2eq_m_shape():
+    """Test the x,y,z/equatorial rotation matrix for shape preservation"""
+    mat = aipy.coord.top2eq_m(0, 0)
+    assert len(mat.shape) == 2
+    assert mat.shape[0] == 3
+    assert mat.shape[1] == 3
+
+    mat = aipy.coord.top2eq_m(np.array([0., 0]), np.array([0.,0]))
+    assert len(mat.shape) == 3
+    assert mat.shape[0] == 2
+    assert mat.shape[1] == 3
+    assert mat.shape[2] == 3
+
+    return
+
+def test_top2eq_m_accuracy():
+    """Test the x,y,z/equatorial rotation matrix for accuracy"""
+    diag = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
+    e1, e2, e3 = diag
+    mat = np.round(aipy.coord.top2eq_m(0, 0), 10)
+    assert np.allclose(mat, np.array([e3, e1, e2]))
+
+    mat = np.round(aipy.coord.top2eq_m(-np.pi / 2, 0.), 10)
+    assert np.allclose(mat, np.array([-e1, e3, e2]))
+
+    mat = np.round(aipy.coord.top2eq_m(0, np.pi / 2), 10)
+    assert np.allclose(mat, np.array([-e2, e1, e3]))
+
+    return
