@@ -1,0 +1,16 @@
+name: aipy_tests
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - astropy
+  - ephem
+  - healpy
+  - matplotlib
+  - numpy
+  - pip
+  - pytest
+  - pytest-runner
+  - pytz
+  - pip:
+      - pytest-cov
