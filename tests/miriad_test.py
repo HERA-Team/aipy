@@ -2,7 +2,6 @@
 # Copyright (c) 2010 Aaron Parsons
 # Licensed under the GPLv3
 
-import os
 import pytest
 import numpy as np
 
