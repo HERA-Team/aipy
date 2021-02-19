@@ -1,126 +1,159 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2011 Aaron Parsons
+# Licensed under the GPLv3
 
-from __future__ import print_function, division, absolute_import
+import pytest
+import aipy.amp as amp
+import numpy as np
 
-import unittest
-import aipy.amp as amp, numpy as n
+@pytest.fixture(scope="function")
+def generate_AntennaArray():
+    freqs = np.arange(0.1, 0.2, 0.01)
+    bm = amp.Beam(freqs)
+    ant0 = amp.Antenna(0, 0, 0, bm)
+    aa = amp.AntennaArray(('0', '0'), [ant0])
 
-class TestRadioBody(unittest.TestCase):
-    def setUp(self):
-        self.fqs = n.arange(.1,.2,.01)
-        bm = amp.Beam(self.fqs)
-        ant0 = amp.Antenna(0,0,0,bm)
-        self.aa = amp.AntennaArray(('0','0'), [ant0])
-    def test_attributes(self):
-        """Test aipy.amp.RadioFixedBody attributes"""
-        s = amp.RadioFixedBody('0:00', '0:00',
-            jys=100, index=-2, mfreq=.1, name='src1')
-        self.assertEqual(s._jys, 100)
-        self.assertEqual(s.index, -2)
-        s.compute(self.aa)
-        self.assertTrue(n.all(s.get_jys() == 100 * (self.fqs / .1)**-2))
+    yield freqs, aa
 
-class TestBeam(unittest.TestCase):
-    def setUp(self):
-        self.fqs = n.arange(.1,.2,.01)
-        self.bm = amp.Beam(self.fqs)
-    def test_response(self):
-        """Test retrieving aipy.amp.Beam response"""
-        xyz = (0,0,1)
-        self.assertTrue(n.all(self.bm.response(xyz) == n.ones_like(self.fqs)))
-        x = n.array([0, .1, .2])
-        y = n.array([.1, .2, 0])
-        z = n.array([.2, 0, .1])
-        xyz = (x,y,z)
-        self.assertTrue(n.all(self.bm.response(xyz) == \
-            n.ones((self.fqs.size,3))))
-        self.bm.select_chans([0,1,2])
-        self.assertTrue(n.all(self.bm.response(xyz) == n.ones((3,3))))
+    # clean up when done
+    del freqs, aa
 
-class TestBeam2DGaussian(unittest.TestCase):
-    def setUp(self):
-        self.fqs = n.arange(.1,.2,.01)
-        self.bm = amp.Beam2DGaussian(self.fqs, .05, .025)
-    def test_response(self):
-        """Test retrieving a 2D Gaussian beam response"""
-        xyz = (0,0,1)
-        self.assertTrue(n.all(self.bm.response(xyz) == n.ones_like(self.fqs)))
-        x = n.array([0, .05,   0])
-        y = n.array([0,   0, .05])
-        z = n.array([1,   1,   1])
-        xyz = (x,y,z)
-        resp = self.bm.response(xyz)
-        self.assertEqual(resp.shape, (self.fqs.size,3))
-        ans = n.sqrt(n.array([1., n.exp(-0.5), n.exp(-2)]))
-        ans.shape = (1,3)
-        self.bm.select_chans([0])
-        resp = self.bm.response(xyz)
-        self.assertTrue(n.all(n.round(resp - ans, 3) == 0))
+    return
 
-class TestBeamAlm(unittest.TestCase):
-    def setUp(self):
-        self.fqs = n.arange(.1,.2,.01)
-        self.coeffs = {0:n.array([1.,0,0], dtype=n.complex)}
-        self.bm = amp.BeamAlm(self.fqs, lmax=1, mmax=1, deg=0, coeffs=self.coeffs)
-    def test_init_update(self):
-        self.assertTrue(n.allclose(self.bm.hmap[0].map, 1./n.sqrt(4*n.pi)))
-    def test_response(self):
-        x = n.array([0, .05,   0])
-        y = n.array([0,   0, .05])
-        z = n.array([1,   1,   1])
-        xyz = (x,y,z)
-        resp = self.bm.response(xyz)
-        self.assertEqual(resp.shape, (self.fqs.size,3))
-        ans = n.ones(3, dtype=n.complex) / n.sqrt(4*n.pi)
-        ans.shape = (1,3)
-        self.bm.select_chans([0])
-        resp = self.bm.response(xyz)
-        self.assertTrue(n.all(n.round(resp - ans, 3) == 0))
+@pytest.fixture(scope="function")
+def generate_Beam():
+    freqs = np.arange(0.1, 0.2, 0.01)
+    bm = amp.Beam(freqs)
 
-class TestAntenna(unittest.TestCase):
-    def setUp(self):
-        self.fqs = n.arange(.1,.2,.01)
-        bm = amp.Beam2DGaussian(self.fqs, .05, .025)
-        self.ant = amp.Antenna(0,0,0, beam=bm)
-    def test_passband(self):
-        """Test the Antenna passband"""
-        pb = self.ant.passband()
-        self.assertTrue(n.all(pb == n.ones_like(self.fqs)))
-        self.ant.select_chans([0,1,2])
-        pb = self.ant.passband()
-        self.assertEqual(pb.shape, (3,))
-    def test_bm_response(self):
-        """Test the Antenna beam response"""
-        xyz = (.05,0,1)
-        self.ant.select_chans([0])
-        # resp = self.ant.bm_response(xyz, pol='x')
-        # self.assertAlmostEqual(resp, n.sqrt(n.exp(-0.5)), 3)
-        # resp = self.ant.bm_response(xyz, pol='y')
-        # self.assertAlmostEqual(resp, n.sqrt(n.exp(-2)), 3)
+    yield freqs, bm
 
-#class TestMemLeaks(unittest.TestCase):
-#    def test_antenna_create(self):
-#        freqs = n.arange(.1,.2,.001)
-#        beam = amp.Beam(freqs)
-#        while True: ant = amp.Antenna(0,0,0,beam, pointing=(0,n.pi/2,.1))
-#    def test_aa_create(self):
-#        freqs = n.arange(.1,.2,.001)
-#        beam = amp.Beam(freqs)
-#        ants = [amp.Antenna(0,0,0,beam) for i in range(100)]
-#        while True: aa = amp.AntennaArray(('0:00','0:00'), ants)
+    # clean up when done
+    del freqs, bm
 
-class TestSuite(unittest.TestSuite):
-    """A unittest.TestSuite class which contains all of the aipy.amp unit tests."""
+    return
 
-    def __init__(self):
-        unittest.TestSuite.__init__(self)
+@pytest.fixture(scope="function")
+def generate_Beam2DGaussian():
+    freqs = np.arange(0.1, 0.2, 0.01)
+    bm = amp.Beam2DGaussian(freqs, 0.05, 0.025)
 
-        loader = unittest.TestLoader()
-        self.addTests(loader.loadTestsFromTestCase(TestRadioBody))
-        self.addTests(loader.loadTestsFromTestCase(TestBeam))
-        self.addTests(loader.loadTestsFromTestCase(TestBeam2DGaussian))
-        self.addTests(loader.loadTestsFromTestCase(TestAntenna))
-        #self.addTests(loader.loadTestsFromTestCase(TestMemLeaks))
+    yield freqs, bm
 
-if __name__ == '__main__':
-    unittest.main()
+    # clean up when done
+    del freqs, bm
+
+    return
+
+@pytest.fixture(scope="function")
+def generate_BeamAlm():
+    freqs = np.arange(.1,.2,.01)
+    coeffs = {0 : np.array([1., 0, 0], dtype=np.complex128)}
+    bm = amp.BeamAlm(freqs, lmax=1, mmax=1, deg=0, coeffs=coeffs)
+
+    yield freqs, coeffs, bm
+
+    # clean up when done
+    del freqs, coeffs, bm
+
+    return
+
+@pytest.fixture(scope="function")
+def generate_Antenna():
+    freqs = np.arange(0.1, 0.2, 0.01)
+    bm = amp.Beam2DGaussian(freqs, .05, .025)
+    ant = amp.Antenna(0,0,0, beam=bm)
+
+    yield freqs, ant
+
+    # clean up when done
+    del freqs, ant
+
+    return
+
+def test_radiobody_attributes(generate_AntennaArray):
+    """Test aipy.amp.RadioFixedBody attributes"""
+    freqs, aa = generate_AntennaArray
+
+    source = amp.RadioFixedBody(
+        '0:00', '0:00', jys=100, index=-2, mfreq=.1, name='src1'
+    )
+    assert source._jys == 100
+    assert source.index == -2
+
+    source.compute(aa)
+    assert np.allclose(source.get_jys(), 100 * (freqs / 0.1)**(-2))
+
+    return
+
+def test_response_TestBeam(generate_Beam):
+    """Test retrieving aipy.amp.Beam response"""
+    freqs, bm = generate_Beam
+    xyz = (0, 0, 1)
+    assert np.allclose(bm.response(xyz), np.ones_like(freqs))
+
+    x = np.array([0, .1, .2])
+    y = np.array([.1, .2, 0])
+    z = np.array([.2, 0, .1])
+    xyz = (x,y,z)
+    assert np.allclose(bm.response(xyz), np.ones((freqs.size, 3)))
+
+    bm.select_chans([0, 1, 2])
+    assert np.allclose(bm.response(xyz), np.ones((3, 3)))
+
+    return
+
+def test_response_TestBeam2DGaussian(generate_Beam2DGaussian):
+    """Test retrieving a 2D Gaussian beam response"""
+    freqs, bm = generate_Beam2DGaussian
+    xyz = (0, 0, 1)
+    assert np.allclose(bm.response(xyz), np.ones_like(freqs))
+
+    x = np.array([0, .05, 0])
+    y = np.array([0, 0, .05])
+    z = np.array([1, 1, 1])
+    xyz = (x, y, z)
+    resp = bm.response(xyz)
+    assert resp.shape == (freqs.size, 3)
+
+    ans = np.sqrt(np.array([1., np.exp(-0.5), np.exp(-2)]))
+    ans.shape = (1, 3)
+    bm.select_chans([0])
+    resp = bm.response(xyz)
+    assert np.allclose(np.round(resp - ans, 3), 0.0)
+
+    return
+
+def test_init_update_BeamAlm(generate_BeamAlm):
+    freqs, coeffs, bm = generate_BeamAlm
+    assert np.allclose(bm.hmap[0].map, 1.0 / np.sqrt(4 * np.pi))
+
+    return
+
+def test_response_BeamAlm(generate_BeamAlm):
+    freqs, coeffs, bm = generate_BeamAlm
+    x = np.array([0, .05, 0])
+    y = np.array([0, 0, .05])
+    z = np.array([1, 1, 1])
+    xyz = (x, y, z)
+    resp = bm.response(xyz)
+    assert resp.shape == (freqs.size, 3)
+
+    ans = np.ones(3, dtype=np.complex128) / np.sqrt(4 * np.pi)
+    ans.shape = (1,3)
+    bm.select_chans([0])
+    resp = bm.response(xyz)
+    assert np.allclose(np.round(resp - ans, 3), 0.0)
+
+    return
+
+def test_passband_Antenna(generate_Antenna):
+    """Test the Antenna passband"""
+    freqs, ant = generate_Antenna
+    pb = ant.passband()
+    assert np.allclose(pb, np.ones_like(freqs))
+
+    ant.select_chans([0, 1, 2])
+    pb = ant.passband()
+    assert pb.shape == (3,)
+
+    return

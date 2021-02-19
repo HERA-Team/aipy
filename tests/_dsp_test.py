@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2011 Aaron Parsons
+# Licensed under the GPLv3
 
 import numpy as np
 import pytest
