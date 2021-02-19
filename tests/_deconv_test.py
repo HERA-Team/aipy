@@ -1,70 +1,87 @@
-from __future__ import print_function, division, absolute_import
 
-import unittest, ephem, random
-import aipy as a, numpy as n
+import pytest
+import random
+import ephem
+import aipy
+import numpy as np
 
 DIM = 128
 
-class TestClean(unittest.TestCase):
-    def test_clean2dc(self):
-        res = n.zeros((DIM,DIM), dtype=n.complex)
-        ker = n.zeros((DIM,DIM), dtype=n.complex)
-        mdl = n.zeros((DIM,DIM), dtype=n.complex)
-        area = n.zeros((DIM,DIM), dtype=n.int)
-        self.assertRaises(ValueError, a._deconv.clean, \
-            res,ker,mdl,area.astype(n.float))
-        ker[0,0] = 1.
-        res[0,0] = 1.; res[5,5] = 1.
-        area[:4][:4] = 1
-        rv = a._deconv.clean(res,ker,mdl,area,tol=1e-8)
-        self.assertAlmostEqual(res[0,0], 0, 3)
-        self.assertEqual(res[5,5], 1)
-    def test_clean2dr(self):
-        res = n.zeros((DIM,DIM), dtype=n.float)
-        ker = n.zeros((DIM,DIM), dtype=n.float)
-        mdl = n.zeros((DIM,DIM), dtype=n.float)
-        area = n.zeros((DIM,DIM), dtype=n.int)
-        self.assertRaises(ValueError, a._deconv.clean, \
-            res,ker,mdl,area.astype(n.float))
-        ker[0,0] = 1.
-        res[0,0] = 1.; res[5,5] = 1.
-        area[:4][:4] = 1
-        rv = a._deconv.clean(res,ker,mdl,area,tol=1e-8)
-        self.assertAlmostEqual(res[0,0], 0, 3)
-    def test_clean1dc(self):
-        res = n.zeros((DIM,), dtype=n.complex)
-        ker = n.zeros((DIM,), dtype=n.complex)
-        mdl = n.zeros((DIM,), dtype=n.complex)
-        area = n.zeros((DIM,), dtype=n.int)
-        self.assertRaises(ValueError, a._deconv.clean, \
-            res,ker,mdl,area.astype(n.float))
-        ker[0] = 1.
-        res[0] = 1.; res[5] = 1.
-        area[:4] = 1
-        rv = a._deconv.clean(res,ker,mdl,area,tol=1e-8)
-        self.assertAlmostEqual(res[0], 0, 3)
-        self.assertEqual(res[5], 1)
-    def test_clean1dr(self):
-        res = n.zeros((DIM,), dtype=n.float)
-        ker = n.zeros((DIM,), dtype=n.float)
-        mdl = n.zeros((DIM,), dtype=n.float)
-        area = n.zeros((DIM,), dtype=n.int)
-        self.assertRaises(ValueError, a._deconv.clean, \
-            res,ker,mdl,area.astype(n.float))
-        ker[0] = 1.
-        res[0] = 1.; res[5] = 1.
-        area[:4] = 1
-        rv = a._deconv.clean(res,ker,mdl,area,tol=1e-8)
-        self.assertAlmostEqual(res[0], 0, 3)
-        self.assertEqual(res[5], 1)
-    def test_clean2d_stop_if_div(self):
-        DIM1,DIM2 = 1000, 250
-        dim = n.random.normal(size=(DIM1,DIM2))
-        dbm = n.random.normal(size=(DIM1,DIM2))
-        mdl = n.zeros(dim.shape, dtype=dim.dtype)
-        area = n.ones(dim.shape, dtype=n.int)
-        rv = a._deconv.clean(dim, dbm, mdl, area, gain=.1, tol=1e-2, stop_if_div=0, maxiter=100)
+def test_clean2dc():
+    res = np.zeros((DIM, DIM), dtype=np.complex64)
+    ker = np.zeros((DIM, DIM), dtype=np.complex64)
+    mdl = np.zeros((DIM, DIM), dtype=np.complex64)
+    area = np.zeros((DIM, DIM), dtype=np.int64)
+    with pytest.raises(ValueError):
+        aipy._deconv.clean(res, ker, mdl, area.astype(np.float64))
+    ker[0, 0] = 1.
+    res[0, 0] = 1.
+    res[5, 5] = 1.
+    area[:4, :4] = 1
+    rv = aipy._deconv.clean(res, ker, mdl, area, tol=1e-8)
+    assert np.allclose(res[0, 0], 0, atol=1e-3)
+    assert res[5, 5] == 1
 
+    return
 
-if __name__ == '__main__':
-    unittest.main()
+def test_clean2dr():
+    res = np.zeros((DIM,DIM), dtype=np.float32)
+    ker = np.zeros((DIM,DIM), dtype=np.float32)
+    mdl = np.zeros((DIM,DIM), dtype=np.float32)
+    area = np.zeros((DIM,DIM), dtype=np.int64)
+    with pytest.raises(ValueError):
+        aipy._deconv.clean(res, ker, mdl, area.astype(np.float32))
+    ker[0, 0] = 1.
+    res[0, 0] = 1.
+    res[5, 5] = 1.
+    area[:4, :4] = 1
+    rv = aipy._deconv.clean(res, ker, mdl, area, tol=1e-8)
+    assert np.allclose(res[0, 0], 0, atol=1e-3)
+
+    return
+
+def test_clean1dc():
+    res = np.zeros((DIM,), dtype=np.complex64)
+    ker = np.zeros((DIM,), dtype=np.complex64)
+    mdl = np.zeros((DIM,), dtype=np.complex64)
+    area = np.zeros((DIM,), dtype=np.int64)
+    with pytest.raises(ValueError):
+        aipy._deconv.clean(res, ker, mdl, area.astype(np.float32))
+    ker[0] = 1.
+    res[0] = 1.
+    res[5] = 1.
+    area[:4] = 1
+    rv = aipy._deconv.clean(res, ker, mdl, area, tol=1e-8)
+    assert np.allclose(res[0], 0, atol=1e-3)
+    assert res[5] == 1
+
+    return
+
+def test_clean1dr():
+    res = np.zeros((DIM,), dtype=np.float32)
+    ker = np.zeros((DIM,), dtype=np.float32)
+    mdl = np.zeros((DIM,), dtype=np.float32)
+    area = np.zeros((DIM,), dtype=np.int64)
+    with pytest.raises(ValueError):
+        aipy._deconv.clean(res, ker, mdl, area.astype(np.float32))
+    ker[0] = 1.
+    res[0] = 1.
+    res[5] = 1.
+    area[:4] = 1
+    rv = aipy._deconv.clean(res, ker, mdl, area, tol=1e-8)
+    assert np.allclose(res[0], 0, atol=1e-3)
+    assert res[5] == 1
+
+    return
+
+def test_clean2d_stop_if_div():
+    DIM1, DIM2 = 1000, 250
+    dim = np.random.normal(size=(DIM1, DIM2))
+    dbm = np.random.normal(size=(DIM1, DIM2))
+    mdl = np.zeros(dim.shape, dtype=dim.dtype)
+    area = np.ones(dim.shape, dtype=np.int)
+    init_val = dim[0, 0]
+    rv = aipy._deconv.clean(dim, dbm, mdl, area, gain=.1, tol=1e-2, stop_if_div=0, maxiter=100)
+    assert np.allclose(dim[0, 0], init_val, atol=1e-3)
+
+    return
