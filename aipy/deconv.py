@@ -19,7 +19,7 @@ import sys
 from . import _deconv
 
 # Find smallest representable # > 0 for setting clip level
-lo_clip_lev = np.finfo(np.float).tiny
+lo_clip_lev = np.finfo(np.float64).tiny
 
 def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3,
         stop_if_div=True, verbose=False, pos_def=False):
@@ -48,9 +48,9 @@ def clean(im, ker, mdl=None, area=None, gain=.1, maxiter=10000, tol=1e-3,
                                    np.fft.fft2(ker)).astype(im.dtype)
         else: raise ValueError('Number of dimensions != 1 or 2')
     if area is None:
-        area = np.ones(im.shape, dtype=np.int)
+        area = np.ones(im.shape, dtype=np.int_)
     else:
-        area = area.astype(np.int)
+        area = area.astype(np.int_)
 
     iter = _deconv.clean(res, ker, mdl, area,
             gain=gain, maxiter=maxiter, tol=tol,
@@ -96,9 +96,9 @@ def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200,
         mdl = np.zeros(im.shape, dtype=im.dtype)
     x = mdl.copy()
     if area is None:
-        area = np.ones(im.shape, dtype=np.int)
+        area = np.ones(im.shape, dtype=np.int_)
     else:
-        area = area.astype(np.int)
+        area = area.astype(np.int_)
     # Estimate gain of the kernel
     q = np.sqrt((np.abs(ker)**2).sum())
     ker_i = np.fft.fft2(ker)

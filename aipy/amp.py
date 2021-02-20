@@ -170,7 +170,7 @@ class BeamPolynomial(phs.Beam):
         if zang.size == 1:
             zang = np.array([zang]); zang.shape = (1,)
             az = np.array([az]); az.shape = (1,)
-        a = 2 * np.arange(self.poly.shape[0], dtype=np.float)
+        a = 2 * np.arange(self.poly.shape[0], dtype=np.float64)
         a.shape = (1,) + a.shape; az.shape += (1,); zang.shape += (1,)
         a = np.cos(np.dot(az, a))
         a[:,0] = 0.5

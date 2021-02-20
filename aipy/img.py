@@ -104,8 +104,8 @@ class Img:
     def get_indices(self, u, v):
         """Get the pixel indices corresponding to the provided uv coordinates."""
         if not USEDSP:
-            u = np.round(u / self.res).astype(np.int)
-            v = np.round(v / self.res).astype(np.int)
+            u = np.round(u / self.res).astype(np.int_)
+            v = np.round(v / self.res).astype(np.int_)
             return np.array([-v,u],).transpose()
         else:
             return (-v / self.res).astype(np.float32), (u / self.res).astype(np.float32)

@@ -153,8 +153,8 @@ def img_it(im):
     #print('Imaging with %d integrations' % n_ints)
     n_ints = 0
     # Form dirty images/beams
-    uvs = a.img.recenter(np.abs(im.uv).astype(np.float), (DIM/2,DIM/2))
-    bms = a.img.recenter(np.abs(im.bm[0]).astype(np.float), (DIM/2,DIM/2))
+    uvs = a.img.recenter(np.abs(im.uv).astype(np.float64), (DIM/2,DIM/2))
+    bms = a.img.recenter(np.abs(im.bm[0]).astype(np.float64), (DIM/2,DIM/2))
     dim = im.image((DIM/2, DIM/2))
     dbm = im.bm_image(term=0, center=(DIM/2,DIM/2))
     return uvs,bms, dim,dbm
@@ -226,7 +226,7 @@ for srccnt, s in enumerate(cat.values()):
               # Optimal SNR: down-weight beam-attenuated data
               # by another factor of the beam response.
               d *= wgt; wgt *= wgt
-          else: wgt = np.ones(d.shape, dtype=np.float)
+          else: wgt = np.ones(d.shape, dtype=np.float64)
           valid = np.logical_and(np.logical_not(f), longenough)
           d = d.compress(valid)
           if len(d) == 0: continue

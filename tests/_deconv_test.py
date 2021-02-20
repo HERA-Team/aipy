@@ -82,7 +82,7 @@ def test_clean2d_stop_if_div():
     dim = np.random.normal(size=(DIM1, DIM2))
     dbm = np.random.normal(size=(DIM1, DIM2))
     mdl = np.zeros(dim.shape, dtype=dim.dtype)
-    area = np.ones(dim.shape, dtype=np.int)
+    area = np.ones(dim.shape, dtype=np.int64)
     init_val = dim[0, 0]
     rv = aipy._deconv.clean(dim, dbm, mdl, area, gain=.1, tol=1e-2, stop_if_div=0, maxiter=100)
     assert np.allclose(dim[0, 0], init_val, atol=1e-3)
