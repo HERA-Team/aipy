@@ -454,8 +454,8 @@ def test_antenna_array_gen_phs(test_antenna_array):
 
     phs1 = aa.gen_phs(src, 0, 2, mfreq=0.1, ionref=(0.001, 0.001))
     phs2 = aa.gen_phs(src, 0, 2, mfreq=0.1, srcshape=(0.01, 0.01, 0), resolve_src=True)
-    assert not np.any(np.isclose(phs1, 1 + 0j))
-    assert not np.any(np.isclose(phs2, 1 + 0j))
+    assert np.all(phs1 != 1 + 0j)
+    assert np.all(phs2 != 1 + 0j)
     return
 
 
