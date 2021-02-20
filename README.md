@@ -1,7 +1,7 @@
 # AIPY (Astronomical Interferometry in PYthon)
 
-[![Build Status](https://travis-ci.org/HERA-Team/aipy.svg?branch=master)](https://travis-ci.org/HERA-Team/aipy)
-[![Coverage Status](https://coveralls.io/repos/github/HERA-Team/aipy/badge.svg?branch=master)](https://coveralls.io/github/HERA-Team/aipy?branch=master)
+[![Build Status](https://github.com/HERA-Team/aipy/workflows/Run%20Tests/badge.svg)](https://github.com/HERA-Team/aipy/actions)
+[![Coverage Status](https://codecov.io/gh/HERA-Team/aipy/branch/master/graph/badge.svg?token=Vrr4XFcE8p)](https://codecov.io/gh/HERA-Team/aipy)
 
 ## Description
 
