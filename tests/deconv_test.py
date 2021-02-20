@@ -6,6 +6,7 @@ import pytest
 import numpy as np
 import aipy
 
+
 @pytest.fixture(scope="function")
 def init_deconv():
     SIZE = 100
@@ -29,6 +30,7 @@ def init_deconv():
 
     return
 
+
 def test_clean(init_deconv):
     """Test that the standard clean deconvolution runs"""
     data, bm = init_deconv
@@ -36,6 +38,7 @@ def test_clean(init_deconv):
     assert True
 
     return
+
 
 def test_lsq(init_deconv):
     """Test that least squared deconvolution runs"""
@@ -45,13 +48,15 @@ def test_lsq(init_deconv):
 
     return
 
+
 def test_mem(init_deconv):
     """Test the maximum entropy deconvolution runs"""
     data, bm = init_deconv
-    cln, info = aipy.deconv.maxent(data, bm, np.var(data**2) * 0.5, verbose=False)
+    cln, info = aipy.deconv.maxent(data, bm, np.var(data ** 2) * 0.5, verbose=False)
     assert True
 
     return
+
 
 def test_anneal(init_deconv):
     """Test that simulated annealing deconvolution runs"""

@@ -6,6 +6,7 @@ import pytest
 import aipy.healpix as ah
 import numpy as np
 
+
 @pytest.fixture(scope="function")
 def healpix_base():
     hpb = ah.HealpixBase(nside=32, scheme="RING")
@@ -14,6 +15,7 @@ def healpix_base():
     # cleanup
     del hpb
     return
+
 
 @pytest.fixture(scope="function")
 def healpix_map():
@@ -24,11 +26,13 @@ def healpix_map():
     del hpm
     return
 
+
 def test_order(healpix_base):
     """Test HEALpix order functional attribute"""
     hpb = healpix_base
     assert hpb.order() == 5
     return
+
 
 def test_nside(healpix_base):
     """Test HEALpix nside functional attribute"""
@@ -36,11 +40,13 @@ def test_nside(healpix_base):
     assert hpb.nside() == 32
     return
 
+
 def test_npix(healpix_base):
     """Test HEALpix npix functional attribute"""
     hpb = healpix_base
-    assert hpb.npix() == 12 * hpb.nside()**2
+    assert hpb.npix() == 12 * hpb.nside() ** 2
     return
+
 
 def test_scheme(healpix_base):
     """Test HEALpix scheme functional attribute"""
@@ -48,11 +54,13 @@ def test_scheme(healpix_base):
     assert hpb.scheme() == "RING"
     return
 
+
 def test_npix2nside(healpix_base):
     """Test HEALpix npix2nside functional attribute"""
     hpb = healpix_base
-    assert hpb.npix2nside(12 * 2**12) == 2**6
+    assert hpb.npix2nside(12 * 2 ** 12) == 2 ** 6
     return
+
 
 def test_set_nside_scheme(healpix_base):
     hpb = healpix_base
@@ -64,6 +72,7 @@ def test_set_nside_scheme(healpix_base):
     assert hpb.nside() == 32
     assert hpb.scheme() == "RING"
     return
+
 
 def test_nest_ring_conv(healpix_base):
     hpb = healpix_base
@@ -77,28 +86,31 @@ def test_nest_ring_conv(healpix_base):
     assert px == 5968
     return
 
+
 def test_ang2px(healpix_base):
     hpb = healpix_base
     th = np.linspace(0, np.pi, 10)
     ph = np.linspace(-np.pi, np.pi, 10)
-    px = hpb.crd2px(th,ph)
+    px = hpb.crd2px(th, ph)
     assert len(px) == len(th)
     np.testing.assert_allclose(
         px, np.array([2, 398, 1375, 3114, 5049, 7239, 9173, 10912, 11889, 12286])
     )
     return
 
+
 def test_vec2px(healpix_base):
     hpb = healpix_base
     x = np.linspace(-0.5, 0.5, 10)
     y = np.linspace(-0.5, 0.5, 10)
-    z = 1 - np.sqrt(x**2 + y**2)
+    z = 1 - np.sqrt(x ** 2 + y ** 2)
     px = hpb.crd2px(x, y, z)
     assert len(px) == len(x)
     np.testing.assert_allclose(
-        px, np.array([3728, 2192, 1069, 247, 19, 13,225, 1023, 2128, 3664])
+        px, np.array([3728, 2192, 1069, 247, 19, 13, 225, 1023, 2128, 3664])
     )
     return
+
 
 def test_px2vec(healpix_base):
     hpb = healpix_base
@@ -110,6 +122,7 @@ def test_px2vec(healpix_base):
     np.testing.assert_equal(px, px_recovered)
     return
 
+
 def test_px2ang(healpix_base):
     hpb = healpix_base
     px = np.arange(hpb.npix())
@@ -120,6 +133,7 @@ def test_px2ang(healpix_base):
     np.testing.assert_equal(px, px_recovered)
     return
 
+
 def test_ang2px_interp(healpix_base):
     hpb = healpix_base
     th = np.linspace(0, np.pi, 3)
@@ -128,10 +142,11 @@ def test_ang2px_interp(healpix_base):
     assert len(px) == len(th)
     assert wgt.shape == (len(th), 4)
     np.testing.assert_allclose(
-        px, np.array(
+        px,
+        np.array(
             [
-                [ 3, 0, 1, 2],
-                [ 6207, 6080, 6208, 6209],
+                [3, 0, 1, 2],
+                [6207, 6080, 6208, 6209],
                 [12285, 12286, 12287, 12284],
             ]
         ),
@@ -141,18 +156,19 @@ def test_ang2px_interp(healpix_base):
         np.array(
             [
                 [0.25, 0.25, 0.25, 0.25],
-                [0.5 , 0.5 , 0.,  0.],
+                [0.5, 0.5, 0.0, 0.0],
                 [0.25, 0.25, 0.25, 0.25],
             ]
         ),
     )
     return
 
+
 def test_vec2px_interp(healpix_base):
     hpb = healpix_base
     x = np.linspace(-0.5, 0.5, 3)
     y = np.linspace(-0.5, 0.5, 3)
-    z = 1 - np.sqrt(x**2 + y**2)
+    z = 1 - np.sqrt(x ** 2 + y ** 2)
     px, wgt = hpb.crd2px(x, y, z, interpolate=True)
     assert len(px) == len(x)
     assert wgt.shape == (len(x), 4)
@@ -170,14 +186,15 @@ def test_vec2px_interp(healpix_base):
         wgt,
         np.array(
             [
-                [0.367711, 0., 0.316145, 0.316145],
+                [0.367711, 0.0, 0.316145, 0.316145],
                 [0.25, 0.25, 0.25, 0.25],
-                [0.367711, 0., 0.316145, 0.316145],
+                [0.367711, 0.0, 0.316145, 0.316145],
             ]
         ),
         rtol=1e-5,
     )
     return
+
 
 def test_set(healpix_map):
     hpm = healpix_map
@@ -185,11 +202,12 @@ def test_set(healpix_map):
     assert hpm[0] == 1
 
     hpm[0, 0] = 1
-    assert hpm[0,0] == 1
+    assert hpm[0, 0] == 1
 
     hpm[0, 1, 0] = 1
     assert hpm[0, 1, 0] == 1
     return
+
 
 def test_set_px(healpix_map):
     hpm = healpix_map
@@ -205,6 +223,7 @@ def test_set_px(healpix_map):
     hpm[cval] = cval
     np.testing.assert_allclose(hpm[cval], cval)
     return
+
 
 def test_set_ang(healpix_map):
     hpm = healpix_map
@@ -222,11 +241,12 @@ def test_set_ang(healpix_map):
     np.testing.assert_allclose(hpm[th, ph], th)
     return
 
+
 def test_set_vec(healpix_map):
     hpm = healpix_map
     x = np.linspace(-0.5, 0.5, 10)
     y = np.linspace(-0.5, 0.5, 10)
-    z = 1 - np.sqrt(x**2 + y**2)
+    z = 1 - np.sqrt(x ** 2 + y ** 2)
     assert len(hpm[x, y, z]) == len(x)
 
     hpm[x, y, z] += x

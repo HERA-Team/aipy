@@ -9,15 +9,17 @@ import pytest
 import ephem
 import numpy as np
 
+
 @pytest.fixture(scope="function")
 def source_catalog():
-    src1 = aipy.phs.RadioFixedBody('1:00', '1:00', name='src1')
-    src2 = aipy.phs.RadioFixedBody('2:00', '2:00', name='src2')
-    src3 = aipy.phs.RadioFixedBody('3:00', '3:00', name='src3')
+    src1 = aipy.phs.RadioFixedBody("1:00", "1:00", name="src1")
+    src2 = aipy.phs.RadioFixedBody("2:00", "2:00", name="src2")
+    src3 = aipy.phs.RadioFixedBody("3:00", "3:00", name="src3")
     srcs = [src1, src2, src3]
     cat = aipy.phs.SrcCatalog(srcs)
     yield srcs, cat
     return
+
 
 @pytest.fixture(scope="function")
 def test_beam():
@@ -25,6 +27,7 @@ def test_beam():
     bm = aipy.phs.Beam(freqs)
     yield freqs, bm
     return
+
 
 @pytest.fixture(scope="function")
 def test_antenna():
@@ -34,10 +37,12 @@ def test_antenna():
     yield freqs, bm, ant
     return
 
+
 @pytest.fixture(scope="function")
 def test_array_location():
-    yield aipy.phs.ArrayLocation(('0', '0'))
+    yield aipy.phs.ArrayLocation(("0", "0"))
     return
+
 
 @pytest.fixture(scope="function")
 def test_antenna_array():
@@ -47,24 +52,27 @@ def test_antenna_array():
     a3 = aipy.phs.Antenna(0, 1, 0, bm, [0, 2])
     a4 = aipy.phs.Antenna(0, 0, 1, bm, [0, 3])
     ants = [a1, a2, a3, a4]
-    aa = aipy.phs.AntennaArray(('0', '0'), ants)
+    aa = aipy.phs.AntennaArray(("0", "0"), ants)
     yield ants, aa
     return
+
 
 def test_pointing_error():
     pnterr = aipy.phs.PointingError("Error String")
     assert str(pnterr) == "Error String"
     with pytest.raises(aipy.phs.PointingError):
-        raise  pnterr
+        raise pnterr
     return
+
 
 def test_ephem_zero():
     """Test converting between ephem dates and JD - zero point"""
-    ephemzero = ephem.date('1899/12/31 12:00')
+    ephemzero = ephem.date("1899/12/31 12:00")
     jdzero = 2415020.0
     assert np.isclose(aipy.phs.juldate2ephem(jdzero), ephemzero)
     assert np.isclose(aipy.phs.ephem2juldate(ephemzero), jdzero)
     return
+
 
 def test_ephem_random():
     """Test converting between ephem dates and JD - various"""
@@ -75,20 +83,21 @@ def test_ephem_random():
 
     return
 
+
 def test_radiobody_attributes():
     """Test aipy.phs.RadioFixedBody attributes"""
     epoch = ephem.B1950
     source = aipy.phs.RadioFixedBody(
-        '0:00',
-        '0:00',
+        "0:00",
+        "0:00",
         mfreq=0.200,
-        name='src1',
+        name="src1",
         epoch=epoch,
         ionref=(0.0, 0.0),
         srcshape=(0.003, 0.005, 0.6),
     )
-    assert source._ra == ephem.hours('0:00')
-    assert source._dec == ephem.degrees('0:00')
+    assert source._ra == ephem.hours("0:00")
+    assert source._dec == ephem.degrees("0:00")
     assert np.isclose(source.mfreq, 0.200)
     assert source.src_name == "src1"
     assert np.isclose(source._epoch, epoch, atol=1e-3)
@@ -102,19 +111,20 @@ def test_radiobody_attributes():
     with pytest.raises(AttributeError):
         source.map
 
-    obs = aipy.phs.ArrayLocation(('0:00','0:00'))
+    obs = aipy.phs.ArrayLocation(("0:00", "0:00"))
     obs.set_ephemtime(epoch)
     source.compute(obs)
-    assert len(source.get_crds('eq', ncrd=2)) == 2
-    assert len(source.get_crds('top', ncrd=2)) == 2
-    assert len(source.get_crds('eq', ncrd=3)) == 3
-    assert len(source.get_crds('top', ncrd=3)) == 3
+    assert len(source.get_crds("eq", ncrd=2)) == 2
+    assert len(source.get_crds("top", ncrd=2)) == 2
+    assert len(source.get_crds("eq", ncrd=3)) == 3
+    assert len(source.get_crds("top", ncrd=3)) == 3
     assert source.map.shape == (3, 3)
     return
 
+
 def test_ephem_interface():
     """Test the aipy.phs.RadioFixedBody ephem interface"""
-    obs = aipy.phs.ArrayLocation(('0:00','0:00'))
+    obs = aipy.phs.ArrayLocation(("0:00", "0:00"))
     for epoch in [ephem.B1900, ephem.B1950, ephem.J2000]:
         for ra in np.arange(np.pi / 8, 2 * np.pi, np.pi / 8):
             for dec in np.arange(-3 * np.pi / 8, np.pi / 2, np.pi / 8):
@@ -125,12 +135,13 @@ def test_ephem_interface():
                 assert np.isclose(source.a_dec, source._dec, atol=1e-9)
     return
 
+
 def test_ephem_compute():
     """Test the aipy.phs.RadioFixedBody ephem calculations"""
     epoch = ephem.J2000
-    obs = aipy.phs.ArrayLocation(('0:00','0:00'))
+    obs = aipy.phs.ArrayLocation(("0:00", "0:00"))
     obs.set_ephemtime(epoch)
-    diagonal = np.array([[1., 0, 0], [0, 1, 0], [0, 0, 1]])
+    diagonal = np.array([[1.0, 0, 0], [0, 1, 0], [0, 0, 1]])
     for ra in np.arange(np.pi / 8, 2 * np.pi, np.pi / 8):
         for dec in np.arange(-3 * np.pi / 8, np.pi / 2, np.pi / 8):
             source = aipy.phs.RadioFixedBody(ra, dec, epoch=epoch)
@@ -140,40 +151,42 @@ def test_ephem_compute():
             assert np.isclose(err, 0.0, atol=1e-10)
     return
 
+
 def test_get_crds(self):
     """Test the aipy.phs.RadioFixedBody calculated coordinates"""
     epoch = ephem.J2000
-    obs = aipy.phs.ArrayLocation(('0:00','0:00'))
+    obs = aipy.phs.ArrayLocation(("0:00", "0:00"))
     obs.set_ephemtime(epoch)
     for ra in np.arange(np.pi / 8, 2 * np.pi, np.pi / 8):
         for dec in np.arange(-3 * np.pi / 8, np.pi / 2, np.pi / 8):
             source = aipy.phs.RadioFixedBody(ra, dec, epoch=epoch)
             source.compute(obs)
-            ra, dec = source.get_crds('eq', ncrd=2)
+            ra, dec = source.get_crds("eq", ncrd=2)
             assert np.isclose(source.ra, ra)
             assert np.isclose(source.dec, dec)
 
-            az, alt = source.get_crds('top', ncrd=2)
+            az, alt = source.get_crds("top", ncrd=2)
             assert np.isclose(source.az, az)
             assert np.isclose(source.alt, alt)
 
-            eq = source.get_crds('eq', ncrd=3)
+            eq = source.get_crds("eq", ncrd=3)
             ra, dec = aipy.coord.eq2radec(eq)
             assert np.isclose(source.ra, ra, atol=1e-10)
             assert np.isclose(source.dec, dec, atol=1e-10)
 
-            top = source.get_crds('top', ncrd=3)
+            top = source.get_crds("top", ncrd=3)
             az, alt = aipy.coord.top2azalt(top)
             assert np.isclose(source.az, az, atol=1e-10)
             assert np.isclose(source.alt, alt, atol=1e-10)
     return
 
+
 def test_add_srcs(source_catalog):
     """Test adding sources to a aipy.phs.SrcCatalog() catalog"""
     srcs, cat = source_catalog
     cat2 = aipy.phs.SrcCatalog()
-    src1b = aipy.phs.RadioFixedBody('0:00', '0:00', name='src1')
-    src4 = aipy.phs.RadioFixedBody('4:00', '4:00', name='src4')
+    src1b = aipy.phs.RadioFixedBody("0:00", "0:00", name="src1")
+    src4 = aipy.phs.RadioFixedBody("4:00", "4:00", name="src4")
     cat2.add_srcs(srcs)
     assert len(cat2) == 3
     cat2.add_srcs(src1b)
@@ -186,14 +199,16 @@ def test_add_srcs(source_catalog):
         assert src == cat2[name]
     return
 
+
 def test_get_srcs(source_catalog):
     """Test retrieving sources from a aipy.phs.SrcCatalog() catalog"""
     srcs, cat = source_catalog
-    assert cat.get_srcs('src1', 'src2', 'src3') == srcs
-    assert cat.get_srcs(['src1', 'src2']) == srcs[:2]
+    assert cat.get_srcs("src1", "src2", "src3") == srcs
+    assert cat.get_srcs(["src1", "src2"]) == srcs[:2]
     with pytest.raises(KeyError):
         cat.get_srcs("bad")
     return
+
 
 def test_compute(source_catalog):
     """Test the ephem interfaces for a aipy.phs.SrcCatalog() catalog"""
@@ -205,34 +220,37 @@ def test_compute(source_catalog):
         assert src.dec is not None
     return
 
+
 def test_get_crds(source_catalog):
     """Test coordinates calculated from a aipy.phs.SrcCatalog() catalog"""
     srcs, cat = source_catalog
     obs = ephem.Observer()
     cat.compute(obs)
-    crd1 = cat.get_crds('eq', srcs=['src1'])
+    crd1 = cat.get_crds("eq", srcs=["src1"])
     assert crd1.shape == (3, 1)
-    assert np.allclose(crd1[:, 0], srcs[0].get_crds('eq'))
+    assert np.allclose(crd1[:, 0], srcs[0].get_crds("eq"))
 
-    crd2 = cat.get_crds('top', srcs=['src1', 'src2'])
+    crd2 = cat.get_crds("top", srcs=["src1", "src2"])
     assert crd2.shape == (3, 2)
     return
+
 
 def test_get(source_catalog):
     """Test retrieving source attributes from a aipy.phs.SrcCatalog() catalog"""
     srcs, cat = source_catalog
-    mfreq = cat.get('mfreq', srcs=['src1'])
+    mfreq = cat.get("mfreq", srcs=["src1"])
     assert mfreq.shape == (1,)
 
-    mfreq = cat.get('mfreq', srcs=['src1','src2'])
+    mfreq = cat.get("mfreq", srcs=["src1", "src2"])
     assert mfreq.shape == (2,)
 
-    ionrefs = cat.get('ionref', srcs=['src1', 'src2'])
+    ionrefs = cat.get("ionref", srcs=["src1", "src2"])
     assert ionrefs.shape == (2, 2)
 
-    srcshapes = cat.get('srcshape', srcs=['src1', 'src2'])
-    assert srcshapes.shape == (3,2)
+    srcshapes = cat.get("srcshape", srcs=["src1", "src2"])
+    assert srcshapes.shape == (3, 2)
     return
+
 
 def test_beam_attributes(test_beam):
     """Test accessing aipy.phs.Beam attributes"""
@@ -242,6 +260,7 @@ def test_beam_attributes(test_beam):
     assert np.allclose(bm.afreqs, freqs)
     return
 
+
 def test_beam_select_chans(test_beam):
     """Test selecting various aipy.phs.Beam channels"""
     freqs, bm = test_beam
@@ -250,6 +269,7 @@ def test_beam_select_chans(test_beam):
     assert np.allclose(bm.chans, chans)
     assert np.allclose(bm.afreqs, freqs.take(chans))
     return
+
 
 def test_antenna_attributes(test_antenna):
     """Test accessing aipy.phs.Antenna attributes"""
@@ -266,6 +286,7 @@ def test_antenna_attributes(test_antenna):
     assert np.allclose(-ant, -pos)
     return
 
+
 def test_antenna_select_chans(test_antenna):
     """Test selecting various aipy.phs.Antenna channels"""
     freqs, bm, ant = test_antenna
@@ -275,6 +296,7 @@ def test_antenna_select_chans(test_antenna):
     assert np.allclose(ant.phsoff, 1)
     return
 
+
 def test_array_location_attributes(test_array_location):
     al = test_array_location
     assert al.pressure == 0.0
@@ -283,6 +305,7 @@ def test_array_location_attributes(test_array_location):
     assert al.elev == 0.0
     assert np.allclose(al._eq2zen, aipy.coord.eq2top_m(0.0, 0.0))
     return
+
 
 def test_array_location_set_jultime(test_array_location):
     al = test_array_location
@@ -295,15 +318,17 @@ def test_array_location_set_jultime(test_array_location):
     eq2now_rnd = np.round(al._eq2now, 7)
     assert np.allclose(
         eq2now_rnd,
-        np.array([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]]),
+        np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
     )
     return
+
 
 def test_array_location_get_jultime(test_array_location):
     al = test_array_location
     al.set_jultime(2454555)
     assert al.get_jultime() == 2454555
     return
+
 
 def test_antenna_array_attributes(test_antenna_array):
     ants, aa = test_antenna_array
@@ -314,6 +339,7 @@ def test_antenna_array_attributes(test_antenna_array):
         assert len(aa[:i]) == i
     return
 
+
 def test_antenna_array_select_chans(test_antenna_array):
     ants, aa = test_antenna_array
     chans = np.array([1, 2, 3])
@@ -322,6 +348,7 @@ def test_antenna_array_select_chans(test_antenna_array):
         assert np.allclose(ant.beam.chans, chans)
     return
 
+
 def test_antenna_array_ij2bl(test_antenna_array):
     ants, aa = test_antenna_array
     assert aa.ij2bl(0, 1) == 258
@@ -329,12 +356,14 @@ def test_antenna_array_ij2bl(test_antenna_array):
     assert aa.ij2bl(1, 2) == 515
     return
 
+
 def test_antenna_array_bl2ij(test_antenna_array):
     ants, aa = test_antenna_array
     assert aa.bl2ij(258) == (0, 1)
     assert aa.bl2ij(259) == (0, 2)
     assert aa.bl2ij(515) == (1, 2)
     return
+
 
 def test_antenna_array_get_baseline(test_antenna_array):
     ants, aa = test_antenna_array
@@ -352,7 +381,7 @@ def test_antenna_array_get_baseline(test_antenna_array):
             aa.set_jultime(2454554.9)
             bl_rnd = np.round(aa.get_baseline(0, j, "e"), 7)
             assert not np.allclose(bl_rnd, ant.pos)
-    src = aipy.phs.RadioFixedBody('12:00', '0:00')
+    src = aipy.phs.RadioFixedBody("12:00", "0:00")
     src.compute(aa)
     with pytest.raises(aipy.phs.PointingError):
         aa.get_baseline(0, 1, src)
@@ -365,6 +394,7 @@ def test_antenna_array_get_baseline(test_antenna_array):
         assert np.allclose(zbl_rnd, sbl_rnd)
     return
 
+
 def test_antenna_array_get_phs_offset(test_antenna_array):
     ants, aa = test_antenna_array
     assert np.allclose(aa.get_phs_offset(0, 0), 0)
@@ -372,6 +402,7 @@ def test_antenna_array_get_phs_offset(test_antenna_array):
     assert np.allclose(aa.get_phs_offset(0, 2), 2)
     assert np.allclose(aa.get_phs_offset(0, 3), 3)
     return
+
 
 def test_antenna_array_gen_uvw(test_antenna_array):
     ants, aa = test_antenna_array
@@ -394,6 +425,7 @@ def test_antenna_array_gen_uvw(test_antenna_array):
     assert np.allclose(w, 0 * afreqs)
     return
 
+
 def test_antenna_array_gen_phs(test_antenna_array):
     ants, aa = test_antenna_array
     aa.select_chans([1, 2, 3])
@@ -403,9 +435,9 @@ def test_antenna_array_gen_phs(test_antenna_array):
         src = aipy.phs.RadioFixedBody(aa.sidereal_time(), aa.lat, epoch=aa.epoch)
         src.compute(aa)
         if t > 0.5:
-            seq = src.get_crds('eq', ncrd=3)
+            seq = src.get_crds("eq", ncrd=3)
             if t > 0.75:
-                seq = np.array([seq,seq]).transpose()
+                seq = np.array([seq, seq]).transpose()
         else:
             seq = src
         phs = np.round(aa.gen_phs(seq, 0, 1, mfreq=0.1), 6)
@@ -421,12 +453,11 @@ def test_antenna_array_gen_phs(test_antenna_array):
         assert np.allclose(phs, 1 + 0j)
 
     phs1 = aa.gen_phs(src, 0, 2, mfreq=0.1, ionref=(0.001, 0.001))
-    phs2 = aa.gen_phs(
-        src, 0, 2, mfreq=0.1, srcshape=(0.01, 0.01, 0), resolve_src=True
-    )
-    assert not np.any(np.isclose(phs1, 1+0j))
-    assert not np.any(np.isclose(phs2, 1+0j))
+    phs2 = aa.gen_phs(src, 0, 2, mfreq=0.1, srcshape=(0.01, 0.01, 0), resolve_src=True)
+    assert not np.any(np.isclose(phs1, 1 + 0j))
+    assert not np.any(np.isclose(phs2, 1 + 0j))
     return
+
 
 def test_antenna_array_resolve_src(test_antenna_array):
     ants, aa = test_antenna_array
@@ -452,6 +483,7 @@ def test_antenna_array_resolve_src(test_antenna_array):
     assert np.isclose(amp, 2 * aipy.phs.j1(x) / x)
     return
 
+
 def test_refract(test_antenna_array):
     ants, aa = test_antenna_array
     aa.select_chans([1, 2, 3])
@@ -460,7 +492,7 @@ def test_refract(test_antenna_array):
     ones = np.ones((1, 3), dtype=np.float64)
     # Test non-vectors, dra->u association
     dw = aa.refract(ones, zeros, mfreq=0.1, ionref=(0.001, 0))
-    ans = 0.001 / (afreqs / 0.1)**2
+    ans = 0.001 / (afreqs / 0.1) ** 2
     ans.shape = (1, ans.size)
     assert len(dw.shape) == 2
     assert np.allclose(np.round(dw, 10), np.round(ans, 10))
@@ -481,25 +513,27 @@ def test_refract(test_antenna_array):
     ones = np.ones((2, 3), dtype=np.float64)
     ionref = (np.array([0, 0.001]), np.array([0.001, 0]))
     mfreq = np.array([0.1, 0.2])
-    ans = np.array([0.002 / (afreqs / 0.1)**2, 0.002 / (afreqs / 0.2)**2])
+    ans = np.array([0.002 / (afreqs / 0.1) ** 2, 0.002 / (afreqs / 0.2) ** 2])
     dw = aa.refract(2 * ones, 2 * ones, mfreq=mfreq, ionref=ionref)
     assert np.allclose(np.round(dw, 10), np.round(ans, 10))
     return
+
 
 def test_antenna_array_phs2src(test_antenna_array):
     ants, aa = test_antenna_array
     aa.select_chans([1, 2, 3])
     aa.set_jultime(2454555.0)
-    src = aipy.phs.RadioFixedBody('0:00', '20:00')
+    src = aipy.phs.RadioFixedBody("0:00", "20:00")
     src.compute(aa)
     assert np.allclose(aa.phs2src(1.0, src, 0, 1), aa.gen_phs(src, 0, 1))
     return
+
 
 def test_unphs2src(test_antenna_array):
     ants, aa = test_antenna_array
     aa.select_chans([1, 2, 3])
     aa.set_jultime(2454555.0)
-    src = aipy.phs.RadioFixedBody('0:00', '20:00')
+    src = aipy.phs.RadioFixedBody("0:00", "20:00")
     src.compute(aa)
     assert np.allclose(aa.unphs2src(aa.gen_phs(src, 0, 1), src, 0, 1), 1.0)
     return

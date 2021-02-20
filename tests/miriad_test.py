@@ -8,6 +8,7 @@ import numpy as np
 from aipy import miriad
 from aipy import _miriad
 
+
 @pytest.fixture(scope="function")
 def test_file_r(tmp_path):
     filename1 = str(tmp_path / "test1.uv")
@@ -30,6 +31,7 @@ def test_file_r(tmp_path):
 
     return
 
+
 @pytest.fixture(scope="function")
 def test_file_j(tmp_path):
     filename = str(tmp_path / "test1.uv")
@@ -51,9 +53,11 @@ def test_file_j(tmp_path):
 
     return
 
+
 def test_maxchan():
     assert type(_miriad.MAXCHAN) == int
     return
+
 
 def test_immediate_corr(test_file_r):
     """Test immediate corr of a Miriad UV file"""
@@ -61,6 +65,7 @@ def test_immediate_corr(test_file_r):
     uv = miriad.UV(filename2, status="new")
     assert uv.vartable["corr"] == "r"
     return
+
 
 def test_vartable_r(test_file_r):
     """Test accesing vartable data in a Miriad UV file"""
@@ -70,6 +75,7 @@ def test_vartable_r(test_file_r):
     assert uv1.vartable["nchan"] == "i"
     assert uv1.vartable["pol"] == "i"
     return
+
 
 def test_data_r(test_file_r):
     """Test writing data from a Miriad UV file"""
@@ -93,6 +99,7 @@ def test_data_r(test_file_r):
     assert np.allclose(d, data)
     return
 
+
 def test_vartable_j(test_file_j):
     """Test accesing vartable data in a Miriad UV file"""
     filename, data = test_file_j
@@ -101,6 +108,7 @@ def test_vartable_j(test_file_j):
     assert uv.vartable["nchan"] == "i"
     assert uv.vartable["pol"] == "i"
     return
+
 
 def test_data_j(test_file_j):
     """Test writing data from a Miriad UV file"""
