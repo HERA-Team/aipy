@@ -43,7 +43,7 @@ jobs:
           pytest --cov=aipy --cov-report xml:coverage.xml
 
       - name: Upload coverage
-        uses: codecov/codedov-action@v1
+        uses: codecov/codecov-action@v1
         with:
           files: ./coverage.xml
           flags: unittests
