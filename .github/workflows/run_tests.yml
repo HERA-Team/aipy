@@ -38,6 +38,10 @@ jobs:
             exit 1;
           fi
 
+      - name: Install
+        run: |
+          pip install -e .
+
       - name: Run Tests
         run: |
           pytest --cov=aipy --cov-report xml:coverage.xml
