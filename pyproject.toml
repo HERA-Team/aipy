@@ -1,3 +1,18 @@
 [build-system]
 requires = ["setuptools>=42", "wheel", "oldest-supported-numpy"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "tests/alm_test.py",
+    "tests/amp_test.py",
+    "tests/coord_test.py",
+    "tests/deconv_test.py",
+    "tests/dsp_test.py",
+    "tests/healpix_test.py",
+    "tests/miriad_test.py",
+    "tests/phs_test.py",
+    "tests/scripting_test.py",
+    "tests/twodgauss_test.py",
+]
