@@ -13,39 +13,39 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.6, 3.7, 3.8, 3.9]
-      env:
-        OS: ${{ matrix.os }}
-        PYTHON: ${{ matrix.python-version }}
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: ${{ matrix.python-version }}
 
-      steps:
-        - uses: actions/checkout@v2
+    steps:
+      - uses: actions/checkout@v2
 
-        - name: set up Python ${{ matrix.python-version }}
-          uses: conda-incubator/setup-miniconda@v2.0.0
-          with:
-            auto-update-conda: true
-            miniconda-version: "latest"
-            python-version: ${{ matrix.python-version }}
-            environment-file: ci/test_environment.yml
-            activate-environment: aipy_tests
+      - name: set up Python ${{ matrix.python-version }}
+        uses: conda-incubator/setup-miniconda@v2.0.0
+        with:
+          auto-update-conda: true
+          miniconda-version: "latest"
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/test_environment.yml
+          activate-environment: aipy_tests
 
-        - name: Conda Info
-          run: |
-            conda info -a
-            conda list
-            PYVER=`python -c "import sys; print('{:d}.{:d}'.format(sys.version_info.major, sys.version_info.minor))"`
-            if [[ $PYVER != $PYTHON ]]; then
-              exit 1;
-            fi
+      - name: Conda Info
+        run: |
+          conda info -a
+          conda list
+          PYVER=`python -c "import sys; print('{:d}.{:d}'.format(sys.version_info.major, sys.version_info.minor))"`
+          if [[ $PYVER != $PYTHON ]]; then
+            exit 1;
+          fi
 
-        - name: Run Tests
-          run: |
-            pytest --cov=aipy --cov-report xml:coverage.xml
+      - name: Run Tests
+        run: |
+          pytest --cov=aipy --cov-report xml:coverage.xml
 
-        - name: Upload coverage
-          uses: codecov/codedov-action@v1
-          with:
-            files: ./coverage.xml
-            flags: unittests
-            env_vars: PYTHON
-            verbose: true
+      - name: Upload coverage
+        uses: codecov/codedov-action@v1
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          env_vars: PYTHON
+          verbose: true
