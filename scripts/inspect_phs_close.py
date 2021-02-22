@@ -50,7 +50,7 @@ for uvfile in args:
         if not pol in DD.keys(): DD[pol] = {}
         if not (i,j) in DD[pol].keys(): DD[pol][(i,j)] = np.zeros_like(d)
         #Construct flagging kernel
-        flags = np.logical_not(d.mask).astype(np.float)
+        flags = np.logical_not(d.mask).astype(np.float64)
         gain = np.sqrt(np.average(flags**2))
         ker = np.fft.ifft(flags)
         d = d.filled(0)

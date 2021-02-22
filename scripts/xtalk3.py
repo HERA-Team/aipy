@@ -55,7 +55,7 @@ if opts.reprocess:
             gain[bl].append(np.average(adat[chans[0]:chans[1]]))
             dat /= gain[bl][-1]
             xsum[bl] = xsum.get(bl, 0) + dat
-            cnt[bl] = cnt.get(bl, 0) + np.logical_not(adat.mask).astype(np.int)
+            cnt[bl] = cnt.get(bl, 0) + np.logical_not(adat.mask).astype(np.int_)
     for bl in xsum: xsum[bl] /= np.where(cnt[bl] == 0, 1, cnt[bl])
     for c, jd in enumerate(times):
         repfile = '%f.xtalk.rep.npz' % jd

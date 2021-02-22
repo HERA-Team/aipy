@@ -1,12 +1,13 @@
-import unittest
+# -*- coding: utf-8 -*-
+# Copyright (c) 2018 Aaron Parsons
+# Licensed under the GPLv3
+
 import aipy.dsp as dsp
+import numpy as np
 
-class TestWindows(unittest.TestCase):
-    def test_kaiser2(self):
-        win = dsp.gen_window(1024, 'kaiser2')
-        self.assertAlmostEqual(win[0], 0.01147993)
-        self.assertAlmostEqual(win[1], 0.01192681)
-        self.assertAlmostEqual(win[2], 0.01238142)
 
-if __name__ == '__main__':
-    unittest.main()
+def test_kaiser2():
+    win = dsp.gen_window(1024, "kaiser2")
+    assert np.allclose(win[0], 0.01147993)
+    assert np.allclose(win[1], 0.01192681)
+    assert np.allclose(win[2], 0.01238142)

@@ -86,7 +86,7 @@ for uvfile in args:
                 cat.compute(aa)
         bl = a.miriad.ij2bl(i,j)
         try:
-            flags = np.logical_not(f).astype(np.float)
+            flags = np.logical_not(f).astype(np.float64)
             # Check first if source is up
             if not src is None:
                 d = aa.phs2src(d, src, i, j)

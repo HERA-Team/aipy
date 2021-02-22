@@ -252,10 +252,10 @@ class HealpixMap(HealpixBase):
         else:
             m = np.zeros_like(self.map)
             px = px.reshape(px.size,1)
-            cnt = np.zeros(self.map.shape, dtype=np.bool)
+            cnt = np.zeros(self.map.shape, dtype=np.bool_)
             val = mk_arr(val, dtype=m.dtype)
             utils.add2array(m, px, val)
-            utils.add2array(cnt, px, np.ones(val.shape, dtype=np.bool))
+            utils.add2array(cnt, px, np.ones(val.shape, dtype=np.bool_))
             self.map = np.where(cnt, m, self.map)
     def from_hpm(self, hpm):
         """Initialize this HealpixMap with data from another.  Takes care

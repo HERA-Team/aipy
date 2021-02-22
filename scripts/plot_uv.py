@@ -173,10 +173,10 @@ for uvfile in args:
         if opts.delay:
             w = a.dsp.gen_window(d.shape[-1], window=opts.window)
             if opts.unmask:
-                flags = np.ones(d.shape, dtype=np.float)
+                flags = np.ones(d.shape, dtype=np.float64)
                 d = d.data
             else:
-                flags = np.logical_not(d.mask).astype(np.float)
+                flags = np.logical_not(d.mask).astype(np.float64)
                 d = d.filled(0)
             d = np.fft.ifft(d*w)
             ker = np.fft.ifft(flags*w)

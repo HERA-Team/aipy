@@ -1,69 +1,67 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
+# Copyright (c) 2008 Aaron Parsons
+# Licensed under the GPLv3
 
-from __future__ import print_function, division, absolute_import
+import pytest
+import numpy as np
+import aipy
 
-import unittest
-import aipy as a, numpy as n
-#import pylab as p
 
-class TestDeconv(unittest.TestCase):
-    def setUp(self):
-        SIZE = 100
-        NOISE = .001
-        i = n.zeros((SIZE,SIZE), n.float)
-        i[10,10] = 10.
-        i[20:25,20:25] = 1.
-        i[30:40,30:40] = .1
-        self.b = a.img.gaussian_beam(2, shape=i.shape)
-        self.b[0,0] = .05
+@pytest.fixture(scope="function")
+def init_deconv():
+    SIZE = 100
+    NOISE = 0.001
+    img = np.zeros((SIZE, SIZE), np.float64)
+    img[10, 10] = 10
+    img[20:25, 20:25] = 1
+    img[30:40, 30:40] = 0.1
 
-        self.d = n.abs(n.fft.ifft2(n.fft.fft2(i) * n.fft.fft2(self.b)))
-        ns = n.random.normal(scale=NOISE, size=i.shape)
-        self.d = n.abs(self.d + ns)
+    bm = aipy.img.gaussian_beam(2, shape=img.shape)
+    bm[0, 0] = 0.05
 
-    def test_clean(self):
-        """Test that the standard clean deconvolution runs"""
-        #print 'Clean'
-        #p.subplot(221)
-        c,info = a.deconv.clean(self.d, self.b, verbose=False)
-        #p.title('CLEAN')
-        #p.imshow(n.log10(c), vmin=-5, vmax=1)
+    data = np.abs(np.fft.ifft2(np.fft.fft2(img) * np.fft.fft2(bm)))
+    ns = np.random.normal(scale=NOISE, size=img.shape)
+    data = np.abs(data + ns)
 
-    def test_lsq(self):
-        """Test that least squared deconvolution runs"""
-        #print 'LSQ'
-        #p.subplot(222)
-        c,info = a.deconv.lsq(self.d, self.b, verbose=False)
-        #p.title('LSQ')
-        #p.imshow(n.log10(c), vmin=-5, vmax=1)
+    yield data, bm
 
-    def test_mem(self):
-        """Test the maximum entropy deconvolution runs"""
-        #print 'MEM'
-        #p.subplot(223)
-        c,info = a.deconv.maxent(self.d, self.b, n.var(self.d**2)*.5, verbose=False)
-        #p.title('MEM')
-        #p.imshow(n.log10(c), vmin=-5, vmax=1)
+    # clean up when done
+    del data, bm
 
-    def test_anneal(self):
-        """Test that simulated annealing deconvolution runs"""
-        #print 'Anneal'
-        #p.subplot(224)
-        c,info = a.deconv.anneal(self.d, self.b, verbose=False)
-        #p.title('Anneal')
-        #p.imshow(n.log10(c), vmin=-5, vmax=1)
-        #p.colorbar()
-        #p.show()
+    return
 
-class TestSuite(unittest.TestSuite):
-    """A unittest.TestSuite class which contains all of the aipy.deconv unit tests."""
 
-    def __init__(self):
-        unittest.TestSuite.__init__(self)
+def test_clean(init_deconv):
+    """Test that the standard clean deconvolution runs"""
+    data, bm = init_deconv
+    cln, info = aipy.deconv.clean(data, bm, verbose=False)
+    assert True
 
-        loader = unittest.TestLoader()
-        self.addTests(loader.loadTestsFromTestCase(TestDeconv))
+    return
 
-if __name__ == '__main__':
-    unittest.main()
+
+def test_lsq(init_deconv):
+    """Test that least squared deconvolution runs"""
+    data, bm = init_deconv
+    cln, info = aipy.deconv.lsq(data, bm, verbose=False)
+    assert True
+
+    return
+
+
+def test_mem(init_deconv):
+    """Test the maximum entropy deconvolution runs"""
+    data, bm = init_deconv
+    cln, info = aipy.deconv.maxent(data, bm, np.var(data ** 2) * 0.5, verbose=False)
+    assert True
+
+    return
+
+
+def test_anneal(init_deconv):
+    """Test that simulated annealing deconvolution runs"""
+    data, bm = init_deconv
+    cln, info = aipy.deconv.anneal(data, bm, verbose=False)
+    assert True
+
+    return

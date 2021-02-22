@@ -18,7 +18,7 @@ __all__ = ['interpolate', 'default_filter']
 def subsample(a, factor):
     rv = np.zeros((a.size, factor), dtype=a.dtype)
     rv[:,0] = a
-    wgts = np.zeros((a.size, factor), dtype=np.float)
+    wgts = np.zeros((a.size, factor), dtype=np.float64)
     wgts[:,0] = 1.
     return rv.flatten(), wgts.flatten()
 
@@ -37,7 +37,7 @@ def default_filter(xs, freq=.25):
     """A basic smoothing filter using a Hamming window and a sinc function
     of the specified frequency.  Input a sample grid [-x,x] to get the
     FIR coefficients used for smoothing."""
-    i = np.arange(xs.size, dtype=np.float) / xs.size * 2*np.pi
+    i = np.arange(xs.size, dtype=np.float64) / xs.size * 2*np.pi
     return (1-np.cos(i)) * np.sinc(freq*xs)
 
 def interpolate(ys, factor, filter=default_filter, order=4):

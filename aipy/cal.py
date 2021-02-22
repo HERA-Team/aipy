@@ -11,7 +11,7 @@ import sys
 from . import src
 
 def get_freqs(sdf, sfreq, nchan):
-    return np.arange(nchan, dtype=np.float) * sdf + sfreq
+    return np.arange(nchan, dtype=np.float64) * sdf + sfreq
 
 def get_aa(*args):
     '''Return the AntennaArray specified by cal_key, which should be the

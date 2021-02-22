@@ -1,112 +1,134 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2010 Aaron Parsons
+# Licensed under the GPLv3
 
-from __future__ import print_function, division, absolute_import
+import pytest
+import numpy as np
 
-import tempfile
-import unittest, numpy as np, os
-import aipy.miriad as m, aipy._miriad as _m
+from aipy import miriad
+from aipy import _miriad
 
-class TestMiriadUV(unittest.TestCase):
-    def setUp(self):
-        self.tmppath = tempfile.mkdtemp(prefix='miriad-test-', suffix='.tmp')
-        self.filename1 = os.path.join(self.tmppath, 'test1.uv')
-        self.filename2 = os.path.join(self.tmppath, 'test2.uv')
-        uv = m.UV(self.filename1, status='new', corrmode='r')
-        uv['history'] = 'Made this file from scratch.\n'
-        uv.add_var('nchan', 'i')
-        uv.add_var('pol', 'i')
-        uv['nchan'] = 4
-        uv['pol'] = -5
-        uvw = np.array([1,2,3], dtype=np.double)
-        preamble = (uvw, 12345.6789, (0,1))
-        self.data = np.ma.array([1j,2,3j,4], mask=[0,0,1,0], dtype=np.complex64)
-        uv.write(preamble,self.data)
-        uv['pol'] = -6
-        uv.write(preamble,self.data)
-    def test_maxchan(self):
-        self.assertEqual(type(_m.MAXCHAN), int)
-    def test_immediate_corr(self):
-        """Test immediate corr of a Miriad UV file"""
-        uv = m.UV(self.filename2, status='new')
-        self.assertEqual(uv.vartable['corr'], 'r')
-    def test_vartable(self):
-        """Test accesing vartable data in a Miriad UV file"""
-        uv = m.UV(self.filename1)
-        self.assertEqual(uv.vartable['corr'], 'r')
-        self.assertEqual(uv.vartable['nchan'], 'i')
-        self.assertEqual(uv.vartable['pol'], 'i')
-    def test_data(self):
-        """Test writing data from a Miriad UV file"""
-        uv = m.UV(self.filename1)
-        self.assertEqual(uv['history'], 'Made this file from scratch.\n')
-        (uvw,t,bl),d = uv.read()
-        self.assertEqual(uv['nchan'], 4)
-        self.assertEqual(uv['pol'], -5)
-        self.assertEqual(bl, (0,1))
-        self.assertEqual(t, 12345.6789)
-        self.assertTrue(np.all(uvw == np.array([1,2,3], dtype=np.double)))
-        self.assertTrue(np.all(d == self.data))
-        (uvw,t,bl),d = uv.read()
-        self.assertEqual(uv['nchan'], 4)
-        self.assertEqual(uv['pol'], -6)
-        self.assertEqual(bl, (0,1))
-        self.assertEqual(t, 12345.6789)
-        self.assertTrue(np.all(uvw == np.array([1,2,3], dtype=np.double)))
-        self.assertTrue(np.all(d == self.data))
-    def tearDown(self):
-        os.system("rm -rf %s" % self.tmppath)
 
-class TestMiriadUV_corrj(unittest.TestCase):
-    def setUp(self):
-        self.tmppath = tempfile.mkdtemp(prefix='miriad-test-', suffix='.tmp')
-        self.filename1 = os.path.join(self.tmppath, 'test1.uv')
-        uv = m.UV(self.filename1, status='new', corrmode='j')
-        uv['history'] = 'Made this file from scratch.\n'
-        uv.add_var('nchan', 'i')
-        uv.add_var('pol', 'i')
-        uv['nchan'] = 4
-        uv['pol'] = -5
-        uvw = np.array([1,2,3], dtype=np.double)
-        preamble = (uvw, 12345.6789, (0,1))
-        self.data = np.ma.array([1j,2,3j,4], mask=[0,0,1,0], dtype=np.complex64)
-        uv.write(preamble,self.data)
-        uv['pol'] = -6
-        uv.write(preamble,self.data)
-    def test_vartable(self):
-        """Test accesing vartable data in a Miriad UV file"""
-        uv = m.UV(self.filename1, corrmode='j')
-        self.assertEqual(uv.vartable['corr'], 'j')
-        self.assertEqual(uv.vartable['nchan'], 'i')
-        self.assertEqual(uv.vartable['pol'], 'i')
-    def test_data(self):
-        """Test writing data from a Miriad UV file"""
-        uv = m.UV(self.filename1)
-        self.assertEqual(uv['history'], 'Made this file from scratch.\n')
-        (uvw,t,bl),d = uv.read()
-        self.assertEqual(uv['nchan'], 4)
-        self.assertEqual(uv['pol'], -5)
-        self.assertEqual(bl, (0,1))
-        self.assertEqual(t, 12345.6789)
-        self.assertTrue(np.all(uvw == np.array([1,2,3], dtype=np.double)))
-        self.assertTrue(np.all(np.abs(d - self.data) < 1e-4))
-        (uvw,t,bl),d = uv.read()
-        self.assertEqual(uv['nchan'], 4)
-        self.assertEqual(uv['pol'], -6)
-        self.assertEqual(bl, (0,1))
-        self.assertEqual(t, 12345.6789)
-        self.assertTrue(np.all(uvw == np.array([1,2,3], dtype=np.double)))
-        self.assertTrue(np.all(np.abs(d - self.data) < 1e-4))
-    def tearDown(self):
-        os.system("rm -rf %s" % self.tmppath)
+@pytest.fixture(scope="function")
+def test_file_r(tmp_path):
+    filename1 = str(tmp_path / "test1.uv")
+    filename2 = str(tmp_path / "test2.uv")
+    uv = miriad.UV(filename1, status="new", corrmode="r")
+    uv["history"] = "Made this file from scratch.\n"
+    uv.add_var("nchan", "i")
+    uv.add_var("pol", "i")
+    uv["nchan"] = 4
+    uv["pol"] = -5
+    uvw = np.array([1, 2, 3], dtype=np.float64)
+    preamble = (uvw, 12345.6789, (0, 1))
+    data = np.ma.array([1j, 2, 3j, 4], mask=[0, 0, 1, 0], dtype=np.complex64)
+    uv.write(preamble, data)
+    uv["pol"] = -6
+    uv.write(preamble, data)
+    del uv
 
-class TestSuite(unittest.TestSuite):
-    """A unittest.TestSuite class which contains all of the aipy.miriad unit tests."""
+    yield filename1, filename2, data
 
-    def __init__(self):
-        unittest.TestSuite.__init__(self)
+    return
 
-        loader = unittest.TestLoader()
-        self.addTests(loader.loadTestsFromTestCase(TestMiriadUV))
 
-if __name__ == '__main__':
-    unittest.main()
+@pytest.fixture(scope="function")
+def test_file_j(tmp_path):
+    filename = str(tmp_path / "test1.uv")
+    uv = miriad.UV(filename, status="new", corrmode="j")
+    uv["history"] = "Made this file from scratch.\n"
+    uv.add_var("nchan", "i")
+    uv.add_var("pol", "i")
+    uv["nchan"] = 4
+    uv["pol"] = -5
+    uvw = np.array([1, 2, 3], dtype=np.float64)
+    preamble = (uvw, 12345.6789, (0, 1))
+    data = np.ma.array([1j, 2, 3j, 4], mask=[0, 0, 1, 0], dtype=np.complex64)
+    uv.write(preamble, data)
+    uv["pol"] = -6
+    uv.write(preamble, data)
+    del uv
+
+    yield filename, data
+
+    return
+
+
+def test_maxchan():
+    assert type(_miriad.MAXCHAN) == int
+    return
+
+
+def test_immediate_corr(test_file_r):
+    """Test immediate corr of a Miriad UV file"""
+    filename1, filename2, data = test_file_r
+    uv = miriad.UV(filename2, status="new")
+    assert uv.vartable["corr"] == "r"
+    return
+
+
+def test_vartable_r(test_file_r):
+    """Test accesing vartable data in a Miriad UV file"""
+    filename1, filename2, data = test_file_r
+    uv1 = miriad.UV(filename1)
+    assert uv1.vartable["corr"] == "r"
+    assert uv1.vartable["nchan"] == "i"
+    assert uv1.vartable["pol"] == "i"
+    return
+
+
+def test_data_r(test_file_r):
+    """Test writing data from a Miriad UV file"""
+    filename1, filename2, data = test_file_r
+    uv = miriad.UV(filename1)
+    assert uv["history"] == "Made this file from scratch.\n"
+    (uvw, t, bl), d = uv.read()
+    assert uv["nchan"] == 4
+    assert uv["pol"] == -5
+    assert bl == (0, 1)
+    assert np.isclose(t, 12345.6789)
+    assert np.allclose(uvw, np.array([1, 2, 3], dtype=np.float64))
+    assert np.allclose(d, data)
+
+    (uvw, t, bl), d = uv.read()
+    assert uv["nchan"] == 4
+    assert uv["pol"] == -6
+    assert bl == (0, 1)
+    assert np.isclose(t, 12345.6789)
+    assert np.allclose(uvw, np.array([1, 2, 3], dtype=np.float64))
+    assert np.allclose(d, data)
+    return
+
+
+def test_vartable_j(test_file_j):
+    """Test accesing vartable data in a Miriad UV file"""
+    filename, data = test_file_j
+    uv = miriad.UV(filename, corrmode="j")
+    assert uv.vartable["corr"] == "j"
+    assert uv.vartable["nchan"] == "i"
+    assert uv.vartable["pol"] == "i"
+    return
+
+
+def test_data_j(test_file_j):
+    """Test writing data from a Miriad UV file"""
+    filename, data = test_file_j
+    uv = miriad.UV(filename)
+    assert uv["history"] == "Made this file from scratch.\n"
+
+    (uvw, t, bl), d = uv.read()
+    assert uv["nchan"] == 4
+    assert uv["pol"] == -5
+    assert bl == (0, 1)
+    assert np.isclose(t, 12345.6789)
+    assert np.allclose(uvw, np.array([1, 2, 3], dtype=np.float64))
+    assert np.allclose(np.abs(d - data), 0.0, atol=1e-4)
+
+    (uvw, t, bl), d = uv.read()
+    assert uv["nchan"] == 4
+    assert uv["pol"] == -6
+    assert bl == (0, 1)
+    assert np.isclose(t, 12345.6789)
+    assert np.allclose(uvw, np.array([1, 2, 3], dtype=np.float64))
+    assert np.allclose(np.abs(d - data), 0.0, atol=1e-4)
+    return

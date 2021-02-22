@@ -135,7 +135,7 @@ def fit_func(prms, filelist, decimate, decphs):
               for bl in dbuf[t]:
                 for pol in dbuf[t][bl]:
                     samp += len(dbuf[t][bl][pol][1])
-                    vsamp += np.logical_not(dbuf[t][bl][pol][1]).astype(np.int).sum()
+                    vsamp += np.logical_not(dbuf[t][bl][pol][1]).astype(np.int_).sum()
                     wgts += dbuf[t][bl][pol][2]
             print('Cache summary:')
             print('   %d samples' % samp)

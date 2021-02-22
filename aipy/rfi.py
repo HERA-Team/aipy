@@ -50,14 +50,14 @@ def flag_by_int(preflagged_auto, nsig=1, raw=False):
     hi_thr, lo_thr = gen_rfi_thresh(spikey_pwr_vs_t, cnt_per_bin=20, nsig=nsig)
     spikey_pwr_vs_t = spikey_pwr_vs_t.filled(hi_thr)
     mask = spikey_pwr_vs_t >= hi_thr
-    return mask.astype(np.int)
+    return mask.astype(np.int_)
 
 def remove_spikes(data, mask=None, order=6, iter=3, return_poly=False):
     """Iteratively fits a smooth function by removing outliers and fitting
     a polynomial, then using the polynomial to remove other outliers."""
     xs = np.arange(data.size)
     if mask is None or mask.size != data.size:
-        mask = np.zeros(data.shape, dtype=np.bool)
+        mask = np.zeros(data.shape, dtype=np.bool_)
     im = np.logical_not(mask)
     nxs = xs.compress(im)
     ndata = data.compress(im)

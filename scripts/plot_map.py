@@ -21,9 +21,9 @@ class Basemap:
         self.lat_0, self.lon_0 = lat_0, lon_0
     def __call__(self, lon, lat, inverse=False):
         if inverse:
-            lon = lon.astype(np.float) * 90 - self.lon_0
+            lon = lon.astype(np.float64) * 90 - self.lon_0
             lon = self.wrap(lon, -180, 180)
-            lat = lat.astype(np.float) * 90 - self.lat_0
+            lat = lat.astype(np.float64) * 90 - self.lat_0
             lat = self.wrap(lat, -90, 90)
             return lon,lat
         else:
@@ -49,8 +49,8 @@ class Basemap:
         p.grid(True)
     def makegrid(self, dim1, dim2, returnxy=True):
         y,x = np.indices((dim2,dim1))
-        x = 4 * x.astype(np.float)/dim1 - 2
-        y = 1 - 2 * y.astype(np.float)/dim2
+        x = 4 * x.astype(np.float64)/dim1 - 2
+        y = 1 - 2 * y.astype(np.float64)/dim2
         lon,lat = self(x,y, inverse=True)
         if returnxy: return lon,lat, x,y
         else: return lon,lat

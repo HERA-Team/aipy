@@ -53,7 +53,7 @@ for uvfile in args:
             d.shape = (opts.nchan, nchan/opts.nchan)
             d = d.sum(axis=1)
             f.shape = (opts.nchan, nchan/opts.nchan)
-            f = np.logical_not(f).astype(np.int).sum(axis=1)
+            f = np.logical_not(f).astype(np.int_).sum(axis=1)
             d /= f.clip(1,np.Inf)
             if opts.careful_flag: f = np.where(f < nchan/opts.nchan, 1, 0)
             elif opts.dont_flag: f = np.where(f < 1, 1, 0)
