@@ -22,12 +22,15 @@ from . import pol, twodgauss #added by dfm
 import ephem
 
 try:
-    from .__gitlog__ import __gitlog__
-    from .__branch__ import __branch__
-    from .__version__ import __version__
+    from importlib.metadata import PackageNotFoundError, version
 except ImportError:
-    __gitlog__ = None
-    __branch__ = None
-    fh = open('VERSION', 'r')
-    __version__ = fh.read()
-    fh.close()
+    from importlib_metadata import PackageNotFoundError, version
+
+try:
+    from ._version import version as __version__
+except ModuleNotFoundError:  # pragma: no cover
+    try:
+        __version__ = version("aipy")
+    except PackageNotFoundError:
+        # package is not installed
+        __version__ = "unknown"
