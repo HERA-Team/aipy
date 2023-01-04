@@ -64,7 +64,7 @@ setup(
             'pytest',
             'pytest-cov'
         ]
-    }
+    },
     package_dir = {'aipy':'aipy', 'aipy._src':'aipy/_src'},
     packages = ['aipy', 'aipy._src'],
     ext_modules = [
