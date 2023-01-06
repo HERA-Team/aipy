@@ -3,7 +3,7 @@ name: Run Tests
 on: [push]
 
 jobs:
-  build-linux:
+  Tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
