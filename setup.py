@@ -6,6 +6,14 @@ from setuptools import setup, Extension
 
 import os, glob, numpy, subprocess, sys
 
+PY2 = sys.version_info.major < 3
+if PY2:
+    MATPLOTLIB_DEP = 'matplotlib<3'
+    ASTROPY_DEP = 'astropy>=1.0'
+else:
+    MATPLOTLIB_DEP = 'matplotlib'
+    ASTROPY_DEP = 'astropy>=3.0'
+
 def get_description():
     def get_description_lines():
         seen_desc = False
@@ -52,9 +60,9 @@ setup(
         'setuptools_scm',
     ],
     install_requires = [
-        'astropy>=3.0',
+        ASTROPY_DEP,
         'healpy>=1.11',
-        'matplotlib',
+        MATPLOTLIB_DEP,
         'numpy>=1.2',
         'ephem>=3.7.3.2',
         'scipy>=0.19',
