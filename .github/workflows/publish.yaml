@@ -25,15 +25,7 @@ jobs:
           python -m build .
 
       - name: Publish to PyPI
-        if: startsWith(github.event.ref, 'refs/tags/v') &&  
+        if: startsWith(github.event.ref, 'refs/tags/v')
         uses: pypa/gh-action-pypi-publish@master
         with:
           password: ${{ secrets.pypi_password }}
-
-      - name: Publish the release notes
-        uses: release-drafter/release-drafter@v5.21.1
-        with:
-          publish: ${{ startsWith(github.event.ref, 'refs/tags/v') }}
-          tag: ${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
