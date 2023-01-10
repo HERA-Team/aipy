@@ -22,7 +22,7 @@ jobs:
 
       - name: Build a binary wheel and a source tarball
         run: |
-          python -m build .
+          python -m build -s .
           ls dist/
 
       - name: Publish to PyPI
