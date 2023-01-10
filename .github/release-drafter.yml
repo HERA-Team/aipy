@@ -24,6 +24,8 @@ categories:
     labels:
       - "dependencies"
       - "build"
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
 autolabeler:
   - label: 'documentation'
     files:
