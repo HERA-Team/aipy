@@ -462,10 +462,9 @@ def test_antenna_array_gen_phs(test_antenna_array):
 def test_antenna_array_resolve_src(test_antenna_array):
     ants, aa = test_antenna_array
     # we get a runtime warning when x ~ 0
-    with pytest.warns(RuntimeWarning) as record:
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in") as record:
         amp = aa.resolve_src(100.0, 100.0, srcshape=(0, 0, 0))
     assert len(record) == 1
-    assert record[0].message.args[0] == "invalid value encountered in double_scalars"
 
     # check that value is correct
     assert amp == 1

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "oldest-supported-numpy"]
+requires = ["setuptools>=42", "wheel", "numpy", "setuptools-scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
@@ -16,3 +16,8 @@ testpaths = [
     "tests/scripting_test.py",
     "tests/twodgauss_test.py",
 ]
+
+[tool.setuptools_scm]
+write_to = "aipy/_version.py"
+parentdir_prefix_version = "aipy-"
+fallback_version = "0.0.0"

@@ -2,6 +2,11 @@
 
 - Remove `ez_setup` installation infrastructure; it has been deprecated for a
   long time.
+- Allow installing from empty environment
+- Use github actions instead of travis
+- Use python3 print()
+- Use pytest instead of unittest
+- Use explicit numpy types
 
 # 3.0.1 (2019 Aug 21)
 

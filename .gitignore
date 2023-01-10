@@ -8,3 +8,4 @@
 /aipy/__version__.py
 /aipy/*.so
 /doc/build/
+aipy/_version.py
