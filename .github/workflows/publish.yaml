@@ -2,7 +2,7 @@ name: Publish Python distributions to PyPI
 
 on:
   release:
-    types: [published, created, edited]
+    types: [published]
 
 jobs:
   build-n-publish:
@@ -26,7 +26,6 @@ jobs:
           ls dist/
 
       - name: Publish to PyPI
-        if: startsWith(github.event.ref, 'refs/tags/v')
         uses: pypa/gh-action-pypi-publish@master
         with:
           password: ${{ secrets.pypi_password }}
