@@ -51,7 +51,7 @@ def generate_Beam2DGaussian():
 @pytest.fixture(scope="function")
 def generate_BeamAlm():
     freqs = np.arange(0.1, 0.2, 0.01)
-    coeffs = {0: np.array([1.0, 0, 0], dtype=np.complex128)}
+    coeffs = {0: np.array([1.0, 0, 0], dtype=complex)}
     bm = amp.BeamAlm(freqs, lmax=1, mmax=1, deg=0, coeffs=coeffs)
 
     yield freqs, coeffs, bm
@@ -148,7 +148,7 @@ def test_response_BeamAlm(generate_BeamAlm):
     resp = bm.response(xyz)
     assert resp.shape == (freqs.size, 3)
 
-    ans = np.ones(3, dtype=np.complex128) / np.sqrt(4 * np.pi)
+    ans = np.ones(3, dtype=complex) / np.sqrt(4 * np.pi)
     ans.shape = (1, 3)
     bm.select_chans([0])
     resp = bm.response(xyz)

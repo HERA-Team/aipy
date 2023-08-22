@@ -6,26 +6,26 @@ import aipy as a, numpy as n
 from matplotlib import pylab as p
 
 SIZE = 100
-aim = n.zeros((SIZE,SIZE), dtype=n.float)
+aim = n.zeros((SIZE,SIZE), dtype=float)
 aim[10,10] = 10.
 aim[20:25,20:25] = 1.
 aim[30:40,30:40] = .1
-dbm = a.img.gaussian_beam(2, shape=aim.shape).astype(n.float)
+dbm = a.img.gaussian_beam(2, shape=aim.shape).astype(float)
 dbm[0,0] = 2
 dbm /= dbm.sum()
 
-dim = n.fft.ifft2(n.fft.fft2(aim) * n.fft.fft2(dbm)).astype(n.float)
+dim = n.fft.ifft2(n.fft.fft2(aim) * n.fft.fft2(dbm)).astype(float)
 
 print('REAL TEST:')
 cim, info = a.deconv.clean(dim, dbm)
 print(info)
 print('-----------------------------------------------------------------')
 
-aim = n.zeros((SIZE,SIZE), dtype=n.complex)
+aim = n.zeros((SIZE,SIZE), dtype=complex)
 aim[10,10] = 10.
 aim[20:25,20:25] = 1j
 aim[30:40,30:40] = .1+.1j
-dbm = a.img.gaussian_beam(2, shape=aim.shape).astype(n.complex)
+dbm = a.img.gaussian_beam(2, shape=aim.shape).astype(complex)
 dbm[0,0] = 2
 dbm /= dbm.sum()
 
