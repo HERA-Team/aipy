@@ -61,7 +61,7 @@ setup(
     ],
     install_requires = [
         ASTROPY_DEP,
-        'astropy-healpix>=1.0.0',
+        'astropy-healpix',
         MATPLOTLIB_DEP,
         'numpy>=1.2',
         'ephem>=3.7.3.2',
