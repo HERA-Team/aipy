@@ -14,21 +14,21 @@ Python:
 
 >>> import aipy
 >>> uv = aipy.miriad.UV('test.uv')
->>> print uv.items()
+>>> print(uv.items())
 ['vartable', 'obstype', 'history']
->>> print uv['history']
+>>> print(uv['history'])
 C2M (Python): Version=0.1.1.Fixed bandpass inversion & ordering, and pol
 label.APPLY_BP: version=0.0.1, corr type = combXRFI: version 0.0.2XTALK2:
 version 0.0.1 Miniaturized...
->>> print uv.vars()
+>>> print(uv.vars())
 ['latitud', 'npol', 'nspect', 'obsdec', 'vsource', 'ischan', 'operator',
 'nants', 'baseline', 'sfreq', 'inttime', 'source', 'epoch', 'version',
 'ra', 'restfreq', 'nschan', 'sdf', 'corr', 'freq', 'longitu', 'nchan',
 'tscale', 'antpos', 'telescop', 'pol', 'coord', 'veldop', 'lst', 'time',
 'dec', 'obsra']
->>> print uv['nchan']
+>>> print(uv['nchan'])
 64
->>> print uv['antpos']
+>>> print(uv['antpos'])
 [ -8.48 205.47 187.1 -262.7 455.28 319.53 -352.95 -219.07 9.82
 -251.71 -232.59 318.7 ]
 
@@ -50,9 +50,9 @@ multiple values, we get an array of the values.
 Let's continue:
 
 >>> preamble, data = uv.read()
->>> print preamble
+>>> print(preamble)
 (array([ 0., 0., 0.]), 2454302.8700115741, (0, 0))
->>> print data
+>>> print(data)
 [(3.55898427963+0j) (5.16037225723+0j) (7.65382957458+0j)
 (11.5349502563+0j) (17.6214637756+0j) (26.8085384369+0j)
 (40.0749702454+0j) (56.860118866+0j) (74.8811569214+0j) (89.6064910889+0j)
@@ -72,10 +72,10 @@ Let's continue:
 (38.8019142151+0j) (38.0523262024+0j) (37.1168937683+0j)
 (36.1814575195+0j) (35.2924880981+0j) (34.3105926514+0j)
 (33.4278144836+0j) (32.3839683533+0j)]
->>> print uv['pol'], aipy.miriad.pol2str[uv['pol']]
+>>> print(uv['pol'], aipy.miriad.pol2str[uv['pol']])
 -6 yy
 >>> preamble, data = uv.read()
->>> print preamble
+>>> print(preamble)
 (array([-538.6, 298.79613781, -674.73816035]), 2454302.8700115741, (1, 3))
 >>> preamble, data, flags = uv.read(raw=True)
 
@@ -94,7 +94,7 @@ Now for some more advanced stuff:
 >>> uv.select('antennae', 0, 1, include=True)
 >>> for preamble, data in uv.all():
 ... uvw, t, (i,j) = preamble
-... print i, j, t
+... print(i, j, t)
 ...
 0 1 2454302.87001
 0 1 2454302.87009
@@ -228,8 +228,8 @@ scratch:
 >>> del(uv)
 >>> uv = aipy.miriad.UV('newest.uv')
 >>> for p, d in uv.all():
-... print p, uv['pol']
-... print d
+... print(p, uv['pol'])
+... print(d)
 ...
 (array([ 1., 2., 3.]), 12345.678900000001, (0, 1)) -5
 [1j (2+0j) -- (4+0j)]
@@ -264,7 +264,7 @@ example, starting from scratch:
 >>> ants.append(aipy.phs.Antenna(0,100,0,beam,delay=1))
 >>> ants.append(aipy.phs.Antenna(100,0,0,beam,offset=.5))
 >>> aa = aipy.phs.AntennaArray(ants=ants,location=("18:20:39","-66:45:10"))
->>> print aa.get_baseline(0,2,'r'), aa.get_phs_offset(0,2)
+>>> print(aa.get_baseline(0,2,'r'), aa.get_phs_offset(0,2))
 [ 100. 0. 0.] [ 0.  0.  0.]
 >>> aa.set_jultime(2454447.37472)
 >>> srcs = []
@@ -272,9 +272,9 @@ example, starting from scratch:
 >>> srcs.append(aipy.phs.RadioSpecial("Venus"))
 >>> cat = aipy.phs.SrcCatalog(srcs)
 >>> cat.compute(aa) # REMEMBER to call this before projecting!
->>> print aa.get_baseline(0,1,src=cat['Sun'])
+>>> print(aa.get_baseline(0,1,src=cat['Sun']))
 [ 34.6664193  -36.79755778 -86.27965644]
->>> print aa.get_baseline(0,1,src=cat['Venus'])
+>>> print(aa.get_baseline(0,1,src=cat['Venus']))
 aipy.phs.PointingError: Venus below horizon
 
 We made a Beam with frequency information, created 3 Antennas using the same Beam, and 
@@ -295,17 +295,17 @@ and recover.
 
 Let's continue:
 
->>> print aa.gen_phs(cat['Sun'], 0, 1)
+>>> print(aa.gen_phs(cat['Sun'], 0, 1))
 [ 0.93421349-0.3567144j   0.33723017-0.94142223j -0.49523164-0.86876097j]
 >>> data = aa.phs2src(numpy.array([.5,1,0j]),cat['Sun'],1,2)
->>> print data
+>>> print(data)
 [-0.07802227+0.49387501j  0.83315419+0.55304077j  0.00000000+0.j        ]
 >>> uvw = aa.gen_uvw(1,2,cat['Sun'])
->>> print uvw
+>>> print(uvw)
 [[[  8.86987669   9.4612018   10.05252691]]
  [[  7.55959227   8.06356508   8.5675379 ]]
  [[ 17.72506283  18.90673368  20.08840454]]]
->>> print aa.unphs2src(data,cat['Sun'],1,2)
+>>> print(aa.unphs2src(data,cat['Sun'],1,2))
 [ 0.5+0.j 1.0+0.j 0.0+0.j]
 
 Using the AntennaArray and SrcCatalog we created earlier, we can now use gen_phs() to return 
@@ -424,7 +424,7 @@ image:
 Next, we will gather visibility data from the UV file and calculate the corresponding uvw coordinates
 using our AntennaArray and celestial source.  We will not include auto-correlation data (uv.select), 
 we will skip data where Virgo is below the horizon (the PointingError try-except clause), and we will 
-throw out data that is agged as bad in the data mask (the compress/compressed functions).  For more 
+throw out data that is flagged as bad in the data mask (the compress/compressed functions).  For more 
 signal-to-noise, we're including all channels-all data and coordinates are a function of frequency, 
 making this a multi-frequency map:
 

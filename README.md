@@ -57,7 +57,7 @@ Aaron Parsons
 
 -----------------------------------------------------------------------------
 
-# Package Info for Developers
+## Package Info for Developers
 
 The miriad source code (`aipy/miriad/mirsrc`) was included from MIRIAD 4.0.5.
 To update, download a MIRIAD distribution and copy `$MIR/src/subs/*` and
@@ -66,3 +66,11 @@ To update, download a MIRIAD distribution and copy `$MIR/src/subs/*` and
 Healpix source code (`aipy/healpix/cxx`) was included from Healpix 2.01. To
 update, download a HEALPix distribution and copy `src/cxx` into
 `aipy/healpix`.
+
+## Making Releases (for Maintainers)
+
+To make a release of `aipy` (both on Github and PyPI), head to the most current 
+[Draft Release](https://github.com/HERA-Team/aipy/releases) and note the *suggested*
+release version. Contact the maintainers with your intention to make a release either 
+to that version (or, if appropriate, to a different version), and publish the release
+via the Github UI. All done!

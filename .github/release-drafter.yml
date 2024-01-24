@@ -1,0 +1,68 @@
+# See https://github.com/marketplace/actions/release-drafter for configuration
+categories:
+  - title: ":boom: Breaking Changes"
+    label: "breaking"
+  - title: ":rocket: Features"
+    label: "enhancement"
+  - title: ":fire: Removals and Deprecations"
+    label: "removal"
+  - title: ":beetle: Fixes"
+    label: "bug"
+  - title: ":racehorse: Performance"
+    label: "performance"
+  - title: ":rotating_light: Testing"
+    label: "testing"
+  - title: ":construction_worker: Continuous Integration"
+    label: "ci"
+  - title: ":books: Documentation"
+    label: "documentation"
+  - title: ":hammer: Refactoring"
+    label: "refactoring"
+  - title: ":lipstick: Style"
+    label: "style"
+  - title: ":package: Dependencies"
+    labels:
+      - "dependencies"
+      - "build"
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+autolabeler:
+  - label: 'documentation'
+    files:
+      - '*.md'
+    branch:
+      - '/.*docs{0,1}.*/'
+  - label: 'bug'
+    branch:
+      - '/fix.*/'
+    title:
+      - '/fix/i'
+  - label: 'enhancement'
+    branch:
+      - '/feature.*|add-.+/'
+    title:
+      - '/feat:.+|feature:.+/i'
+    body:
+      - '/JIRA-[0-9]{1,4}/'
+  - label: "removal"
+    title:
+      - "/remove .*/i"
+  - label: "performance"
+    title:
+      - "/.* performance .*/i"
+  - label: "ci"
+    files:
+      - '.github/*'
+      - '.pre-commit-config.yaml'
+      - '.coveragrc'
+  - label: "style"
+    files:
+      - ".flake8"
+  - label: "refactoring"
+    title:
+      - "/.* refactor.*/i"
+
+template: |
+  ## Changes
+
+  $CHANGES

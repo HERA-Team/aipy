@@ -232,7 +232,7 @@ class HealpixMap(HealpixBase):
                 px,wgts = self.crd2px(*crd, **{'interpolate':1})
                 return np.sum(self.map[px] * wgts, axis=-1)
             else: px = self.crd2px(*crd)
-        else: px = mk_arr(crd, dtype=np.long)
+        else: px = mk_arr(crd, dtype=np.int64)
         return self.map[px]
     def __setitem__(self, crd, val):
         """Assign data to a sphere via hpm[crd] = val.  Functionality slightly
@@ -245,7 +245,7 @@ class HealpixMap(HealpixBase):
             px = self.crd2px(*crd)
         else:
             if type(crd) is np.ndarray: assert(len(crd.shape) == 1)
-            px = mk_arr(crd, dtype=np.int)
+            px = mk_arr(crd, dtype=int)
         if px.size == 1:
             if type(val) is np.ndarray: val = mk_arr(val, dtype=self.map.dtype)
             self.map[px] = val
