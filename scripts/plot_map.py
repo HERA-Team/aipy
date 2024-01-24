@@ -108,11 +108,11 @@ if opts.cen is None:
     if opts.osys == 'eq': opts.cen = 180
     else: opts.cen = 0
 map = Basemap(projection=opts.projection,lat_0=0,lon_0=opts.cen, rsphere=1.)
-lons,lats,x,y = map.makegrid(360/opts.res,180/opts.res, returnxy=True)
+lons,lats,x,y = map.makegrid(int(360/opts.res),int(180/opts.res), returnxy=True)
 # Mask off parts of the image to be plotted that are outside of the map
 lt = lats[:,0]
-ln1 = np.ones_like(lt) * (lons[lons.shape[0]/2,0])
-ln2 = np.ones_like(lt) * (lons[lons.shape[0]/2,-1])
+ln1 = np.ones_like(lt) * (lons[lons.shape[0]//2,0])
+ln2 = np.ones_like(lt) * (lons[lons.shape[0]//2,-1])
 x1,y1 = map(ln1,lt); x2,y2 = map(ln2,lt)
 x = np.ma.array(x)
 for c,(i,j) in enumerate(zip(x1,x2)): x[c] = np.ma.masked_outside(x[c], i, j)

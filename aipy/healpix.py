@@ -175,7 +175,7 @@ class Alm(object):
         self.set_data(data)
     def lm_indices(self):
         """Return the L and M indices of the coefficients contained in Alm, in the order that they are returned by get_data()."""
-        return np.array([self._alm.getlm(self._lmax, i) for i in range(self.size)])
+        return np.array([self._alm.getlm(self._lmax, i) for i in range(self.size())])
     def get_data(self):
         """Return all of the coefficients contained in Alm, in the order indexed by lm_indices()."""
         return self.data
