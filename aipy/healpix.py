@@ -15,7 +15,8 @@ try:
 except ImportError:
     import pyfits
 
-import healpy
+from astropy_healpix import healpy
+import astropy_healpix
 
 default_fits_format_codes = {
     np.bool_:'L', np.uint8:'B', np.int16:'I', np.int32:'J', np.int64:'K',
@@ -77,7 +78,7 @@ class HealpixBase(object):
             return x,y,z
     def order(self):
         """Return the order parameter."""
-        return healpy.nside2order(self._nside)
+        return astropy_healpix.nside_to_level(self._nside)
     def nside(self):
         """Return the Nside parameter."""
         return self._nside
