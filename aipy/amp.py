@@ -125,7 +125,7 @@ class Beam(phs.Beam):
 class Beam2DGaussian(phs.Beam):
     """Representation of a 2D Gaussian beam pattern, with default setting for
     a flat beam."""
-    def __init__(self, freqs, xwidth=np.Inf, ywidth=np.Inf):
+    def __init__(self, freqs, xwidth=np.inf, ywidth=np.inf):
         """xwidth = angular width (radians) in EW direction
         ywidth = angular width (radians) in NS direction"""
         phs.Beam.__init__(self, freqs)

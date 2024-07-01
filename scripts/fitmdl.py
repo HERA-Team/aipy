@@ -54,7 +54,7 @@ cat = a.cal.get_catalog(opts.cal, srclist, cutoff, catalogs)
 aa.set_jultime(t)
 cat.compute(aa)
 del(uv)
-if opts.maxiter < 0: opts.maxiter = np.Inf
+if opts.maxiter < 0: opts.maxiter = np.inf
 
 # Figure out parameters to fit
 prms, prm_dict, shkeys = {}, {}, []
@@ -234,7 +234,7 @@ elif opts.master:
         fit_func, prm_list,
         #args=(args, opts.decimate, opts.decphs),
         full_output=1, disp=0,
-        maxfun=opts.maxiter, maxiter=np.Inf,
+        maxfun=opts.maxiter, maxiter=np.inf,
         ftol=opts.ftol, xtol=opts.xtol
     )
     prms,score = rv[:2]
@@ -252,7 +252,7 @@ elif not opts.snap:
         fit_func, prm_list,
         args=(args, opts.decimate, opts.decphs),
         full_output=1, disp=0,
-        maxfun=opts.maxiter, maxiter=np.Inf,
+        maxfun=opts.maxiter, maxiter=np.inf,
         ftol=opts.ftol, xtol=opts.xtol
     )
     prms,score = rv[:2]
@@ -283,7 +283,7 @@ else:
                 fit_func, prm_list,
                 args=([uvfile], decimate, opts.decimate*cnt + opts.decphs),
                 full_output=1, disp=0,
-                maxfun=opts.maxiter, maxiter=np.Inf,
+                maxfun=opts.maxiter, maxiter=np.inf,
                 ftol=opts.ftol, xtol=opts.xtol
             )
             prms,score = rv[:2]

@@ -149,7 +149,8 @@ class Alm(object):
           polarized input)'''
         return healpy.alm2map(self.get_data(), nside, 
             lmax=self._lmax, mmax=self._mmax,
-            pixwin=pixwin, fwhm=fwhm, sigma=sigma, pol=pol, verbose=verbose)
+            pixwin=pixwin, fwhm=fwhm, sigma=sigma, pol=pol
+        )
     def from_map(self, data, iter=3, pol=True, use_weights=False, gal_cut=0):
         '''Set the coefficients of this Alm object (with its specified 
         lmax and mmax) from the data of a HealpixMap in 'RING' mode.

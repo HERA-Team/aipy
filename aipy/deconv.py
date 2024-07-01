@@ -77,7 +77,7 @@ def recenter(a, c):
     return a2
 
 def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200,
-        lower=lo_clip_lev, upper=np.Inf, verbose=False):
+        lower=lo_clip_lev, upper=np.inf, verbose=False):
     """This simple least-square fitting procedure for deconvolving an image
     saves computing by assuming a diagonal pixel-pixel gradient of the fit.
     In essence, this assumes that the convolution kernel is a delta-function.
@@ -132,7 +132,7 @@ def lsq(im, ker, mdl=None, area=None, gain=.1, tol=1e-3, maxiter=200,
     return x, info
 
 def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200,
-        lower=lo_clip_lev, upper=np.Inf, verbose=False):
+        lower=lo_clip_lev, upper=np.inf, verbose=False):
     """Maximum entropy deconvolution (MEM) (see Cornwell and Evans 1984
     "A Simple Maximum Entropy Deconvolution Algorithm" and Sault 1990
     "A Modification of the Cornwell and Evans Maximum Entropy Algorithm")
@@ -197,7 +197,7 @@ def maxent(im, ker, var0, mdl=None, gain=.1, tol=1e-3, maxiter=200,
     return b_i, info
 
 def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
-        maxiter=200, lower=lo_clip_lev, upper=np.Inf, verbose=False,
+        maxiter=200, lower=lo_clip_lev, upper=np.inf, verbose=False,
         maxiterok=False):
     """This frontend to maxent tries to find a variance for which maxent will
     converge.  If the starting variance (var) is not specified, it will be
@@ -237,7 +237,7 @@ def maxent_findvar(im, ker, var=None, f_var0=.6, mdl=None, gain=.1, tol=1e-3,
     if verbose: print('Done with MEM.')
     return cl, info
 
-def anneal(im, ker, mdl=None, maxiter=1000, lower=lo_clip_lev, upper=np.Inf,
+def anneal(im, ker, mdl=None, maxiter=1000, lower=lo_clip_lev, upper=np.inf,
         cooling=lambda i,x: 1e+1*(1-np.cos(i/50.))*(x**2), verbose=False):
     """Annealing takes a non-deterministic approach to deconvolution by
     randomly perturbing the model and selecting perturbations that improve the

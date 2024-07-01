@@ -91,7 +91,7 @@ for filename in args:
             guess[bl] += np.where(f, 0, d)
             cnt[bl] += np.logical_not(f)
         del(uv)
-        for bl in guess: xtalk[bl] = guess[bl] / np.clip(cnt[bl], 1, np.Inf)
+        for bl in guess: xtalk[bl] = guess[bl] / np.clip(cnt[bl], 1, np.inf)
     if opts.outfile:
         xfile = '%f.xtalk.npz' % jd
         print('Writing', xfile)

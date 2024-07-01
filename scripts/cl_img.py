@@ -78,7 +78,7 @@ for cnt, k in enumerate(keys):
             level = float(opts.rewgt.split('(')[-1][:-1])
             abms = np.abs(bms)
             thresh = abms.max() * level
-            divisor = abms.clip(thresh, np.Inf)
+            divisor = abms.clip(thresh, np.inf)
             uvs /= divisor; bms /= divisor
         elif opts.rewgt.startswith('radial'):
             #x,y = np.indices(dim.shape)
